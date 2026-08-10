@@ -1,0 +1,430 @@
+---
+title: "\\textbf{Lab 7: Two-Stage Least Squares and Its Diagnostics}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 8"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.3, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+1.  Build the IV estimator by hand and see that it is a ratio of two reduced-form
+    quantities.
+2.  Run 2SLS properly, and understand why running the two stages manually gives
+    the wrong standard errors.
+3.  Read every diagnostic an IV paper should report.
+4.  Watch weak instruments destroy 2SLS in simulation.
+5.  Characterize the compliers.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(ivreg)
+library(fixest)
+library(sandwich); library(lmtest)
+
+data("SchoolingReturns", package = "ivreg")
+card <- SchoolingReturns |>
+  mutate(lwage = log(wage), near4 = as.integer(nearcollege4 != "none"))
+c(n = nrow(card), share_near_4yr = mean(card$near4))
+table(card$nearcollege4)
+```
+
+# The design
+
+The question is the causal return to a year of schooling. Schooling is
+endogenous: unmeasured ability raises both schooling and wages, so OLS is biased
+upward; measurement error pushes the other way.
+
+The instrument, following Card (1995), is **growing up near a four-year
+college**. The argument for relevance is that proximity lowers the cost of
+attending. The argument for exclusion is that, conditional on region and urban
+status, where your parents happened to live does not affect your wage except
+through the schooling it made cheaper.
+
+::: callout-warning
+That exclusion argument is contestable, and it has been contested — college
+towns differ from other places in labour markets, school quality, and family
+background. Part of today's job is learning to interrogate it rather than accept
+it.
+:::
+
+# By hand: the Wald estimator
+
+With a binary instrument, IV is the ratio of two differences in means.
+
+```{r}
+#| label: wald
+rf <- mean(card$lwage[card$near4 == 1]) - mean(card$lwage[card$near4 == 0])
+fs <- mean(card$education[card$near4 == 1]) - mean(card$education[card$near4 == 0])
+
+c(reduced_form = rf, first_stage = fs, wald_ratio = rf / fs)
+```
+
+```{r}
+#| label: wald-reg
+## the same numbers as regressions
+c(reduced_form = coef(lm(lwage ~ near4, data = card))["near4"],
+  first_stage  = coef(lm(education ~ near4, data = card))["near4"],
+  iv           = coef(ivreg(lwage ~ education | near4, data = card))["education"])
+```
+
+::: callout-note
+Notice the two ingredients. The reduced form is small (about 0.16 log points) and
+so is the first stage (about 0.83 years). Dividing one small number by another is
+exactly the operation that makes IV fragile — and once we add covariates, both
+shrink further.
+:::
+
+# 2SLS with covariates
+
+```{r}
+#| label: models
+f_ols <- lwage ~ education + experience + I(experience^2) + ethnicity +
+  smsa + south
+
+m_ols <- lm(f_ols, data = card)
+
+m_iv <- ivreg(lwage ~ education + experience + I(experience^2) + ethnicity +
+                smsa + south |
+                near4 + age + I(age^2) + ethnicity + smsa + south,
+              data = card)
+
+round(cbind(OLS = coef(m_ols)[1:3], IV = coef(m_iv)[1:3]), 4)
+```
+
+Note the instrument set: because `experience` is a function of `education`
+($\text{exper} = \text{age} - \text{educ} - 6$), it is endogenous too, and we
+instrument it with `age`. Getting this bookkeeping right matters — every
+endogenous regressor needs its own instrument.
+
+```{r}
+#| label: iv-summary
+summary(m_iv, vcov = sandwich, diagnostics = TRUE)
+```
+
+The IV estimate is *larger* than OLS. That is the standard finding with this
+instrument and it is worth pausing on: if ability bias were the only problem, IV
+should come out *smaller*. Candidate explanations are measurement error in
+self-reported schooling, and the fact that the LATE applies to compliers whose
+return may genuinely be higher.
+
+## Why not run the two stages by hand?
+
+To make the comparison clean, use a specification with a **single** endogenous
+regressor: instrument `education` with `near4`, and treat `age` (rather than
+`experience`) as the exogenous age control so nothing else is endogenous.
+
+```{r}
+#| label: simple-iv
+m_iv1 <- ivreg(lwage ~ education + age + I(age^2) + ethnicity + smsa + south |
+                 near4 + age + I(age^2) + ethnicity + smsa + south, data = card)
+
+stage1 <- lm(education ~ near4 + age + I(age^2) + ethnicity + smsa + south,
+             data = card)
+card$edu_hat <- fitted(stage1)
+stage2 <- lm(lwage ~ edu_hat + age + I(age^2) + ethnicity + smsa + south,
+             data = card)
+
+round(cbind(
+  coefficient = c(manual = coef(stage2)["edu_hat"], ivreg = coef(m_iv1)["education"]),
+  std_error = c(manual = sqrt(diag(vcov(stage2)))["edu_hat"],
+                ivreg = sqrt(diag(vcov(m_iv1)))["education"])
+), 5)
+```
+
+The **coefficients agree** but the **standard errors do not**. The manual second
+stage treats $\hat D$ as if it were data rather than an estimate, so it
+understates the uncertainty. Always use `ivreg()` or `feols()`.
+
+## The same thing in `fixest`
+
+```{r}
+#| label: fixest-iv
+m_fe <- feols(lwage ~ age + I(age^2) + ethnicity + smsa + south |
+                education ~ near4,
+              data = card, vcov = "hetero")
+summary(m_fe)
+```
+
+```{r}
+#| label: fixest-stage1
+fitstat(m_fe, c("ivf", "ivwald", "wh"))
+```
+
+# Diagnostics
+
+## The first stage
+
+```{r}
+#| label: firststage
+fs_mod <- lm(education ~ near4 + age + I(age^2) + ethnicity + smsa + south,
+             data = card)
+round(coef(summary(fs_mod))["near4", ], 4)
+
+## robust F on the excluded instrument
+car::linearHypothesis(fs_mod, "near4 = 0", vcov. = vcovHC(fs_mod, "HC1"))
+```
+
+Growing up near a four-year college is associated with about a third of a year
+more schooling once covariates are included, and the robust $F$ is right at the
+traditional threshold of 10.
+
+That is **not reassuring**. Recall from lecture that the threshold of 10 is now
+known to be far too lax: Lee, McCrary, Moreira, and Porter (2022) show that a
+conventional 5% $t$-test on the 2SLS estimate has correct size only when the
+first-stage $F$ exceeds roughly **104**. At $F \approx 10$ we are deep in the
+weak-instrument regime, and the conventional standard error is badly
+optimistic.
+
+```{r}
+#| label: tF
+## the Lee et al. tF adjustment factor, interpolated from their Table 3
+## Lee et al. (2022, Table 3) give ADJUSTED CRITICAL VALUES, not SE multipliers.
+## The implied interval-widening factor is (critical value) / 1.96.
+tF_crit <- function(F) {
+  Fgrid <- c(4, 6, 8, 10, 12, 15, 20, 30, 40, 60, 100, 104.7, 200)
+  crit  <- c(Inf, 18.66, 5.72, 3.43, 3.02, 2.71, 2.54, 2.31, 2.20, 2.11, 2.01,
+             1.96, 1.96)
+  approx(Fgrid, crit, xout = F, rule = 2)$y
+}
+Fstat <- car::linearHypothesis(fs_mod, "near4 = 0",
+                               vcov. = vcovHC(fs_mod, "HC1"))$F[2]
+se_iv <- sqrt(diag(vcovHC(m_iv1, "HC1")))["education"]
+b_iv  <- coef(m_iv1)["education"]
+crit  <- tF_crit(Fstat)
+
+c(F = Fstat, adjusted_crit_value = crit, widening_factor = crit / 1.96,
+  estimate = b_iv, conventional_se = se_iv,
+  conventional_t = b_iv / se_iv,
+  significant_at_5pct = abs(b_iv / se_iv) > crit)
+```
+
+At $F \approx 10$ the honest critical value is about 3.4 rather than 1.96 --- so
+the interval is roughly 1.75 times wider, and a $t$-statistic that looked
+comfortably significant may not clear the bar. This is the single most important
+diagnostic in the lab.
+
+Note also that `tF` is designed for the **just-identified, single-endogenous-
+regressor** case, which is why we built `m_iv1` above.
+
+## The reduced form
+
+```{r}
+#| label: reduced-form
+rf_mod <- lm(lwage ~ near4 + age + I(age^2) + ethnicity + smsa + south,
+             data = card)
+round(coef(summary(rf_mod))["near4", ], 4)
+```
+
+::: callout-tip
+**Always report the reduced form.** It is the one regression in an IV design
+that requires no instrument-strength assumption at all. Here the adjusted
+reduced-form coefficient is about 0.032 with a standard error of 0.016 — a
+$t$ of roughly 2. That is the entire evidentiary basis for the IV estimate, and
+it is thin. If the instrument has no detectable effect on the outcome, the IV
+estimate is a small number divided by another small number, and its apparent
+precision is an artefact.
+:::
+
+## Overidentification
+
+```{r}
+#| label: overid
+m_over <- ivreg(lwage ~ education + experience + I(experience^2) + ethnicity +
+                  smsa + south |
+                  near4 + nearcollege2 + age + I(age^2) + ethnicity + smsa + south,
+                data = card)
+summary(m_over, diagnostics = TRUE)$diagnostics
+```
+
+Read the Sargan row carefully. It also assumes homoskedasticity, unlike
+everything else in this lab --- the heteroskedasticity-robust analogue is
+Hansen's $J$. And non-rejection is weak evidence either way: it is entirely
+consistent with both instruments being invalid in the same direction.
+
+# Weak instruments, by simulation
+
+The cleanest way to see the danger is to build a world where you know the answer.
+
+```{r}
+#| label: weak-sim
+set.seed(723)
+
+sim_iv <- function(n = 500, pi = 0.5, rho = 0.6, beta = 1) {
+  z <- rnorm(n)
+  u <- rnorm(n)                               # confounder
+  d <- pi * z + rho * u + rnorm(n)            # pi = instrument strength
+  y <- beta * d + u + rnorm(n)                # TRUE effect is 1
+  m <- ivreg(y ~ d | z)
+  fs <- summary(lm(d ~ z))$fstatistic[1]
+  c(iv = coef(m)["d"], ols = coef(lm(y ~ d))["d"], F = fs)
+}
+
+strengths <- c(strong = 0.5, moderate = 0.15, weak = 0.05)
+res <- lapply(strengths, function(p) t(replicate(600, sim_iv(pi = p))))
+
+sapply(res, function(r) c(
+  median_F = median(r[, "F.value"]),
+  mean_IV  = mean(r[, "iv.d"]),
+  median_IV = median(r[, "iv.d"]),
+  mean_OLS = mean(r[, "ols.d"])
+)) |> round(3)
+```
+
+```{r}
+#| label: fig-weak
+#| fig-cap: "Sampling distribution of the 2SLS estimate at three instrument strengths, truncated to [-5, 5] for display. The truth is 1 (dashed). As the instrument weakens, 2SLS collapses toward OLS and develops very heavy tails -- see the share truncated, reported below."
+bind_rows(lapply(names(res), function(nm)
+  tibble::tibble(est = res[[nm]][, "iv.d"], strength = nm))) |>
+  filter(abs(est) < 5) |>
+  ggplot(aes(est)) +
+  geom_histogram(bins = 60, fill = "navy", alpha = .7) +
+  geom_vline(xintercept = 1, linetype = 2) +
+  facet_wrap(~ factor(strength, levels = c("strong", "moderate", "weak")),
+             scales = "free_y") +
+  labs(x = expression(hat(beta)[2*SLS]), y = "count") +
+  theme_minimal(base_size = 9)
+```
+
+```{r}
+#| label: tail-share
+sapply(res, function(r) mean(abs(r[, "iv.d"]) >= 5))   # share outside the plot
+```
+
+Three lessons:
+
+-   With a **strong** instrument, 2SLS is centred on the truth and roughly normal.
+-   With a **weak** instrument, the distribution is badly skewed and shifted
+    toward the OLS probability limit. IV is biased *toward the thing it was
+    supposed to fix*.
+-   The tails are heavy enough that the mean is not even a useful summary.
+    Conventional standard errors are hopeless here.
+
+```{r}
+#| label: coverage-weak
+## coverage of nominal 95% intervals
+cov_check <- function(pi) {
+  out <- replicate(600, {
+    z <- rnorm(500); u <- rnorm(500)
+    d <- pi * z + 0.6 * u + rnorm(500); y <- 1 * d + u + rnorm(500)
+    m <- ivreg(y ~ d | z)
+    ci <- confint(m)["d", ]
+    ci[1] < 1 & 1 < ci[2]
+  })
+  mean(out)
+}
+sapply(strengths, cov_check)
+```
+
+A nominal 95% interval that covers 60% of the time is not a 95% interval.
+
+# Who are the compliers?
+
+The LATE applies to people whose schooling was changed by college proximity. We
+cannot name them, but we can describe them.
+
+```{r}
+#| label: complier-share
+## complier share = first stage on a binary treatment
+card2 <- card |> mutate(some_college = as.integer(education >= 13))
+fs_bin <- lm(some_college ~ near4 + age + I(age^2) + ethnicity + smsa + south,
+             data = card2)
+round(coef(summary(fs_bin))["near4", ], 4)
+```
+
+About 5 percent of the sample are compliers on this definition — that is, roughly
+5 percent attend some college *because* they grew up near one.
+
+```{r}
+#| label: complier-profile
+## Abadie's kappa weights let us describe complier characteristics
+pz <- fitted(glm(near4 ~ age + I(age^2) + ethnicity + smsa + south,
+                 data = card2, family = binomial))
+kappa <- 1 - card2$some_college * (1 - card2$near4) / (1 - pz) -
+  (1 - card2$some_college) * card2$near4 / pz
+
+profile <- function(x) c(all = mean(x), compliers = sum(kappa * x) / sum(kappa))
+round(rbind(
+  father_educ = profile(card2$feducation |> tidyr::replace_na(mean(card2$feducation, na.rm = TRUE))),
+  south = profile(as.integer(card2$south == "yes")),
+  smsa  = profile(as.integer(card2$smsa == "yes")),
+  black = profile(as.integer(card2$ethnicity == "afam"))
+), 3)
+```
+
+::: callout-important
+The complier profile is the interpretive heart of an IV paper. If the compliers
+are disproportionately from low-education families, then the LATE is a return to
+college **for people at the margin of attending** — which is often the
+policy-relevant group, but is emphatically not the ATE.
+:::
+
+# Exercises
+
+1.  **The bookkeeping.** Refit the IV model treating `experience` as exogenous
+    (i.e. not instrumenting it). How much does the education coefficient move?
+    Explain why `experience` cannot be exogenous if `education` is not.
+
+2.  **Reduced form first.** Suppose a referee reports only the 2SLS estimate and
+    its $t$-statistic. Compute the reduced form and first stage and write two
+    sentences a referee could use to evaluate whether the design is credible.
+
+3.  **A placebo.** Growing up near a college should not affect variables
+    determined before college attendance. Regress `feducation`, `meducation`, and
+    `library14` on `near4` with the same controls. Do any of them move? What
+    would it mean for exclusion if they did?
+
+4.  **Anderson–Rubin.** Write a function that, for a grid of $\beta_0$ values,
+    regresses $Y - \beta_0 D$ on the instrument and controls and records the
+    $p$-value on the instrument. Plot it, and read off the 95% AR confidence set.
+    Compare with the conventional 2SLS interval.
+
+5.  **Bias amplification with weak instruments.** In `sim_iv()`, add a small
+    direct effect of $Z$ on $Y$ (violating exclusion by, say, 0.05). Show that
+    the resulting bias in 2SLS grows as the instrument weakens, and compare it
+    with the OLS bias.
+
+6.  **Many weak instruments.** Add 20 pure-noise instruments to the strong
+    design. What happens to the first-stage $F$, and to the 2SLS estimate?
+    Explain in terms of overfitting the first stage.
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

@@ -1,0 +1,388 @@
+---
+title: "\\textbf{Lab 3: Coding and Maximizing a Likelihood}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, September 10"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \newcommand{\loglik}{\ell}
+        \newcommand{\Info}{\mathcal{I}}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.4, fig.align = "center", dpi = 200)
+options(digits = 5, scipen = 999)
+```
+
+# Goals
+
+1.  Write a log-likelihood as an `R` function and plot it.
+2.  Maximize it numerically with `optim()`, and check the answer against the
+    closed form.
+3.  Get standard errors from the Hessian, and check them against the analytic
+    Fisher information.
+4.  See what non-identification looks like.
+5.  Code the logit likelihood from scratch and reproduce `glm()`.
+6.  Compute the likelihood ratio, Wald, and score tests by hand.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+gss <- readRDS("../Data/gss_earnings.rds")
+```
+
+# The likelihood as an `R` function
+
+## A binomial likelihood
+
+Ten draws, seven blue marbles. The likelihood is
+$\mathcal{L}(\theta) = \binom{10}{7}\theta^7(1-\theta)^3$.
+
+```{r}
+#| label: fig-binom
+#| fig-cap: "Binomial likelihood, 7 successes in 10 trials."
+lik <- function(theta) dbinom(x = 7, size = 10, prob = theta)
+curve(lik, from = 0, to = 1, n = 400, col = "navy", lwd = 2,
+      xlab = expression(theta), ylab = expression(L(theta)))
+abline(v = 0.7, col = "firebrick", lty = 2)
+```
+
+Note what `dbinom()` is doing: it is the *same function* whether you use it to
+compute a probability (fix `prob`, vary `x`) or a likelihood (fix `x`, vary
+`prob`). Only your reading of it changes.
+
+## Why we work in logs
+
+```{r}
+#| label: loglik-scale
+set.seed(723)
+n <- 500
+y <- rbinom(n, size = 1, prob = 0.3)
+
+## the raw likelihood underflows to zero
+prod(dbinom(y, size = 1, prob = 0.3))
+
+## the log-likelihood is perfectly well behaved
+sum(dbinom(y, size = 1, prob = 0.3, log = TRUE))
+```
+
+::: callout-tip
+Every `d*()` function in `R` takes `log = TRUE`. Use it. Computing
+`log(dnorm(x))` instead of `dnorm(x, log = TRUE)` is both slower and less
+accurate.
+:::
+
+# Maximizing: the Poisson case
+
+The GSS variable `childs` counts a respondent's children. Start with the simplest
+possible model, $Y_i \sim \text{Poisson}(\theta)$ with no covariates.
+
+```{r}
+#| label: pois-llik
+y <- gss$childs
+
+nll_pois <- function(theta) -sum(dpois(y, lambda = theta, log = TRUE))
+
+fit <- optim(par = 1, fn = nll_pois, method = "Brent",
+             lower = 0.01, upper = 20, hessian = TRUE)
+
+c(mle_numeric = fit$par, closed_form = mean(y), converged = fit$convergence)
+```
+
+```{r}
+#| label: fig-pois-llik
+#| fig-cap: "Poisson log-likelihood for the number of children, GSS."
+th <- seq(1.2, 2.1, length.out = 300)
+plot(th, -sapply(th, nll_pois), type = "l", col = "navy", lwd = 2,
+     xlab = expression(theta), ylab = expression(ell(theta)))
+abline(v = mean(y), col = "firebrick", lty = 2)
+```
+
+## Standard errors from the Hessian
+
+We minimized $-\loglik$, so the Hessian `optim()` returns is already
+$-\partial^2\loglik/\partial\theta^2$ --- the observed information. Its inverse
+is the variance.
+
+```{r}
+#| label: pois-se
+se_hessian  <- sqrt(1 / fit$hessian)
+se_analytic <- sqrt(mean(y) / length(y))   # from I(theta) = n/theta
+
+c(hessian = as.numeric(se_hessian), analytic = se_analytic)
+```
+
+They agree, as they must: the analytic result $\Info(\theta) = n/\theta$ is what
+the numerical second derivative is approximating.
+
+```{r}
+#| label: pois-ci
+c(estimate = mean(y),
+  lower = mean(y) - 1.96 * se_analytic,
+  upper = mean(y) + 1.96 * se_analytic)
+```
+
+# Two parameters: the normal likelihood
+
+```{r}
+#| label: norm-llik
+z <- gss$lnearn
+
+nll_norm <- function(par) {
+  mu <- par[1]; sigma <- exp(par[2])   # log-parameterize sigma to keep it > 0
+  -sum(dnorm(z, mean = mu, sd = sigma, log = TRUE))
+}
+
+fit2 <- optim(c(10, 0), nll_norm, method = "BFGS", hessian = TRUE)
+
+c(mu_hat = fit2$par[1], closed_form_mu = mean(z),
+  sigma_hat = exp(fit2$par[2]),
+  closed_form_sigma = sqrt(mean((z - mean(z))^2)))
+```
+
+::: callout-note
+Two things worth noticing.
+
+1.  We optimized over $\log\sigma$ rather than $\sigma$. Constrained parameters
+    (variances, probabilities, rates) should be transformed to the whole real
+    line before handing them to an unconstrained optimizer. By **invariance**,
+    $\hat\sigma = \exp(\widehat{\log\sigma})$ is still the MLE.
+2.  The MLE of $\sigma^2$ divides by $n$, not $n - 1$. It is *biased*. Compare
+    `sqrt(mean((z - mean(z))^2))` with `sd(z)`.
+:::
+
+```{r}
+#| label: biased-sigma
+c(mle = sqrt(mean((z - mean(z))^2)), sd_function = sd(z))
+```
+
+## The likelihood surface
+
+```{r}
+#| label: fig-surface
+#| fig-cap: "Log-likelihood surface for the normal model. The contours are ellipses centred on the MLE."
+#| fig-height: 3.8
+mu_grid    <- seq(9.85, 10.05, length.out = 80)
+sigma_grid <- seq(0.87, 1.00, length.out = 80)
+g <- expand.grid(mu = mu_grid, sigma = sigma_grid)
+g$ll <- mapply(function(m, s) sum(dnorm(z, m, s, log = TRUE)), g$mu, g$sigma)
+
+ggplot(g, aes(mu, sigma, z = ll)) +
+  geom_contour_filled(bins = 12) +
+  geom_point(aes(x = mean(z), y = sqrt(mean((z - mean(z))^2))),
+             colour = "white", size = 2, inherit.aes = FALSE) +
+  labs(x = expression(mu), y = expression(sigma), fill = expression(ell)) +
+  theme_minimal(base_size = 9) + theme(legend.key.size = unit(0.3, "cm"))
+```
+
+# What non-identification looks like
+
+Suppose we (foolishly) parameterize the mean as $\theta_1 + \theta_2$. The data
+can only speak to the sum.
+
+```{r}
+#| label: nonident
+set.seed(1)
+w <- rnorm(200, mean = 3, sd = 1)
+
+nll_bad <- function(par) -sum(dnorm(w, mean = par[1] + par[2], sd = 1, log = TRUE))
+
+starts <- matrix(rnorm(60, sd = 3), ncol = 2)
+res <- t(apply(starts, 1, function(s) optim(s, nll_bad)$par))
+head(round(res, 3), 4)
+```
+
+```{r}
+#| label: fig-ridge
+#| fig-cap: "Estimates from 30 different starting values. They lie on the ridge $\\theta_1 + \\theta_2 = \\bar w$."
+plot(res, col = "navy", pch = 19, cex = .7,
+     xlab = expression(hat(theta)[1]), ylab = expression(hat(theta)[2]))
+abline(a = mean(w), b = -1, col = "firebrick", lwd = 1.5)
+```
+
+The Hessian is singular, so there are no standard errors:
+
+```{r}
+#| label: singular
+H <- optim(c(0, 0), nll_bad, hessian = TRUE)$hessian
+H
+qr(H)$rank                # 1, not 2
+try(solve(H), silent = TRUE) |> class()
+```
+
+::: callout-important
+This is the likelihood analogue of perfect collinearity. **The lesson:** always
+run your optimizer from several starting values. If they disagree, you have an
+identification problem, not a numerical one.
+:::
+
+# Logit from scratch
+
+Now put covariates inside. Outcome: whether the respondent holds a bachelor's
+degree or more (`ba`).
+
+```{r}
+#| label: logit-manual
+X <- model.matrix(~ pareduc + wordsum + female + black, data = gss)
+yb <- gss$ba
+
+## log(1 + exp(eta)), computed without overflowing for large |eta|
+log1pexp <- function(eta) ifelse(eta > 30, eta, log1p(exp(pmin(eta, 30))))
+
+nll_logit <- function(beta) {
+  eta <- as.vector(X %*% beta)
+  -sum(yb * eta - log1pexp(eta))
+}
+
+## analytic gradient: -X'(y - p)
+gr_logit <- function(beta) {
+  p <- plogis(as.vector(X %*% beta))
+  -as.vector(crossprod(X, yb - p))
+}
+
+fit_l <- optim(rep(0, ncol(X)), nll_logit, gr = gr_logit,
+               method = "BFGS", hessian = TRUE)
+
+m_glm <- glm(ba ~ pareduc + wordsum + female + black,
+             data = gss, family = binomial(link = "logit"))
+
+round(cbind(manual = fit_l$par, glm = coef(m_glm)), 5)
+```
+
+Standard errors from the Hessian, versus what `glm()` reports:
+
+```{r}
+#| label: logit-se
+round(cbind(manual = sqrt(diag(solve(fit_l$hessian))),
+            glm = sqrt(diag(vcov(m_glm)))), 5)
+```
+
+Identical to four or five decimal places. `glm()` is doing exactly what we just
+did, only with Fisher scoring instead of BFGS.
+
+```{r}
+#| label: score-check
+## the score at the MLE should be zero
+round(gr_logit(coef(m_glm)), 6)
+```
+
+# The three tests, by hand
+
+Test $H_0$: the coefficients on `wordsum` and `black` are both zero.
+
+```{r}
+#| label: three-tests
+m_full <- glm(ba ~ pareduc + wordsum + female + black,
+              data = gss, family = binomial)
+m_rest <- glm(ba ~ pareduc + female, data = gss, family = binomial)
+
+## ---- likelihood ratio ----
+LR <- -2 * (as.numeric(logLik(m_rest)) - as.numeric(logLik(m_full)))
+c(LR = LR, df = 2, p = pchisq(LR, df = 2, lower.tail = FALSE))
+```
+
+```{r}
+#| label: lr-check
+anova(m_rest, m_full, test = "Chisq")
+```
+
+```{r}
+#| label: wald
+## ---- Wald ----
+R <- matrix(0, nrow = 2, ncol = length(coef(m_full)))
+R[1, which(names(coef(m_full)) == "wordsum")] <- 1
+R[2, which(names(coef(m_full)) == "black")]   <- 1
+
+b <- coef(m_full); V <- vcov(m_full)
+W <- as.numeric(t(R %*% b) %*% solve(R %*% V %*% t(R)) %*% (R %*% b))
+c(Wald = W, df = 2, p = pchisq(W, df = 2, lower.tail = FALSE))
+```
+
+```{r}
+#| label: score-test
+## ---- score / Lagrange multiplier ----
+## evaluate the FULL model's score and information at the RESTRICTED estimates
+b0 <- rep(0, length(coef(m_full)))
+names(b0) <- names(coef(m_full))
+b0[names(coef(m_rest))] <- coef(m_rest)
+
+p0 <- plogis(as.vector(model.matrix(m_full) %*% b0))
+Xf <- model.matrix(m_full)
+S  <- as.vector(crossprod(Xf, gss$ba - p0))          # score
+I  <- crossprod(Xf * sqrt(p0 * (1 - p0)))            # information
+LM <- as.numeric(t(S) %*% solve(I) %*% S)
+c(Score = LM, df = 2, p = pchisq(LM, df = 2, lower.tail = FALSE))
+```
+
+All three point the same way, as the theory promises, and they differ a little in
+magnitude, as the theory also promises.
+
+# Exercises
+
+1.  **Bernoulli information.** Simulate $n = 200$ draws from Bernoulli$(0.3)$.
+    Compute the MLE, the observed information from `optim(hessian = TRUE)`, and
+    the analytic $\Info(\theta) = n/[\theta(1-\theta)]$ evaluated at
+    $\hat\theta$. Confirm all three standard errors agree.
+
+2.  **Curvature is information.** For $n \in \{25, 100, 400, 1600\}$, simulate
+    Poisson$(2)$ data and plot the four log-likelihoods on the same axes,
+    each shifted to peak at zero. Describe what happens to the width of the peak,
+    and connect it to $\Info_n = n\Info_1$.
+
+3.  **A biased MLE.** Simulate $n = 50$ draws from Uniform$[0,\theta]$ with
+    $\theta = 10$. The MLE is $\max_i Y_i$. Over 5,000 replications, compute the
+    mean of the MLE. How large is the bias, and which regularity condition has
+    failed?
+
+4.  **Probit from scratch.** Write the Bernoulli log-likelihood directly with
+    $p_i = \Phi(X_i'\beta)$, i.e.
+    `sum(yb * pnorm(eta, log.p = TRUE) + (1 - yb) * pnorm(-eta, log.p = TRUE))`,
+    and reproduce `glm(..., family = binomial(link = "probit"))`. (Note you
+    cannot get there by swapping `plogis` for `pnorm` in the *canonical-link*
+    expression above --- that simplification is specific to the logit.) Compare
+    the two sets of coefficients: is the ratio close to 1.6?
+
+5.  **Invariance.** For the logit model above, the odds ratio for `wordsum` is
+    $e^{\hat\beta}$. Get a standard error for it two ways: the delta method
+    (`car::deltaMethod`) and by simulating 10,000 draws of $\tilde\beta$ from
+    $\mathcal N(\hat\beta, \widehat{\Var}(\hat\beta))$ and exponentiating. Which
+    interval would you report, and why?
+
+6.  **A misspecified model.** Fit a Poisson model to `childs` and compare the
+    model-based standard error with `sandwich::vcovHC()`. What does the gap tell
+    you about the Poisson variance assumption? (This previews overdispersion,
+    which is Week 4.)
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

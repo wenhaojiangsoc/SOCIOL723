@@ -1,0 +1,353 @@
+---
+title: "\\textbf{Lab 5: Simulating Confounding, Colliders, and DAGs}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, September 24"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \newcommand{\indep}{\perp\!\!\!\perp}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.4, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+The point of this lab is that **you already know the right answer**. We build
+worlds where the causal effect is a number we chose, then see which analyses
+recover it and which do not. That is the only way to develop reliable intuition
+about identification.
+
+1.  Simulate confounding and watch adjustment fix it.
+2.  Simulate a collider and watch adjustment *break* a correct answer.
+3.  Simulate post-treatment (mediator) control.
+4.  See selection bias as collider bias.
+5.  Draw and query DAGs in `R` with `dagitty`.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(dagitty)
+library(ggdag)
+set.seed(723)
+```
+
+# Confounding
+
+The world: $X$ causes both $D$ and $Y$; the true effect of $D$ on $Y$ is
+$\tau = 2$.
+
+```{r}
+#| label: confound-dgp
+sim_confound <- function(n = 2000, tau = 2) {
+  x <- rnorm(n)                       # confounder
+  d <- 1.2 * x + rnorm(n)             # treatment
+  y <- tau * d + 1.5 * x + rnorm(n)   # outcome
+  data.frame(y, d, x)
+}
+dat <- sim_confound()
+
+c(naive    = coef(lm(y ~ d, data = dat))["d"],
+  adjusted = coef(lm(y ~ d + x, data = dat))["d"],
+  truth    = 2)
+```
+
+The naive estimate is badly biased upward. Check the omitted variable bias
+formula from Week 1:
+
+```{r}
+#| label: confound-ovb
+b_x   <- coef(lm(y ~ d + x, data = dat))["x"]   # effect of the omitted variable
+delta <- coef(lm(x ~ d, data = dat))["d"]       # omitted on included
+c(predicted_bias = b_x * delta,
+  actual_bias = coef(lm(y ~ d, data = dat))["d"] - coef(lm(y ~ d + x, data = dat))["d"])
+```
+
+Exactly as predicted. Over many replications the adjusted estimator is centred
+on the truth and the naive one is not:
+
+```{r}
+#| label: fig-confound
+#| fig-cap: "1,000 replications. Adjustment recovers the true effect of 2; the naive estimator does not."
+reps <- t(replicate(1000, {
+  d0 <- sim_confound()
+  c(naive = coef(lm(y ~ d, d0))["d"], adjusted = coef(lm(y ~ d + x, d0))["d"])
+}))
+
+as.data.frame(reps) |>
+  tidyr::pivot_longer(everything()) |>
+  ggplot(aes(value, fill = name)) +
+  geom_histogram(bins = 60, alpha = .7, position = "identity") +
+  geom_vline(xintercept = 2, colour = "black", linetype = 2) +
+  scale_fill_manual(values = c("naive.d" = "firebrick", "adjusted.d" = "navy")) +
+  labs(x = expression(hat(tau)), y = "count", fill = NULL) +
+  theme_minimal(base_size = 10)
+```
+
+# Colliders
+
+Now the world has **no confounding at all**: $D$ and $Y$ share no common cause.
+But both cause $C$.
+
+```{r}
+#| label: collider-dgp
+sim_collider <- function(n = 2000, tau = 2) {
+  d <- rnorm(n)
+  y <- tau * d + rnorm(n)
+  c_ <- 1.0 * d + 1.0 * y + rnorm(n)     # collider: caused by BOTH
+  data.frame(y, d, c = c_)
+}
+dat2 <- sim_collider()
+
+c(correct   = coef(lm(y ~ d, data = dat2))["d"],
+  controlled = coef(lm(y ~ d + c, data = dat2))["d"],
+  truth     = 2)
+```
+
+::: callout-important
+Read that table again. The **unadjusted** regression is right; adding a control
+makes it wrong. Nothing about the data would tell you this. Only the DAG does.
+:::
+
+```{r}
+#| label: fig-collider
+#| fig-cap: "Controlling for a collider introduces bias where none existed."
+reps2 <- t(replicate(1000, {
+  d0 <- sim_collider()
+  c(correct = coef(lm(y ~ d, d0))["d"], controlled = coef(lm(y ~ d + c, d0))["d"])
+}))
+
+as.data.frame(reps2) |>
+  tidyr::pivot_longer(everything()) |>
+  ggplot(aes(value, fill = name)) +
+  geom_histogram(bins = 60, alpha = .7, position = "identity") +
+  geom_vline(xintercept = 2, colour = "black", linetype = 2) +
+  scale_fill_manual(values = c("correct.d" = "navy", "controlled.d" = "firebrick")) +
+  labs(x = expression(hat(tau)), y = "count", fill = NULL) +
+  theme_minimal(base_size = 10)
+```
+
+## Berkson's paradox, directly
+
+Two genuinely independent traits become correlated once you condition on their
+common effect.
+
+```{r}
+#| label: berkson
+n <- 5000
+test <- rnorm(n); athl <- rnorm(n)
+admit <- (test + athl) > 1.5          # admitted if either is high enough
+
+c(all_applicants = cor(test, athl),
+  admitted_only  = cor(test[admit], athl[admit]))
+```
+
+```{r}
+#| label: fig-berkson
+#| fig-cap: "Test score and athletic talent are independent among applicants and negatively related among admitted students."
+tibble::tibble(test, athl, admit) |>
+  ggplot(aes(test, athl, colour = admit)) +
+  geom_point(alpha = .25, size = .5) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = .7) +
+  scale_colour_manual(values = c("grey70", "navy")) +
+  labs(colour = "admitted") +
+  theme_minimal(base_size = 10)
+```
+
+# Post-treatment control
+
+$D$ affects $Y$ both directly and through a mediator $M$. Controlling for $M$
+answers a different question.
+
+```{r}
+#| label: mediator
+sim_med <- function(n = 2000) {
+  d <- rnorm(n)
+  m <- 0.8 * d + rnorm(n)              # mediator
+  y <- 1.0 * d + 1.5 * m + rnorm(n)    # total effect = 1.0 + 0.8*1.5 = 2.2
+  data.frame(y, d, m)
+}
+dat3 <- sim_med()
+
+c(total_effect   = coef(lm(y ~ d, data = dat3))["d"],
+  direct_effect  = coef(lm(y ~ d + m, data = dat3))["d"],
+  truth_total    = 2.2,
+  truth_direct   = 1.0)
+```
+
+Both numbers are "correct" --- they estimate *different estimands*. The mistake
+is not computing the second; it is reporting it as though it were the first.
+
+::: callout-warning
+This is the single most common error in applied sociology: controlling for
+occupation when studying the effect of education on earnings, controlling for
+income when studying the effect of education on health, controlling for marriage
+when studying the effect of a policy on fertility.
+:::
+
+# Selection bias
+
+Now the sample itself is selected on a collider. Only people who are employed
+appear in the data, and employment depends on both the treatment and the
+unobserved determinants of wages.
+
+```{r}
+#| label: selection
+sim_select <- function(n = 5000, tau = 1) {
+  educ <- rnorm(n)
+  u    <- rnorm(n)                        # unobserved ability
+  wage <- tau * educ + u + rnorm(n)
+  employed <- (0.8 * educ + 1.2 * u + rnorm(n)) > 0.5
+  data.frame(wage, educ, employed)
+}
+d4 <- sim_select()
+
+c(full_population = coef(lm(wage ~ educ, data = d4))["educ"],
+  employed_only   = coef(lm(wage ~ educ, data = d4, subset = employed))["educ"],
+  truth = 1)
+```
+
+The regression on the observed (employed) sample is biased **downward**, even
+though the specification is exactly the one that was unbiased in the full
+population. Restricting to the employed opens a path through the collider, so
+unobserved ability becomes correlated with education *within the sample*. The
+sample restriction *is* the conditioning.
+
+# DAGs in `R`
+
+`dagitty` lets you state a graph and ask it what to condition on.
+
+```{r}
+#| label: dagitty-basic
+g <- dagitty('dag {
+  U [unobserved]
+  X -> D
+  X -> Y
+  U -> X
+  U -> C
+  D -> M
+  M -> Y
+  Y -> C
+  D [exposure]
+  Y [outcome]
+}')
+
+adjustmentSets(g, exposure = "D", outcome = "Y", effect = "total")
+```
+
+```{r}
+#| label: fig-dag
+#| fig-cap: "The DAG from lecture."
+#| fig-height: 3.2
+ggdag(tidy_dagitty(g, layout = "sugiyama"), text_size = 3,
+      node_size = 12) +
+  theme_dag_blank()
+```
+
+Ask it directly whether a candidate adjustment set works:
+
+```{r}
+#| label: dagitty-queries
+isAdjustmentSet(g, "X", exposure = "D", outcome = "Y")
+isAdjustmentSet(g, c("X", "C"), exposure = "D", outcome = "Y")   # collider!
+isAdjustmentSet(g, c("X", "M"), exposure = "D", outcome = "Y")   # mediator!
+```
+
+And which paths exist, open or blocked:
+
+```{r}
+#| label: paths
+paths(g, from = "D", to = "Y")$paths |> head(6)
+paths(g, from = "D", to = "Y", Z = "X")$open |> head(6)
+```
+
+## Testable implications
+
+A DAG implies conditional independencies. Those *are* testable, and they are the
+only part of a DAG that data can speak to.
+
+```{r}
+#| label: implications
+impliedConditionalIndependencies(g) |> head(5)
+```
+
+```{r}
+#| label: test-implications
+## simulate from the DAG and check
+sim <- simulateSEM(g, N = 5000)
+localTests(g, sim, type = "cis.loess", R = 50) |> round(3) |> head(5)
+```
+
+::: callout-note
+A DAG that passes its testable implications is not thereby "correct" --- many
+different DAGs imply the same independencies. But a DAG that *fails* them is
+wrong, and that is worth knowing.
+:::
+
+# Exercises
+
+1.  **Bad control that predicts treatment.** Simulate $Z \to D \to Y$ with $Z$
+    having no effect on $Y$, plus an unobserved confounder $U \to D$, $U \to Y$.
+    Compare the bias in $\hat\tau$ with and without controlling for $Z$. You
+    should find that controlling for $Z$ makes the bias *worse* --- this is
+    **bias amplification**. Explain why using the FWL logic from Week 1.
+
+2.  **Positivity.** Modify `sim_confound()` so that everyone with $x > 1$ is
+    treated with probability $0.99$. Estimate the ATE with and without those
+    observations. What does regression do in the region with no comparison
+    cases?
+
+3.  **Heterogeneous effects.** Make $\tau_i$ depend on $x$: $\tau_i = 1 + x_i$.
+    Compute the true ATE and the true ATT by simulation, then see what
+    `lm(y ~ d + x)` reports. Connect your answer to the variance-weighting
+    result from Week 1.
+
+4.  **Your own DAG.** Draw the DAG for a causal question in your own research in
+    `dagitty`. Mark unobserved variables. Ask for `adjustmentSets()`. Is there
+    any set you can actually measure? If not, that is a finding --- and it points
+    you toward Weeks 7--11.
+
+5.  **The birth-weight paradox.** Simulate: smoking $\to$ birth weight, an
+    unobserved severe condition $\to$ birth weight and $\to$ infant mortality,
+    smoking $\to$ mortality (a genuine harmful effect). Show that among
+    low-birth-weight infants, smoking appears protective.
+
+6.  **State an estimand.** For the GSS earnings data, write one sentence in the
+    Lundberg--Johnson--Stewart form: a unit-specific quantity and a target
+    population. Then say what would have to be true for
+    `lm(lnearn ~ educ + ...)` to estimate it.
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

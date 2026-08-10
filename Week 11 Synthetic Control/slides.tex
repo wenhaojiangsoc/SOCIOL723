@@ -1,0 +1,470 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SOCIOL 723 -- Social Statistics II
+%% Week 11 -- Synthetic Control and Event Studies
+%% Wenhao Jiang, Duke University, Fall 2026
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[aspectratio=169,11pt,xcolor=dvipsnames]{beamer}
+\mode<presentation>
+
+%% ---- fonts: Latin Modern Roman (the LaTeX default), serif throughout -------
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usefonttheme{serif}
+\renewcommand{\familydefault}{\rmdefault}
+
+%% ---- packages --------------------------------------------------------------
+\usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[english]{babel}
+
+\newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
+\newcommand{\srct}[1]{#1}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\plim}{plim}
+\newcommand{\indep}{\perp\!\!\!\perp}
+
+%% ---- notation conventions (course-wide) ------------------------------------
+\newcommand{\E}{E}
+\newcommand{\En}{\mathbb{E}_n}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\bm{X}}
+\newcommand{\Y}{\bm{y}}
+\newcommand{\Ix}{\bm{I}}
+\newcommand{\zero}{\bm{0}}
+\newcommand{\bhat}{\hat{\bm{\beta}}}
+\newcommand{\dto}{\overset{d}{\longrightarrow}}
+\newcommand{\pto}{\overset{p}{\longrightarrow}}
+\usetikzlibrary{shapes,decorations.pathmorphing}
+\newcommand{\lik}{\mathcal{L}}
+\newcommand{\loglik}{\ell}
+\newcommand{\Info}{\mathcal{I}}
+\newcommand{\SE}{\widehat{\text{SE}}}
+
+%% ---- theme -----------------------------------------------------------------
+\usetheme{default}
+\useoutertheme[subsection=false]{miniframes}
+\setbeamertemplate{mini frames}{}
+
+\definecolor{dukeblue}{RGB}{1,33,105}
+\definecolor{accent}{RGB}{200,78,0}
+\definecolor{softgray}{RGB}{242,242,245}
+
+\setbeamercolor{structure}{fg=dukeblue}
+\setbeamercolor{frametitle}{fg=dukeblue,bg=white}
+\setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{alerted text}{fg=accent}
+\setbeamercolor{block title}{fg=white,bg=dukeblue}
+\setbeamercolor{block body}{fg=black,bg=softgray}
+\setbeamercolor{block title alerted}{fg=white,bg=accent}
+\setbeamercolor{block body alerted}{fg=black,bg=softgray}
+
+\setbeamertemplate{footline}[page number]
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamerfont{footnote}{size=\scriptsize}
+\setbeamerfont{caption}{size=\footnotesize}
+\setbeamertemplate{subsection in head/foot}{}
+\setbeamertemplate{subsection in head/foot shaded}{}
+\setbeamertemplate{caption}[numbered]
+
+\newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+
+\setbeamertemplate{section page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
+  \vskip4pt{\color{dukeblue}\rule{0.35\linewidth}{1pt}\par}
+  \vfill\end{centering}}
+\setbeamertemplate{subsection page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\large\bfseries\insertsubsectionhead\par}
+  \vfill\end{centering}}
+
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{5pt}%
+  \setlength{\belowdisplayskip}{5pt}%
+  \setlength{\abovedisplayshortskip}{2pt}%
+  \setlength{\belowdisplayshortskip}{3pt}%
+}
+\setbeamertemplate{frametitle}{%
+  \vskip4pt\usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}%
+  \insertframetitle\par\vskip2pt}
+\setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
+
+%% ---- title -----------------------------------------------------------------
+\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
+\subtitle{\large Week 11 --- Synthetic Control and Event Studies\\[-8pt]}
+\author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
+\institute[Duke]{}
+\titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
+\date{\large Department of Sociology, Fall 2026}
+
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Today}
+  \tableofcontents
+\end{frame}
+
+\begin{frame}{When There Is Only One Treated Unit}
+Difference-in-differences needs a control \emph{group}. What if the treated unit
+is California, or East Germany, or a single firm?
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Comparative case studies have always done this informally: ``compare
+        California to the rest of the country.'' The choice of comparison was
+        made by the author, and the reader had to trust it.
+  \item \alert{Synthetic control} makes that choice a data-driven, transparent,
+        pre-registered procedure: construct a weighted average of untreated units
+        that reproduces the treated unit's pre-treatment trajectory.
+  \item ``Perhaps the most important innovation in the policy evaluation
+        literature in the last 15 years'' \srcp{Athey and Imbens 2017}.
+\end{itemize}
+\vskip4pt
+The identifying idea is not new. What is new is that the weights are chosen by an
+algorithm, reported in a table, and checked against placebo units.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Synthetic Control]{The Synthetic Control Estimator}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Setup}
+Unit 1 is treated from period $T_0+1$ onward. Units $2,\dots,J+1$ --- the
+\alert{donor pool} --- are never treated. The estimand is
+\begin{align*}
+  \tau_{1t} = Y_{1t}(1) - Y_{1t}(0), \qquad t > T_0 .
+\end{align*}
+We observe $Y_{1t}(1)$; the whole problem is imputing $Y_{1t}(0)$.
+\vskip4pt
+\begin{block}{The synthetic control}
+Choose weights $w_2,\dots,w_{J+1}$ with $w_j \geq 0$ and $\sum_j w_j = 1$ so that
+the weighted donors match the treated unit \emph{before} treatment:
+\begin{align*}
+  \sum_{j\geq2} w_j Y_{jt} \approx Y_{1t} \ \text{ for } t \leq T_0,
+  \qquad
+  \sum_{j\geq2} w_j X_j \approx X_1 ,
+\end{align*}
+then estimate $\hat\tau_{1t} = Y_{1t} - \sum_{j\geq2} w_j Y_{jt}$ for $t > T_0$.
+\end{block}
+\end{frame}
+
+
+\begin{frame}{The Optimization Problem, Explicitly}
+Let $\bm X_1$ be a $k\times1$ vector of pre-treatment predictors for the treated
+unit and $\bm X_0$ the $k\times J$ matrix for the donors. Choose weights
+\begin{align*}
+  \bm W^{*}(\bm V) = \argmin_{\bm W \in \mathcal{W}}\ (\bm X_1 - \bm X_0\bm W)'\,
+  \bm V\,(\bm X_1 - \bm X_0 \bm W) ,
+  \qquad
+  \mathcal W = \Big\{\bm W \geq 0,\ \textstyle\sum_j w_j = 1\Big\} .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item $\bm V$ is a diagonal matrix of \alert{predictor importance} weights. It
+        is itself chosen --- usually to minimize pre-treatment prediction error
+        of the \emph{outcome}:
+        $\bm V^{*} = \argmin_{\bm V} \sum_{t\leq T_0}\big(Y_{1t} - \sum_j w_j^{*}(\bm V) Y_{jt}\big)^2$.
+  \item So there are two nested optimizations, and the inner one is a constrained
+        quadratic program. The constraint set $\mathcal W$ is a simplex.
+  \item \alert{This nesting is where researcher degrees of freedom hide.} Which
+        predictors enter $\bm X$, and how many pre-periods are used, can move the
+        answer. Pre-register the choice or report the full space.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=10]{The Factor-Model Justification}
+Suppose untreated outcomes follow a linear factor model
+\begin{align*}
+  Y_{jt}(0) = \delta_t + \bm\theta_t'\bm Z_j + \bm\lambda_t'\bm\mu_j + \epsilon_{jt} ,
+\end{align*}
+with $\bm\lambda_t$ common (unobserved) factors and $\bm\mu_j$ unit-specific
+loadings.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{DID} allows arbitrary common time shocks $\delta_t$, but requires
+        that the remaining term $\bm\lambda_t'\bm\mu_j$ not generate
+        \emph{differential} trends between treated and control units. Synthetic
+        control weakens that by matching on the loadings instead.
+  \item \srct{Abadie, Diamond, and Hainmueller (2010)} show that if a convex
+        combination of donors reproduces the treated unit's outcomes over a
+        \emph{long} pre-period \emph{and} its observed predictors, then under
+        regularity conditions --- enough pre-periods relative to the noise, and a
+        factor structure of bounded rank --- the weighted donors also approximately
+        match the \alert{unobserved loadings} $\bm\mu_1$, and a bound on the
+        post-treatment bias shrinks with the number of pre-periods.
+  \item \alert{Length of the pre-period is doing the identification work.} A
+        two-period match proves nothing; a twenty-period match is informative.
+        This is the single most important design consideration.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why the Constraints Matter}
+The restrictions $w_j\geq 0$ and $\sum_j w_j = 1$ look like technicalities. They
+are the heart of the method.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{No extrapolation}: the synthetic unit is a \emph{convex
+        combination} of real units, so it lies inside the donor pool's support.
+        Unconstrained regression would happily assign weights of $+3$ and $-2$ and
+        predict outside anything ever observed.
+  \item \textbf{Sparsity}: the constraints usually produce weights on a handful
+        of donors and zero on the rest. You can print the weight table and let
+        readers judge whether the comparison is sensible.
+  \item \textbf{Transparency}: the counterfactual is a named, weighted set of real
+        places, not a regression coefficient.
+  \item If no convex combination matches the treated unit --- if California is
+        richer than every donor --- \alert{the method tells you}, through poor
+        pre-treatment fit. That is a feature.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Relation to Difference-in-Differences}
+DID is synthetic control with the weights fixed at $1/J$ (or population shares),
+and with an added intercept shift.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item DID assumes parallel trends between the treated unit and a
+        \emph{pre-specified} average of controls.
+  \item Synthetic control \emph{searches} for a weighting under which
+        pre-treatment trajectories coincide, and then assumes that coincidence
+        continues.
+  \item The formal justification is a linear factor model
+        $Y_{jt}(0) = \delta_t + \bm\theta_t'Z_j + \bm\lambda_t'\bm\mu_j + \epsilon_{jt}$:
+        if the synthetic control matches the treated unit on a long pre-period,
+        it must also match on the unobserved factor loadings $\bm\mu_j$
+        \srcp{Abadie, Diamond, and Hainmueller 2010}.
+  \item \alert{Length of the pre-period is doing the identification work.} A
+        two-period pre-window proves nothing; a twenty-period match is
+        informative.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=8]{Inference With One Treated Unit}
+Conventional standard errors are meaningless here: $n_{\text{treated}} = 1$.
+Instead, \alert{permutation inference}.
+\vskip3pt
+\begin{block}{Placebo (in-space) tests}
+Pretend each donor was the treated unit. Estimate its ``effect.'' If the real
+treated unit's post-treatment gap is extreme relative to the placebo
+distribution, that is evidence.
+\end{block}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item Report the ratio of post- to pre-treatment RMSPE for every unit. A large
+        post/pre ratio for the treated unit and small ratios elsewhere is the
+        result.
+  \item The treated unit's rank among the $J+1$ units gives a permutation-style
+        $p$-value, with a hard floor of $1/39 \approx 0.026$ for a donor pool of
+        38. It is a placebo rank, not an exact test --- exactness would require
+        random assignment among these units.
+  \item \textbf{Discard poorly fitting placebos} --- a donor the method could not
+        match will show a huge gap for reasons unrelated to treatment.
+  \item \textbf{In-time placebo}: pretend treatment happened earlier. A ``gap''
+        should not appear before the real intervention.
+\end{itemize}
+\end{frame}
+\begin{frame}[shrink=10]{Placebo Inference, Mechanically}
+With one treated unit there is no sampling distribution to appeal to. Use
+\alert{permutation}: pretend each donor was treated, and compare.
+\vskip3pt
+For each unit $j$ compute
+\begin{align*}
+  \text{RMSPE}^{\text{pre}}_j = \sqrt{\tfrac{1}{T_0}\sum_{t\leq T_0}\big(Y_{jt}-\hat Y^{N}_{jt}\big)^2},
+  \qquad
+  \text{RMSPE}^{\text{post}}_j = \sqrt{\tfrac{1}{T-T_0}\sum_{t> T_0}\big(Y_{jt}-\hat Y^{N}_{jt}\big)^2},
+\end{align*}
+and rank units by the \alert{ratio} $\text{RMSPE}^{\text{post}}_j /
+\text{RMSPE}^{\text{pre}}_j$.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item The ratio, rather than the raw post-treatment gap, is what makes placebos
+        comparable: a donor the method could not fit will show a large gap for
+        reasons unrelated to treatment.
+  \item The rank of the treated unit among the $J+1$ units gives a
+        permutation-style $p$-value: with 38 donors the smallest attainable value
+        is $1/39 \approx 0.026$. \alert{Call it a placebo rank, not an exact
+        $p$-value} --- exactness would require treatment to have been randomly
+        assigned among these units under a sharp null, which it was not.
+  \item \textbf{In-time placebo}: re-run pretending treatment began earlier. A gap
+        should not appear before the real intervention.
+  \item \textbf{Leave-one-donor-out}: drop each positively weighted donor in turn.
+        If the result rests on one unit, say so.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=10]{The Canonical Application: California Proposition 99}
+\srct{Abadie, Diamond, and Hainmueller (2010)} study California's 1988 tobacco
+control programme.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Outcome}: per-capita cigarette sales, 1970--2000.
+        \textbf{Donor pool}: the 38 states that never adopted comparable
+        programmes over the period --- states with their own large tax increases
+        or programmes are excluded \emph{a priori}, on substantive grounds.
+  \item \textbf{Synthetic California} is a weighted average of Colorado,
+        Connecticut, Montana, Nevada, and Utah. The weight table is printed in the
+        paper, and readers can judge whether that is a sensible California.
+  \item Pre-1988 trajectories are nearly indistinguishable; afterwards they
+        diverge sharply, implying roughly 26 fewer packs per capita per year by
+        2000.
+  \item In the placebo distribution, California's post/pre RMSPE ratio is the
+        largest of all 39 units, giving $p = 1/39$.
+\end{itemize}
+\vskip2pt
+\alert{Notice how much of the credibility comes from things a reader can check by
+eye}: the weight table, the pre-treatment overlap, and the placebo plot.
+\end{frame}
+
+
+\begin{frame}{Diagnostics and Failure Modes}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Poor pre-treatment fit} invalidates the design. Report the
+        pre-treatment RMSPE and plot the two trajectories. If they do not overlap
+        before treatment, stop.
+  \item \textbf{Interpolation bias}: donors very unlike the treated unit can be
+        combined to match on average while differing on everything that matters.
+        Restrict the donor pool on substantive grounds \emph{before} estimating.
+  \item \textbf{Overfitting the pre-period}: matching noise rather than structure.
+        A long pre-period and few donors is the safe configuration.
+  \item \textbf{Contamination}: donors affected by the treatment (spillovers) or
+        by their own interventions must be excluded.
+  \item \textbf{Specification search}: the choice of predictors and pre-periods
+        can move results. Pre-register it, or report the full space.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Extensions]{Extensions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{When the Convex Hull Is Empty}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Augmented synthetic control} \srcp{Ben-Michael, Feller, and Rothstein
+        2021}: when no convex combination fits, allow a \emph{bias correction} ---
+        fit an outcome model to the residual imbalance, exactly the augmentation
+        logic of AIPW in Week 6. Relaxes the no-extrapolation constraint by a
+        controlled amount.
+  \item \textbf{Ridge-augmented} versions penalize how far the weights stray from
+        uniform, trading a little extrapolation for much better fit.
+  \item \textbf{Generalized synthetic control} \srcp{Xu 2017}: estimate an
+        interactive fixed effects model
+        $Y_{it}(0) = \bm\lambda_t'\bm\mu_i + \dots$ on the untreated units and use
+        it to impute $Y_{it}(0)$ for the treated. Handles \emph{multiple} treated
+        units and staggered timing, and gives conditional standard errors via a
+        parametric bootstrap.
+  \item \textbf{Synthetic DID} \srcp{Arkhangelsky et al.\ 2021}: unit weights
+        \emph{and} time weights, with a DID-style intercept. Doubly robust in
+        spirit and often the best default now.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Choosing Among Them}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+\toprule
+Situation & Method & \texttt{R} \\
+\midrule
+One treated unit, good pre-fit & classic synthetic control & \texttt{Synth}, \texttt{tidysynth} \\
+One treated unit, poor pre-fit & augmented / ridge SC & \texttt{augsynth} \\
+Several treated units, staggered & generalized SC & \texttt{gsynth} \\
+Many units, want DID robustness & synthetic DID & \texttt{synthdid} \\
+Many units, staggered, covariates & Callaway--Sant'Anna (Wk 10) & \texttt{did} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip5pt
+\begin{itemize}\itemsep2pt
+  \item These are not rivals so much as points on a spectrum between ``trust the
+        weights'' and ``trust the outcome model.'' The augmented versions
+        deliberately use both --- the same insurance logic as AIPW.
+  \item Report the classic estimator alongside whichever you prefer, so readers
+        can see how much the extrapolation is doing.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reporting a Synthetic Control Study}
+\begin{enumerate}\itemsep2pt
+  \item The donor pool, and why each unit is in it or excluded.
+  \item The predictors used for matching and the pre-treatment window.
+  \item \textbf{The weight table.} Which units, with what weights.
+  \item A balance table: treated versus synthetic on every predictor.
+  \item The trajectory plot, treated versus synthetic, with the intervention
+        marked.
+  \item The gap plot, with placebo gaps overlaid.
+  \item Pre- and post-treatment RMSPE, their ratio, and the permutation
+        $p$-value.
+  \item In-time placebo and leave-one-donor-out robustness.
+\end{enumerate}
+\vskip3pt
+\alert{The trajectory plot is the result.} If the pre-treatment lines do not sit
+on top of one another, no test rescues the design.
+\end{frame}
+
+\begin{frame}{Looking Ahead}
+\begin{itemize}\itemsep4pt
+  \item Synthetic control completes the design-based half of the course. Weeks
+        5--11 have all been variations on one question: \emph{where does the
+        counterfactual come from?}
+  \item Notice the recurring structure: choose weights on comparison units
+        (Week 6), choose an exogenous slice of variation (Weeks 7, 9), choose a
+        differencing scheme (Week 10), choose a weighted donor pool (Week 11).
+  \item \textbf{Weeks 12--13} change the question again: what happens when
+        prediction rather than identification is the goal, and what --- if
+        anything --- flexible prediction can contribute back to causal work.
+\end{itemize}
+\vskip4pt
+\begin{block}{Final projects}
+Article sign-up and confirmation of replication data availability due
+\textbf{November 2}.
+\end{block}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+\footnotesize
+\begin{itemize}\itemsep3pt
+\item Abadie, Alberto. 2021. ``Using Synthetic Controls: Feasibility, Data
+Requirements, and Methodological Aspects.'' \textit{Journal of Economic
+Literature} 59(2): 391--425.
+\item Abadie, Alberto, Alexis Diamond, and Jens Hainmueller. 2010. ``Synthetic
+Control Methods for Comparative Case Studies: Estimating the Effect of
+California's Tobacco Control Program.'' \textit{Journal of the American
+Statistical Association} 105(490): 493--505.
+\item Abadie, Alberto and Javier Gardeazabal. 2003. ``The Economic Costs of
+Conflict: A Case Study of the Basque Country.'' \textit{American Economic Review}
+93(1): 113--132.
+\item Arkhangelsky, Dmitry, Susan Athey, David A. Hirshberg, Guido W. Imbens, and
+Stefan Wager. 2021. ``Synthetic Difference-in-Differences.''
+\textit{American Economic Review} 111(12): 4088--4118.
+\item Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied
+Econometrics: Causality and Policy Evaluation.'' \textit{Journal of Economic
+Perspectives} 31(2): 3--32.
+\item Ben-Michael, Eli, Avi Feller, and Jesse Rothstein. 2021. ``The Augmented
+Synthetic Control Method.'' \textit{Journal of the American Statistical
+Association} 116(536): 1789--1803.
+\item Xu, Yiqing. 2017. ``Generalized Synthetic Control Method: Causal Inference
+with Interactive Fixed Effects Models.'' \textit{Political Analysis} 25(1):
+57--76.
+\end{itemize}
+\end{frame}
+
+\end{document}

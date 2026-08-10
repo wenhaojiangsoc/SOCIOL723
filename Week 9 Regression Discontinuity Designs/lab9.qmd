@@ -1,0 +1,346 @@
+---
+title: "\\textbf{Lab 9: Estimating and Stress-Testing an RD}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 22"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.3, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+1.  Draw the picture first, because in an RD the picture *is* the result.
+2.  Estimate with local linear regression and robust bias-corrected intervals.
+3.  Choose a bandwidth, and see how much the answer depends on it.
+4.  Run every validity check an RD paper should report.
+5.  See in simulation what manipulation of the running variable does.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(rdrobust)
+library(rddensity)
+
+data("rdrobust_RDsenate", package = "rdrobust")
+sen <- rdrobust_RDsenate |> filter(!is.na(vote))
+c(n = nrow(sen), min_margin = min(sen$margin), max_margin = max(sen$margin))
+```
+
+# The design
+
+**Question.** Does winning a Senate seat make a party more likely to win that
+seat again six years later — the *incumbency advantage*?
+
+**Running variable.** `margin`: the Democratic vote-share margin of victory in
+the previous election. **Cutoff.** Zero. **Treatment.** Democratic incumbency.
+**Outcome.** `vote`: the Democratic vote share in the following election.
+
+The identification claim is that elections decided by a fraction of a percentage
+point are essentially coin flips, so parties that barely won and parties that
+barely lost are comparable in everything except incumbency.
+
+# The picture comes first
+
+```{r}
+#| label: fig-rdplot
+#| fig-cap: "Binned means of the following election's Democratic vote share against the previous margin of victory, with fourth-order polynomials fitted separately on each side."
+rdplot(y = sen$vote, x = sen$margin, c = 0,
+       x.label = "Democratic margin of victory, previous election",
+       y.label = "Democratic vote share, next election",
+       title = "")
+```
+
+::: callout-important
+Look at the jump at zero before you compute anything. If you cannot see it here,
+no amount of bandwidth tuning should convince you it is there. Conversely, a
+jump this visible does not need a high-order polynomial to find it.
+:::
+
+```{r}
+#| label: fig-rdplot-linear
+#| fig-cap: "The same data with local linear fits inside a 15-point window. This is closer to what the estimator actually uses."
+rdplot(y = sen$vote[abs(sen$margin) < 15], x = sen$margin[abs(sen$margin) < 15],
+       c = 0, p = 1, nbins = c(20, 20),
+       x.label = "margin", y.label = "next vote share", title = "")
+```
+
+# Estimation
+
+```{r}
+#| label: rd-main
+rd <- rdrobust(y = sen$vote, x = sen$margin, c = 0)
+summary(rd)
+```
+
+Three numbers to read from that output.
+
+-   **Conventional**: the local linear estimate at the MSE-optimal bandwidth,
+    with a naive standard error.
+-   **Bias-Corrected**: the point estimate after subtracting an estimate of the
+    leading bias term.
+-   **Robust**: the confidence interval that accounts for the *uncertainty in
+    that bias correction*. **This is the one to report** (Calonico, Cattaneo, and
+    Titiunik 2014).
+
+```{r}
+#| label: rd-eff-n
+## how many observations are actually doing the work?
+c(bandwidth_left = rd$bws[1, 1], bandwidth_right = rd$bws[1, 2],
+  n_left = rd$N_h[1], n_right = rd$N_h[2], n_total = sum(rd$N))
+```
+
+Note the gap between the nominal sample size and the effective one. An RD with
+1,300 observations may be estimated from 400.
+
+## Doing it by hand
+
+`rdrobust` is a black box until you have written the estimator once.
+
+```{r}
+#| label: rd-manual
+h <- rd$bws[1, 1]                       # use the same bandwidth
+
+sub <- sen |> filter(abs(margin) <= h) |>
+  mutate(D = as.integer(margin >= 0),
+         kw = 1 - abs(margin) / h)      # triangular kernel
+
+## fully interacted local linear regression: separate slopes each side
+fit_manual <- lm(vote ~ D * margin, data = sub, weights = kw)
+
+c(manual = coef(fit_manual)["D"], rdrobust_conventional = rd$coef[1])
+```
+
+The coefficient on the treatment indicator in a kernel-weighted, fully
+interacted local linear regression *is* the RD estimate. Everything `rdrobust`
+adds is bandwidth selection and bias correction.
+
+## Bandwidth sensitivity
+
+```{r}
+#| label: fig-bwsens
+#| fig-cap: "The RD estimate across bandwidths from 3 to 40 points, with robust 95% intervals. A credible result is flat over a wide range."
+bws <- seq(3, 40, by = 1)
+sens <- lapply(bws, function(b) {
+  r <- rdrobust(y = sen$vote, x = sen$margin, c = 0, h = b)
+  tibble::tibble(h = b, est = r$coef[3],          # bias-corrected point estimate
+                 lo = r$ci[3, 1], hi = r$ci[3, 2]) # matching robust interval
+}) |> bind_rows()
+
+ggplot(sens, aes(h, est)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), fill = "navy", alpha = .15) +
+  geom_line(colour = "navy", linewidth = .8) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_vline(xintercept = rd$bws[1, 1], colour = "firebrick", linetype = 3) +
+  labs(x = "bandwidth", y = "RD estimate") +
+  theme_minimal(base_size = 10)
+```
+
+The dotted red line marks the MSE-optimal bandwidth. The estimate is stable
+across a wide range — this is what a robust RD looks like.
+
+## Why not a global polynomial?
+
+```{r}
+#| label: global-poly
+poly_est <- sapply(1:8, function(p) {
+  m <- lm(vote ~ poly(margin, p, raw = TRUE) * I(margin >= 0), data = sen)
+  coef(m)["I(margin >= 0)TRUE"]
+})
+round(setNames(poly_est, paste0("degree_", 1:8)), 3)
+```
+
+The answer wanders with the polynomial degree, and every one of these estimates
+uses observations 80 points from the cutoff to fit the value *at* the cutoff.
+Gelman and Imbens (2019) explain why the implied weights are indefensible.
+
+# Validity checks
+
+## Is the density of the running variable continuous?
+
+If parties could precisely control their vote margin, we would see bunching just
+above zero.
+
+```{r}
+#| label: density-test
+dens <- rddensity(X = sen$margin, c = 0)
+summary(dens)
+```
+
+```{r}
+#| label: fig-density
+#| fig-cap: "Estimated density of the running variable on each side of the cutoff with confidence bands. Overlapping bands at zero are what we want to see."
+rdplotdensity(dens, sen$margin, plotN = 100)
+```
+
+Non-rejection is consistent with the design, but it is not a validation of it:
+the test has limited power, and it detects only manipulation that shows up as
+bunching in the density. In settings where actors *can* manipulate the running
+variable (income thresholds, test retakes) treat it as one weak signal among
+several.
+
+## Placebo cutoffs
+
+The estimator should find nothing at thresholds where nothing happens.
+
+```{r}
+#| label: placebo
+placebos <- c(-20, -15, -10, -5, 5, 10, 15, 20)
+plc <- sapply(placebos, function(cc) {
+  d <- if (cc < 0) sen |> filter(margin < 0) else sen |> filter(margin >= 0)
+  r <- rdrobust(y = d$vote, x = d$margin, c = cc)
+  c(estimate = r$coef[1], p_robust = r$pv[3])
+})
+round(t(plc), 3) |> `rownames<-`(paste("cutoff", placebos))
+```
+
+Note the restriction to one side of the true cutoff: otherwise a placebo test
+would pick up the genuine discontinuity at zero.
+
+## Donut hole
+
+Drop the observations nearest the cutoff, where manipulation would be
+concentrated.
+
+```{r}
+#| label: donut
+donut <- sapply(c(0, 0.25, 0.5, 1), function(dd) {
+  d <- sen |> filter(abs(margin) > dd)
+  r <- rdrobust(y = d$vote, x = d$margin, c = 0)
+  c(estimate = r$coef[1], ci_lo = r$ci[3, 1], ci_hi = r$ci[3, 2])
+})
+round(t(donut), 3) |> `rownames<-`(paste("hole =", c(0, 0.25, 0.5, 1)))
+```
+
+# What manipulation actually does
+
+Simulate a world where the treatment has **no effect at all**, but where units
+just below the cutoff can push themselves above it.
+
+```{r}
+#| label: manip-sim
+set.seed(723)
+n <- 4000
+u <- rnorm(n)                              # ability: raises both X and Y
+x_true <- rnorm(n) + 0.8 * u
+
+## units with high u who are just below the cutoff push themselves over
+push <- (x_true > -0.3 & x_true < 0) & (u > 0.5)
+x <- ifelse(push, abs(x_true) + 0.01, x_true)
+
+d <- as.integer(x >= 0)
+y <- 0 * d + u + rnorm(n)                  # TRUE EFFECT IS ZERO
+
+r_bad <- rdrobust(y = y, x = x, c = 0)
+c(estimate = r_bad$coef[1], p_robust = r_bad$pv[3], truth = 0)
+```
+
+```{r}
+#| label: manip-density
+dt <- rddensity(X = x, c = 0)
+c(t_statistic = dt$test$t_jk, p_value = dt$test$p_jk)
+```
+
+The RD finds a large "effect" that does not exist — and **the density test
+catches it**. That is why the test belongs in every RD paper — while remembering
+that manipulation which does *not* produce bunching would slip past it.
+
+```{r}
+#| label: fig-manip
+#| fig-cap: "Histogram of the running variable under manipulation. The excess mass just above zero is the signature."
+tibble::tibble(x) |> filter(abs(x) < 1.5) |>
+  ggplot(aes(x)) +
+  geom_histogram(bins = 60, fill = "navy", alpha = .7) +
+  geom_vline(xintercept = 0, colour = "firebrick", linewidth = .8) +
+  labs(x = "running variable", y = "count") +
+  theme_minimal(base_size = 10)
+```
+
+# Fuzzy RD
+
+When crossing the cutoff changes the *probability* of treatment, `rdrobust`
+takes a `fuzzy` argument and returns the ratio estimate.
+
+```{r}
+#| label: fuzzy-sim
+set.seed(1)
+n <- 3000
+xx <- runif(n, -1, 1)
+takeup <- rbinom(n, 1, ifelse(xx >= 0, 0.75, 0.20))   # jump of 0.55
+yy <- 1.5 * takeup + 0.5 * xx + rnorm(n)               # TRUE effect = 1.5
+
+## sharp (intention-to-treat): attenuated toward zero
+r_itt   <- rdrobust(y = yy, x = xx, c = 0)
+## fuzzy: scaled up by the first stage
+r_fuzzy <- rdrobust(y = yy, x = xx, c = 0, fuzzy = takeup)
+
+c(ITT = r_itt$coef[1], fuzzy = r_fuzzy$coef[1], truth = 1.5)
+```
+
+The sharp estimate is the *intention-to-treat* effect of crossing the cutoff. The
+fuzzy estimate divides it by the jump in take-up, exactly as in Week 7 — and it
+inherits the LATE interpretation. Here the estimand is the effect for compliers
+*at the cutoff*.
+
+# Exercises
+
+1.  **Report an RD properly.** Write a short results paragraph for the Senate
+    application containing: the robust estimate and interval, the bandwidth and
+    effective $n$, the density test, one placebo, and one sentence stating the
+    estimand. Under 150 words.
+
+2.  **Kernel choice.** Re-estimate with `kernel = "uniform"` and
+    `kernel = "epanechnikov"`. How much does the answer move relative to its
+    standard error? Which choice matters more, kernel or bandwidth?
+
+3.  **Local polynomial order.** Compare `p = 1`, `p = 2`, and `p = 3` in
+    `rdrobust`. Note both the estimate and the selected bandwidth. Why does the
+    optimal bandwidth widen with $p$?
+
+4.  **Covariates.** `rdrobust` accepts a `covs` argument. Add one and see what
+    happens to the standard error and the point estimate. Under what condition is
+    adding covariates to an RD legitimate?
+
+5.  **Detecting your own manipulation.** In `manip-sim`, vary the strength of the
+    push (the `u > 0.5` threshold). At what point does the density test start to
+    detect it? What does that tell you about the test's power?
+
+6.  **A real design.** Find an RD in the sociological literature. Identify the
+    running variable, the cutoff, and the estimand in one sentence each. Then
+    list which of the six checks from lecture the paper reports.
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

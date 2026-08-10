@@ -1,0 +1,553 @@
+---
+title: "\\textbf{Lab 2: Calculus, Simulation, and Robust Inference}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, September 3"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \DeclareMathOperator*{\argmax}{arg\,max}
+        \DeclareMathOperator{\trace}{tr}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \newcommand{\En}{\mathbb{E}_n}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.4, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+1.  Review the calculus we actually use: derivatives, gradients, the chain rule,
+    and numerical optimization. This is the bridge to maximum likelihood next
+    week.
+2.  See a sampling distribution by *building* one, through simulation.
+3.  Watch classical standard errors fail under heteroskedasticity, and watch
+    robust standard errors fix them.
+4.  Compute HC0--HC3 and cluster-robust standard errors in `R`, by hand and with
+    packages.
+5.  Meet the few-clusters problem, and repair it.
+6.  Bootstrap, from first principles and with `boot`.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(sandwich)      # vcovHC(), vcovCL()
+library(lmtest)        # coeftest(), waldtest()
+library(clubSandwich)  # CR2 + Satterthwaite
+library(boot)          # bootstrap
+library(fixest)        # fast fixed effects with clustered SEs
+```
+
+```{r}
+#| label: data
+gss <- readRDS("../Data/gss_earnings.rds")
+c(n = nrow(gss), psu = n_distinct(gss$psu),
+  stratum = n_distinct(gss$stratum), region = n_distinct(gss$region))
+```
+
+# Calculus, as we use it
+
+Almost all of estimation is: *write down a criterion function, differentiate it,
+set the derivative to zero, and solve.* Last week the criterion was
+$S(b) = \sum_i (Y_i - X_i'b)^2$; next week it is a log-likelihood. The mechanics
+are identical.
+
+## Derivatives, numerically
+
+```{r}
+#| label: numderiv
+f  <- function(x) x^3 - 4 * x + 1        # a scalar function
+fp <- function(x) 3 * x^2 - 4            # its analytic derivative
+
+## central difference approximation
+num_deriv <- function(f, x, h = 1e-5) (f(x + h) - f(x - h)) / (2 * h)
+
+x0 <- 1.3
+c(analytic = fp(x0), numeric = num_deriv(f, x0))
+```
+
+The central difference $\big(f(x+h)-f(x-h)\big)/2h$ has error $O(h^2)$; the
+forward difference $\big(f(x+h)-f(x)\big)/h$ has error only $O(h)$. Use central
+differences when you code your own.
+
+## Gradients
+
+For a function of several arguments, the gradient stacks the partial
+derivatives. Here is the OLS criterion in the bivariate case:
+
+$$
+S(b_0,b_1) = \sum_i (Y_i - b_0 - b_1 X_i)^2,
+\qquad
+\nabla S = \begin{pmatrix}
+-2\sum_i (Y_i - b_0 - b_1X_i)\\
+-2\sum_i X_i(Y_i - b_0 - b_1X_i)
+\end{pmatrix}.
+$$
+
+```{r}
+#| label: gradient
+y <- gss$lnearn; x <- gss$educ
+
+S <- function(b) sum((y - b[1] - b[2] * x)^2)
+
+grad_S <- function(b) {
+  r <- y - b[1] - b[2] * x
+  c(-2 * sum(r), -2 * sum(x * r))
+}
+
+## numeric gradient, for checking
+num_grad <- function(f, b, h = 1e-6) {
+  sapply(seq_along(b), function(j) {
+    e <- rep(0, length(b)); e[j] <- h
+    (f(b + e) - f(b - e)) / (2 * h)
+  })
+}
+
+b_test <- c(8, 0.1)
+rbind(analytic = grad_S(b_test), numeric = num_grad(S, b_test))
+```
+
+::: callout-tip
+Always check an analytic gradient against a numeric one before trusting it. In
+Week 3 you will hand-code log-likelihood gradients, and this is the only reliable
+way to catch a sign error.
+:::
+
+## Optimization
+
+`optim()` searches for the minimum of a function. Give it the gradient and it
+converges faster and more accurately.
+
+```{r}
+#| label: optim
+fit_optim <- optim(par = c(0, 0), fn = S, gr = grad_S,
+                   method = "BFGS", control = list(reltol = 1e-14))
+
+rbind(optim = fit_optim$par,
+      lm    = unname(coef(lm(lnearn ~ educ, data = gss))))
+```
+
+The OLS problem is *convex*, so `optim()` finds the same answer as the closed
+form from any starting point. Most likelihoods are not so friendly --- which is
+why next week we care about starting values, convergence codes, and the Hessian.
+
+```{r}
+#| label: hessian
+## the Hessian of S is 2 X'X; its inverse scaled by s^2 is Var(bhat)
+H <- optim(par = fit_optim$par, fn = S, gr = grad_S, method = "BFGS",
+           hessian = TRUE)$hessian
+X <- model.matrix(~ educ, data = gss)
+all.equal(H, 2 * crossprod(X), check.attributes = FALSE, tolerance = 1e-4)
+```
+
+# Building a sampling distribution
+
+The fastest way to understand a standard error is to construct one.
+
+```{r}
+#| label: sampling-dist
+set.seed(723)
+
+## a population we control completely
+sim_once <- function(n = 200, beta1 = 0.5, hetero = FALSE) {
+  x <- rnorm(n, mean = 0, sd = 1)
+  sd_i <- if (hetero) 0.5 * exp(0.8 * x) else 1     # error sd
+  e <- rnorm(n, sd = sd_i)
+  y <- 1 + beta1 * x + e
+  m <- lm(y ~ x)
+  c(b = coef(m)[2],
+    se_classical = sqrt(diag(vcov(m)))[2],
+    se_hc3 = sqrt(diag(vcovHC(m, type = "HC3")))[2])
+}
+
+reps_homo <- t(replicate(4000, sim_once(hetero = FALSE)))
+head(round(reps_homo, 4), 3)
+```
+
+```{r}
+#| label: fig-sampdist
+#| fig-cap: "Sampling distribution of $\\hat\\beta_1$ over 4,000 samples of size 200. The true value is 0.5."
+tibble::tibble(b = reps_homo[, 1]) |>
+  ggplot(aes(b)) +
+  geom_histogram(bins = 50, fill = "navy", alpha = .65) +
+  geom_vline(xintercept = 0.5, colour = "firebrick", linewidth = .7) +
+  labs(x = expression(hat(beta)[1]), y = "count") +
+  theme_minimal(base_size = 10)
+```
+
+The *true* standard error is the standard deviation of this histogram. Compare it
+to what the two formulas report on average:
+
+```{r}
+#| label: se-compare-homo
+c(truth = sd(reps_homo[, "b.x"]),
+  mean_classical = mean(reps_homo[, "se_classical.x"]),
+  mean_hc3 = mean(reps_homo[, "se_hc3.x"]))
+```
+
+Under homoskedasticity both are right; the robust one is very slightly noisier.
+That is the small price we pay for insurance. Now turn heteroskedasticity on:
+
+```{r}
+#| label: se-compare-hetero
+reps_het <- t(replicate(4000, sim_once(hetero = TRUE)))
+c(truth = sd(reps_het[, "b.x"]),
+  mean_classical = mean(reps_het[, "se_classical.x"]),
+  mean_hc3 = mean(reps_het[, "se_hc3.x"]))
+```
+
+The classical formula is badly wrong; HC3 tracks the truth. What matters in
+practice is the **coverage** of the resulting confidence intervals:
+
+```{r}
+#| label: coverage
+covers <- function(b, se, truth = 0.5, crit = 1.96) {
+  mean(abs(b - truth) / se < crit)
+}
+c(classical = covers(reps_het[, "b.x"], reps_het[, "se_classical.x"]),
+  hc3       = covers(reps_het[, "b.x"], reps_het[, "se_hc3.x"]))
+```
+
+A nominal 95% interval that covers 80% of the time is not a 95% interval.
+
+::: callout-important
+Note what did **not** happen: $\hat\beta_1$ stayed centred on 0.5 in both cases.
+Heteroskedasticity does not bias the estimate. It corrupts the *stated
+uncertainty*.
+:::
+
+# Robust standard errors on real data
+
+## By hand
+
+The scalar formula from lecture, for the bivariate case:
+
+$$
+\widehat{\Var}_{\text{HC0}}(\hat\beta_1)
+= \frac{\sum_i d_i^2 \hat e_i^2}{\left(\sum_i d_i^2\right)^2},
+\qquad d_i = X_i - \bar X .
+$$
+
+```{r}
+#| label: hc0-by-hand
+m_biv <- lm(lnearn ~ educ, data = gss)
+d  <- gss$educ - mean(gss$educ)
+eh <- residuals(m_biv)
+
+se_hc0_manual <- sqrt(sum(d^2 * eh^2) / (sum(d^2))^2)
+se_hc0_pkg    <- sqrt(diag(vcovHC(m_biv, type = "HC0")))["educ"]
+se_classical  <- sqrt(diag(vcov(m_biv)))["educ"]
+
+round(c(classical = se_classical, hc0_manual = se_hc0_manual,
+        hc0_sandwich = se_hc0_pkg), 6)
+```
+
+The general matrix version, also by hand:
+
+```{r}
+#| label: hc0-matrix
+m <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
+X <- model.matrix(m); e <- residuals(m)
+bread <- solve(crossprod(X))
+meat  <- crossprod(X * e)          # = sum_i e_i^2 x_i x_i'
+V_hc0 <- bread %*% meat %*% bread
+round(cbind(manual = sqrt(diag(V_hc0)),
+            sandwich = sqrt(diag(vcovHC(m, type = "HC0")))), 6)
+```
+
+## HC0 through HC3
+
+```{r}
+#| label: hc-family
+ses <- sapply(c("const", "HC0", "HC1", "HC2", "HC3"),
+              function(ty) sqrt(diag(vcovHC(m, type = ty))))
+round(ses, 5)
+```
+
+```{r}
+#| label: coeftest
+coeftest(m, vcov = vcovHC(m, type = "HC3"))
+```
+
+With $n = `r nrow(gss)`$ the four robust variants are nearly identical. Rerun
+this on a subsample of 100 and the gaps open up:
+
+```{r}
+#| label: small-n
+set.seed(1)
+small <- gss[sample(nrow(gss), 100), ]
+m_small <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = small)
+round(sapply(c("const", "HC0", "HC1", "HC2", "HC3"),
+             function(ty) sqrt(diag(vcovHC(m_small, type = ty)))["educ"]), 5)
+```
+
+## Robust joint tests
+
+A trap worth internalizing: `anova()` is **not** robust.
+
+```{r}
+#| label: robust-F
+m_long <- lm(lnearn ~ educ + exper + I(exper^2) + female + black +
+               wordsum + pareduc, data = gss)
+m_short <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
+
+anova(m_short, m_long)                                        # NOT robust
+waldtest(m_short, m_long, vcov = vcovHC(m_long, type = "HC3")) # robust
+```
+
+Same null hypothesis, two different tests. Report the second.
+
+# Clustering
+
+The GSS is a multi-stage area probability sample: it draws primary sampling units
+(`psu`) within strata (`stratum`), then households within PSUs. Respondents in
+the same PSU live in the same neighbourhood, so their errors are correlated.
+
+```{r}
+#| label: cluster-ses
+ses_cl <- c(
+  classical   = sqrt(diag(vcov(m)))["educ"],
+  hc3         = sqrt(diag(vcovHC(m, type = "HC3")))["educ"],
+  cluster_psu = sqrt(diag(vcovCL(m, cluster = ~ psu)))["educ"],
+  cluster_str = sqrt(diag(vcovCL(m, cluster = ~ stratum)))["educ"],
+  cluster_yr  = sqrt(diag(vcovCL(m, cluster = ~ year)))["educ"],
+  cluster_reg = sqrt(diag(vcovCL(m, cluster = ~ region)))["educ"]
+)
+round(ses_cl, 5)
+```
+
+Two things to notice.
+
+1.  Clustering on `psu` (`r n_distinct(gss$psu)` clusters) raises the standard
+    error modestly. GSS PSUs contain few respondents each, so the Moulton
+    inflation $1 + (\bar n - 1)\rho_x\rho_e$ is small.
+2.  Clustering on `region` (9 clusters) *lowers* it. **This is not good news.**
+    With 9 clusters the cluster-robust estimator is severely biased downward.
+    A smaller standard error from coarser clustering is a warning sign, not a
+    result.
+
+## The intra-class correlation
+
+```{r}
+#| label: icc
+## one-way ANOVA ICC with the unequal-cluster-size correction n0
+icc <- function(resid, cluster) {
+  df <- data.frame(r = resid, g = cluster)
+  ms <- df |> group_by(g) |> summarise(n = n(), m = mean(r), .groups = "drop")
+  N <- nrow(df); G <- nrow(ms)
+  between <- sum(ms$n * (ms$m - mean(df$r))^2) / (G - 1)
+  within  <- sum((df$r - ms$m[match(df$g, ms$g)])^2) / (N - G)
+  n0 <- (N - sum(ms$n^2) / N) / (G - 1)      # NOT mean cluster size
+  (between - within) / (between + (n0 - 1) * within)
+}
+c(psu = icc(residuals(m), gss$psu),
+  region = icc(residuals(m), gss$region))
+```
+
+## Simulating the few-clusters problem
+
+```{r}
+#| label: few-clusters
+set.seed(723)
+
+sim_cluster <- function(G = 10, n_g = 50, rho = 0.3) {
+  g   <- rep(1:G, each = n_g)
+  nu  <- rnorm(G, sd = sqrt(rho))[g]        # cluster shock
+  eta <- rnorm(G * n_g, sd = sqrt(1 - rho)) # idiosyncratic
+  x   <- rep(rnorm(G), each = n_g)          # treatment varies at cluster level
+  y   <- 0 * x + nu + eta                   # TRUE EFFECT IS ZERO
+  d   <- data.frame(y, x, g)
+  mm  <- lm(y ~ x, data = d)
+  b   <- coef(mm)[2]
+  c(
+    naive   = abs(b / sqrt(diag(vcov(mm)))[2]),
+    cr1     = abs(b / sqrt(diag(vcovCL(mm, cluster = ~ g)))[2]),
+    cr2_t   = abs(coef_test(mm, vcov = "CR2", cluster = d$g,
+                            test = "Satterthwaite")$tstat[2]),
+    cr2_p   = coef_test(mm, vcov = "CR2", cluster = d$g,
+                        test = "Satterthwaite")$p_Satt[2]
+  )
+}
+
+out <- t(replicate(600, sim_cluster(G = 10)))
+c(
+  "reject rate, naive SE"     = mean(out[, "naive.x"] > 1.96),
+  "reject rate, CR1"          = mean(out[, "cr1.x"]  > 1.96),
+  "reject rate, CR2 + Satt."  = mean(out[, "cr2_p"]  < 0.05)
+)
+```
+
+All three should reject 5% of the time --- the true effect is zero. The naive
+standard error rejects far too often; CR1 with 10 clusters still over-rejects;
+CR2 with Satterthwaite degrees of freedom is close to nominal.
+
+```{r}
+#| label: cr2-gss
+coef_test(m, vcov = "CR2", cluster = gss$region, test = "Satterthwaite")[1:3, ]
+```
+
+Look at the `df_Satt` column: with 9 regions, the effective degrees of freedom
+are in single digits, so the critical value is far above 1.96.
+
+# The bootstrap
+
+## By hand
+
+```{r}
+#| label: boot-manual
+set.seed(723)
+B <- 2000
+boot_b <- replicate(B, {
+  idx <- sample(nrow(gss), replace = TRUE)     # resample PAIRS
+  coef(lm(lnearn ~ educ + exper + I(exper^2) + female + black,
+          data = gss[idx, ]))["educ"]
+})
+
+c(estimate = coef(m)["educ"],
+  se_boot  = sd(boot_b),
+  se_hc3   = sqrt(diag(vcovHC(m, type = "HC3")))["educ"])
+
+quantile(boot_b, c(.025, .975))       # percentile interval
+```
+
+The pairs bootstrap resamples $(Y_i, X_i)$ jointly, so it makes no assumption
+about $\sigma_i^2$. Asymptotically it targets the same sandwich variance that
+the HC estimators do, which is why it lands in the same neighbourhood --- the
+small gaps among HC0/HC3/bootstrap here are finite-sample, not conceptual.
+
+```{r}
+#| label: fig-boot
+#| fig-cap: "Bootstrap distribution of the coefficient on years of schooling, $B = 2{,}000$."
+tibble::tibble(b = boot_b) |>
+  ggplot(aes(b)) +
+  geom_histogram(bins = 50, fill = "navy", alpha = .65) +
+  geom_vline(xintercept = coef(m)["educ"], colour = "firebrick") +
+  labs(x = "bootstrap replicate of the coefficient on educ", y = "count") +
+  theme_minimal(base_size = 10)
+```
+
+## With the `boot` package, including BCa
+
+```{r}
+#| label: boot-pkg
+b_fun <- function(data, idx) {
+  unname(coef(lm(lnearn ~ educ + exper + I(exper^2) + female + black,
+                 data = data[idx, ]))["educ"])
+}
+set.seed(723)
+bo <- boot(gss, b_fun, R = 2000)
+boot.ci(bo, type = c("norm", "perc", "bca"),
+        L = empinf(bo, type = "jack"))
+```
+
+::: callout-note
+The BCa interval needs *empirical influence values* --- roughly, how much each
+observation pulls the estimate --- to compute its acceleration constant. The
+default way `boot` estimates them (a regression approximation) fails here, so we
+supply the jackknife version explicitly with `empinf(bo, type = "jack")`. If you
+ever see `estimated adjustment 'a' is NA`, this is the fix.
+:::
+
+## The cluster bootstrap
+
+Resample **clusters**, not individuals:
+
+```{r}
+#| label: boot-cluster
+set.seed(723)
+psus <- unique(gss$psu)
+boot_cl <- replicate(1000, {
+  draw <- sample(psus, length(psus), replace = TRUE)
+  dat  <- do.call(rbind, lapply(draw, function(p) gss[gss$psu == p, ]))
+  coef(lm(lnearn ~ educ + exper + I(exper^2) + female + black,
+          data = dat))["educ"]
+})
+c(cluster_boot = sd(boot_cl),
+  analytic_CR1 = sqrt(diag(vcovCL(m, cluster = ~ psu)))["educ"])
+```
+
+::: callout-warning
+If you had resampled *individuals* here, the bootstrap would have reproduced the
+too-small non-clustered standard error just as faithfully as the analytic formula
+does. The bootstrap does not know your design --- you have to tell it.
+:::
+
+# A convenient shortcut: `fixest`
+
+For everyday work, `fixest::feols()` computes clustered standard errors on the
+fly and is very fast.
+
+```{r}
+#| label: fixest
+fe <- feols(lnearn ~ educ + exper + I(exper^2) + female + black | year,
+            data = gss, cluster = ~ psu)
+summary(fe)
+```
+
+The `| year` term absorbs year fixed effects (FWL under the hood, as in Lab 1),
+and `cluster = ~ psu` supplies the cluster-robust variance.
+
+# Exercises
+
+1.  **Coverage of the classical interval.** Repeat the coverage simulation with
+    error standard deviation $0.5\exp(1.5 x_i)$ instead of $0.5\exp(0.8 x_i)$.
+    How bad does classical coverage get? Does HC3 hold up?
+
+2.  **HC3 versus HC0 in small samples.** For $n \in \{30, 60, 120, 500\}$,
+    simulate 2,000 heteroskedastic datasets and record the coverage of intervals
+    built from HC0 and from HC3. At what $n$ does the difference stop mattering?
+
+3.  **The Moulton factor.** In `sim_cluster()`, vary $\rho \in
+    \{0, 0.05, 0.2, 0.5\}$ with $G = 50$ and $\bar n = 50$. Compare the ratio of
+    the clustered to the naive standard error against the Moulton prediction
+    $\sqrt{1 + (\bar n - 1)\rho_x\rho_e}$ with $\rho_x = 1$.
+
+4.  **Choosing the cluster level.** Suppose you wanted to estimate the effect of
+    a state-level minimum-wage law on individual earnings, using individual GSS
+    data. At what level would you cluster, and why? What if the law varied by
+    state *and* year?
+
+5.  **Delta method versus bootstrap.** Estimate the experience profile's turning
+    point $-\hat\beta_{\text{exper}} / (2\hat\beta_{\text{exper}^2})$. Get its
+    standard error two ways: `car::deltaMethod()` and a pairs bootstrap. Do they
+    agree? Which interval would you report?
+
+6.  **A robust $F$-test by hand.** Using $\bm R$, $\widehat{\Var}(\hat{\bm\beta})$
+    and the Wald formula from lecture, compute the joint test that `wordsum` and
+    `pareduc` are both zero, with an HC3 variance. Confirm it matches
+    `waldtest()`.
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

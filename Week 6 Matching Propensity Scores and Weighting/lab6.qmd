@@ -1,0 +1,436 @@
+---
+title: "\\textbf{Lab 6: Matching, Weighting, and Doubly Robust Estimation}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 1"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \newcommand{\indep}{\perp\!\!\!\perp}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.3, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# The question
+
+**Estimand.** The average difference in log personal earnings between completing
+a bachelor's degree and not completing one, among the full-time workers aged
+25--64 in our GSS analytic sample, 2010--2022.
+
+::: callout-note
+Note the deliberately modest population. The GSS is a complex sample, and doing
+this properly for the U.S. population would require the survey weights (`wt`) and
+PSU/stratum-aware inference. We work unweighted here so that the adjustment
+methods are visible on their own; that is a simplification, and you should say so
+if you write it up.
+:::
+
+We also exclude `hours` from the adjustment set. Hours worked is plausibly a
+*consequence* of completing college, so conditioning on it would be the
+post-treatment error from Week 5 --- it would answer a different question.
+
+This is an *observational* question with obvious confounding: people who complete
+college differ from those who do not in family background, measured ability, and
+much else. We are going to assume conditional ignorability given the covariates
+we have, do the adjustment five different ways, and then ask how much an
+unobserved confounder would have to matter to overturn the answer.
+
+::: callout-warning
+Assuming conditional ignorability here is almost certainly wrong. That is the
+point of the last section. Treat today's numbers as an exercise in *method*, not
+as an estimate of the return to college.
+:::
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(MatchIt)
+library(cobalt)
+library(sensemakr)
+library(sandwich); library(lmtest)
+library(boot)
+
+gss <- readRDS("../Data/gss_earnings.rds") |>
+  mutate(D = ba, Y = lnearn)
+
+covs <- c("pareduc", "wordsum", "female", "black", "otherace", "exper")
+c(n = nrow(gss), treated = sum(gss$D), control = sum(1 - gss$D))
+```
+
+# Where we start: the naive comparison
+
+```{r}
+#| label: naive
+naive <- lm(Y ~ D, data = gss)
+reg   <- lm(Y ~ D + pareduc + wordsum + female + black + otherace + exper +
+              I(exper^2), data = gss)
+
+c(naive = coef(naive)["D"], regression = coef(reg)["D"])
+```
+
+Adjustment moves the estimate substantially. But regression is only one of the
+adjustment strategies available, and it makes assumptions we have not examined.
+
+```{r}
+#| label: imbalance
+bal.tab(reg_formula <- D ~ pareduc + wordsum + female + black + otherace +
+          exper, data = gss, un = TRUE, thresholds = c(m = 0.1))
+```
+
+The `Diff.Un` column is the standardized mean difference. Values well above
+$0.1$ --- here `pareduc` and `wordsum` especially --- mean the two groups are not
+comparable as they stand.
+
+# The propensity score
+
+```{r}
+#| label: ps
+ps_mod <- glm(D ~ pareduc + wordsum + female + black + otherace +
+                exper + I(exper^2),
+              data = gss, family = binomial)
+gss$ps <- fitted(ps_mod)
+
+summary(gss$ps)
+```
+
+```{r}
+#| label: fig-overlap
+#| fig-cap: "Distribution of the estimated propensity score by treatment status. Overlap is imperfect in both tails."
+ggplot(gss, aes(ps, fill = factor(D))) +
+  geom_density(alpha = .45, colour = NA) +
+  scale_fill_manual(values = c("0" = "navy", "1" = "firebrick"),
+                    labels = c("no BA", "BA"), name = NULL) +
+  labs(x = "estimated propensity score", y = "density") +
+  theme_minimal(base_size = 10)
+```
+
+```{r}
+#| label: overlap-tails
+## how many treated units sit where controls are scarce, and vice versa?
+c(treated_above_0.9 = sum(gss$D == 1 & gss$ps > 0.9),
+  controls_above_0.9 = sum(gss$D == 0 & gss$ps > 0.9),
+  controls_below_0.1 = sum(gss$D == 0 & gss$ps < 0.1),
+  treated_below_0.1 = sum(gss$D == 1 & gss$ps < 0.1))
+```
+
+::: callout-note
+Note the trade-off from lecture: a propensity model that predicts treatment
+*well* is a model that separates the groups, which is exactly the situation in
+which comparison is hardest. Judge the model by **balance**, not by AUC.
+:::
+
+# Matching
+
+## Nearest-neighbour on the propensity score
+
+```{r}
+#| label: match-nn
+m_nn <- matchit(D ~ pareduc + wordsum + female + black + otherace +
+                  exper + I(exper^2),
+                data = gss, method = "nearest", distance = "glm",
+                estimand = "ATT", replace = FALSE)
+m_nn
+```
+
+```{r}
+#| label: fig-balance
+#| fig-cap: "Covariate balance before and after nearest-neighbour matching. Everything should land inside the dashed lines."
+love.plot(m_nn, thresholds = c(m = 0.1), binary = "std",
+          colors = c("firebrick", "navy")) +
+  theme_minimal(base_size = 9)
+```
+
+```{r}
+#| label: match-est
+md_nn <- match.data(m_nn)
+fit_nn <- lm(Y ~ D + pareduc + wordsum + female + black + otherace +
+               exper + I(exper^2),
+             data = md_nn, weights = weights)
+coeftest(fit_nn, vcov = vcovCL, cluster = ~ subclass)["D", ]
+```
+
+Two things to notice. First, we still run a regression on the matched data ---
+matching is *preprocessing*, and the regression mops up residual imbalance.
+Second, the standard errors are clustered on the matched pair, because the
+matching induces dependence.
+
+## Mahalanobis distance
+
+Instead of collapsing the covariates to a propensity score, match on the
+covariates directly, scaling by their covariance so that no variable dominates
+through its units.
+
+```{r}
+#| label: match-mahal
+m_mah <- matchit(D ~ pareduc + wordsum + female + black + otherace +
+                   exper,
+                 data = gss, method = "nearest", distance = "mahalanobis",
+                 estimand = "ATT")
+summary(m_mah)$nn
+```
+
+## A caliper
+
+A caliper refuses matches beyond a set distance on the propensity score,
+measured in standard deviations of the linear predictor.
+
+```{r}
+#| label: match-caliper
+m_cal <- matchit(D ~ pareduc + wordsum + female + black + otherace +
+                   exper + I(exper^2),
+                 data = gss, method = "nearest", distance = "glm",
+                 estimand = "ATT", caliper = 0.1, std.caliper = TRUE)
+summary(m_cal)$nn
+```
+
+Look at the **Unmatched** row for the treated. Those respondents have no
+comparable counterpart in the data, and dropping them silently redefines the
+estimand --- you are now describing the subpopulation of degree-holders who have
+plausible non-degree counterparts.
+
+## Coarsened exact matching
+
+```{r}
+#| label: cem
+m_cem <- matchit(D ~ pareduc + wordsum + female + black + exper,
+                 data = gss, method = "cem", estimand = "ATT")
+summary(m_cem)$nn
+```
+
+CEM is the most transparent method: it matches exactly within coarsened bins, so
+balance is guaranteed by construction. The price is written plainly in the
+number of discarded observations.
+
+# Weighting
+
+## IPW by hand
+
+```{r}
+#| label: ipw
+e  <- gss$ps
+D  <- gss$D
+Y  <- gss$Y
+
+## Horvitz-Thompson
+ate_ht <- mean(D * Y / e) - mean((1 - D) * Y / (1 - e))
+
+## Hajek / stabilized -- divide by the sum of the weights
+w1 <- D / e
+w0 <- (1 - D) / (1 - e)
+ate_sipw <- sum(w1 * Y) / sum(w1) - sum(w0 * Y) / sum(w0)
+
+c(horvitz_thompson = ate_ht, stabilized = ate_sipw)
+```
+
+```{r}
+#| label: weight-diagnostics
+w <- ifelse(D == 1, 1 / e, 1 / (1 - e))
+ess <- sum(w)^2 / sum(w^2)
+c(max_weight = max(w), ess = ess, n = length(w), ess_share = ess / length(w))
+```
+
+The **effective sample size** is what your standard errors should reflect. If a
+handful of observations carry most of the weight, you have far less information
+than $n$ suggests.
+
+## ATT and overlap weights
+
+```{r}
+#| label: other-weights
+att_w  <- ifelse(D == 1, 1, e / (1 - e))          # ATT weights
+ato_w  <- ifelse(D == 1, 1 - e, e)                # overlap weights
+
+wmean_diff <- function(wt) {
+  sum(wt * Y * D) / sum(wt * D) - sum(wt * Y * (1 - D)) / sum(wt * (1 - D))
+}
+c(ATE_stabilized = ate_sipw,
+  ATT = wmean_diff(att_w),
+  ATO_overlap = wmean_diff(ato_w))
+```
+
+Three different numbers, because they are three different **estimands**, not
+three attempts at one. The overlap-weighted estimate describes the subpopulation
+where comparison is most informative, and its weights are bounded by
+construction.
+
+## Does weighting actually balance the covariates?
+
+```{r}
+#| label: weight-balance
+bal.tab(D ~ pareduc + wordsum + female + black + otherace + exper,
+        data = gss, weights = ifelse(D == 1, 1 / e, 1 / (1 - e)),
+        method = "weighting", un = TRUE, thresholds = c(m = 0.1))
+```
+
+# G-computation and AIPW
+
+```{r}
+#| label: gcomp
+## fit separate outcome models in each arm, then impute both potential outcomes
+out_form <- Y ~ pareduc + wordsum + female + black + otherace + exper +
+  I(exper^2)
+m1 <- lm(out_form, data = gss[D == 1, ])
+m0 <- lm(out_form, data = gss[D == 0, ])
+
+mu1 <- predict(m1, newdata = gss)
+mu0 <- predict(m0, newdata = gss)
+
+ate_gcomp <- mean(mu1 - mu0)
+ate_gcomp
+```
+
+```{r}
+#| label: aipw
+aipw_terms <- (mu1 - mu0) +
+  D * (Y - mu1) / e -
+  (1 - D) * (Y - mu0) / (1 - e)
+
+ate_aipw <- mean(aipw_terms)
+
+## the influence-function standard error comes free
+se_aipw <- sd(aipw_terms) / sqrt(length(aipw_terms))
+
+c(estimate = ate_aipw, se = se_aipw,
+  lower = ate_aipw - 1.96 * se_aipw, upper = ate_aipw + 1.96 * se_aipw)
+```
+
+::: callout-tip
+The AIPW estimator is an average of $n$ i.i.d. terms, so its standard error is
+just the standard deviation of those terms over $\sqrt n$. That is not a
+coincidence --- `aipw_terms` is the *efficient influence function*, and this is
+the pattern that Week 13 generalizes.
+:::
+
+## Everything in one place
+
+```{r}
+#| label: compare-all
+results <- tibble::tibble(
+  method = c("Naive difference", "OLS adjustment", "NN matching (ATT)",
+             "IPW stabilized (ATE)", "ATT weights", "Overlap weights (ATO)",
+             "G-computation (ATE)", "AIPW (ATE)"),
+  estimate = c(coef(naive)["D"], coef(reg)["D"], coef(fit_nn)["D"],
+               ate_sipw, wmean_diff(att_w), wmean_diff(ato_w),
+               ate_gcomp, ate_aipw)
+)
+knitr::kable(results, digits = 4)
+```
+
+If these had disagreed sharply, that itself would be the finding: it would tell
+us the answer is coming from modelling choices rather than from comparison.
+
+## Bootstrapping the whole procedure
+
+Standard errors must account for the fact that the propensity score was
+*estimated*. The safest route is to bootstrap the entire pipeline.
+
+```{r}
+#| label: boot-aipw
+aipw_fun <- function(data, idx) {
+  d <- data[idx, ]
+  psm <- glm(D ~ pareduc + wordsum + female + black + otherace +
+               exper + I(exper^2), data = d, family = binomial)
+  ee  <- fitted(psm)
+  f1 <- lm(out_form, data = d[d$D == 1, ]); f0 <- lm(out_form, data = d[d$D == 0, ])
+  m1p <- predict(f1, newdata = d); m0p <- predict(f0, newdata = d)
+  mean((m1p - m0p) + d$D * (d$Y - m1p) / ee -
+         (1 - d$D) * (d$Y - m0p) / (1 - ee))
+}
+set.seed(723)
+bo <- boot(gss, aipw_fun, R = 500)
+c(estimate = bo$t0, boot_se = sd(bo$t), analytic_se = se_aipw)
+```
+
+The two standard errors agree closely, which is reassuring: the influence-function
+formula is doing its job.
+
+# Sensitivity analysis
+
+All of the above assumed we measured every confounder. We did not. So ask
+instead: **how strong would an unobserved confounder have to be?**
+
+```{r}
+#| label: sensemakr
+sens <- sensemakr(model = reg, treatment = "D",
+                  benchmark_covariates = "wordsum",
+                  kd = 1:3)
+sens
+```
+
+```{r}
+#| label: fig-sens
+#| fig-cap: "Contours of the adjusted estimate as a function of how much residual variation in treatment and outcome an unobserved confounder explains. Benchmarks show multiples of the vocabulary score."
+plot(sens)
+```
+
+Read the **robustness value**: it is the share of residual variation in both the
+treatment and the outcome that a confounder would need to explain to reduce the
+estimate to zero. Compare it to the benchmark: if a confounder three times as
+strong as measured verbal ability would be needed, the finding is reasonably
+robust; if half of one would do it, it is not.
+
+# Exercises
+
+1.  **Estimand discipline.** Redo the analysis targeting the **ATT** throughout
+    (matching, ATT weights, and an ATT version of AIPW). Do the answers move?
+    Explain why the ATE and ATT differ here in terms of who is on the margin of
+    completing college.
+
+2.  **Trimming.** Restrict to $0.1 < \hat e < 0.9$ and recompute IPW and AIPW.
+    How much does the estimate move, and how many observations did you drop?
+    Write one sentence stating what population your new estimate describes.
+
+3.  **Deliberate misspecification, on simulated data.** Double robustness cannot
+    be "confirmed" against observational data, because the causal truth is
+    unknown. Simulate a world with a known ATE, then fit (a) a correct outcome
+    model with a badly wrong propensity model and (b) the reverse. Confirm that
+    AIPW stays close to the truth in both cases while IPW and g-computation each
+    fail in one. This is double robustness in action.
+
+4.  **A bad control.** Add `prestige` (occupational prestige) to the covariate
+    set. It is plausibly a *consequence* of holding a degree. Report how the
+    estimate changes and explain, using the Week 5 vocabulary, why the new number
+    answers a different question.
+
+5.  **Balance versus fit.** Compute the AUC of the propensity model. Then add
+    interactions until balance improves. Does the AUC go up or down? Discuss what
+    this means for the "propensity score paradox" from lecture.
+
+6.  **Effective sample size.** Plot the IPW weights against $\hat e$. Identify the
+    ten most heavily weighted observations. Refit without them --- how much does
+    the estimate move relative to its standard error?
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

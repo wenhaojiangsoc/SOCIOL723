@@ -1,0 +1,352 @@
+---
+title: "\\textbf{Lab 13: Double Machine Learning and Causal Forests}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, November 19"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.4, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+1.  **Watch naive ML fail** on a problem where we know the answer.
+2.  Fix it with orthogonalization, and fix it again with cross-fitting.
+3.  Run DML with `DoubleML`, and check that the answer does not depend on the
+    split.
+4.  Estimate heterogeneous effects with a causal forest, and test whether the
+    heterogeneity is real.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(glmnet)
+library(ranger)
+library(DoubleML); library(mlr3); library(mlr3learners)
+library(grf)
+lgr::get_logger("mlr3")$set_threshold("warn")
+set.seed(723)
+```
+
+# Regularization bias, in a world we control
+
+The partially linear model $Y = \theta D + g(W) + \epsilon$,
+$D = m(W) + v$, with $\theta = 0.5$ known.
+
+```{r}
+#| label: dgp
+## approximately sparse coefficients: a few large, a long decaying tail
+make_data <- function(n = 500, p = 200, theta = 0.5) {
+  W <- matrix(rnorm(n * p), n, p); colnames(W) <- paste0("w", seq_len(p))
+  b <- 1 / (seq_len(p))^2
+  m <- as.vector(W %*% b)          # E[D | W]
+  g <- as.vector(W %*% b)          # E[Y | W] beyond theta*D
+  D <- m + rnorm(n)
+  Y <- theta * D + g + rnorm(n)
+  list(Y = Y, D = D, W = W)
+}
+```
+
+Note the structure: the *same* covariates drive both $D$ and $Y$, so $W$ is
+genuinely confounding. With $p = 200$ and $n = 500$ OLS is estimable, but it is
+so high-variance and poorly conditioned as to be useless --- which is why we
+regularize.
+
+```{r}
+#| label: three-estimators
+estimators <- function(dat) {
+  Y <- dat$Y; D <- dat$D; W <- dat$W; n <- length(Y)
+
+  ## 1. NAIVE: lasso Y on (D, W), leaving D unpenalized, and read off D
+  pf    <- c(0, rep(1, ncol(W)))
+  f_all <- cv.glmnet(cbind(D, W), Y, penalty.factor = pf)
+  naive <- as.vector(coef(f_all, s = "lambda.min"))[2]
+
+  ## 2. ORTHOGONAL, no cross-fitting: residualize both on W, same data
+  ly  <- cv.glmnet(W, Y);  lm_ <- cv.glmnet(W, D)
+  ry0 <- Y - as.vector(predict(ly,  W, s = "lambda.min"))
+  rd0 <- D - as.vector(predict(lm_, W, s = "lambda.min"))
+  ortho <- unname(coef(lm(ry0 ~ rd0))[2])
+
+  ## 3. ORTHOGONAL + CROSS-FITTING
+  K <- 5; folds <- sample(rep(1:K, length.out = n))
+  ry <- rd <- numeric(n)
+  for (k in 1:K) {
+    tr <- folds != k; te <- folds == k
+    a <- cv.glmnet(W[tr, ], Y[tr]); b <- cv.glmnet(W[tr, ], D[tr])
+    ry[te] <- Y[te] - as.vector(predict(a, W[te, ], s = "lambda.min"))
+    rd[te] <- D[te] - as.vector(predict(b, W[te, ], s = "lambda.min"))
+  }
+  dml <- unname(coef(lm(ry ~ rd))[2])
+
+  c(naive = naive, orthogonal = ortho, dml = dml)
+}
+
+round(estimators(make_data()), 4)
+```
+
+```{r}
+#| label: repeat-sim
+reps <- t(replicate(30, estimators(make_data())))
+round(rbind(mean = colMeans(reps), bias = colMeans(reps) - 0.5,
+            sd = apply(reps, 2, sd),
+            rmse = sqrt(colMeans((reps - 0.5)^2))), 4)
+```
+
+```{r}
+#| label: fig-dml
+#| fig-cap: "Sampling distributions over 30 simulations. The truth is 0.5 (dashed). The naive lasso is biased upward; residualizing both sides removes almost all of it."
+as.data.frame(reps) |>
+  tidyr::pivot_longer(everything()) |>
+  mutate(name = factor(name, levels = c("naive", "orthogonal", "dml"),
+                       labels = c("naive", "orthogonal", "orthogonal + cross-fit"))) |>
+  ggplot(aes(value, fill = name)) +
+  geom_density(alpha = .5, colour = NA) +
+  geom_vline(xintercept = 0.5, linetype = 2) +
+  scale_fill_manual(values = c("firebrick", "goldenrod", "navy")) +
+  labs(x = expression(hat(theta)), y = NULL, fill = NULL) +
+  theme_minimal(base_size = 10)
+```
+
+::: callout-important
+Read the bias column. The naive estimator's error does not come from a bad
+learner — the lasso predicts $Y$ well. It comes from the fact that *any*
+regularized estimate is shrunk, and that shrinkage transmits directly to
+$\hat\theta$ unless the moment is orthogonal.
+
+Note also that here **orthogonalization does nearly all the work** and
+cross-fitting adds little: a cross-validated lasso does not overfit badly at this
+$n$. Cross-fitting matters much more with flexible learners such as forests and
+boosting, which fit the training sample far more aggressively — Exercise 2 makes
+that comparison.
+:::
+
+# DML with the `DoubleML` package
+
+The 401(k) data: does *eligibility* for a 401(k) plan raise net financial
+assets? Eligibility is not random — it is offered by employers — so we condition
+on income, age, family size, education, and other plan participation.
+
+```{r}
+#| label: dml-data
+## cached locally so the handout renders without a network connection
+d401 <- readRDS("../Data/pension401k.rds")
+dim(d401)
+
+dml_data <- DoubleMLData$new(d401, y_col = "net_tfa", d_cols = "e401",
+                             x_cols = c("age", "inc", "educ", "fsize", "marr",
+                                        "twoearn", "db", "pira", "hown"))
+dml_data
+```
+
+```{r}
+#| label: dml-plr
+lrn_g <- lrn("regr.ranger", num.trees = 400, min.node.size = 10)
+lrn_m <- lrn("regr.ranger", num.trees = 400, min.node.size = 10)
+
+set.seed(1)
+plr <- DoubleMLPLR$new(dml_data, ml_l = lrn_g, ml_m = lrn_m,
+                       n_folds = 5, n_rep = 1)
+plr$fit()
+plr$summary()
+```
+
+```{r}
+#| label: dml-compare
+## a naive OLS benchmark
+ols <- lm(net_tfa ~ e401 + age + inc + educ + fsize + marr + twoearn + db +
+            pira + hown, data = d401)
+c(OLS = coef(ols)["e401"], DML_PLR = plr$coef)
+```
+
+## The interactive model (AIPW with ML)
+
+The partially linear model assumes a constant effect. The *interactive*
+regression model does not — it is the AIPW score from Week 6 with cross-fitted
+ML nuisances.
+
+```{r}
+#| label: dml-irm
+lrn_g2 <- lrn("regr.ranger", num.trees = 400, min.node.size = 10)
+lrn_m2 <- lrn("classif.ranger", num.trees = 400, min.node.size = 10,
+              predict_type = "prob")
+
+set.seed(1)
+irm <- DoubleMLIRM$new(dml_data, ml_g = lrn_g2, ml_m = lrn_m2,
+                       n_folds = 5, score = "ATE")
+irm$fit()
+irm$summary()
+```
+
+## Does the answer depend on the split?
+
+```{r}
+#| label: dml-reps
+set.seed(2)
+plr_rep <- DoubleMLPLR$new(dml_data, ml_l = lrn_g, ml_m = lrn_m,
+                           n_folds = 5, n_rep = 10)
+plr_rep$fit()
+c(median_estimate = plr_rep$coef, se = plr_rep$se)
+```
+
+`n_rep = 10` repeats the whole cross-fitting procedure with different partitions
+and reports the median. **If the estimate moves a lot across partitions, report
+that** — it means the nuisance estimates are unstable relative to the signal.
+
+# Heterogeneous treatment effects
+
+```{r}
+#| label: cf
+X <- as.matrix(d401[, c("age", "inc", "educ", "fsize", "marr", "twoearn",
+                        "db", "pira", "hown")])
+Y <- d401$net_tfa
+D <- d401$e401
+
+cf <- causal_forest(X, Y, D, num.trees = 2000, seed = 1)
+average_treatment_effect(cf, target.sample = "all")
+```
+
+```{r}
+#| label: calibration
+test_calibration(cf)
+```
+
+::: callout-important
+Read `test_calibration()` carefully. `mean.forest.prediction` near 1 says the
+average effect is well estimated. **`differential.forest.prediction` is the
+one that matters**: a coefficient near 1 with a small $p$-value is evidence of
+*real* heterogeneity; a coefficient near 0 says your CATE surface is noise, and
+you should not interpret it.
+:::
+
+```{r}
+#| label: fig-cate
+#| fig-cap: "Estimated conditional average treatment effects against income."
+tau <- predict(cf)$predictions
+tibble::tibble(tau, inc = d401$inc) |>
+  filter(inc < quantile(inc, .98)) |>
+  ggplot(aes(inc, tau)) +
+  geom_point(alpha = .1, size = .4, colour = "navy") +
+  geom_smooth(method = "loess", se = TRUE, colour = "firebrick") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  labs(x = "income", y = expression(hat(tau)(x))) +
+  theme_minimal(base_size = 10)
+```
+
+## Sorted group ATEs, honestly
+
+Rank units by $\hat\tau$, form quintiles, and estimate a **doubly robust** ATE
+within each — using the forest's own out-of-bag predictions so the ranking and
+the estimate do not use the same information.
+
+```{r}
+#| label: gates
+dr <- get_scores(cf)                       # doubly robust scores, one per unit
+grp <- cut(tau, breaks = quantile(tau, seq(0, 1, .2)), include.lowest = TRUE,
+           labels = paste0("Q", 1:5))
+
+gates <- tibble::tibble(dr, grp) |>
+  group_by(grp) |>
+  summarise(ate = mean(dr), se = sd(dr) / sqrt(n()), n = n(), .groups = "drop") |>
+  mutate(lo = ate - 1.96 * se, hi = ate + 1.96 * se)
+knitr::kable(gates, digits = 0)
+```
+
+```{r}
+#| label: fig-gates
+#| fig-cap: "Doubly robust group average treatment effects by predicted-effect quintile."
+ggplot(gates, aes(grp, ate)) +
+  geom_pointrange(aes(ymin = lo, ymax = hi), colour = "navy") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  labs(x = "quintile of predicted effect", y = "doubly robust ATE") +
+  theme_minimal(base_size = 10)
+```
+
+```{r}
+#| label: gate-test
+## is the top quintile different from the bottom?
+q1 <- dr[grp == "Q1"]; q5 <- dr[grp == "Q5"]
+d_hat <- mean(q5) - mean(q1)
+se_d  <- sqrt(var(q5)/length(q5) + var(q1)/length(q1))
+c(difference = d_hat, se = se_d, t = d_hat / se_d)
+```
+
+```{r}
+#| label: varimp
+vi <- variable_importance(cf)
+tibble::tibble(variable = colnames(X), importance = as.vector(vi)) |>
+  arrange(desc(importance)) |> head(6) |> knitr::kable(digits = 3)
+```
+
+This is importance for **effect heterogeneity**, not for predicting the outcome —
+a different and more useful quantity. It is still descriptive: it says where the
+forest found variation, not why.
+
+# Exercises
+
+1.  **How slow can the learner be?** In `estimators()`, replace `cv.glmnet` with
+    a deliberately crude learner --- a single shallow tree via
+    `ranger(x = as.data.frame(W), y = Y, num.trees = 1, max.depth = 2)`. Does DML
+    still recover 0.5? At what point does the rate condition plausibly fail?
+
+2.  **Where cross-fitting earns its keep.** Repeat the three-estimator comparison
+    with a random forest in place of the lasso (`ranger` on
+    `as.data.frame(W)`, remembering that `ranger` needs column names). Forests fit
+    their training sample far more aggressively than a cross-validated lasso, so
+    the gap between the "orthogonal" and "orthogonal + cross-fit" columns should
+    now be visible. Report both.
+
+3.  **Overlap.** In the 401(k) IRM, extract the estimated propensity scores and
+    plot them by treatment status. Are there units with $\hat e$ near 0 or 1?
+    Re-run trimming to $[0.05, 0.95]$ and report how the ATE moves.
+
+4.  **Learner choice.** Re-run the PLR with `regr.cv_glmnet` and with
+    `regr.ranger`. How much does $\hat\theta$ move relative to its standard
+    error? What does stability across learners buy you, and what does it not?
+
+5.  **DML for IV.** `fetch_401k(instrument = TRUE)` gives eligibility (`e401`) as
+    an instrument for participation (`p401`). Fit `DoubleMLPLIV` and compare with
+    the PLR estimate. Which estimand is each targeting?
+
+6.  **Honest heterogeneity.** The group ATEs above already use out-of-bag
+    predictions and doubly robust scores, which removes most --- but not all ---
+    of the optimism, because the same units informed the forest's structure. Split
+    the sample in half: fit the causal forest on the first half, predict
+    $\hat\tau$ on the second, and estimate group ATEs in the second half only.
+    How much does the top-minus-bottom contrast shrink?
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

@@ -1,0 +1,478 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SOCIOL 723 -- Social Statistics II
+%% Week 13 -- Causal Machine Learning
+%% Wenhao Jiang, Duke University, Fall 2026
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[aspectratio=169,11pt,xcolor=dvipsnames]{beamer}
+\mode<presentation>
+
+%% ---- fonts: Latin Modern Roman (the LaTeX default), serif throughout -------
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usefonttheme{serif}
+\renewcommand{\familydefault}{\rmdefault}
+
+%% ---- packages --------------------------------------------------------------
+\usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[english]{babel}
+
+\newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
+\newcommand{\srct}[1]{#1}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\plim}{plim}
+\newcommand{\indep}{\perp\!\!\!\perp}
+
+%% ---- notation conventions (course-wide) ------------------------------------
+\newcommand{\E}{E}
+\newcommand{\En}{\mathbb{E}_n}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\bm{X}}
+\newcommand{\Y}{\bm{y}}
+\newcommand{\Ix}{\bm{I}}
+\newcommand{\zero}{\bm{0}}
+\newcommand{\bhat}{\hat{\bm{\beta}}}
+\newcommand{\dto}{\overset{d}{\longrightarrow}}
+\newcommand{\pto}{\overset{p}{\longrightarrow}}
+\usetikzlibrary{shapes,decorations.pathmorphing}
+\newcommand{\lik}{\mathcal{L}}
+\newcommand{\loglik}{\ell}
+\newcommand{\Info}{\mathcal{I}}
+\newcommand{\SE}{\widehat{\text{SE}}}
+
+%% ---- theme -----------------------------------------------------------------
+\usetheme{default}
+\useoutertheme[subsection=false]{miniframes}
+\setbeamertemplate{mini frames}{}
+
+\definecolor{dukeblue}{RGB}{1,33,105}
+\definecolor{accent}{RGB}{200,78,0}
+\definecolor{softgray}{RGB}{242,242,245}
+
+\setbeamercolor{structure}{fg=dukeblue}
+\setbeamercolor{frametitle}{fg=dukeblue,bg=white}
+\setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{alerted text}{fg=accent}
+\setbeamercolor{block title}{fg=white,bg=dukeblue}
+\setbeamercolor{block body}{fg=black,bg=softgray}
+\setbeamercolor{block title alerted}{fg=white,bg=accent}
+\setbeamercolor{block body alerted}{fg=black,bg=softgray}
+
+\setbeamertemplate{footline}[page number]
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamerfont{footnote}{size=\scriptsize}
+\setbeamerfont{caption}{size=\footnotesize}
+\setbeamertemplate{subsection in head/foot}{}
+\setbeamertemplate{subsection in head/foot shaded}{}
+\setbeamertemplate{caption}[numbered]
+
+\newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+
+\setbeamertemplate{section page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
+  \vskip4pt{\color{dukeblue}\rule{0.35\linewidth}{1pt}\par}
+  \vfill\end{centering}}
+\setbeamertemplate{subsection page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\large\bfseries\insertsubsectionhead\par}
+  \vfill\end{centering}}
+
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{5pt}%
+  \setlength{\belowdisplayskip}{5pt}%
+  \setlength{\abovedisplayshortskip}{2pt}%
+  \setlength{\belowdisplayshortskip}{3pt}%
+}
+\setbeamertemplate{frametitle}{%
+  \vskip4pt\usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}%
+  \insertframetitle\par\vskip2pt}
+\setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
+
+%% ---- title -----------------------------------------------------------------
+\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
+\subtitle{\large Week 13 --- Causal Machine Learning\\[-8pt]}
+\author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
+\institute[Duke]{}
+\titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
+\date{\large Department of Sociology, Fall 2026}
+
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Today}
+  \tableofcontents
+\end{frame}
+
+\begin{frame}{Putting the Two Halves Together}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Weeks 5--11} gave us identification: what must be true for a
+        parameter to be causal. Almost every design ended with a nuisance
+        function to estimate --- a propensity score, an outcome regression, a
+        first stage, a conditional trend.
+  \item \textbf{Week 12} gave us flexible estimators for exactly such functions,
+        which work with many covariates and unknown functional form.
+  \item \alert{The obvious move --- plug ML into the causal estimator --- fails.}
+        Today is about why, and what fixes it.
+\end{itemize}
+\vskip4pt
+\begin{block}{The payoff}
+We get to relax the functional-form assumptions that identification arguments
+have been quietly leaning on all semester --- AJR's linear geography control,
+the linear propensity score, the additive conditional trend --- \emph{without}
+giving up $\sqrt n$ inference.
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[The Problem]{Why Naive ML Fails}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Partially Linear Model}
+The workhorse specification for the rest of the course:
+\begin{align*}
+  Y_i &= \theta\, D_i + g(W_i) + \epsilon_i, \qquad \E[\epsilon_i \mid D_i, W_i] = 0 \\
+  D_i &= m(W_i) + v_i, \qquad\qquad\ \ \E[v_i \mid W_i] = 0 .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item $\theta$ is the target: the effect of $D$ holding $W$ fixed, and it is
+        assumed constant (relaxed in the last section).
+  \item $g$ and $m$ are \alert{nuisance functions} --- we do not care about them,
+        but we must handle them. They may be highly nonlinear, and $W$ may be
+        high-dimensional.
+  \item Under conditional ignorability given $W$ (Week 5), $\theta$ is the ATE.
+  \item Week 1 solved this when $g$ and $m$ are linear and low-dimensional. The
+        question now is what happens when we estimate them with lasso or a forest.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Attempt 1: Regularization Bias}
+The naive approach: estimate $\hat g$ by ML, then regress $Y_i - \hat g(W_i)$ on
+$D_i$.
+\begin{align*}
+  \hat\theta_{\text{naive}}
+  = \frac{\frac1n\sum_i D_i\big(Y_i - \hat g(W_i)\big)}{\frac1n\sum_i D_i^2} .
+\end{align*}
+Substituting the true model and rescaling,
+\begin{align*}
+  \sqrt n\big(\hat\theta_{\text{naive}} - \theta\big)
+  = \underbrace{\Big(\tfrac1n\textstyle\sum_i D_i^2\Big)^{-1}\tfrac{1}{\sqrt n}\sum_i D_i\epsilon_i}_{\dto\ \mathcal N(0,\Sigma)}
+  + \underbrace{\Big(\tfrac1n\textstyle\sum_i D_i^2\Big)^{-1}\tfrac{1}{\sqrt n}\sum_i D_i\big(g(W_i)-\hat g(W_i)\big)}_{\alert{\text{regularization bias}}} .
+\end{align*}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item Regularized estimators are \emph{deliberately biased} (Week 12), and
+        typically converge more slowly than the parametric $n^{-1/2}$.
+  \item Then the second term does not vanish on the $\sqrt n$ scale --- the
+        nuisance bias is of the same order as, or larger than, the sampling noise
+        we are trying to describe.
+  \item \alert{The point estimate may be fine; the inference is not.} Confidence
+        intervals are centred in the wrong place, and collecting more data does
+        not fix it.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Attempt 2: Partial Out Both Sides}
+Frisch--Waugh--Lovell says: residualize $Y$ \emph{and} $D$ on $W$, then regress.
+With ML estimates $\hat g$ and $\hat m$,
+\begin{align*}
+  \tilde Y_i = Y_i - \hat\ell(W_i), \qquad \tilde D_i = D_i - \hat m(W_i),
+  \qquad
+  \hat\theta = \frac{\frac1n\sum_i \tilde D_i \tilde Y_i}{\frac1n\sum_i \tilde D_i^2} ,
+\end{align*}
+where $\ell(W) = \E[Y\mid W]$.
+\vskip3pt
+The bias term now involves the \alert{product} of the two estimation errors:
+\begin{align*}
+  \text{bias} \approx \sqrt n \cdot \frac1n\sum_i
+  \big(m(W_i)-\hat m(W_i)\big)\big(\ell(W_i)-\hat \ell(W_i)\big) .
+\end{align*}
+\vskip2pt
+\alert{This vanishes when
+$\|\hat m - m\|_2\,\|\hat\ell - \ell\|_2 = o_p(n^{-1/2})$} --- for which it is
+sufficient that \emph{each} converge faster than $n^{-1/4}$. Lasso and forests
+can do that under sparsity or smoothness assumptions.
+\textbf{First-order bias has become second-order.}
+\end{frame}
+
+\begin{frame}{This Is Neyman Orthogonality Again}
+The residualized moment condition is
+\begin{align*}
+  \E\Big[\psi(W_i;\theta,\eta)\Big] = 0, \qquad
+  \psi = \Big[\big(Y - \ell(W)\big) - \theta\big(D - m(W)\big)\Big]\,\big(D-m(W)\big) ,
+\end{align*}
+and it satisfies
+\begin{align*}
+  \left.\frac{\partial}{\partial\eta}\E\big[\psi(W_i;\theta_0,\eta)\big]\right|_{\eta=\eta_0} = 0 .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \alert{You derived this in Week 6}, for the AIPW score, using a Gateaux
+        derivative. The partially linear case is the same statement for a
+        different moment.
+  \item And you derived it in \textbf{Week 1}: FWL is the linear special case, in
+        which $\hat m$ is an OLS projection and the ``adaptivity'' of $\hat\beta_1$
+        to estimation error in the residuals is exactly orthogonality.
+  \item \textbf{The thread of the whole course}: FWL $\to$ AIPW $\to$ DML. One
+        idea, three levels of generality.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[DML]{Double Machine Learning}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Second Ingredient: Cross-Fitting}
+Orthogonality is not quite enough. If $\hat m$ is fitted on the \emph{same}
+observations where it is evaluated, its errors correlate with those units'
+outcomes --- \alert{overfitting bias}, which orthogonality does not remove.
+\vskip3pt
+\begin{block}{Cross-fitting}
+Split the sample into $K$ folds. For each fold $k$: estimate
+$\hat\ell^{(-k)}, \hat m^{(-k)}$ on the \emph{other} folds, and form residuals
+only for observations \emph{in} fold $k$. Then pool.
+\end{block}
+\vskip3pt
+\begin{align*}
+  \hat\theta_{\text{DML}} =
+  \frac{\frac1n\sum_{k}\sum_{i \in \mathcal I_k}
+        \big(D_i - \hat m^{(-k)}(W_i)\big)\big(Y_i - \hat\ell^{(-k)}(W_i)\big)}
+       {\frac1n\sum_{k}\sum_{i \in \mathcal I_k}\big(D_i - \hat m^{(-k)}(W_i)\big)^2}
+\end{align*}
+\vskip2pt
+This is the same device as cross-validation in Week 12 --- but used to protect
+\emph{inference}, not to select a tuning parameter.
+\end{frame}
+
+\begin{frame}{The DML Recipe}
+\begin{enumerate}\itemsep3pt
+  \item Split the sample into $K$ folds (typically $K = 5$; split on the
+        \emph{independent unit} if data are clustered).
+  \item On the training folds, estimate $\hat\ell(W) = \hat\E[Y\mid W]$ and
+        $\hat m(W) = \hat\E[D\mid W]$ with any ML method --- lasso, random forest,
+        boosting, or an ensemble.
+  \item On the held-out fold, form residuals $\tilde Y_i$ and $\tilde D_i$.
+  \item Pool across folds and regress $\tilde Y$ on $\tilde D$.
+  \item The standard error is the usual heteroskedasticity-robust one from that
+        final bivariate regression --- \alert{orthogonality is what makes it
+        valid} despite the ML first stage.
+  \item Repeat the whole split several times with different seeds and take the
+        median; the answer should not depend on the partition.
+\end{enumerate}
+\vskip3pt
+\srct{Chernozhukov et al.\ (2018)}. In \texttt{R}: \texttt{DoubleML} with
+\texttt{mlr3} learners.
+\end{frame}
+
+\begin{frame}{What the Theory Requires --- and What It Does Not}
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\textbf{Requires}
+\begin{itemize}\small\itemsep2pt
+  \item Conditional ignorability given $W$ (unchanged!).
+  \item Overlap: $\hat m(W)$ bounded away from 0 and 1 for binary $D$.
+  \item Nuisance convergence faster than $n^{-1/4}$ --- e.g.\ approximate
+        sparsity for lasso, smoothness for forests.
+  \item Orthogonal moment $+$ cross-fitting.
+\end{itemize}
+\end{column}
+\begin{column}{0.49\textwidth}
+\textbf{Does not require}
+\begin{itemize}\small\itemsep2pt
+  \item Correct functional form for $g$ or $m$.
+  \item Knowing which of the $p$ covariates matter.
+  \item $p \ll n$. High-dimensional $W$ is the point.
+  \item Consistent \emph{model selection} --- lasso may pick the wrong variables
+        and $\hat\theta$ is still fine.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip5pt
+\begin{alertblock}{The assumption that does not go away}
+\alert{DML does not identify anything.} It is an estimation technology for a
+parameter already identified by the arguments of Weeks 5--11. If $W$ omits a
+confounder, no amount of machine learning helps.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}[shrink=10]{Where DML Plugs In}
+The same two ingredients --- an orthogonal score plus cross-fitting --- apply to
+almost every design in this course:
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+\toprule
+Design & Nuisance functions & Week \\
+\midrule
+Partially linear regression & $\E[Y\mid W]$, $\E[D\mid W]$ & 1 \\
+Interactive / ATE under CIA (AIPW) & $\E[Y\mid D,W]$, $\Pr(D=1\mid W)$ & 6 \\
+Instrumental variables & $\E[Y\mid W]$, $\E[D\mid W]$, $\E[Z\mid W]$ & 7 \\
+Regression discontinuity & $\E[Y\mid W]$ within the bandwidth & 9 \\
+Conditional DID & outcome trend and propensity, by cohort & 10 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item For IV: residualize $Y$, $D$, \emph{and} $Z$ on $W$ using ML, then run
+        2SLS on the residuals. This is what lets us replace AJR's ``linear in
+        distance from the equator plus continent dummies'' with something
+        flexible.
+  \item For conditional DID: this is precisely the doubly robust
+        Callaway--Sant'Anna estimator from Week 10, with ML nuisances.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[HTE]{Heterogeneous Treatment Effects}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{From ATE to CATE}
+Drop the constant-effect assumption. The target becomes the
+\alert{conditional average treatment effect}
+\begin{align*}
+  \tau(x) = \E\big[Y_i(1) - Y_i(0) \mid X_i = x\big] .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Sociologically this is often the substantive question: \emph{for whom}
+        does college pay off, \emph{which} neighbourhoods benefit, \emph{who} is
+        harmed.
+  \item \alert{The naive approach --- run subgroup regressions, report the
+        significant ones --- is a multiple-testing disaster} and does not
+        replicate. It is the specification search of Week 2 with more rooms to
+        search.
+  \item The modern approach: build an orthogonal, doubly robust
+        \emph{pseudo-outcome} whose conditional mean is $\tau(x)$, then use ML to
+        estimate that conditional mean --- with honest sample splitting so that
+        the subgroups are not chosen using the same data that tests them.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Doubly Robust Score as a Pseudo-Outcome}
+Take the AIPW summand from Week 6, unit by unit:
+\begin{align*}
+  \Gamma_i = \hat m_1(X_i) - \hat m_0(X_i)
+  + \frac{D_i\big(Y_i - \hat m_1(X_i)\big)}{\hat e(X_i)}
+  - \frac{(1-D_i)\big(Y_i-\hat m_0(X_i)\big)}{1-\hat e(X_i)} .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Its \emph{average} is the AIPW estimate of the ATE --- that was Week 6.
+  \item With the \emph{true} nuisance functions, its conditional mean is exactly
+        the CATE: $\E[\Gamma_i \mid X_i = x] = \tau(x)$. With cross-fitted
+        estimates it holds approximately, at a rate governed by the same product
+        condition as before.
+  \item So: construct $\Gamma_i$ with cross-fitted nuisances, then \alert{regress
+        $\Gamma_i$ on $X_i$ by any method you like}.
+  \begin{itemize}\itemsep1pt
+    \item Regress on a few chosen covariates $\to$ \textbf{group average treatment
+          effects} (GATEs) with valid standard errors.
+    \item Regress with a forest $\to$ a nonparametric CATE surface.
+    \item Regress on a constant $\to$ back to the ATE.
+  \end{itemize}
+  \item \alert{This one construction unifies the whole section.}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Causal Forests}
+\srct{Wager and Athey (2018)}, \srct{Athey, Tibshirani, and Wager (2019)}: a
+random forest whose splits are chosen to maximize \emph{heterogeneity in the
+treatment effect} rather than in the outcome.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Honesty}: within each tree, one subsample chooses the splits and a
+        \emph{disjoint} subsample estimates the effects in the resulting leaves.
+        This is what delivers asymptotic normality and valid pointwise intervals
+        --- without it, leaves are selected \emph{because} they show large
+        effects.
+  \item \textbf{Local centering}: residualize $Y$ and $D$ on $X$ first (i.e.\
+        orthogonalize), exactly as in DML.
+  \item Output: an estimate $\hat\tau(x)$ for every unit, with standard errors,
+        plus variable-importance measures for \emph{effect} heterogeneity.
+  \item \texttt{grf::causal\_forest()}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reporting Heterogeneity Honestly}
+An estimated $\hat\tau(x)$ that varies is not by itself evidence of
+heterogeneity --- noise varies too.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Calibration test}: regress the doubly robust scores on
+        $\hat\tau(X_i)$ (out of fold). A slope near 1 indicates real, well-calibrated
+        heterogeneity; a slope near 0 says your CATE surface is noise.
+        \texttt{grf::test\_calibration()}.
+  \item \textbf{Sorted group ATEs}: rank units by $\hat\tau$, form quantile
+        groups, and report the doubly robust ATE \emph{within each group} using
+        held-out data. Then test whether the top and bottom groups differ.
+  \item \textbf{Pre-specify} the moderators you care about wherever possible, and
+        label exploratory heterogeneity as exploratory.
+  \item \alert{Effect heterogeneity is where causal ML is most useful and most
+        abused.} The honest-splitting discipline is not optional.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where This Leaves the Course}
+\begin{itemize}\itemsep4pt
+  \item \textbf{One idea, three appearances.} FWL (Week 1) $\to$ double
+        robustness and Neyman orthogonality (Week 6) $\to$ DML and causal forests
+        (today). Each generalizes the last; none replaces identification.
+  \item \textbf{ML relaxes functional-form assumptions, not identifying
+        assumptions.} That is a real and substantial gain --- many published
+        identification arguments lean on linearity they never defended --- but it
+        is a bounded one.
+  \item \textbf{The binding constraint is still the design.} A causal forest on a
+        confounded comparison estimates heterogeneity in a bias.
+\end{itemize}
+\vskip4pt
+\begin{block}{Next week}
+Synthesis, and the final project workshop. The project is due December 14.
+\end{block}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+\footnotesize
+\begin{itemize}\itemsep3pt
+\item Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied
+Econometrics: Causality and Policy Evaluation.'' \textit{Journal of Economic
+Perspectives} 31(2): 3--32.
+\item Athey, Susan, Julie Tibshirani, and Stefan Wager. 2019. ``Generalized
+Random Forests.'' \textit{Annals of Statistics} 47(2): 1148--1178.
+\item Belloni, Alexandre, Victor Chernozhukov, and Christian Hansen. 2014.
+``High-Dimensional Methods and Inference on Structural and Treatment Effects.''
+\textit{Journal of Economic Perspectives} 28(2): 29--50.
+\item Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, Esther Duflo,
+Christian Hansen, Whitney Newey, and James Robins. 2018. ``Double/Debiased
+Machine Learning for Treatment and Structural Parameters.''
+\textit{The Econometrics Journal} 21(1): C1--C68.
+\item Chernozhukov, Victor et al. 2025. \textit{Applied Causal Inference Powered
+by ML and AI}. [Ch.\ 4 and 10]
+\item Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of
+Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the
+American Statistical Association} 113(523): 1228--1242.
+\end{itemize}
+\end{frame}
+
+\end{document}

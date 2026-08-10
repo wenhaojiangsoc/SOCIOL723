@@ -1,0 +1,307 @@
+---
+title: "\\textbf{Lab 12: Regularization, Trees, and Cross-Validation}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, November 12"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.4, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+1.  See the bias–variance tradeoff by simulating it.
+2.  Fit ridge, lasso, and elastic net, and choose $\lambda$ by cross-validation.
+3.  Fit trees, random forests, and boosting, and compare honest test error.
+4.  Watch what happens when cross-validation is done wrong.
+5.  See why lasso's selected set is not a variable-importance ranking.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(glmnet)
+library(ranger)
+library(rpart); library(rpart.plot)
+
+gss <- readRDS("../Data/gss_earnings.rds")
+set.seed(723)
+```
+
+# The tradeoff, simulated
+
+```{r}
+#| label: bv-sim
+f_true <- function(x) sin(2 * x) + 0.5 * x
+
+sim_once <- function(n = 60, df) {
+  x <- runif(n, -3, 3); y <- f_true(x) + rnorm(n, sd = .6)
+  fit <- smooth.spline(x, y, df = df)
+  predict(fit, x = 1.0)$y            # predict at a fixed point
+}
+
+grid <- expand.grid(df = c(2, 4, 8, 16, 30))
+res <- lapply(grid$df, function(d) replicate(400, sim_once(df = d)))
+
+tibble::tibble(
+  df = grid$df,
+  bias2 = sapply(res, function(r) (mean(r) - f_true(1.0))^2),
+  variance = sapply(res, var)
+) |> mutate(mse = bias2 + variance) |> knitr::kable(digits = 4)
+```
+
+```{r}
+#| label: fig-bv
+#| fig-cap: "Squared bias falls and variance rises with flexibility; MSE is U-shaped. Every tuning parameter in this lab is this picture."
+tibble::tibble(df = grid$df,
+               bias2 = sapply(res, function(r) (mean(r) - f_true(1.0))^2),
+               variance = sapply(res, var)) |>
+  mutate(MSE = bias2 + variance) |>
+  tidyr::pivot_longer(-df) |>
+  ggplot(aes(df, value, colour = name)) +
+  geom_line(linewidth = .9) + geom_point() +
+  scale_colour_manual(values = c("bias2" = "navy", "variance" = "firebrick",
+                                 "MSE" = "black")) +
+  labs(x = "effective degrees of freedom", y = NULL, colour = NULL) +
+  theme_minimal(base_size = 10)
+```
+
+# Regularized regression
+
+A deliberately high-dimensional design matrix: all covariates, their squares, and
+all two-way interactions.
+
+```{r}
+#| label: design
+X <- model.matrix(~ (educ + exper + wordsum + pareduc + prestige + hours +
+                     female + black + otherace + factor(year) + region)^2 +
+                    I(exper^2) + I(educ^2) + I(hours^2) - 1, data = gss)
+y <- gss$lnearn
+dim(X)
+```
+
+```{r}
+#| label: split
+n <- nrow(X); train <- sample(n, floor(0.7 * n)); test <- setdiff(seq_len(n), train)
+mse <- function(pred, truth) mean((pred - truth)^2)
+```
+
+```{r}
+#| label: ols-baseline
+## OLS on the full design -- note the warning about rank deficiency
+ols <- lm(y[train] ~ X[train, ])
+pred_ols <- cbind(1, X[test, ]) %*% ifelse(is.na(coef(ols)), 0, coef(ols))
+c(train_mse = mse(fitted(ols), y[train]), test_mse = mse(pred_ols, y[test]))
+```
+
+The gap between training and test error is the **optimism**. It is large here
+because the design is flexible relative to $n$.
+
+## Ridge and lasso
+
+```{r}
+#| label: glmnet
+cv_ridge <- cv.glmnet(X[train, ], y[train], alpha = 0, nfolds = 10)
+cv_lasso <- cv.glmnet(X[train, ], y[train], alpha = 1, nfolds = 10)
+cv_enet  <- cv.glmnet(X[train, ], y[train], alpha = 0.5, nfolds = 10)
+
+c(ridge_lambda_min = cv_ridge$lambda.min,
+  lasso_lambda_min = cv_lasso$lambda.min,
+  lasso_lambda_1se = cv_lasso$lambda.1se)
+```
+
+```{r}
+#| label: fig-cv
+#| fig-cap: "Cross-validated MSE against log penalty for the lasso. The left dashed line is the minimizer; the right is the one-standard-error rule."
+plot(cv_lasso)
+```
+
+```{r}
+#| label: compare-linear
+preds <- list(
+  ridge = predict(cv_ridge, X[test, ], s = "lambda.min"),
+  lasso = predict(cv_lasso, X[test, ], s = "lambda.min"),
+  lasso_1se = predict(cv_lasso, X[test, ], s = "lambda.1se"),
+  enet  = predict(cv_enet,  X[test, ], s = "lambda.min")
+)
+sapply(preds, mse, truth = y[test]) |> round(5)
+```
+
+```{r}
+#| label: sparsity
+c(p_total = ncol(X),
+  nonzero_min = sum(coef(cv_lasso, s = "lambda.min") != 0) - 1,
+  nonzero_1se = sum(coef(cv_lasso, s = "lambda.1se") != 0) - 1)
+```
+
+The one-standard-error rule buys a much smaller model at almost no predictive
+cost. That is usually the right default when you have to describe the model.
+
+## Lasso selection is unstable
+
+```{r}
+#| label: lasso-stability
+picked <- replicate(20, {
+  b <- sample(train, length(train), replace = TRUE)
+  cvb <- cv.glmnet(X[b, ], y[b], alpha = 1, nfolds = 5)
+  nm <- rownames(coef(cvb, s = "lambda.min"))
+  nm[as.vector(coef(cvb, s = "lambda.min")) != 0][-1]
+}, simplify = FALSE)
+
+tab <- sort(table(unlist(picked)), decreasing = TRUE)
+head(tab, 12)
+c(variables_ever_selected = length(tab),
+  selected_every_time = sum(tab == 20))
+```
+
+::: callout-important
+Across 20 bootstrap resamples, only a handful of variables are chosen every
+time, while dozens are chosen occasionally. **The selected set is not a
+ranking of importance.** Among correlated predictors, lasso picks one
+essentially arbitrarily. Reporting "lasso selected these variables" as a
+substantive finding is a mistake — and reporting naive $p$-values from a refit
+on the selected set is worse.
+:::
+
+# Trees and ensembles
+
+```{r}
+#| label: tree
+df_tr <- as.data.frame(gss[train, ])
+df_te <- as.data.frame(gss[test, ])
+form <- lnearn ~ educ + exper + wordsum + pareduc + prestige + hours +
+  female + black + otherace + region + year
+
+tree <- rpart(form, data = df_tr, control = rpart.control(cp = 0.002))
+```
+
+```{r}
+#| label: fig-tree
+#| fig-cap: "A regression tree grown with a complexity penalty. Readable, and high-variance."
+rpart.plot(tree, type = 2, extra = 0, cex = .55, box.palette = "Blues")
+```
+
+```{r}
+#| label: forest-boost
+rf <- ranger(form, data = df_tr, num.trees = 800, mtry = 4,
+             min.node.size = 5, seed = 1)
+
+## boosting, hand-rolled so the mechanism is visible
+boost <- function(data, newdata, M = 400, eta = 0.05, depth = 3) {
+  f_tr <- rep(mean(data$lnearn), nrow(data))
+  f_te <- rep(mean(data$lnearn), nrow(newdata))
+  for (m in seq_len(M)) {
+    data$r <- data$lnearn - f_tr
+    t_m <- rpart(update(form, r ~ .), data = data,
+                 control = rpart.control(maxdepth = depth, cp = 0, xval = 0))
+    f_tr <- f_tr + eta * predict(t_m, data)
+    f_te <- f_te + eta * predict(t_m, newdata)
+  }
+  f_te
+}
+pred_boost <- boost(df_tr, df_te)
+
+c(tree   = mse(predict(tree, df_te), y[test]),
+  forest = mse(predict(rf, df_te)$predictions, y[test]),
+  boost  = mse(pred_boost, y[test]),
+  lasso  = mse(preds$lasso, y[test]),
+  ridge  = mse(preds$ridge, y[test]))
+```
+
+Note the ordering: a single tree is worst, the ensembles improve on it
+substantially, and on this modestly sized tabular problem the penalized linear
+models are competitive. **Flexibility is not automatically better.**
+
+```{r}
+#| label: oob
+c(oob_mse = rf$prediction.error, test_mse = mse(predict(rf, df_te)$predictions, y[test]))
+```
+
+Out-of-bag error is a free honest estimate of test error — no separate split
+needed.
+
+# How to do cross-validation wrong
+
+```{r}
+#| label: leak
+## WRONG: screen variables on the full sample, then cross-validate
+cors <- apply(X, 2, function(z) abs(cor(z, y)))
+top <- order(cors, decreasing = TRUE)[1:40]
+cv_leak <- cv.glmnet(X[, top], y, alpha = 1, nfolds = 10)
+leak_cv_mse <- min(cv_leak$cvm)
+
+## RIGHT: screen inside each fold
+folds <- sample(rep(1:10, length.out = n))
+right <- sapply(1:10, function(k) {
+  tr <- which(folds != k); te <- which(folds == k)
+  cc <- apply(X[tr, ], 2, function(z) abs(cor(z, y[tr])))
+  tp <- order(cc, decreasing = TRUE)[1:40]
+  fit <- cv.glmnet(X[tr, tp], y[tr], alpha = 1, nfolds = 5)
+  mse(predict(fit, X[te, tp], s = "lambda.min"), y[te])
+})
+
+c(leaky_cv_mse = leak_cv_mse, honest_cv_mse = mean(right))
+```
+
+::: callout-warning
+The leaky procedure looks better because the screening step already saw the
+held-out outcomes. **Every data-dependent choice must happen inside the fold** —
+screening, standardization, imputation, and tuning alike.
+:::
+
+# Exercises
+
+1.  **Ridge versus lasso by design.** Simulate two datasets with $p = 200$: one
+    sparse (5 non-zero coefficients), one dense (200 small coefficients). Which
+    penalty wins in each, and why?
+
+2.  **Tuning a forest.** Vary `mtry` over $\{2, 4, 8, 12\}$ and `min.node.size`
+    over $\{1, 5, 20\}$. Which matters more? Explain via bias and variance.
+
+3.  **Boosting's dials.** In `boost()`, try $\eta \in \{0.01, 0.1, 0.5\}$ with
+    $M \in \{100, 400, 2000\}$. Show that small $\eta$ with large $M$ beats large
+    $\eta$ with small $M$, and explain why in terms of bias.
+
+4.  **Clustered splitting.** Re-run the cross-validation splitting on `psu`
+    rather than on rows. Does the estimated test error change? Which is the honest
+    number, and why does the Week 2 bootstrap rule apply here too?
+
+5.  **Prediction is not inference.** Take the lasso's `educ` coefficient at
+    `lambda.min`. Compare it with the OLS estimate from Week 1. Explain in two
+    sentences why you would not report the lasso coefficient with a standard
+    error.
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

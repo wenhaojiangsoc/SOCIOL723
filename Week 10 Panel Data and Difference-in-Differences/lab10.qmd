@@ -1,0 +1,381 @@
+---
+title: "\\textbf{Lab 10: Fixed Effects, DID, and the Staggered-Adoption Problem}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 29"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.3, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+1.  Confirm that within-transformation, first differences, and unit dummies are
+    the same estimator.
+2.  Estimate a canonical $2\times2$ DID and its event-study generalization.
+3.  **Watch two-way fixed effects fail on staggered data where we know the
+    truth.**
+4.  Decompose TWFE into its $2\times2$ pieces (Goodman-Bacon).
+5.  Use Sun–Abraham and Callaway–Sant'Anna to get the right answer.
+6.  Bound how badly parallel trends could fail.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(fixest)
+library(did)
+library(bacondecomp)
+
+data(base_stagg, package = "fixest")
+stg <- base_stagg |> as.data.frame() |>
+  mutate(D = as.integer(time_to_treatment >= 0),
+         cohort = year_treated) |>            # 10000 codes never-treated
+  select(id, year, y, D, cohort, time_to_treatment, x1, treatment_effect_true)
+
+c(units = n_distinct(stg$id), periods = n_distinct(stg$year),
+  cohorts = n_distinct(stg$cohort),
+  never_treated_units = sum(!duplicated(stg$id) & stg$cohort == 10000))
+```
+
+The simulated panel has 100 units over 10 periods. Half are never treated; the
+other half adopt in staggered fashion, one cohort per period.
+
+# Fixed effects: three routes, one estimator
+
+```{r}
+#| label: fe-equivalence
+d <- stg
+
+## 1. unit dummies
+m_dummy  <- lm(y ~ D + factor(id) + factor(year), data = d)
+
+## 2. within transformation, by hand
+## y_it - ybar_i - ybar_t + ybar
+dm <- d |>
+  group_by(id)   |> mutate(y_i = y - mean(y), D_i = D - mean(D)) |>
+  group_by(year) |> mutate(y_t = mean(y_i),  D_t = mean(D_i)) |>
+  ungroup() |>
+  mutate(y_w = y_i - y_t, D_w = D_i - D_t)   # grand mean already removed by y_i
+m_within <- lm(y_w ~ D_w, data = dm)
+
+## 3. fixest
+m_fe <- feols(y ~ D | id + year, data = d)
+
+round(c(dummies = coef(m_dummy)["D"],
+        within  = coef(m_within)["D_w"],
+        fixest  = coef(m_fe)["D"]), 6)
+```
+
+All three agree to six decimals. This is the Frisch–Waugh–Lovell theorem from
+Week 1: regressing on unit dummies *is* demeaning within unit.
+
+```{r}
+#| label: fe-cost
+## how much variation survives the transformation?
+c(sd_D_raw = sd(d$D), sd_D_within = sd(dm$D_w))
+```
+
+That ratio is the price of fixed effects. Everything the estimator knows comes
+from the smaller number.
+
+# A clean $2\times2$ DID
+
+Restrict to two cohorts and two periods so the design is transparent.
+
+```{r}
+#| label: two-by-two
+d22 <- stg |>
+  filter(cohort %in% c(5, 10000), year %in% c(4, 6)) |>
+  mutate(treated = as.integer(cohort == 5),
+         post    = as.integer(year == 6))
+
+cellmeans <- d22 |> group_by(treated, post) |> summarise(m = mean(y), .groups = "drop")
+knitr::kable(tidyr::pivot_wider(cellmeans, names_from = post, values_from = m,
+                                names_prefix = "post_"), digits = 3)
+```
+
+```{r}
+#| label: two-by-two-hand
+cm <- with(cellmeans, setNames(m, paste0(treated, post)))
+did_hand <- (cm["11"] - cm["10"]) - (cm["01"] - cm["00"])
+
+did_reg <- coef(lm(y ~ treated * post, data = d22))["treated:post"]
+c(by_hand = did_hand, regression = did_reg)
+```
+
+The interaction coefficient *is* the difference in differences.
+
+# The staggered problem
+
+`base_stagg` is simulated, so we know the answer. The column
+`treatment_effect_true` records each observation's true effect.
+
+```{r}
+#| label: truth
+true_att <- mean(stg$treatment_effect_true[stg$D == 1])
+c(true_ATT = true_att)
+```
+
+```{r}
+#| label: fig-truth
+#| fig-cap: "The true effect by time since treatment. It grows in magnitude with exposure — exactly the dynamic pattern that breaks TWFE."
+stg |> filter(D == 1) |>
+  group_by(time_to_treatment) |>
+  summarise(truth = mean(treatment_effect_true)) |>
+  ggplot(aes(time_to_treatment, truth)) +
+  geom_line(colour = "navy", linewidth = .9) + geom_point(colour = "navy") +
+  labs(x = "periods since treatment", y = "true effect") +
+  theme_minimal(base_size = 10)
+```
+
+## What TWFE reports
+
+```{r}
+#| label: twfe-fail
+m_twfe <- feols(y ~ D | id + year, data = stg, cluster = ~ id)
+c(TWFE = coef(m_twfe)["D"], truth = true_att)
+```
+
+::: callout-important
+The true ATT is $-1$. TWFE reports roughly $-3.5$ — **three and a half times too
+large**. Nothing is misspecified in the usual sense: there is no omitted
+variable, no functional-form error, no measurement problem. The failure comes
+entirely from using already-treated units as controls while their own effects are
+still growing.
+:::
+
+## Where the damage comes from
+
+```{r}
+#| label: bacon
+bd <- bacon(y ~ D, data = stg, id_var = "id", time_var = "year")
+
+bd |> group_by(type) |>
+  summarise(total_weight = sum(weight),
+            weighted_estimate = sum(estimate * weight) / sum(weight),
+            n_comparisons = n(), .groups = "drop") |>
+  knitr::kable(digits = 4)
+```
+
+Read the `Earlier vs Later Treated` and `Later vs Earlier Treated` rows. The
+second is the **forbidden comparison** — already-treated units serving as
+controls. Its weight tells you how much of the TWFE estimate is contaminated.
+
+```{r}
+#| label: fig-bacon
+#| fig-cap: "Goodman-Bacon decomposition: each point is a 2x2 comparison, positioned by its weight and its estimate."
+ggplot(bd, aes(weight, estimate, colour = type, shape = type)) +
+  geom_point(size = 2, alpha = .8) +
+  geom_hline(yintercept = coef(m_twfe)["D"], linetype = 2) +
+  geom_hline(yintercept = true_att, colour = "firebrick") +
+  labs(x = "weight", y = "2x2 DID estimate", colour = NULL, shape = NULL) +
+  theme_minimal(base_size = 9) + theme(legend.position = "bottom")
+```
+
+The dashed line is the TWFE estimate — a weighted average of everything shown.
+The red line is the truth.
+
+# Estimators that work
+
+## Sun–Abraham
+
+```{r}
+#| label: sunab
+m_sa <- feols(y ~ sunab(cohort, year) | id + year,
+              data = stg, cluster = ~ id)
+summary(m_sa, agg = "att")
+```
+
+```{r}
+#| label: fig-sunab
+#| fig-cap: "Sun–Abraham event study. Pre-period coefficients hover around zero; post-period coefficients trace the true dynamic path."
+iplot(m_sa, main = "", xlab = "periods since treatment")
+```
+
+## Callaway–Sant'Anna
+
+```{r}
+#| label: cs
+set.seed(723)
+cs <- att_gt(yname = "y", tname = "year", idname = "id",
+             gname = "cohort", data = stg,
+             control_group = "notyettreated", bstrap = TRUE, cband = FALSE)
+cs_att <- aggte(cs, type = "simple", na.rm = TRUE)
+summary(cs_att)
+```
+
+```{r}
+#| label: fig-cs-dyn
+#| fig-cap: "Callaway–Sant'Anna dynamic effects, aggregated across cohorts by time since treatment."
+cs_dyn <- aggte(cs, type = "dynamic", na.rm = TRUE)
+ggdid(cs_dyn) + theme_minimal(base_size = 9)
+```
+
+## The scoreboard
+
+```{r}
+#| label: scoreboard
+tibble::tibble(
+  estimator = c("Truth", "TWFE", "Sun-Abraham", "Callaway-Sant'Anna"),
+  estimate = c(true_att, coef(m_twfe)["D"],
+               summary(m_sa, agg = "att")$coeftable[1, 1],
+               cs_att$overall.att)
+) |> knitr::kable(digits = 4)
+```
+
+Sun–Abraham and Callaway–Sant'Anna land near the truth of $-1$. TWFE does not,
+and TWFE is the specification that appears in thousands of published papers.
+
+(The two modern estimators are not exactly $-1$ because the "simple" aggregation
+weights cohorts and periods differently from a naive average over treated
+observations. That is a choice of estimand, not an error — see Exercise 3.)
+
+# A real application
+
+`did::mpdta` contains county-level teen employment and the timing of minimum-wage
+increases, 2003--2007.
+
+```{r}
+#| label: mpdta
+data(mpdta, package = "did")
+c(counties = n_distinct(mpdta$countyreal), years = n_distinct(mpdta$year),
+  cohorts = paste(sort(unique(mpdta$first.treat)), collapse = ", "))
+```
+
+```{r}
+#| label: fig-rawmeans
+#| fig-cap: "Raw group means of log teen employment by treatment cohort. Always draw this before any regression."
+mpdta |>
+  group_by(first.treat, year) |>
+  summarise(y = mean(lemp), .groups = "drop") |>
+  ggplot(aes(year, y, colour = factor(first.treat))) +
+  geom_line(linewidth = .8) + geom_point() +
+  labs(x = NULL, y = "mean log teen employment", colour = "cohort") +
+  theme_minimal(base_size = 10)
+```
+
+```{r}
+#| label: mpdta-compare
+## `treat` in mpdta is a time-invariant cohort flag; build the time-varying
+## treatment indicator ourselves
+mp <- mpdta |> mutate(D = as.integer(first.treat > 0 & year >= first.treat))
+
+m_twfe_mp <- feols(lemp ~ D | countyreal + year, data = mp,
+                   cluster = ~ countyreal)
+
+set.seed(723)
+cs_mp <- att_gt(yname = "lemp", tname = "year", idname = "countyreal",
+                gname = "first.treat", xformla = ~ lpop, data = mp,
+                control_group = "notyettreated", bstrap = TRUE)
+cs_mp_att <- aggte(cs_mp, type = "simple", na.rm = TRUE)
+
+c(TWFE = coef(m_twfe_mp)["D"], CS = cs_mp_att$overall.att)
+```
+
+```{r}
+#| label: fig-mpdta-dyn
+#| fig-cap: "Event-study estimates for the minimum-wage application, with conditional parallel trends adjusting for county population."
+ggdid(aggte(cs_mp, type = "dynamic", na.rm = TRUE)) + theme_minimal(base_size = 9)
+```
+
+Note the `xformla = ~ lpop` argument: this is **conditional** parallel trends,
+with the adjustment done by a doubly robust estimator. Week 6 has reappeared
+inside a DID.
+
+# How bad could parallel trends be?
+
+Rather than testing pre-trends and proceeding, bound the violation.
+
+```{r}
+#| label: honest-manual
+## A crude linear-extrapolation diagnostic -- NOT a Rambachan-Roth bound.
+## It ignores sampling uncertainty and assumes the violation stays linear.
+dyn <- aggte(cs_mp, type = "dynamic", na.rm = TRUE)
+pre <- data.frame(e = dyn$egt, att = dyn$att.egt) |> filter(e < 0)
+post_mean <- mean(dyn$att.egt[dyn$egt >= 0])
+
+## slope of the estimated pre-trend
+pre_slope <- if (nrow(pre) > 1) coef(lm(att ~ e, data = pre))["e"] else NA
+c(pre_trend_slope = pre_slope, mean_post_effect = post_mean,
+  periods_to_explain = post_mean / pre_slope)
+```
+
+Interpretation: if the untreated potential outcome had continued drifting at the
+estimated pre-trend slope, how many periods of drift would it take to account for
+the whole post-treatment effect? A small number means the design is fragile.
+
+::: callout-warning
+This is a back-of-envelope diagnostic, not a formal sensitivity analysis. It
+treats the estimated pre-trend as if it were known, ignores uncertainty in both
+pieces, and assumes any violation is linear. For the real thing, use `HonestDiD`
+and report the **breakdown value** $\bar M$ --- how large the post-treatment
+violation may be, relative to the largest violation seen before treatment, before
+your conclusion reverses.
+:::
+
+# Exercises
+
+1.  **Build the failure yourself.** Simulate a staggered design with three
+    cohorts and a *constant* treatment effect of 2. Show that TWFE recovers it.
+    Then make the effect grow with exposure and show that TWFE does not. Explain
+    the difference in one sentence.
+
+2.  **Not-yet-treated versus never-treated.** Re-run `att_gt()` with
+    `control_group = "nevertreated"`. Compare with the not-yet-treated version.
+    Which is more efficient, and under what assumption is each valid?
+
+3.  **Aggregation choices.** From the same `att_gt` object, compute
+    `aggte(type = "group")` and `aggte(type = "calendar")`. These are three
+    different estimands built from the same group-time effects. Write one sentence
+    describing each in words.
+
+4.  **Pre-trend power.** For the `mpdta` application, simulate what a linear
+    pre-trend of a given slope would do to the estimated pre-period coefficients.
+    How large would the slope have to be before your pre-trend test detects it
+    80% of the time?
+
+5.  **Levels or logs?** `mpdta` supplies only log employment, so construct
+    `emp <- exp(lemp)` and re-run the minimum-wage analysis in levels. Do the
+    conclusions change? Which scale would you have pre-committed to, and why?
+    (Recall from lecture that parallel trends in levels and in logs are different
+    --- and generally incompatible --- assumptions.)
+
+6.  **Clustering.** Re-estimate the `mpdta` TWFE model clustering on state
+    (`countyreal %/% 1000` gives the state FIPS code) rather than county. How many clusters are there, and what does Week 2 say you should
+    do about it?
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

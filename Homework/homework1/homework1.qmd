@@ -1,0 +1,256 @@
+---
+title: "\\textbf{SOCIOL 723: Problem Set 1}"
+subtitle: "\\textit{Assigned}: September 1 \\quad\\textbullet\\quad \\textit{Due}: Monday, September 14, 11:59PM"
+author: "Your name:"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1.1in, bottom=1.1in, left=1.1in, right=1.1in"
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \DeclareMathOperator{\trace}{tr}
+        \DeclareMathOperator{\rank}{rank}
+        \newcommand{\E}{E}
+        \newcommand{\En}{\mathbb{E}_n}
+        \newcommand{\X}{\bm{X}}
+        \newcommand{\Y}{\bm{y}}
+        \newcommand{\Pm}{\bm{P}}
+        \newcommand{\Mm}{\bm{M}}
+        \newcommand{\Ix}{\bm{I}}
+        \newcommand{\bhat}{\hat{\bm{\beta}}}
+        \newcommand{\ehat}{\hat{\bm{e}}}
+        \newcommand{\adv}{\,\textcolor{orange}{$\bigstar$}}
+        \usepackage{setspace}
+        \setstretch{1.15}
+        \setlength{\parindent}{0pt}
+        \setlength{\parskip}{6pt}
+        \makeatletter
+        \renewcommand{\maketitle}{%
+          \begin{center}
+            {\LARGE \bfseries \@title \par}
+            \vspace{0.7em}%
+            {\large \itshape \@date \par}
+            \vspace{0.7em}%
+            {\large \@author \par}
+          \end{center}\par\vspace{1em}
+        }
+        \makeatother
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source,
+together with the source file. Show your work: for algebra, the steps; for
+computation, the code. You may use AI assistance, but you are responsible for
+understanding and being able to explain every line you submit.
+
+Questions marked \adv{} are optional and will not be graded. They are there if
+you want to push on the general versions of the arguments.
+
+The data file is `Data/gss_earnings.rds`, the same extract used in lab.
+
+\hrulefill
+
+# Least Squares by Hand (20 points)
+
+Consider the bivariate model $Y_i = \beta_0 + \beta_1 X_i + \epsilon_i$ estimated
+by ordinary least squares on a sample of size $n$.
+
+1.  Starting from the objective $S(b_0,b_1) = \sum_i (Y_i - b_0 - b_1X_i)^2$,
+    derive the two normal equations. State clearly what each one implies about
+    the fitted residuals $\hat e_i$.
+
+2.  Show that $\hat\beta_0 = \bar Y - \hat\beta_1\bar X$ and
+    $\hat\beta_1 = \sum_i (X_i-\bar X)(Y_i-\bar Y) \big/ \sum_i (X_i - \bar X)^2$.
+
+3.  A colleague fits the model, plots $\hat e_i$ against $X_i$, observes no
+    correlation, and concludes that the model is correctly specified. In two or
+    three sentences, explain why this reasoning is wrong.
+
+4.  Suppose you rescale the regressor to $X_i^{\ast} = a + cX_i$ for constants
+    $a$ and $c\neq 0$. Derive what happens to $\hat\beta_0$, $\hat\beta_1$, the
+    residuals, and $R^2$. Use your result to explain what changes and what does
+    not when you center a variable.
+
+5.  Show that $R^2$ from the bivariate regression equals the squared sample
+    correlation between $X$ and $Y$.
+
+# Partialling Out (25 points)
+
+In lecture we showed that the coefficient $\beta_1$ in
+
+$$
+Y_i = \beta_1 D_i + \beta_2' W_i + \epsilon_i
+$$
+
+can be recovered from a bivariate regression of residualized variables,
+
+$$
+\tilde Y_i = \beta_1\tilde D_i + u_i,
+\qquad
+\beta_1 = \frac{\Cov(\tilde Y_i, \tilde D_i)}{\Var(\tilde D_i)},
+$$
+
+where $\tilde D_i = D_i - \gamma_{DW}'W_i$ and $\tilde Y_i = Y_i - \gamma_{YW}'W_i$
+are the residuals from regressing $D_i$ and $Y_i$ on $W_i$.
+
+1.  Show that $\beta_1$ can equally be recovered *without* residualizing the
+    outcome:
+    $$
+    \beta_1 = \frac{\Cov(Y_i, \tilde D_i)}{\Var(\tilde D_i)} .
+    $$
+    (Hint: write $Y_i = \tilde Y_i + \gamma_{YW}'W_i$ and use the fact that
+    $\tilde D_i$ is orthogonal to $W_i$ by construction.)
+
+2.  Is the symmetric statement also true? That is, does
+    $$
+    \beta_1 \overset{?}{=} \frac{\Cov(\tilde Y_i, D_i)}{\Var(\tilde D_i)} ?
+    $$
+    Prove it or give a counterexample.
+
+3.  Now consider what happens if you change the **denominator** as well --- that
+    is, if you simply regress $\tilde Y_i$ on the raw $D_i$:
+    $$
+    \frac{\Cov(\tilde Y_i, D_i)}{\Var(D_i)} .
+    $$
+    Show that this does *not* equal $\beta_1$, and show which direction the
+    discrepancy runs. Explain in one sentence what this tells you about which
+    residualization is doing the work.
+
+4.  Give an expression for $\Var(\hat\beta_1)$ in terms of $\sum_i \tilde d_i^2$,
+    where $\tilde d_i$ is the residualized regressor. Use it to explain, in plain
+    language, why adding a control that is highly correlated with your treatment
+    inflates the standard error, and why this is *not* a violation of any
+    regression assumption.
+
+5.  **Empirically.** Using the GSS extract, verify the Frisch--Waugh--Lovell
+    theorem for the coefficient on `educ` in
+
+    ```{r}
+    #| eval: false
+    lm(lnearn ~ educ + exper + I(exper^2) + female + black + wordsum + pareduc,
+       data = gss)
+    ```
+
+    by residualizing `educ` and `lnearn` on all the other regressors and running
+    the bivariate regression. Report both coefficients and confirm they agree to
+    at least six decimal places. Then produce the added-variable plot and report
+    $sd(\texttt{educ})$ and $sd(\widetilde{\texttt{educ}})$.
+
+6.  \adv{} Prove the general matrix statement: with
+    $\Mm_2 = \Ix - \X_2(\X_2'\X_2)^{-1}\X_2'$, show that
+    $\hat{\bm\beta}_1 = (\X_1'\Mm_2\X_1)^{-1}\X_1'\Mm_2\Y$.
+
+# Omitted Variable Bias (25 points)
+
+1.  Derive the omitted variable bias formula $\tilde\beta_1 = \beta_1 +
+    \beta_2\delta_1$ in scalar form, stating clearly where each assumption is used.
+
+2.  A researcher regresses log earnings on years of schooling and finds
+    $\hat\beta_1 = 0.12$. A referee objects that cognitive ability is omitted.
+    Suppose ability raises earnings and is positively associated with schooling.
+    In which direction is $\hat\beta_1$ biased? Would controlling for a *noisy
+    proxy* for ability (such as a 10-word vocabulary test) fully remove the bias?
+    Explain.
+
+3.  Now suppose the researcher instead controls for **occupational prestige**,
+    which is plausibly a consequence of schooling. Explain, using the language of
+    good and bad controls, why this is likely to make things worse rather than
+    better. What quantity is the coefficient on schooling now estimating?
+
+4.  **Empirically.** Using the GSS extract:
+
+    a.  Estimate the "long" model with `wordsum` and `pareduc` and the "short"
+        model without them.
+    b.  Estimate the two auxiliary regressions and verify numerically that
+        $\tilde\beta_{\texttt{educ}} - \beta_{\texttt{educ}} =
+        \beta_{\texttt{wordsum}}\delta_{\texttt{wordsum}} +
+        \beta_{\texttt{pareduc}}\delta_{\texttt{pareduc}}$.
+    c.  Repeat the exercise adding `prestige` to the long model. Report how the
+        `educ` coefficient moves, and comment on whether you would include it.
+
+5.  Suppose two variables are omitted, $W_1$ and $W_2$, with $\beta_{W_1}>0$,
+    $\delta_{W_1}>0$, $\beta_{W_2}>0$, $\delta_{W_2}<0$. Can you sign the total
+    bias? What would you need to know?
+
+# Projection and Residuals (15 points)
+
+Let $\Pm = \X(\X'\X)^{-1}\X'$ and $\Mm = \Ix_n - \Pm$.
+
+1.  Show that $\Pm$ and $\Mm$ are symmetric and idempotent, and that
+    $\Pm\Mm = \bm 0$.
+
+2.  Show that $\trace(\Pm) = k$ and $\trace(\Mm) = n-k$. Explain in one or two
+    sentences why this is the source of the $n-k$ in $s^2 = \ehat'\ehat/(n-k)$.
+
+3.  Using $\ehat = \Mm\bm\epsilon$, show that
+    $\E[\ehat'\ehat\mid \X] = \sigma^2(n-k)$ under homoskedasticity.
+
+4.  **Empirically.** Take a random subsample of 200 observations from the GSS
+    extract (`set.seed(1)`) and a design matrix with an intercept, `educ`, and
+    `exper`. Form $\Pm$ and $\Mm$ explicitly and verify all the properties above
+    numerically. Report the ten largest values of $h_{ii}$ and describe what those
+    respondents have in common.
+
+5.  \adv{} Show that $\Var(\hat e_i) = \sigma^2(1-h_{ii})$, and explain why this
+    motivates the HC2 and HC3 corrections.
+
+# Robust and Clustered Inference (15 points)
+
+1.  Derive, for the bivariate model and without assuming homoskedasticity,
+    $$
+    \Var(\hat\beta_1\mid X)
+    = \frac{\sum_i d_i^2\sigma_i^2}{\left(\sum_i d_i^2\right)^2},
+    \qquad d_i = X_i - \bar X,\ \ \sigma_i^2 = \Var(\epsilon_i \mid X).
+    $$
+    State the assumption you *do* use about the errors.
+
+2.  Explain, in a short paragraph a first-year graduate student could follow, why
+    it is legitimate to substitute $\hat e_i^2$ for $\sigma_i^2$ even though
+    $\hat e_i^2$ is a terrible estimate of any individual $\sigma_i^2$.
+
+3.  A study has 50 states, 2,000 respondents per state, a treatment that varies
+    only at the state level, and an intra-class correlation of $\rho_e = 0.02$.
+    Using the Moulton factor, by roughly what factor are the naive standard errors
+    too small? A colleague reports $t = 4.1$ from the naive standard error. What
+    is the corrected $t$?
+
+4.  **Empirically.** For the model
+    `lnearn ~ educ + exper + I(exper^2) + female + black`, compute the standard
+    error on `educ` five ways: classical, HC3, clustered on `psu`, clustered on
+    `year`, and clustered on `region`. Present them in a small table. The
+    `region`-clustered standard error is the *smallest* of the five. Explain why
+    that is a red flag rather than a finding, and say which one you would report
+    and why.
+
+5.  A referee writes: "The authors should use robust standard errors, since the
+    key regressor is likely endogenous." Respond in two or three sentences.
+
+# Simulation (Optional, ungraded)
+
+Write a simulation in which the true model is
+$Y_i = 1 + 0.5X_i + \epsilon_i$ with $X_i\sim N(0,1)$ and
+$\epsilon_i \sim N\!\big(0,\ (0.5e^{0.8X_i})^2\big)$, with $n = 200$. Over 5,000
+replications, record the coverage of nominal 95% confidence intervals built from
+(a) classical standard errors, (b) HC0, (c) HC3, and (d) a pairs bootstrap
+percentile interval. Present the four coverage rates in a table and comment.
+
+\vspace{1em}
+\hrulefill
+
+**A note on effort.** Parts 1--3 of each question are algebra and can be done on
+paper. The empirical parts should take under an hour once you have Lab 1 and Lab
+2 open beside you. If you find yourself spending far longer than that, come to
+office hours rather than grinding.

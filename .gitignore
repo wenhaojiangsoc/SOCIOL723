@@ -1,0 +1,12 @@
+logs/
+.claude/
+.DS_Store
+*.aux
+*.log
+*.nav
+*.snm
+*.toc
+*.out
+*.synctex.gz
+*_files/
+.Rhistory

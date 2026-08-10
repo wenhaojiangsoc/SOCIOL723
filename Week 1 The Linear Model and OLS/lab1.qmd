@@ -1,0 +1,607 @@
+---
+title: "\\textbf{Lab 1: Matrix Algebra and OLS by Hand}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, August 27"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator*{\argmin}{arg\,min}
+        \DeclareMathOperator{\trace}{tr}
+        \DeclareMathOperator{\rank}{rank}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \newcommand{\En}{\mathbb{E}_n}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.6, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+By the end of this lab you should be able to:
+
+1.  Organize an analysis in RStudio and Quarto so that it is reproducible.
+2.  Do the linear algebra of the linear model in `R`: transposes, products,
+    inverses, rank, and traces.
+3.  Compute $\hat{\bm{\beta}} = (\bm{X}'\bm{X})^{-1}\bm{X}'\bm{y}$
+    by hand and verify that it matches `lm()`.
+4.  Construct the projection matrix $\bm{P}$ and the residual maker
+    $\bm{M}$, and verify their properties numerically.
+5.  Verify the Frisch--Waugh--Lovell theorem and the omitted-variable-bias
+    formula in real data.
+
+Everything below runs on base `R` plus a handful of packages. Nothing here
+requires more linear algebra than we covered in lecture.
+
+# Getting set up
+
+## Packages
+
+```{r}
+#| label: packages
+library(dplyr)      # data manipulation
+library(ggplot2)    # graphics
+library(broom)      # tidy() / augment() for model objects
+library(modelsummary) # regression tables
+```
+
+If any of these are missing, install them once with
+`install.packages(c("dplyr", "ggplot2", "broom", "modelsummary"))`.
+
+## Working reproducibly
+
+Three habits, which I will assume for every problem set:
+
+-   **Use an RStudio Project.** `File > New Project`. Never use `setwd()`;
+    paths should be relative to the project root.
+-   **Write in Quarto (`.qmd`) or RMarkdown (`.Rmd`).** Your submission should be
+    a rendered PDF produced from a source file that I could run myself.
+-   **Set a seed** before anything random: `set.seed(1)`.
+
+A useful discipline: restart `R` (`Session > Restart R`, or
+`Cmd/Ctrl+Shift+F10`) and re-render from a clean session before you submit.
+If it does not run from scratch, it is not reproducible.
+
+# The data
+
+We use an extract from the **General Social Survey** (NORC) cumulative file,
+pooling the 2010, 2012, 2014, 2016, 2018 and 2022 waves. The sample is
+restricted to respondents working full time, aged 25--64, with positive personal
+income and non-missing values on the analysis variables.
+
+```{r}
+#| label: load-data
+gss <- readRDS("../Data/gss_earnings.rds")
+dim(gss)
+str(gss, give.attr = FALSE)
+```
+
+| Variable | Meaning |
+|:--------------|:--------------------------------------------------------|
+| `lnearn` | log of personal income, constant dollars (`realrinc`) |
+| `educ` | years of schooling completed |
+| `exper` | potential experience, $\max(\text{age} - \text{educ} - 6,\, 0)$ |
+| `female`, `black`, `otherace` | indicator variables |
+| `wordsum` | score on a 10-word vocabulary test (proxy for verbal ability) |
+| `pareduc` | highest education of either parent, in years |
+| `prestige`, `sei` | occupational prestige and socioeconomic index |
+| `hours` | usual hours worked last week |
+| `region` | Census division (9 categories) |
+| `stratum`, `psu` | GSS sampling stratum and primary sampling unit (used in Lab 2) |
+| `wt` | post-stratification sampling weight |
+
+::: callout-note
+The script that builds this file from the raw cumulative file is in
+`Data/build_gss_extract.R`. You do not need to run it.
+:::
+
+A first look:
+
+```{r}
+#| label: describe
+gss |>
+  summarise(across(c(lnearn, educ, exper, wordsum, pareduc, hours),
+                   list(mean = mean, sd = sd), .names = "{.col}_{.fn}")) |>
+  t() |> round(2)
+```
+
+```{r}
+#| label: fig-cef
+#| fig-cap: "The CEF of log earnings given years of schooling, GSS 2010--2022."
+gss |>
+  group_by(educ) |>
+  summarise(m = mean(lnearn), n = n()) |>
+  filter(n >= 20) |>
+  ggplot(aes(educ, m)) +
+  geom_point(aes(size = n), colour = "navy", alpha = .7) +
+  geom_smooth(method = "lm", se = FALSE, colour = "firebrick", linewidth = .6) +
+  labs(x = "Years of schooling", y = "Mean log earnings", size = "n") +
+  theme_minimal(base_size = 10)
+```
+
+The points are the **conditional expectation function** estimated cell by cell
+(this is what a *saturated* regression would fit). The line is the **best linear
+approximation** to it. Notice that the CEF is not exactly linear --- it is
+convex above roughly 12 years --- but the line summarizes it reasonably well.
+
+# Matrix algebra in `R`
+
+## Building blocks
+
+```{r}
+#| label: matrix-basics
+A <- matrix(c(2, 1, 1, 3), nrow = 2)        # filled by column
+b <- c(1, 2)
+
+A
+t(A)              # transpose
+A %*% b           # matrix product (NOT A * b, which is elementwise)
+solve(A)          # inverse
+solve(A) %*% A    # should be the identity
+diag(2)           # 2x2 identity
+```
+
+Two facts worth internalizing now, because they recur constantly:
+
+```{r}
+#| label: matrix-facts
+crossprod(A)          # equals t(A) %*% A, but faster and more accurate
+all.equal(crossprod(A), t(A) %*% A)
+
+sum(diag(A))          # the trace
+```
+
+## Rank, invertibility, and collinearity
+
+$(\bm{X}'\bm{X})^{-1}$ exists if and only if $\bm{X}$ has full
+column rank. Here is what a rank failure looks like:
+
+```{r}
+#| label: rank
+X_bad <- cbind(1, gss$educ, gss$educ * 2)   # third column is redundant
+qr(X_bad)$rank                              # 2, not 3
+try(solve(crossprod(X_bad)), silent = TRUE) |> class()
+```
+
+`lm()` does not error --- it drops the offending column and reports `NA`:
+
+```{r}
+#| label: rank-lm
+coef(lm(lnearn ~ educ + I(educ * 2), data = gss))
+```
+
+::: callout-warning
+An `NA` coefficient is *never* a mystery: it means the column is an exact
+linear combination of the others. The most common cause is the dummy variable
+trap (including all $J$ category indicators plus an intercept).
+:::
+
+## Positive definiteness
+
+$\bm{X}'\bm{X}$ is positive semi-definite by construction, and positive
+definite when $\bm{X}$ has full column rank. We can check via eigenvalues:
+
+```{r}
+#| label: posdef
+X <- model.matrix(~ educ + exper + I(exper^2) + female + black, data = gss)
+ev <- eigen(crossprod(X), only.values = TRUE)$values
+range(ev)
+all(ev > 0)
+```
+
+The ratio of the largest to smallest eigenvalue is the **condition number**; a
+very large value warns of near-collinearity (numerically fragile, and
+substantively a warning that the data carry little independent information about
+some coefficient).
+
+```{r}
+#| label: condnum
+kappa(crossprod(X), exact = TRUE)
+```
+
+# OLS by hand
+
+## The estimator
+
+```{r}
+#| label: ols-by-hand
+y <- gss$lnearn
+X <- model.matrix(~ educ + exper + I(exper^2) + female + black, data = gss)
+
+n <- nrow(X); k <- ncol(X)
+c(n = n, k = k)
+
+XtX     <- crossprod(X)          # X'X   (k x k)
+Xty     <- crossprod(X, y)       # X'y   (k x 1)
+beta_hat <- solve(XtX, Xty)      # solve(A, b) is better than solve(A) %*% b
+round(beta_hat, 4)
+```
+
+Compare with `lm()`:
+
+```{r}
+#| label: ols-check
+fit <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
+all.equal(as.vector(beta_hat), unname(coef(fit)))
+```
+
+::: callout-tip
+`solve(A, b)` solves the linear system directly instead of forming the inverse.
+It is faster and numerically more stable. In production code you would go
+further and use the QR decomposition --- which is what `lm()` actually does:
+`qr.solve(X, y)`.
+:::
+
+```{r}
+#| label: qr
+all.equal(as.vector(qr.solve(X, y)), as.vector(beta_hat))
+```
+
+## Residuals, $s^2$, and standard errors
+
+```{r}
+#| label: ols-se
+e   <- y - X %*% beta_hat            # residuals
+s2  <- sum(e^2) / (n - k)            # unbiased estimator of sigma^2
+V   <- s2 * solve(XtX)               # classical variance matrix
+se  <- sqrt(diag(V))
+
+round(cbind(estimate = beta_hat, se = se,
+            t = beta_hat / se), 4)
+```
+
+```{r}
+#| label: ols-se-check
+round(summary(fit)$coefficients, 4)
+```
+
+Identical. The default standard errors that `R` prints are exactly
+$\sqrt{\operatorname{diag}\!\big(s^2(\bm{X}'\bm{X})^{-1}\big)}$ ---
+i.e. they *assume homoskedasticity*. Next week we replace them.
+
+## The mechanical orthogonality conditions
+
+```{r}
+#| label: orthogonality
+round(crossprod(X, e), 8)     # X'e = 0, up to floating point
+round(sum(e), 8)              # residuals sum to zero (constant included)
+round(cor(X %*% beta_hat, e), 8)  # fitted values orthogonal to residuals
+```
+
+These are identities, true in *every* sample no matter how badly specified the
+model is. They are not evidence of anything.
+
+# The geometry: $\bm{P}$ and $\bm{M}$
+
+With $n = `r nrow(X)`$, the matrix $\bm{P}$ is
+$`r nrow(X)` \times `r nrow(X)`$ --- about
+`r round(nrow(X)^2 * 8 / 1e9, 1)` GB if we formed it. So we work with a random
+subsample to demonstrate the properties, and use the implicit form for the full
+data.
+
+```{r}
+#| label: projection
+set.seed(1)
+idx <- sample(n, 300)
+Xs  <- X[idx, ]; ys <- y[idx]
+
+P <- Xs %*% solve(crossprod(Xs)) %*% t(Xs)
+M <- diag(nrow(Xs)) - P
+
+## symmetric
+all.equal(P, t(P))
+## idempotent
+all.equal(P %*% P, P)
+all.equal(M %*% M, M)
+## orthogonal to each other
+max(abs(P %*% M))
+## P X = X and M X = 0
+all.equal(P %*% Xs, Xs, check.attributes = FALSE)
+max(abs(M %*% Xs))
+## traces are the dimensions of the two subspaces
+c(trace_P = sum(diag(P)), k = ncol(Xs),
+  trace_M = sum(diag(M)), n_minus_k = nrow(Xs) - ncol(Xs))
+```
+
+## Leverage
+
+The diagonal of $\bm{P}$ is the leverage $h_{ii}$. On the full sample we get
+it without ever forming $\bm{P}$:
+
+```{r}
+#| label: leverage
+h <- hatvalues(fit)
+c(mean = mean(h), theoretical = k / n, max = max(h))
+```
+
+```{r}
+#| label: fig-leverage
+#| fig-cap: "Leverage against years of schooling. The high-leverage observations are those with unusual *covariate* values, not unusual outcomes."
+tibble::tibble(h = h, educ = gss$educ, exper = gss$exper) |>
+  ggplot(aes(educ, h)) +
+  geom_jitter(width = .18, alpha = .18, size = .5, colour = "navy") +
+  geom_hline(yintercept = k / n, linetype = 2, colour = "firebrick") +
+  labs(x = "Years of schooling", y = expression(h[ii])) +
+  theme_minimal(base_size = 10)
+```
+
+## The sum-of-squares decomposition
+
+```{r}
+#| label: ssq
+yhat <- fitted(fit)
+TSS <- sum((y - mean(y))^2)
+ESS <- sum((yhat - mean(y))^2)
+RSS <- sum(residuals(fit)^2)
+
+c(TSS = TSS, ESS_plus_RSS = ESS + RSS)
+c(R2_manual = ESS / TSS, R2_lm = summary(fit)$r.squared)
+```
+
+And the model-comparison reading of $R^2$: it is $PRE$ against the
+intercept-only model.
+
+```{r}
+#| label: pre
+fit_c <- lm(lnearn ~ 1, data = gss)              # MODEL C
+SSE_C <- sum(residuals(fit_c)^2)
+SSE_A <- sum(residuals(fit)^2)                    # MODEL A
+c(PRE = (SSE_C - SSE_A) / SSE_C, R2 = summary(fit)$r.squared)
+```
+
+# Frisch--Waugh--Lovell
+
+We now verify FWL on the return to schooling. Partition
+$\bm{X} = [\,\bm{X}_1 \ \ \bm{X}_2\,]$ with $\bm{X}_1 =$ `educ`
+and $\bm{X}_2 =$ everything else.
+
+```{r}
+#| label: fwl
+## Step 1: residualize the treatment on the controls
+d_tilde <- residuals(lm(educ ~ exper + I(exper^2) + female + black, data = gss))
+
+## Step 2: residualize the outcome on the controls
+y_tilde <- residuals(lm(lnearn ~ exper + I(exper^2) + female + black, data = gss))
+
+## Step 3: bivariate regression of the residuals
+b_fwl <- coef(lm(y_tilde ~ d_tilde))["d_tilde"]
+
+c(full_regression = coef(fit)["educ"], fwl = b_fwl)
+```
+
+Both forms of the regression-anatomy formula:
+
+```{r}
+#| label: anatomy
+c(cov_ytilde_dtilde = cov(y_tilde, d_tilde) / var(d_tilde),
+  cov_y_dtilde      = cov(gss$lnearn, d_tilde) / var(d_tilde))
+```
+
+In fact *all three* numerators agree, for the same reason:
+
+```{r}
+#| label: anatomy-three
+c(both_residualized = cov(y_tilde, d_tilde) / var(d_tilde),
+  only_regressor    = cov(gss$lnearn, d_tilde) / var(d_tilde),
+  only_outcome      = cov(y_tilde, gss$educ) / var(d_tilde))
+```
+
+What you *cannot* change is the **denominator**:
+
+```{r}
+#| label: anatomy-wrong
+c(correct = coef(lm(y_tilde ~ d_tilde))["d_tilde"],
+  wrong   = coef(lm(y_tilde ~ gss$educ))[2])
+```
+
+::: callout-note
+**Why does the second one fail?** Regressing $\tilde Y$ on raw `educ` divides by
+$\widehat{\Var}(\texttt{educ})$ instead of $\widehat{\Var}(\widetilde{\texttt{educ}})$.
+Since residualizing can only shrink the variance, the denominator is too large
+and the estimate is attenuated. The numerators are all equal because the part
+removed from $Y$ lies in the span of the controls and is orthogonal to
+$\tilde D$. Work this out on paper --- it is Question 2 of Problem Set 1.
+:::
+
+The residuals are also identical, as the theorem promises:
+
+```{r}
+#| label: fwl-resid
+all.equal(unname(residuals(lm(y_tilde ~ d_tilde))), unname(residuals(fit)))
+```
+
+## The added-variable plot
+
+```{r}
+#| label: fig-avp
+#| fig-cap: "Added-variable plot for years of schooling. The slope of the fitted line *is* the multivariate coefficient on `educ`."
+tibble::tibble(d_tilde, y_tilde) |>
+  ggplot(aes(d_tilde, y_tilde)) +
+  geom_point(alpha = .12, size = .5, colour = "navy") +
+  geom_smooth(method = "lm", se = FALSE, colour = "firebrick", linewidth = .7) +
+  labs(x = "Years of schooling | controls", y = "Log earnings | controls") +
+  theme_minimal(base_size = 10)
+```
+
+Note how much of the spread in `educ` survives residualization
+(`sd(d_tilde)` $=$ `r round(sd(d_tilde), 2)` versus
+`sd(educ)` $=$ `r round(sd(gss$educ), 2)`). When that ratio gets small, the
+coefficient is being estimated off a thin slice of the data, and its standard
+error will show it.
+
+# Omitted variable bias, numerically
+
+Short regression omits verbal ability and parental education; long regression
+includes them.
+
+```{r}
+#| label: ovb
+long  <- lm(lnearn ~ educ + exper + I(exper^2) + female + black +
+              wordsum + pareduc, data = gss)
+short <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
+
+## auxiliary regressions: each omitted variable on the included ones
+aux_w <- lm(wordsum ~ educ + exper + I(exper^2) + female + black, data = gss)
+aux_p <- lm(pareduc ~ educ + exper + I(exper^2) + female + black, data = gss)
+
+beta_short <- coef(short)["educ"]
+beta_long  <- coef(long)["educ"]
+bias_pred  <- coef(long)["wordsum"] * coef(aux_w)["educ"] +
+              coef(long)["pareduc"] * coef(aux_p)["educ"]
+
+round(c(short = beta_short,
+        long = beta_long,
+        long_plus_bias = beta_long + bias_pred,
+        bias = bias_pred), 5)
+```
+
+The identity $\tilde\beta_1 = \beta_1 + \sum_j \beta_{2j}\delta_{1j}$ holds
+exactly, to machine precision. Note the direction: ability and family background
+are positively associated with schooling and positively associated with
+earnings, so omitting them **overstates** the return to schooling.
+
+```{r}
+#| label: ovb-table
+modelsummary(list("(1) Bivariate" = lm(lnearn ~ educ, data = gss),
+                  "(2) + demographics" = short,
+                  "(3) + ability, background" = long),
+             coef_map = c("educ" = "Years of schooling",
+                          "wordsum" = "Vocabulary score",
+                          "pareduc" = "Parental education"),
+             gof_map = c("nobs", "r.squared"),
+             stars = TRUE, output = "markdown")
+```
+
+::: callout-important
+Everything in this section is *algebra*. It tells you how the estimate moves
+when you add a control. It does **not** tell you whether the long regression
+recovers the causal return to schooling --- for that you would need to argue
+that nothing else is omitted, which is a substantive claim, not a statistical
+one. That argument is what Weeks 5--11 are about.
+:::
+
+# Interpretation: functional form
+
+## Logs
+
+With $\ln Y$ on the left, a coefficient $\beta$ is approximately the
+proportional change in $Y$ per unit of $X$. The exact percentage change is
+$100(e^{\beta}-1)$.
+
+```{r}
+#| label: logs
+b <- coef(long)["educ"]
+c(approx_pct = 100 * b, exact_pct = 100 * (exp(b) - 1))
+```
+
+For small $\beta$ the two agree; by $\beta = 0.5$ they do not
+($50\%$ vs $64.9\%$).
+
+## Quadratics
+
+`exper` enters quadratically, so the marginal effect depends on where you
+evaluate it:
+
+```{r}
+#| label: quadratic
+b1 <- coef(long)["exper"]; b2 <- coef(long)["I(exper^2)"]
+sapply(c(0, 10, 20, 30, 40), function(x) b1 + 2 * b2 * x) |>
+  setNames(paste0("exper=", c(0, 10, 20, 30, 40))) |> round(4)
+
+-b1 / (2 * b2)      # turning point, in years of experience
+```
+
+## Interactions
+
+```{r}
+#| label: interaction
+fit_int <- lm(lnearn ~ educ * female + exper + I(exper^2) + black +
+                wordsum + pareduc, data = gss)
+round(coef(fit_int)[c("educ", "female", "educ:female")], 4)
+```
+
+The return to schooling is `educ` for men and `educ + educ:female` for women.
+Never read the `female` main effect as "the gender gap": with an interaction it
+is the gap at `educ == 0`, which is outside the data.
+
+## Saturating the key covariate
+
+```{r}
+#| label: saturate
+fit_sat <- lm(lnearn ~ factor(educ) + exper + I(exper^2) + female + black +
+                wordsum + pareduc, data = gss)
+c(linear_R2 = summary(long)$r.squared,
+  saturated_R2 = summary(fit_sat)$r.squared)
+anova(long, fit_sat)
+```
+
+The $F$-test here is exactly the model comparison from *Social Statistics I*:
+is the reduction in $SSE$ from letting every year of schooling have its own
+coefficient large enough to justify the extra parameters?
+
+# Exercises
+
+Work these during lab; they are not collected, but Problem Set 1 builds directly
+on them.
+
+1.  **Rank.** Construct a design matrix that includes a full set of nine `region`
+    dummies *and* an intercept. Confirm with `qr()$rank` that it is rank
+    deficient, and confirm what `lm()` does about it.
+
+2.  **The trace identity.** On the 300-observation subsample, verify numerically
+    that $\E[\hat{\bm e}'\hat{\bm e}] = \sigma^2(n-k)$ by simulation: fix
+    `Xs`, draw $\bm\epsilon \sim N(0, 4\bm{I})$, generate
+    $\bm y = \bm{X}_s\bm{\beta} + \bm\epsilon$ for some $\bm{\beta}$ you
+    choose, and average $\hat{\bm e}'\hat{\bm e}$ over 2,000 replications.
+    Compare to $4 \times (300 - k)$.
+
+3.  **FWL as fixed effects.** Regress `lnearn` on `educ` and a full set of
+    `region` dummies. Then (a) demean `lnearn` and `educ` within `region` and
+    regress the demeaned outcome on the demeaned regressor. Confirm the slopes
+    match. This is the within estimator we will meet in Week 10.
+
+4.  **Sign the bias.** Suppose you omit `hours` from the long regression. Predict
+    the sign of the bias in the `educ` coefficient *before* running anything,
+    using the OVB formula and the two auxiliary regressions. Then check.
+
+5.  **Leverage.** Find the ten highest-leverage observations. What makes them
+    unusual? Refit dropping them --- how much does the `educ` coefficient move?
+    (Compare to its standard error before concluding anything.)
+
+6.  **Variance inflation.** Compute $\Var(\hat\beta_{\texttt{educ}})$ from the
+    formula $s^2 / \sum_i \tilde d_i^2$ using the residualized `d_tilde` from
+    the FWL section, and confirm it matches the `educ` entry of
+    $s^2(\bm{X}'\bm{X})^{-1}$.
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

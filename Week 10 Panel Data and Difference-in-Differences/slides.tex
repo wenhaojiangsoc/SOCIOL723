@@ -1,0 +1,712 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SOCIOL 723 -- Social Statistics II
+%% Week 10 -- Panel Data and Difference-in-Differences
+%% Wenhao Jiang, Duke University, Fall 2026
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[aspectratio=169,11pt,xcolor=dvipsnames]{beamer}
+\mode<presentation>
+
+%% ---- fonts: Latin Modern Roman (the LaTeX default), serif throughout -------
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usefonttheme{serif}
+\renewcommand{\familydefault}{\rmdefault}
+
+%% ---- packages --------------------------------------------------------------
+\usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[english]{babel}
+
+\newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
+\newcommand{\srct}[1]{#1}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\plim}{plim}
+\newcommand{\indep}{\perp\!\!\!\perp}
+
+%% ---- notation conventions (course-wide) ------------------------------------
+\newcommand{\E}{E}
+\newcommand{\En}{\mathbb{E}_n}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\bm{X}}
+\newcommand{\Y}{\bm{y}}
+\newcommand{\Ix}{\bm{I}}
+\newcommand{\zero}{\bm{0}}
+\newcommand{\bhat}{\hat{\bm{\beta}}}
+\newcommand{\dto}{\overset{d}{\longrightarrow}}
+\newcommand{\pto}{\overset{p}{\longrightarrow}}
+\usetikzlibrary{shapes,decorations.pathmorphing}
+\newcommand{\lik}{\mathcal{L}}
+\newcommand{\loglik}{\ell}
+\newcommand{\Info}{\mathcal{I}}
+\newcommand{\SE}{\widehat{\text{SE}}}
+
+%% ---- theme -----------------------------------------------------------------
+\usetheme{default}
+\useoutertheme[subsection=false]{miniframes}
+\setbeamertemplate{mini frames}{}
+
+\definecolor{dukeblue}{RGB}{1,33,105}
+\definecolor{accent}{RGB}{200,78,0}
+\definecolor{softgray}{RGB}{242,242,245}
+
+\setbeamercolor{structure}{fg=dukeblue}
+\setbeamercolor{frametitle}{fg=dukeblue,bg=white}
+\setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{alerted text}{fg=accent}
+\setbeamercolor{block title}{fg=white,bg=dukeblue}
+\setbeamercolor{block body}{fg=black,bg=softgray}
+\setbeamercolor{block title alerted}{fg=white,bg=accent}
+\setbeamercolor{block body alerted}{fg=black,bg=softgray}
+
+\setbeamertemplate{footline}[page number]
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamerfont{footnote}{size=\scriptsize}
+\setbeamerfont{caption}{size=\footnotesize}
+\setbeamertemplate{subsection in head/foot}{}
+\setbeamertemplate{subsection in head/foot shaded}{}
+\setbeamertemplate{caption}[numbered]
+
+\newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+
+\setbeamertemplate{section page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
+  \vskip4pt{\color{dukeblue}\rule{0.35\linewidth}{1pt}\par}
+  \vfill\end{centering}}
+\setbeamertemplate{subsection page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\large\bfseries\insertsubsectionhead\par}
+  \vfill\end{centering}}
+
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{5pt}%
+  \setlength{\belowdisplayskip}{5pt}%
+  \setlength{\abovedisplayshortskip}{2pt}%
+  \setlength{\belowdisplayshortskip}{3pt}%
+}
+\setbeamertemplate{frametitle}{%
+  \vskip4pt\usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}%
+  \insertframetitle\par\vskip2pt}
+\setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
+
+%% ---- title -----------------------------------------------------------------
+\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
+\subtitle{\large Week 10 --- Panel Data and Difference-in-Differences\\[-8pt]}
+\author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
+\institute[Duke]{}
+\titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
+\date{\large Department of Sociology, Fall 2026}
+
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Today}
+  \tableofcontents
+\end{frame}
+
+\begin{frame}{A Third Source of Variation}
+So far: adjust for observables (Week 6), find an instrument (Week 7), find a
+threshold (Week 9). Today: use \alert{variation over time within the same unit}.
+\vskip4pt
+\begin{block}{The core idea}
+If we observe the same unit before and after, we can difference away everything
+about that unit that does not change --- including confounders we never measured
+and could not name.
+\end{block}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item That is a genuinely powerful trick, and it is why panel data are prized.
+  \item It buys nothing against confounders that \emph{do} change over time, and
+        the price is a new and demanding assumption about counterfactual trends.
+  \item The last decade has shown that the standard implementation ---
+        two-way fixed effects --- is badly behaved in exactly the setting
+        sociologists use most.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Panel Data]{Panel Data and Unobserved Heterogeneity}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Error Components Model}
+With unit $i$ observed at times $t = 1,\dots,T$:
+\begin{align*}
+  Y_{it} = \beta D_{it} + \underbrace{\alpha_i}_{\text{unit effect}}
+         + \underbrace{\lambda_t}_{\text{time effect}} + \epsilon_{it} .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item $\alpha_i$ absorbs \emph{every} time-invariant characteristic of unit $i$
+        --- observed or not, nameable or not.
+  \item Pooled OLS is biased whenever $\Cov(D_{it},\alpha_i)\neq 0$: states that
+        adopt a policy differ persistently from states that do not.
+  \item \textbf{Random effects} assumes $\Cov(D_{it},\alpha_i)=0$ and is more
+        efficient if true. It is almost never true in the settings we care about.
+        The Hausman test compares the two; when in doubt, use fixed effects.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[shrink=10]{The Within Transformation, Explicitly}
+Average the model within unit and subtract:
+\begin{align*}
+  Y_{it} &= \beta D_{it} + \alpha_i + \lambda_t + \epsilon_{it} \\
+  \bar Y_{i\cdot} &= \beta \bar D_{i\cdot} + \alpha_i + \bar\lambda + \bar\epsilon_{i\cdot} \\[2pt]
+  \Longrightarrow\quad
+  Y_{it} - \bar Y_{i\cdot} &= \beta\big(D_{it}-\bar D_{i\cdot}\big)
+  + (\lambda_t - \bar\lambda) + \big(\epsilon_{it}-\bar\epsilon_{i\cdot}\big) .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item $\alpha_i$ is gone --- \alert{whatever it was}. That is the whole appeal:
+        we never had to name it, measure it, or model it.
+  \item Anything time-invariant is annihilated with it. You cannot estimate the
+        effect of race, sex, or birth cohort in a unit-fixed-effects model, not
+        because they do not matter but because there is no within-unit variation.
+  \item Two-way fixed effects demeans within unit \emph{and} within period,
+        removing common shocks.
+  \item The equivalence with unit dummies is \alert{exactly FWL from Week 1}:
+        regressing on unit dummies partials out the unit means.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=10]{Random Effects, and Why We Usually Do Not Use It}
+Random effects treats $\alpha_i$ as a draw from a distribution and assumes
+\begin{align*}
+  \Cov(D_{it}, \alpha_i) = 0 .
+\end{align*}
+It then estimates by GLS, a matrix-weighted average of the within and between
+estimators.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{If the assumption holds}, RE is more efficient and can identify
+        coefficients on time-invariant covariates. That is a real gain.
+  \item \textbf{The assumption says states that adopt a policy are, on average,
+        no different from states that do not.} In the settings sociologists study
+        it is almost never plausible.
+  \item The \textbf{Hausman test} compares the two: a large difference indicates
+        $\Cov(D,\alpha)\neq 0$ and favours FE. But failing to reject is weak
+        evidence, as usual.
+  \item \alert{The default should be fixed effects}, with random effects reserved
+        for cases where you can defend the exogeneity of the unit effect --- or
+        where the multilevel structure is itself the object of interest.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=10]{Nickell Bias and the FE-versus-LDV Choice}
+Add a lagged dependent variable to a fixed-effects model:
+\begin{align*}
+  Y_{it} = \rho Y_{i,t-1} + \beta D_{it} + \alpha_i + \epsilon_{it} .
+\end{align*}
+Demeaning makes $Y_{i,t-1} - \bar Y_{i\cdot}$ mechanically correlated with
+$\epsilon_{it} - \bar\epsilon_{i\cdot}$, because $\bar Y_{i\cdot}$ contains
+$Y_{it}$, which contains $\epsilon_{it}$.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item The resulting \alert{Nickell bias} is $O(1/T)$: severe in short panels
+        ($T = 3$), negligible in long ones. Arellano--Bond-type GMM instruments
+        the lagged difference with deeper lags.
+  \item \textbf{FE and LDV embody different selection stories}: FE assumes
+        selection on time-invariant traits; LDV assumes selection on prior
+        outcomes. They can both be valid, but they are different assumptions and
+        will generally give different answers.
+  \item \srct{Angrist and Pischke (2009)} suggest running both: under some
+        conditions the two \alert{bracket} the truth, so agreement is reassuring
+        and disagreement tells you how much the selection story matters. Treat
+        that as a heuristic, not a theorem.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Three Ways to Remove $\alpha_i$}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{lll}
+\toprule
+Estimator & Transformation & Note \\
+\midrule
+Within (fixed effects) & $Y_{it}-\bar Y_i = \beta(D_{it}-\bar D_i) + \tilde\epsilon_{it}$
+  & the default \\
+First difference & $\Delta Y_{it} = \beta \Delta D_{it} + \Delta\epsilon_{it}$
+  & equals within when $T = 2$ \\
+Unit dummies & include $n-1$ indicators & numerically identical to within \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip5pt
+\begin{itemize}\itemsep2pt
+  \item The equivalence of demeaning and dummies is \alert{exactly FWL from
+        Week 1}: regressing on unit dummies partials out the unit means.
+  \item Anything time-invariant is annihilated. You cannot estimate the effect of
+        race, sex, or birth cohort in a unit-fixed-effects model --- not because
+        they do not matter but because there is no within-unit variation.
+  \item Within and first differences differ when $T > 2$ and disagree under
+        serial correlation; report which you used and why.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Fixed Effects Costs}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Precision}. You are using only within-unit variation. If $D_{it}$
+        barely moves within units, the standard error explodes --- FWL again.
+  \item \textbf{Measurement error is amplified}. Differencing removes signal and
+        keeps noise, so attenuation bias gets worse.
+  \item \textbf{Nickell bias}. With a lagged dependent variable and fixed effects,
+        demeaning correlates the regressor with the transformed error; the bias is
+        $O(1/T)$ and serious in short panels.
+  \item \textbf{Lagged dependent variable versus fixed effects} is a real choice,
+        not a nuisance: FE assumes selection on time-invariant traits, LDV assumes
+        selection on prior outcomes. \srct{Angrist and Pischke (2009)} suggest
+        running both --- they typically bracket the truth.
+  \item \alert{Always cluster on the unit} (Week 2). Serial correlation within
+        units is the norm.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[DID]{Difference-in-Differences}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Canonical $2\times 2$}
+Two groups, two periods. One group is treated in period 2.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{lccc}
+\toprule
+ & Before & After & Difference \\
+\midrule
+Treated & $\E[Y\mid g{=}1,t{=}1]$ & $\E[Y\mid g{=}1,t{=}2]$ & $\Delta_1$ \\
+Control & $\E[Y\mid g{=}0,t{=}1]$ & $\E[Y\mid g{=}0,t{=}2]$ & $\Delta_0$ \\
+\midrule
+ & & & $\tau = \Delta_1 - \Delta_0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item The first difference removes anything fixed about each group.
+  \item The second difference removes anything common to both groups over time.
+  \item Equivalent regression:
+        $Y_{it} = \alpha + \gamma\,\text{treated}_i + \delta\,\text{post}_t
+        + \tau\,(\text{treated}_i \times \text{post}_t) + \epsilon_{it}$.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[shrink=10]{The $2\times2$ in Regression Form}
+Write $g_i \in\{0,1\}$ for group and $t\in\{1,2\}$ for period:
+\begin{align*}
+  Y_{it} = \alpha + \gamma\, g_i + \delta\, \text{post}_t
+         + \tau\,\big(g_i \times \text{post}_t\big) + \epsilon_{it} .
+\end{align*}
+Read off the four cell means:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{lccc}
+\toprule
+ & Before & After & Difference \\
+\midrule
+Treated ($g=1$) & $\alpha+\gamma$ & $\alpha+\gamma+\delta+\tau$ & $\delta+\tau$ \\
+Control ($g=0$) & $\alpha$ & $\alpha+\delta$ & $\delta$ \\
+\midrule
+ & & & $\tau$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item $\gamma$ absorbs fixed differences in level; $\delta$ absorbs the common
+        time trend; $\tau$ is what is left.
+  \item With unit and period fixed effects instead of $g_i$ and $\text{post}_t$,
+        this is the two-way fixed-effects model --- \alert{identical when there are
+        two groups and two periods}, and, as we will see, not identical otherwise.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=10]{Parallel Trends Is Not Scale-Free}
+Suppose untreated outcomes would have grown by $10\%$ in both groups, from a base
+of $20$ in the treated group and $40$ in the control group.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lccc}
+\toprule
+ & Before & After & Change \\
+\midrule
+Treated & 20 & 22 & $+2$ \\
+Control & 40 & 44 & $+4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Parallel trends holds \alert{in logs} (both $+10\%$) but \alert{fails in
+        levels} ($+2$ versus $+4$). A DID in levels would report a spurious
+        $-2$.
+  \item The two assumptions are mutually exclusive unless base levels are equal.
+        \alert{There is no neutral choice}, and the transformation is part of the
+        identifying assumption, not a presentational detail.
+  \item Choose on substantive grounds --- is the intervention plausibly additive
+        or multiplicative? --- and \emph{before} looking at the results.
+  \item One diagnostic: if pre-treatment levels are far apart, be especially
+        careful. If they are similar, the choice matters less.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=10]{Event Studies: Specification Details That Matter}
+\begin{align*}
+  Y_{it} = \alpha_i + \lambda_t
+  + \sum_{k \neq -1} \tau_k \cdot \mathbf{1}\{t - g_i = k\} + \epsilon_{it}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Normalization}: one lead must be omitted (here $k=-1$). Every
+        $\tau_k$ is relative to it, so the picture shifts if you change the
+        reference period. Say which you used.
+  \item \textbf{Binning the endpoints}: with unbalanced exposure, far leads and
+        lags are estimated off few units. Bin them ($k \leq -5$, $k \geq 5$) or
+        restrict to a balanced window --- and say which.
+  \item \textbf{Never-treated units} anchor the time effects $\lambda_t$. If there
+        are none, the $\lambda_t$ are identified only off variation in timing, and
+        the contamination problem below is unavoidable.
+  \item \alert{A flat pre-trend is weak evidence.} \srct{Roth (2022)}: these tests
+        often have low power, and conditioning your analysis on passing one
+        distorts the sampling distribution of everything that follows. Report the
+        test's power against economically meaningful trends.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Parallel Trends}
+\begin{block}{The identifying assumption}
+\begin{align*}
+  \E[Y_{i2}(0) - Y_{i1}(0) \mid g_i = 1] = \E[Y_{i2}(0) - Y_{i1}(0)\mid g_i = 0] .
+\end{align*}
+\emph{Absent treatment}, the two groups' average outcomes would have moved in
+parallel.
+\end{block}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Levels may differ arbitrarily. Only the \emph{trends} in the untreated
+        potential outcome must agree.
+  \item \alert{Untestable}: it concerns a counterfactual trend. Pre-treatment
+        parallelism is suggestive evidence, not proof.
+  \item \textbf{Not scale-free}: parallel trends in levels and parallel trends in
+        logs are different assumptions, and both cannot generally hold. Choose the
+        scale on substantive grounds, before looking.
+  \item Needs \textbf{no anticipation}: units must not change behaviour before
+        treatment in expectation of it.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Event Studies}
+Generalize to many periods by estimating an effect for each period relative to
+treatment:
+\begin{align*}
+  Y_{it} = \alpha_i + \lambda_t
+  + \sum_{k \neq -1} \tau_k \cdot \mathbf{1}\{t - g_i = k\} + \epsilon_{it} ,
+\end{align*}
+where $g_i$ is unit $i$'s treatment date and $k = -1$ is the omitted reference.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Pre-period coefficients} ($k<0$) are the parallel-trends check.
+        Flat and near zero is what you want to see.
+  \item \textbf{Post-period coefficients} trace out the dynamics: does the effect
+        grow, fade, or appear only after a lag?
+  \item \alert{Caution}: a flat pre-trend is weak evidence. The test often has low
+        power, and conditioning your analysis on passing it distorts inference
+        \srcp{Roth 2022}. Report the power of your pre-trend test.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Staggered]{The Trouble with Two-Way Fixed Effects}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Setting Everyone Uses}
+Units adopt the policy at \emph{different times}: states pass a law in 1995,
+2001, 2008. The standard specification is
+\begin{align*}
+  Y_{it} = \alpha_i + \lambda_t + \beta\, D_{it} + \epsilon_{it},
+  \qquad D_{it} = \mathbf{1}\{t \geq g_i\} .
+\end{align*}
+\vskip3pt
+For thirty years this was assumed to estimate ``the'' treatment effect. It does
+when the effect is \alert{constant across units and over time since treatment}
+--- but with heterogeneous or dynamic effects it need not estimate any sensible
+average at all.
+\vskip4pt
+\begin{alertblock}{Goodman-Bacon (2021)}
+The TWFE estimate is a weighted average of \emph{all possible} $2\times2$ DID
+comparisons in the data --- including comparisons that use
+\alert{already-treated units as controls}.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{The Forbidden Comparison}
+\begin{center}
+\begin{tikzpicture}[scale=0.85]
+  \draw[->] (0,0) -- (9.6,0) node[right]{\scriptsize time};
+  % early unit
+  \draw[dukeblue,very thick] (0.4,2.4) -- (3.0,2.4);
+  \draw[dukeblue,very thick] (3.0,2.9) -- (9.0,2.9);
+  \draw[dukeblue,dashed] (3.0,2.4) -- (3.0,2.9);
+  \node[dukeblue,left] at (0.3,2.6) {\scriptsize early};
+  \fill[dukeblue] (3.0,2.4) circle (1.6pt);
+  % late unit
+  \draw[accent,very thick] (0.4,1.0) -- (6.2,1.0);
+  \draw[accent,very thick] (6.2,1.5) -- (9.0,1.5);
+  \draw[accent,dashed] (6.2,1.0) -- (6.2,1.5);
+  \node[accent,left] at (0.3,1.2) {\scriptsize late};
+  \fill[accent] (6.2,1.0) circle (1.6pt);
+  % shaded window
+  \fill[gray!22] (6.2,0.15) rectangle (9.0,3.3);
+  \node[gray] at (7.6,0.5) {\scriptsize \textbf{late treated,}};
+  \node[gray] at (7.6,0.15) {\scriptsize \textbf{early is the ``control''}};
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item In the shaded window, TWFE uses the \emph{early-treated} unit as a control
+        for the late-treated one.
+  \item If the early unit's effect is still evolving, that evolution is subtracted
+        from the late unit's effect --- and enters with a \alert{negative weight}.
+  \item With dynamic effects, TWFE can be the wrong \emph{sign} even when every
+        unit-level effect is positive.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{The Goodman-Bacon Decomposition}
+With staggered timing, the TWFE estimate is a weighted average of every possible
+$2\times2$ comparison in the data:
+\begin{align*}
+  \hat\beta^{\text{TWFE}} = \sum_{\text{pairs}} s_{ab}\;\hat\beta^{2\times2}_{ab} ,
+  \qquad \sum s_{ab} = 1 ,
+\end{align*}
+where the weights $s_{ab}$ depend on group sizes and on the \emph{variance of
+treatment} within each pair --- largest for pairs whose treatment switches
+mid-window.
+\vskip3pt
+Three kinds of comparison arise:
+\begin{enumerate}\itemsep1pt
+  \item Treated versus \textbf{never-treated} --- clean.
+  \item \textbf{Earlier} treated versus \textbf{later} treated, before the later
+        group switches --- clean.
+  \item \alert{\textbf{Later} treated versus \textbf{earlier} treated, after the
+        earlier group switches --- the forbidden comparison.}
+\end{enumerate}
+\vskip3pt
+Type 3 uses already-treated units as controls. If their effects are still
+evolving, that evolution is subtracted from the late group's effect.
+\end{frame}
+
+\begin{frame}[shrink=10]{Negative Weights}
+\srct{de Chaisemartin and D'Haultf\oe uille (2020)} write TWFE as a weighted sum
+of \emph{unit-time-level} effects,
+\begin{align*}
+  \plim\ \hat\beta^{\text{TWFE}} = \E\Big[\sum_{(i,t):\,D_{it}=1} w_{it}\,\tau_{it}\Big],
+  \qquad \sum w_{it} = 1 ,
+\end{align*}
+and show that some $w_{it}$ are \alert{negative}.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Consequence: TWFE can have the \alert{wrong sign} even when every
+        $\tau_{it} > 0$. This is not a small-sample problem; it survives
+        $n\to\infty$.
+  \item The negative weights fall on units treated \emph{early} and observed for a
+        \emph{long} post-period --- exactly the units with the most information.
+  \item \textbf{Diagnostic}: compute the weights and report how many are negative
+        and what share of the total mass they carry. Small negative mass is
+        reassuring about \emph{this particular} problem --- it says nothing about
+        parallel trends or about dynamic-effect contamination, so it is one
+        diagnostic, not a validity test.
+  \item \srct{Sun and Abraham (2021)} show the same contamination in event-study
+        coefficients: $\hat\tau_k$ is polluted by effects at \emph{other} lags, so
+        apparent pre-trends can be artefacts of post-treatment dynamics.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[shrink=10]{Callaway--Sant'Anna: Build Clean Blocks, Then Aggregate}
+Define the \alert{group-time average treatment effect} for cohort $g$ at time $t$:
+\begin{align*}
+  ATT(g,t) = \E\big[Y_t(g) - Y_t(\infty) \mid G_i = g\big] ,
+\end{align*}
+identified by comparing cohort $g$ to units \emph{not yet treated} at $t$ (or to
+never-treated units), using only periods before $g$ as the baseline.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item Each $ATT(g,t)$ is a clean $2\times2$: no already-treated controls.
+  \item Under \emph{conditional} parallel trends, each block can be estimated by
+        IPW, outcome regression, or a doubly robust estimator --- \alert{Week 6,
+        reappearing inside a DID}.
+  \item \textbf{Then choose an aggregation}, and the choice is an estimand choice:
+  \begin{itemize}\itemsep1pt
+    \item \emph{simple}: average over all treated $(g,t)$;
+    \item \emph{dynamic}: average by $t-g$, giving an event-study path;
+    \item \emph{group}: average within cohort, showing who benefited;
+    \item \emph{calendar}: average within period, showing when.
+  \end{itemize}
+  \item Sun--Abraham reaches the same place through an interaction-weighted
+        regression; Borusyak--Jaravel--Spiess by imputing $Y(0)$ from untreated
+        cells.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Goes Wrong, Precisely}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Negative weights.} \srct{de Chaisemartin and D'Haultf\oe uille
+        (2020)} show TWFE is a weighted sum of unit-time effects where some
+        weights are negative. They provide a diagnostic: compute the weights and
+        report how many are negative and how much mass they carry.
+  \item \textbf{Contaminated event studies.} In a staggered design, the estimated
+        $\tau_k$ at one lag is contaminated by effects at other lags
+        \srcp{Sun and Abraham 2021}. Apparent pre-trends can be artefacts of
+        post-treatment dynamics.
+  \item \textbf{It is not a small problem.} Simulations routinely produce TWFE
+        estimates of the wrong sign under plausible, monotone dynamic effects.
+\end{itemize}
+\vskip3pt
+\alert{TWFE is fine when treatment timing is common, or when effects are
+genuinely constant.} It is unreliable exactly where sociologists use it most.
+\end{frame}
+
+\begin{frame}{The Modern Estimators}
+All of them share one principle: \alert{never use an already-treated unit as a
+control}. Build clean $2\times 2$ comparisons, then aggregate with weights you
+choose.
+\vskip3pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{lll}
+\toprule
+Method & Idea & \texttt{R} \\
+\midrule
+Callaway--Sant'Anna (2021) & group-time ATT$(g,t)$, never- or
+  not-yet-treated controls & \texttt{did} \\
+Sun--Abraham (2021) & interaction-weighted event study & \texttt{fixest::sunab} \\
+de Chaisemartin--D'Haultf\oe uille & clean comparisons at switch dates &
+  \texttt{DIDmultiplegt} \\
+Borusyak--Jaravel--Spiess & impute $Y(0)$ from untreated cells &
+  \texttt{didimputation} \\
+Stacked / cohort DID & one clean event window per cohort & manual \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+Callaway--Sant'Anna also allows \textbf{conditional} parallel trends: trends
+parallel only after adjusting for covariates, estimated by IPW, regression, or
+doubly robust --- Week 6, reappearing.
+\end{frame}
+
+\begin{frame}[shrink=10]{Honest Inference About Pre-Trends}
+Rather than testing pre-trends and proceeding as if they had passed,
+\srct{Rambachan and Roth (2023)} propose bounding how badly parallel trends could
+fail.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Their ``relative magnitudes'' restriction bounds how much the
+        \emph{change} in the trend violation after treatment can exceed the
+        largest change observed before it, by a factor $\bar M$ --- and the
+        resulting confidence sets account for sampling uncertainty in the
+        pre-period estimates rather than treating them as known.
+  \item Report the \emph{breakdown value}: how large $\bar M$ would have to be
+        before your conclusion reverses.
+  \item This turns an untestable assumption into a quantitative claim --- exactly
+        the move sensitivity analysis made in Week 6.
+  \item \texttt{HonestDiD}.
+\end{itemize}
+\vskip3pt
+\begin{alertblock}{Inference reminder}
+\srct{Bertrand, Duflo, and Mullainathan (2004)}: cluster on the unit at which
+treatment varies. With few clusters, use CR2 or a wild cluster bootstrap
+(Week 2).
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{A DID Checklist}
+\begin{enumerate}\itemsep2pt
+  \item State the estimand: ATT for whom, over which post-treatment window?
+  \item Plot the raw group means over time. Before any regression.
+  \item Is timing staggered? If so, \alert{do not use plain TWFE}. Use a modern
+        estimator, and report the TWFE estimate only for comparison.
+  \item Report an event-study plot with pre-period coefficients, using
+        Sun--Abraham or Callaway--Sant'Anna rather than raw TWFE leads.
+  \item Justify the scale (levels or logs) on substantive grounds.
+  \item Cluster on the treatment-assignment unit; report the number of clusters.
+  \item Report a sensitivity analysis for parallel trends.
+  \item Placebo: a pre-treatment outcome, or an untreated outcome that the policy
+        should not affect.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Looking Ahead}
+\begin{itemize}\itemsep4pt
+  \item Fixed effects difference away time-invariant confounders --- a real gain,
+        bought with precision and with a new assumption about trends.
+  \item The staggered-adoption literature is a case study in how a method can be
+        standard for decades and still be wrong. Read papers published before
+        2021 with this in mind, including your own field's classics.
+  \item \textbf{Next week}: what to do when there is only \emph{one} treated
+        unit, and ``the control group'' has to be constructed.
+  \item Notice that conditional parallel trends brought Week 6 back inside a
+        DID: once trends are only parallel given covariates, you need a weighting
+        or outcome model again, and all of Week 6's cautions return with it.
+\end{itemize}
+\vskip4pt
+\begin{block}{Problem Set 5}
+Assigned next Tuesday, due Monday November 23. Covers Weeks 10--11.
+\end{block}
+\end{frame}
+
+
+\begin{frame}[allowframebreaks]{References}
+\footnotesize
+\begin{itemize}\itemsep3pt
+\item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.
+\textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 5]
+\item Bertrand, Marianne, Esther Duflo, and Sendhil Mullainathan. 2004. ``How
+Much Should We Trust Differences-in-Differences Estimates?''
+\textit{Quarterly Journal of Economics} 119(1): 249--275.
+\item Borusyak, Kirill, Xavier Jaravel, and Jann Spiess. 2024. ``Revisiting
+Event-Study Designs: Robust and Efficient Estimation.''
+\textit{Review of Economic Studies} 91(6): 3253--3285.
+\item Callaway, Brantly and Pedro H.C. Sant'Anna. 2021. ``Difference-in-Differences
+with Multiple Time Periods.'' \textit{Journal of Econometrics} 225(2): 200--230.
+\item de Chaisemartin, Cl\'ement and Xavier D'Haultf\oe uille. 2020. ``Two-Way
+Fixed Effects Estimators with Heterogeneous Treatment Effects.''
+\textit{American Economic Review} 110(9): 2964--2996.
+\item Goodman-Bacon, Andrew. 2021. ``Difference-in-Differences with Variation in
+Treatment Timing.'' \textit{Journal of Econometrics} 225(2): 254--277.
+\item Rambachan, Ashesh and Jonathan Roth. 2023. ``A More Credible Approach to
+Parallel Trends.'' \textit{Review of Economic Studies} 90(5): 2555--2591.
+\item Roth, Jonathan. 2022. ``Pretest with Caution: Event-Study Estimates after
+Testing for Parallel Trends.'' \textit{American Economic Review: Insights} 4(3):
+305--322.
+\item Roth, Jonathan, Pedro H.C. Sant'Anna, Alyssa Bilinski, and John Poe. 2023.
+``What's Trending in Difference-in-Differences?''
+\textit{Journal of Econometrics} 235(2): 2218--2244.
+\item Sun, Liyang and Sarah Abraham. 2021. ``Estimating Dynamic Treatment Effects
+in Event Studies with Heterogeneous Treatment Effects.''
+\textit{Journal of Econometrics} 225(2): 175--199.
+\end{itemize}
+\end{frame}
+
+\end{document}

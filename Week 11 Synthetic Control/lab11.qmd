@@ -1,0 +1,286 @@
+---
+title: "\\textbf{Lab 11: Synthetic Control}"
+subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, November 5"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.4, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+# Goals
+
+1.  Construct a synthetic control and read the weight table.
+2.  Judge the design by pre-treatment fit, not by the size of the gap.
+3.  Run placebo inference in space and in time.
+4.  Check robustness by leaving donors out.
+
+```{r}
+#| label: packages
+library(dplyr)
+library(ggplot2)
+library(tidysynth)
+
+data("smoking", package = "tidysynth")
+c(rows = nrow(smoking), states = n_distinct(smoking$state),
+  years = paste(range(smoking$year), collapse = "-"))
+```
+
+# The design
+
+**Question.** What did California's Proposition 99 (1988) do to cigarette
+consumption?
+
+**Treated unit.** California. **Donor pool.** 38 states that adopted no
+comparable programme. **Outcome.** Per-capita cigarette sales.
+**Pre-period.** 1970–1988.
+
+::: callout-note
+The donor pool was restricted *on substantive grounds before estimating*: states
+with their own large tobacco taxes or control programmes are excluded, because
+they are treated too. That decision is part of the design, not a robustness
+check.
+:::
+
+```{r}
+#| label: fig-raw
+#| fig-cap: "Raw trajectories. California is one line among 39; the eye cannot pick out a treatment effect."
+smoking |>
+  mutate(ca = state == "California") |>
+  ggplot(aes(year, cigsale, group = state, colour = ca, linewidth = ca)) +
+  geom_line(alpha = .8) +
+  scale_colour_manual(values = c("grey78", "firebrick"), guide = "none") +
+  scale_linewidth_manual(values = c(.3, 1.1), guide = "none") +
+  geom_vline(xintercept = 1988, linetype = 2) +
+  labs(x = NULL, y = "packs per capita") +
+  theme_minimal(base_size = 10)
+```
+
+# Building the synthetic control
+
+```{r}
+#| label: build
+sc <- smoking |>
+  synthetic_control(outcome = cigsale, unit = state, time = year,
+                    i_unit = "California", i_time = 1988,
+                    generate_placebos = TRUE) |>
+  # predictors measured over the pre-period
+  generate_predictor(time_window = 1980:1988,
+                     ln_income = mean(lnincome, na.rm = TRUE),
+                     ret_price = mean(retprice, na.rm = TRUE),
+                     youth     = mean(age15to24, na.rm = TRUE)) |>
+  generate_predictor(time_window = 1984:1988,
+                     beer_sales = mean(beer, na.rm = TRUE)) |>
+  # lagged outcomes: these do most of the work
+  generate_predictor(time_window = 1975, cigsale_1975 = cigsale) |>
+  generate_predictor(time_window = 1980, cigsale_1980 = cigsale) |>
+  generate_predictor(time_window = 1988, cigsale_1988 = cigsale) |>
+  generate_weights(optimization_window = 1970:1988) |>
+  generate_control()
+```
+
+## Who is synthetic California?
+
+```{r}
+#| label: weights
+sc |> grab_unit_weights() |> filter(weight > 0.001) |>
+  arrange(desc(weight)) |> knitr::kable(digits = 3)
+```
+
+```{r}
+#| label: predweights
+sc |> grab_predictor_weights() |> arrange(desc(weight)) |> knitr::kable(digits = 3)
+```
+
+::: callout-important
+**Print the weight table.** It is the single most informative output of a
+synthetic control study: readers can decide for themselves whether a weighted
+average of these states is a plausible California. No regression coefficient
+offers that.
+:::
+
+## Balance
+
+```{r}
+#| label: balance
+sc |> grab_balance_table() |> knitr::kable(digits = 2)
+```
+
+# The result
+
+```{r}
+#| label: fig-trend
+#| fig-cap: "California and synthetic California. The pre-1988 lines nearly coincide, which is what licenses reading the post-1988 gap as an effect."
+plot_trends(sc)
+```
+
+```{r}
+#| label: fig-diff
+#| fig-cap: "The gap between California and its synthetic control."
+plot_differences(sc)
+```
+
+```{r}
+#| label: effect-size
+gaps <- sc |> grab_synthetic_control() |>
+  mutate(gap = real_y - synth_y)
+c(mean_gap_post = mean(gaps$gap[gaps$time_unit > 1988]),
+  gap_2000 = gaps$gap[gaps$time_unit == 2000],
+  rmspe_pre = sqrt(mean(gaps$gap[gaps$time_unit <= 1988]^2)))
+```
+
+The pre-treatment RMSPE is the number to look at first. If it were large relative
+to the post-treatment gap, there would be nothing to report.
+
+# Inference
+
+## Placebos in space
+
+```{r}
+#| label: fig-placebo
+#| fig-cap: "Each grey line is a donor state treated as if it had adopted Proposition 99. California is in black."
+plot_placebos(sc)
+```
+
+`plot_placebos()` drops donors whose pre-treatment fit is much worse than
+California's — otherwise states the method could never match would dominate the
+picture for reasons unrelated to treatment.
+
+## The RMSPE ratio
+
+```{r}
+#| label: fig-mspe
+#| fig-cap: "Ratio of post- to pre-treatment RMSPE. California is the largest of all 39 units."
+plot_mspe_ratio(sc)
+```
+
+```{r}
+#| label: pvalue
+sig <- sc |> grab_significance()
+sig |> select(unit_name, type, mspe_ratio, rank, fishers_exact_pvalue) |>
+  head(6) |> knitr::kable(digits = 3)
+```
+
+The `fishers_exact_pvalue` column is the unit's rank divided by the number of
+units. With 38 donors the smallest attainable value is $1/39 \approx 0.026$ — a
+hard floor worth stating when you report it. Strictly this is a *placebo rank*
+rather than an exact test: exactness would require treatment to have been
+randomly assigned among these 39 states.
+
+## A placebo in time
+
+Pretend the programme began in 1980, eight years early. Nothing should happen.
+
+```{r}
+#| label: intime
+sc_1980 <- smoking |>
+  filter(year <= 1988) |>
+  synthetic_control(outcome = cigsale, unit = state, time = year,
+                    i_unit = "California", i_time = 1980,
+                    generate_placebos = FALSE) |>
+  generate_predictor(time_window = 1970:1980,
+                     ln_income = mean(lnincome, na.rm = TRUE),
+                     ret_price = mean(retprice, na.rm = TRUE)) |>
+  generate_predictor(time_window = 1975, cigsale_1975 = cigsale) |>
+  generate_weights(optimization_window = 1970:1980) |>
+  generate_control()
+
+g80 <- sc_1980 |> grab_synthetic_control() |> mutate(gap = real_y - synth_y)
+c(mean_gap_1981_1988 = mean(g80$gap[g80$time_unit > 1980]),
+  rmspe_pre = sqrt(mean(g80$gap[g80$time_unit <= 1980]^2)))
+```
+
+A gap near zero after the fake intervention is reassuring. A large one would mean
+the method manufactures effects.
+
+## Leave-one-donor-out
+
+```{r}
+#| label: loo
+donors <- sc |> grab_unit_weights() |> filter(weight > 0.01) |> pull(unit)
+
+## refit the EXACT original pipeline after dropping each donor, so that any
+## change is attributable to the donor and not to a specification change
+loo <- lapply(donors, function(dd) {
+  s <- smoking |> filter(state != dd) |>
+    synthetic_control(outcome = cigsale, unit = state, time = year,
+                      i_unit = "California", i_time = 1988,
+                      generate_placebos = FALSE) |>
+    generate_predictor(time_window = 1980:1988,
+                       ln_income = mean(lnincome, na.rm = TRUE),
+                       ret_price = mean(retprice, na.rm = TRUE),
+                       youth     = mean(age15to24, na.rm = TRUE)) |>
+    generate_predictor(time_window = 1984:1988,
+                       beer_sales = mean(beer, na.rm = TRUE)) |>
+    generate_predictor(time_window = 1975, cigsale_1975 = cigsale) |>
+    generate_predictor(time_window = 1980, cigsale_1980 = cigsale) |>
+    generate_predictor(time_window = 1988, cigsale_1988 = cigsale) |>
+    generate_weights(optimization_window = 1970:1988) |>
+    generate_control()
+  g <- s |> grab_synthetic_control() |> mutate(gap = real_y - synth_y)
+  tibble::tibble(dropped = dd, mean_gap = mean(g$gap[g$time_unit > 1988]))
+}) |> bind_rows()
+
+knitr::kable(loo, digits = 2)
+```
+
+If dropping any single donor moved the estimate substantially, the result would
+rest on one state rather than on a comparison group.
+
+# Exercises
+
+1.  **Predictor sensitivity.** Re-estimate using only lagged outcomes as
+    predictors (drop income, price, beer, youth). How much do the weights and the
+    estimate move? What does that tell you about how much work the covariates are
+    doing?
+
+2.  **Pre-period length.** Re-estimate using only 1980–1988 to fit the weights.
+    Does the pre-treatment fit worsen? Does the estimate change? Connect this to
+    the factor-model justification from lecture.
+
+3.  **A bad donor pool.** Deliberately include a state with its own tobacco
+    programme. How does that contaminate the comparison, and would any diagnostic
+    catch it?
+
+4.  **DID for comparison.** Estimate a plain 2×2 DID comparing California to the
+    unweighted average of all donors, before and after 1988. How does it differ
+    from the synthetic control estimate, and why?
+
+5.  **A different treated unit.** Using `set.seed(723)`, pick a donor state at
+    random, treat it as treated, and run the whole pipeline. Write the paragraph you would write if
+    this were your result — then explain what stops you from believing it.
+
+# Session information
+
+```{r}
+#| label: session
+sessionInfo()
+```

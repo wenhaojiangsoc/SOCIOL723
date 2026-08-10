@@ -1,0 +1,900 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SOCIOL 723 -- Social Statistics II
+%% Week 3: Maximum Likelihood -- Theory
+%% Wenhao Jiang, Duke University, Fall 2026
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[aspectratio=169,11pt,xcolor=dvipsnames]{beamer}
+\mode<presentation>
+
+%% ---- fonts: Latin Modern Roman (the LaTeX default), serif throughout -------
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usefonttheme{serif}
+\renewcommand{\familydefault}{\rmdefault}
+
+%% ---- packages --------------------------------------------------------------
+\usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[english]{babel}
+
+\newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
+\newcommand{\srct}[1]{#1}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\plim}{plim}
+\newcommand{\indep}{\perp\!\!\!\perp}
+
+%% ---- notation conventions (course-wide) ------------------------------------
+\newcommand{\E}{E}
+\newcommand{\En}{\mathbb{E}_n}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\bm{X}}
+\newcommand{\Y}{\bm{y}}
+\newcommand{\Ix}{\bm{I}}
+\newcommand{\zero}{\bm{0}}
+\newcommand{\bhat}{\hat{\bm{\beta}}}
+\newcommand{\dto}{\overset{d}{\longrightarrow}}
+\newcommand{\pto}{\overset{p}{\longrightarrow}}
+\newcommand{\lik}{\mathcal{L}}
+\newcommand{\loglik}{\ell}
+\newcommand{\Info}{\mathcal{I}}
+\newcommand{\SE}{\widehat{\text{SE}}}
+
+%% ---- theme -----------------------------------------------------------------
+\usetheme{default}
+\useoutertheme[subsection=false]{miniframes}
+\setbeamertemplate{mini frames}{}
+
+\definecolor{dukeblue}{RGB}{1,33,105}
+\definecolor{accent}{RGB}{200,78,0}
+\definecolor{softgray}{RGB}{242,242,245}
+
+\setbeamercolor{structure}{fg=dukeblue}
+\setbeamercolor{frametitle}{fg=dukeblue,bg=white}
+\setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{alerted text}{fg=accent}
+\setbeamercolor{block title}{fg=white,bg=dukeblue}
+\setbeamercolor{block body}{fg=black,bg=softgray}
+\setbeamercolor{block title alerted}{fg=white,bg=accent}
+\setbeamercolor{block body alerted}{fg=black,bg=softgray}
+
+\setbeamertemplate{footline}[page number]
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamerfont{footnote}{size=\scriptsize}
+\setbeamerfont{caption}{size=\footnotesize}
+\setbeamertemplate{subsection in head/foot}{}
+\setbeamertemplate{subsection in head/foot shaded}{}
+\setbeamertemplate{caption}[numbered]
+
+\newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+
+\setbeamertemplate{section page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
+  \vskip4pt{\color{dukeblue}\rule{0.35\linewidth}{1pt}\par}
+  \vfill\end{centering}}
+\setbeamertemplate{subsection page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\large\bfseries\insertsubsectionhead\par}
+  \vfill\end{centering}}
+
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{5pt}%
+  \setlength{\belowdisplayskip}{5pt}%
+  \setlength{\abovedisplayshortskip}{2pt}%
+  \setlength{\belowdisplayshortskip}{3pt}%
+}
+\setbeamertemplate{frametitle}{%
+  \vskip4pt\usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}%
+  \insertframetitle\par\vskip2pt}
+\setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
+
+%% ---- title -----------------------------------------------------------------
+\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
+\subtitle{\large Week 3 --- Maximum Likelihood: Theory\\[-8pt]}
+\author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
+\institute[Duke]{}
+\titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
+\date{\large Department of Sociology, Fall 2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Today}
+  \tableofcontents
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Why Likelihood]{Why We Need More Than Least Squares}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Two Ways to Justify an Estimator}
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\textbf{Design / agnostic}
+\begin{itemize}\small\itemsep3pt
+  \item Start with the CEF. $\beta$ is defined as the best linear approximation
+        to it, whatever the world looks like.
+  \item Assumes almost nothing about how $Y$ was generated.
+  \item This was Weeks 1--2.
+\end{itemize}
+\end{column}
+\begin{column}{0.49\textwidth}
+\textbf{Model-based}
+\begin{itemize}\small\itemsep3pt
+  \item Write down a full \emph{probability model} for how $Y$ was generated,
+        with unknown parameters.
+  \item Estimate the parameters that make the observed data most probable.
+  \item This is maximum likelihood, and it is Weeks 3--4.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip8pt
+\begin{block}{Neither is ``the right one''}
+The design-based view is safer for causal estimands. The model-based view buys
+you things the agnostic view cannot deliver: predictions on the right support,
+structural parameters, latent variables, and outcomes that are not real numbers.
+Be pragmatic, and be explicit about which you are using.
+\end{block}
+\end{frame}
+
+\begin{frame}{OLS Is Already a Maximum Likelihood Estimator}
+Suppose we assume the full model
+\begin{align*}
+  Y_i = X_i'\bm\beta + \epsilon_i , \qquad
+  \epsilon_i \overset{iid}{\sim} \mathcal N(0,\sigma^2)
+  \quad\Longrightarrow\quad
+  Y_i \sim \mathcal N(X_i'\bm\beta,\ \sigma^2) .
+\end{align*}
+Then the probability of the observed sample, as a function of the parameters, is
+\begin{align*}
+  \prod_{i=1}^n \frac{1}{\sqrt{2\pi\sigma^2}}
+  \exp\!\left(-\frac{(Y_i - X_i'\bm\beta)^2}{2\sigma^2}\right) .
+\end{align*}
+\pause
+Taking logs, everything except $-\frac{1}{2\sigma^2}\sum_i(Y_i - X_i'\bm\beta)^2$
+is free of $\bm\beta$. \alert{Maximizing over $\bm\beta$ is exactly minimizing the
+sum of squared residuals.}
+\vskip4pt
+So OLS under normality \emph{is} the MLE. What we do today is take the same idea
+and apply it when the outcome is not normal.
+\end{frame}
+
+\begin{frame}{Why We Need the Generalization}
+The normal linear model assumes $Y_i \in \R$ with constant variance. Sociological
+outcomes are often not like that.
+\begin{itemize}\itemsep2pt
+  \item \textbf{Binary}: employed or not, voted or not, married or not. A linear
+        model can predict probabilities below 0 and above 1.
+  \item \textbf{Counts}: number of children, arrests, publications. Non-negative
+        integers, right-skewed, variance tied to the mean.
+  \item \textbf{Categorical}: occupation, party, religious affiliation. There is
+        no meaningful numeric coding of $\{$professional, service, manual$\}$.
+  \item \textbf{Ordered}: strongly agree $\dots$ strongly disagree. The gaps
+        between categories are not known.
+  \item \textbf{Durations, censored, truncated}: time to first birth; income
+        top-coded at \$$200{,}000$.
+\end{itemize}
+\vskip2pt
+Maximum likelihood handles all of these, and is the engine behind almost every
+model in the sociological literature.
+\end{frame}
+
+\begin{frame}{Where We Are Going}
+\begin{enumerate}\itemsep5pt
+  \item \textbf{The likelihood}: what it is, and the crucial distinction between
+        probability and likelihood.
+  \item \textbf{Finding the maximum}: the score function, the first-order
+        condition, and worked examples you can do on paper.
+  \item \textbf{Information}: how the \emph{curvature} of the log-likelihood tells
+        you how precise your estimate is.
+  \item \textbf{Properties}: consistency, asymptotic normality, efficiency,
+        invariance --- and what can go wrong.
+  \item \textbf{Testing}: the likelihood ratio, Wald, and score tests, which are
+        three ways of measuring the same distance.
+\end{enumerate}
+\vskip6pt
+As in Weeks 1--2, everything examinable is done in the \alert{one-parameter
+scalar case}. Frames marked \adv{} generalize.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[The Likelihood]{The Likelihood Function}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Probability Versus Likelihood}
+Both start from the same object, the density (or mass function) $f(y\mid\theta)$.
+What differs is \emph{what you hold fixed}.
+\vskip2pt
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\textbf{Probability}
+\begin{align*}
+  f(y\mid\theta)
+\end{align*}
+$\theta$ is \emph{fixed and known}; $y$ varies.\\[4pt]
+``If the coin is fair, how likely am I to see 7 heads in 10 tosses?''
+\end{column}
+\begin{column}{0.49\textwidth}
+\textbf{Likelihood}
+\begin{align*}
+  \lik(\theta;y) \equiv f(y\mid\theta)
+\end{align*}
+$y$ is \emph{fixed} (it is your data); $\theta$ varies.\\[4pt]
+``Given that I saw 7 heads in 10 tosses, which values of $\theta$ make that
+outcome most probable?''
+\end{column}
+\end{columns}
+\vskip4pt
+\begin{alertblock}{The single most important sentence today}
+The likelihood is \emph{the same formula read backwards}: a function of the
+parameter, with the data nailed down. It is \alert{not} a probability
+distribution over $\theta$ --- it does not integrate to one, and
+$\lik(\theta)$ is not ``the probability that $\theta$ is true.''
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{A First Example: Marbles in a Bag}
+An opaque bag contains blue and white marbles. You want the proportion $\theta$
+that are blue. You draw 10 marbles with replacement and get 7 blue.
+\vskip4pt
+The number of blue draws is Binomial$(10,\theta)$, so
+\begin{align*}
+  \lik(\theta) = \Pr(X = 7\mid\theta) = \binom{10}{7}\theta^{7}(1-\theta)^{3} .
+\end{align*}
+\pause
+\begin{itemize}\itemsep3pt
+  \item Try $\theta = 0.3$: $\lik = 120(0.3)^7(0.7)^3 \approx 0.0090$.
+  \item Try $\theta = 0.5$: $\lik = 120(0.5)^{10} \approx 0.117$.
+  \item Try $\theta = 0.7$: $\lik = 120(0.7)^7(0.3)^3 \approx 0.267$.
+\end{itemize}
+\vskip3pt
+Among these, $\theta = 0.7$ makes the data we actually saw most probable. The MLE
+is the value that does best among \emph{all} $\theta\in[0,1]$.
+\end{frame}
+
+\begin{frame}{The Likelihood, Plotted}
+\begin{center}
+\begin{tikzpicture}[scale=1]
+  \draw[->] (0,0) -- (9.3,0) node[right]{\small $\theta$};
+  \draw[->] (0,0) -- (0,3.4) node[above]{\small $\lik(\theta)$};
+  \foreach \t/\lab in {0/0, 2/0.25, 4/0.5, 6/0.75, 8/1}
+    \draw (\t,0) -- (\t,-0.08) node[below]{\scriptsize \lab};
+  % binomial(10,7) likelihood, scaled: peak 0.2668 at 0.7 -> y=3
+  \draw[dukeblue,very thick,smooth,samples=100,domain=0.02:0.98,variable=\x]
+    plot ({8*\x},{3*120*(\x)^7*(1-\x)^3/0.26683});
+  \draw[accent,dashed,thick] (5.6,0) -- (5.6,3);
+  \node[accent] at (6.5,3.2) {\small $\hat\theta = 0.7$};
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item The height at any $\theta$ is the probability of \emph{these} data if that
+        $\theta$ were true.
+  \item The peak is the MLE. The \alert{width} of the peak will turn out to be our
+        measure of uncertainty --- that is the whole of Section 4.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{From One Observation to Many}
+With $n$ observations we need the \emph{joint} density
+$f(y_1,\dots,y_n\mid\theta)$. If the observations are independent given $\theta$,
+it factors:
+\begin{align*}
+  \lik(\theta; y_1,\dots,y_n) = \prod_{i=1}^{n} f(y_i \mid \theta) .
+\end{align*}
+\pause
+Products of many small numbers underflow and are painful to differentiate, so we
+take logs:
+\begin{align*}
+  \boxed{\;\loglik(\theta) \equiv \log \lik(\theta) = \sum_{i=1}^{n}\log f(y_i\mid\theta)\;}
+\end{align*}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item $\log$ is strictly increasing, so it \alert{does not move the maximum}.
+  \item A product becomes a sum, so the derivative is a sum --- which is why every
+        MLE formula looks like a sample average.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Worked Example 1: Bernoulli}
+Let $Y_i \in \{0,1\}$ with $\Pr(Y_i=1)=\theta$. The mass function written as a
+single formula:
+\begin{align*}
+  f(y_i\mid\theta) = \theta^{y_i}(1-\theta)^{1-y_i} .
+\end{align*}
+(Check: at $y_i = 1$ it gives $\theta$; at $y_i = 0$ it gives $1-\theta$.)
+\vskip4pt
+\begin{align*}
+  \lik(\theta)
+  &= \prod_{i=1}^n \theta^{y_i}(1-\theta)^{1-y_i}
+   = \theta^{\sum_i y_i}(1-\theta)^{n - \sum_i y_i} , \\[3pt]
+  \loglik(\theta)
+  &= \Big(\textstyle\sum_i y_i\Big)\log\theta
+   + \Big(n - \textstyle\sum_i y_i\Big)\log(1-\theta) .
+\end{align*}
+\vskip2pt
+Notice that the data enter only through $\sum_i y_i$: it is a
+\emph{sufficient statistic}.
+\end{frame}
+
+\begin{frame}{Worked Example 2: Poisson}
+Let $Y_i$ be a count with $\Pr(Y_i = y\mid\theta) = \dfrac{\theta^{y}e^{-\theta}}{y!}$.
+\begin{align*}
+  \loglik(\theta)
+  &= \sum_{i=1}^n \log\!\left(\frac{\theta^{y_i}e^{-\theta}}{y_i!}\right)
+   = \sum_{i=1}^n \Big( y_i\log\theta - \theta - \log(y_i!)\Big) \\[3pt]
+  &= \log(\theta)\sum_{i} y_i \;-\; n\theta \;-\; \sum_i \log(y_i!) .
+\end{align*}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item The last term does not involve $\theta$ at all. It is an
+        \emph{additive constant} and can be dropped for maximization --- but not
+        if you want to compare log-likelihood \emph{values} across models.
+  \item Again the data enter only through $\sum_i y_i$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Worked Example 3: Normal}
+Let $Y_i \sim \mathcal N(\mu,\sigma^2)$, two unknown parameters.
+\begin{align*}
+  f(y_i\mid\mu,\sigma^2)
+  = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(y_i-\mu)^2}{2\sigma^2}\right),
+\end{align*}
+so
+\begin{align*}
+  \loglik(\mu,\sigma^2)
+  = -\frac{n}{2}\log(2\pi) - \frac{n}{2}\log\sigma^2
+    - \frac{1}{2\sigma^2}\sum_{i=1}^n (y_i-\mu)^2 .
+\end{align*}
+\vskip3pt
+\begin{itemize}
+  \item Look at the last term: for fixed $\sigma^2$, maximizing over $\mu$ means
+        \alert{minimizing $\sum_i(y_i-\mu)^2$}. Least squares falls out of the
+        normal likelihood, not the other way round.
+  \item Replacing $\mu$ with $X_i'\bm\beta$ gives the linear regression model.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Finding the MLE]{Finding the Maximum}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Score Function}
+\begin{block}{Definition}
+The \alert{score} is the derivative of the log-likelihood with respect to the
+parameter:
+\begin{align*}
+  S(\theta) \;\equiv\; \frac{\partial \loglik(\theta)}{\partial\theta}
+  \;=\; \sum_{i=1}^{n} \frac{\partial \log f(y_i\mid\theta)}{\partial \theta} .
+\end{align*}
+\end{block}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item The MLE $\hat\theta$ solves $S(\hat\theta) = 0$ --- the
+        \alert{first-order condition}, exactly as the normal equations were the
+        FOC for least squares.
+  \item Second-order condition: $\partial^2\loglik/\partial\theta^2 < 0$ at
+        $\hat\theta$, so that we have a maximum rather than a minimum.
+  \item A key population fact: $\E[S(\theta_0)] = 0$ at the true parameter. The
+        score is a \emph{mean-zero} random variable --- which is why the CLT will
+        apply to it.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bernoulli: Deriving $\hat\theta$}
+\begin{align*}
+  \loglik(\theta) &= \Big(\textstyle\sum_i y_i\Big)\log\theta
+   + \Big(n - \textstyle\sum_i y_i\Big)\log(1-\theta) \\[4pt]
+  S(\theta) &= \frac{\sum_i y_i}{\theta} - \frac{n - \sum_i y_i}{1-\theta}
+  \ \overset{!}{=}\ 0 .
+\end{align*}
+\pause
+Multiply through by $\theta(1-\theta)$:
+\begin{align*}
+  (1-\theta)\sum_i y_i - \theta\Big(n - \sum_i y_i\Big) &= 0 \\
+  \sum_i y_i - \theta\sum_i y_i - n\theta + \theta\sum_i y_i &= 0 \\
+  \boxed{\;\hat\theta = \frac{1}{n}\sum_i y_i = \bar y\;}
+\end{align*}
+The MLE of a probability is the sample proportion --- derived, not assumed.
+\end{frame}
+
+\begin{frame}{Poisson: Deriving $\hat\theta$}
+\begin{align*}
+  \loglik(\theta) &= \log(\theta)\sum_i y_i - n\theta - \sum_i\log(y_i!) \\[4pt]
+  S(\theta) &= \frac{\sum_i y_i}{\theta} - n \ \overset{!}{=}\ 0
+  \qquad\Longrightarrow\qquad
+  \boxed{\;\hat\theta = \bar y\;}
+\end{align*}
+\vskip4pt
+Check the second-order condition:
+\begin{align*}
+  \frac{\partial^2 \loglik}{\partial\theta^2} = -\frac{\sum_i y_i}{\theta^2} < 0 ,
+\end{align*}
+so we really have a maximum. \\[4pt]
+Both examples give $\bar y$, which is not a coincidence: for these distributions
+the mean \emph{is} the parameter.
+\end{frame}
+
+\begin{frame}{Normal: Deriving $\hat\mu$ and $\hat\sigma^2$}
+Two parameters, so two first-order conditions.
+\begin{align*}
+  \frac{\partial\loglik}{\partial\mu}
+  &= \frac{1}{\sigma^2}\sum_i (y_i - \mu) \overset{!}{=} 0
+  \quad\Longrightarrow\quad \hat\mu = \bar y . \\[6pt]
+  \frac{\partial\loglik}{\partial\sigma^2}
+  &= -\frac{n}{2\sigma^2} + \frac{1}{2\sigma^4}\sum_i (y_i-\mu)^2 \overset{!}{=} 0
+  \quad\Longrightarrow\quad
+  \hat\sigma^2 = \frac1n\sum_i (y_i - \hat\mu)^2 .
+\end{align*}
+\pause
+\begin{alertblock}{The MLE of $\sigma^2$ is biased}
+It divides by $n$, not $n-1$. So $\E[\hat\sigma^2] = \frac{n-1}{n}\sigma^2 < \sigma^2$.
+\end{alertblock}
+This is our first warning: \alert{maximum likelihood does not promise
+unbiasedness}. What it promises is good behaviour as $n$ grows.
+\end{frame}
+
+\begin{frame}{When There Is No Closed Form}
+Most likelihoods you will meet --- logit, probit, negative binomial, anything
+with covariates --- have no algebraic solution to $S(\theta)=0$. We search
+numerically.
+\vskip4pt
+\begin{block}{Newton--Raphson}
+Start at $\theta^{(0)}$ and iterate
+\begin{align*}
+  \theta^{(t+1)} = \theta^{(t)} - \left[\frac{\partial^2\loglik}{\partial\theta^2}
+  \bigg|_{\theta^{(t)}}\right]^{-1} S(\theta^{(t)}) ,
+\end{align*}
+i.e.\ take a step whose size is the score divided by the curvature. Steep
+curvature $\Rightarrow$ small confident steps; flat $\Rightarrow$ large steps.
+\end{block}
+\vskip3pt
+Variants you will meet: \textbf{BFGS} (approximates the second derivative),
+\textbf{Fisher scoring} (uses the expected rather than observed second
+derivative --- this is what \texttt{glm()} does, as iteratively reweighted least
+squares).
+\end{frame}
+
+\begin{frame}{Practical Matters in \texttt{R}}
+\begin{itemize}\itemsep4pt
+  \item \texttt{optim()} \alert{minimizes}. MLE is a maximization problem, so you
+        pass it the \emph{negative} log-likelihood.
+  \item Supply \texttt{par}, the starting values. Poor starting values are the
+        most common cause of failed convergence.
+  \item Always check the convergence code (\texttt{\$convergence == 0}) --- a
+        returned number is not the same as a converged number.
+  \item Ask for \texttt{hessian = TRUE}; you need it for standard errors.
+        Remember the sign: if you minimized $-\loglik$, then the returned Hessian
+        is $-\partial^2\loglik/\partial\theta\partial\theta'$, which is already
+        the observed information.
+  \item Try several starting values. If they land in different places, your
+        likelihood is multimodal or your model is not identified.
+\end{itemize}
+\vskip3pt
+All of this is Thursday's lab.
+\end{frame}
+
+\begin{frame}{Identification}
+\begin{block}{Definition}
+$\theta$ is \alert{identified} if distinct parameter values imply distinct
+distributions of the data: $\theta^{*}\neq\theta \Rightarrow
+f(\,\cdot \mid \theta^{*}) \neq f(\,\cdot\mid\theta)$.
+\end{block}
+\vskip4pt
+Non-identification means the likelihood is \emph{flat} along some direction: the
+data cannot distinguish among a set of parameter values.
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Classic example}: $Y_i \sim \mathcal N(\theta_1 - \theta_2,\, 1)$.
+        Only the \emph{difference} is identified. Optimizers started at different
+        points will return different $(\hat\theta_1,\hat\theta_2)$ lying along a
+        ridge, all with the same log-likelihood.
+  \item This is the likelihood analogue of \alert{perfect collinearity} in OLS ---
+        and it has the same symptom: a singular Hessian, so no standard errors.
+  \item Diagnosis: multiple start values, and inspecting the Hessian's rank.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Information]{Information and the Variance of the MLE}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Curvature Is Information}
+\begin{center}
+\begin{tikzpicture}[scale=0.95]
+  \begin{scope}
+    \draw[->] (0,0) -- (4.6,0) node[right]{\scriptsize $\theta$};
+    \draw[->] (0,0) -- (0,2.9) node[above]{\scriptsize $\loglik(\theta)$};
+    \draw[dukeblue,very thick,smooth,samples=60,domain=0.3:4.3,variable=\x]
+      plot ({\x},{2.4-0.12*(\x-2.3)^2});
+    \draw[accent,dashed] (2.3,0) -- (2.3,2.4);
+    \node at (2.3,-0.45) {\footnotesize flat: little information};
+  \end{scope}
+  \begin{scope}[xshift=6.2cm]
+    \draw[->] (0,0) -- (4.6,0) node[right]{\scriptsize $\theta$};
+    \draw[->] (0,0) -- (0,2.9) node[above]{\scriptsize $\loglik(\theta)$};
+    \draw[dukeblue,very thick,smooth,samples=60,domain=1.05:3.55,variable=\x]
+      plot ({\x},{2.4-1.5*(\x-2.3)^2});
+    \draw[accent,dashed] (2.3,0) -- (2.3,2.4);
+    \node at (2.3,-0.45) {\footnotesize peaked: much information};
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+\vskip2pt
+Both log-likelihoods peak at the same $\hat\theta$. But on the left, many nearby
+values of $\theta$ fit almost as well --- we are uncertain. On the right, moving
+away from $\hat\theta$ costs a lot of fit --- we are confident.
+\vskip3pt
+\alert{The second derivative measures exactly this.}
+\end{frame}
+
+\begin{frame}{Fisher Information}
+\begin{block}{Definition (one parameter)}
+\begin{align*}
+  \Info(\theta) \;\equiv\; -\E\!\left[\frac{\partial^2 \loglik(\theta)}{\partial\theta^2}\right]
+  \;=\; \E\!\left[\left(\frac{\partial \loglik(\theta)}{\partial\theta}\right)^{\!2}\right]
+  \;=\; \Var\big(S(\theta)\big) .
+\end{align*}
+\end{block}
+\vskip4pt
+The second equality is the \alert{information equality} --- it holds when the
+model is correctly specified, and it will matter a great deal in a moment.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item The minus sign is there because the log-likelihood is concave at a
+        maximum, so the second derivative is negative.
+  \item Information is \emph{additive over independent observations}: with $n$
+        i.i.d.\ observations, $\Info_n(\theta) = n\,\Info_1(\theta)$. This is the
+        source of the familiar $1/n$ in variances.
+  \item Two estimators are available: the \emph{expected} information
+        $\Info(\hat\theta)$ and the \emph{observed} information
+        $-\partial^2\loglik/\partial\theta^2$ evaluated at $\hat\theta$. They are
+        asymptotically equivalent under correct specification, and software
+        typically reports the observed version.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Variance of the MLE}
+\begin{align*}
+  \boxed{\;\widehat{\Var}(\hat\theta) = \Info(\hat\theta)^{-1}
+  = \left[-\frac{\partial^2\loglik}{\partial\theta^2}\bigg|_{\hat\theta}\right]^{-1}\;}
+\end{align*}
+\vskip4pt
+Read it as a sentence: \emph{the variance of the estimate is the reciprocal of
+the curvature of the log-likelihood at its peak}.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Sharper peak $\Rightarrow$ larger information $\Rightarrow$ smaller
+        variance.
+  \item With several parameters\adv, $\Info$ is a matrix and
+        $\widehat{\Var}(\hat{\bm\theta}) = \Info(\hat{\bm\theta})^{-1}$; the
+        standard errors are the square roots of its diagonal.
+  \item This is why \texttt{optim(..., hessian = TRUE)} is not optional.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Worked: Bernoulli Information}
+\begin{align*}
+  S(\theta) &= \frac{\sum_i y_i}{\theta} - \frac{n-\sum_i y_i}{1-\theta}, \\[3pt]
+  \frac{\partial^2\loglik}{\partial\theta^2}
+  &= -\frac{\sum_i y_i}{\theta^2} - \frac{n - \sum_i y_i}{(1-\theta)^2} .
+\end{align*}
+Taking expectations, using $\E[\sum_i y_i] = n\theta$:
+\begin{align*}
+  \Info(\theta)
+  = \frac{n\theta}{\theta^2} + \frac{n(1-\theta)}{(1-\theta)^2}
+  = \frac{n}{\theta} + \frac{n}{1-\theta}
+  = \frac{n}{\theta(1-\theta)} .
+\end{align*}
+\pause
+\begin{align*}
+  \Var(\hat\theta) = \Info(\theta)^{-1} = \frac{\theta(1-\theta)}{n} . \quad\checkmark
+\end{align*}
+Exactly the variance of a sample proportion you already know --- now \emph{derived}
+from the shape of the likelihood.
+\end{frame}
+
+\begin{frame}{Worked: Poisson Information}
+\begin{align*}
+  \frac{\partial^2\loglik}{\partial\theta^2} = -\frac{\sum_i y_i}{\theta^2}
+  \quad\Longrightarrow\quad
+  \Info(\theta) = \frac{\E[\sum_i y_i]}{\theta^2} = \frac{n\theta}{\theta^2}
+  = \frac{n}{\theta} ,
+\end{align*}
+so
+\begin{align*}
+  \Var(\hat\theta) = \frac{\theta}{n},
+  \qquad
+  \widehat{\Var}(\hat\theta) = \frac{\bar y}{n} .
+\end{align*}
+\vskip4pt
+Sanity check by direct calculation: $\hat\theta = \bar y$ and
+$\Var(\bar Y) = \Var(Y)/n = \theta/n$ because the Poisson mean equals its
+variance. \checkmark
+\vskip4pt
+Two routes, same answer. When you can compute the variance directly, do so ---
+it is a free check on your information calculation.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Properties]{Properties of the MLE}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Four Properties}
+Under regularity conditions, as $n\to\infty$:
+\begin{enumerate}\itemsep5pt
+  \item \textbf{Consistency}: $\hat\theta \pto \theta_0$.
+  \item \textbf{Asymptotic normality}:
+        $\hat\theta \overset{a}{\sim} \mathcal N\big(\theta_0, \Info(\theta_0)^{-1}\big)$.
+  \item \textbf{Asymptotic efficiency}: among \emph{regular} estimators, and when
+        the model is correctly specified, none has a smaller asymptotic variance
+        --- the MLE attains the \alert{Cramér--Rao lower bound}. This is much
+        stronger than Gauss--Markov, which only ranked \emph{linear} unbiased
+        estimators.
+  \item \textbf{Invariance}: if $\hat\theta$ is the MLE of $\theta$, then
+        $c(\hat\theta)$ is the MLE of $c(\theta)$ for any continuous $c(\cdot)$.
+        Wonderfully convenient: the MLE of the odds is the odds of the MLE.
+\end{enumerate}
+\vskip6pt
+\alert{The first three are asymptotic} --- none of them says anything about
+$n = 40$. Invariance, by contrast, holds exactly in any sample.
+\end{frame}
+
+\begin{frame}{Why Consistency and Normality Hold\adv}
+The argument is a first-order Taylor expansion of the score around $\theta_0$:
+\begin{align*}
+  0 = S(\hat\theta) \approx S(\theta_0)
+  + \frac{\partial S(\theta_0)}{\partial\theta}(\hat\theta - \theta_0)
+  \ \Longrightarrow\
+  \sqrt n(\hat\theta-\theta_0)
+  \approx \frac{\tfrac{1}{\sqrt n}S(\theta_0)}
+               {-\tfrac1n \partial S(\theta_0)/\partial\theta} .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item The \textbf{denominator} is a sample average of second derivatives; by the
+        LLN it converges to $\Info_1(\theta_0)$.
+  \item The \textbf{numerator} is a normalized sum of the i.i.d.\ mean-zero
+        scores; by the CLT it is asymptotically
+        $\mathcal N\big(0,\Info_1(\theta_0)\big)$.
+  \item Combining: $\sqrt n(\hat\theta-\theta_0)\dto
+        \mathcal N\big(0,\Info_1(\theta_0)^{-1}\big)$.
+\end{itemize}
+\vskip3pt
+\alert{This is structurally identical to the OLS argument in Week 2}: a sample
+average in the numerator, a sample average in the denominator, LLN below and CLT
+above.
+\end{frame}
+
+\begin{frame}{Regularity Conditions --- and When They Fail}
+The theory needs: a correctly specified and identified model; a parameter space
+in which $\theta_0$ is an \emph{interior} point; a support for $y$ that does not
+depend on $\theta$; and enough smoothness to differentiate twice under the
+integral.
+\vskip4pt
+\begin{block}{Failures you will actually meet}
+\begin{itemize}\itemsep2pt
+  \item \textbf{Boundary}: testing whether a variance component is zero. The
+        usual $\chi^2$ reference distribution is wrong.
+  \item \textbf{Support depends on $\theta$}: $Y_i\sim U[0,\theta]$ gives
+        $\hat\theta = \max_i Y_i$, which is \emph{always} below $\theta$ --- badly
+        biased and not asymptotically normal.
+  \item \textbf{Separation} in logit: the MLE runs off to infinity. Week 4.
+  \item \textbf{Too many parameters relative to $n$}: incidental parameters.
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Maximum Likelihood Is Not Unbiased}
+\begin{itemize}\itemsep4pt
+  \item We already saw it: $\hat\sigma^2_{\text{MLE}} = \frac1n\sum_i(y_i-\bar y)^2$
+        has $\E[\hat\sigma^2] = \frac{n-1}{n}\sigma^2$.
+  \item $Y_i \sim U[0,\theta]$: the MLE is $\max_i Y_i$, which is below $\theta$
+        with probability one.
+  \item And unbiasedness does not survive transformation: even if $\hat\theta$ is
+        unbiased for $\theta$, $c(\hat\theta)$ is generally biased for
+        $c(\theta)$. (Invariance holds for the \emph{MLE property}, not for
+        unbiasedness.)
+\end{itemize}
+\vskip4pt
+\begin{alertblock}{The trade we are making}
+Give up exact unbiasedness in finite samples; get consistency, asymptotic
+efficiency, and a completely general recipe that works for any probability model
+you can write down.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{When the Model Is Wrong: the Sandwich Returns\adv}
+The information equality
+$-\E[\partial^2\loglik/\partial\theta^2] = \E[S(\theta)^2]$ holds only if the
+model is correctly specified. When it is not, the two sides differ and
+\begin{align*}
+  \Var(\hat\theta) \approx
+  \underbrace{\big[-\E \partial^2\loglik\big]^{-1}}_{\text{bread}}
+  \underbrace{\E\big[S(\theta)S(\theta)'\big]}_{\text{meat}}
+  \underbrace{\big[-\E \partial^2\loglik\big]^{-1}}_{\text{bread}} .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Exactly the sandwich from Week 2, with the score in place of
+        $X_i\epsilon_i$. It is called the \emph{quasi-} or \emph{pseudo-MLE}
+        variance, or the Huber--White variance for likelihood models.
+  \item In \texttt{R}: \texttt{sandwich::vcovHC()} works on \texttt{glm} objects
+        too, and \texttt{vcovCL()} clusters them.
+  \item The estimator $\hat\theta$ then converges to the parameter of the
+        \emph{best-approximating} model in the Kullback--Leibler sense --- the
+        likelihood analogue of ``best linear approximation to the CEF.''
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Testing]{Likelihood-Based Tests}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Three Ways to Measure the Same Distance}
+\begin{center}
+\begin{tikzpicture}[scale=1.05]
+  \draw[->] (0,0) -- (8.6,0) node[right]{\small $\theta$};
+  \draw[->] (0,0) -- (0,3.5) node[above]{\small $\loglik(\theta)$};
+  \draw[dukeblue,very thick,smooth,samples=80,domain=0.5:8.1,variable=\x]
+    plot ({\x},{3.0-0.14*(\x-5.2)^2});
+  % MLE
+  \draw[dashed,gray] (5.2,0) -- (5.2,3.0);
+  \node at (5.2,-0.35) {\scriptsize $\hat\theta$};
+  % null
+  \draw[dashed,gray] (2.2,0) -- (2.2,{3.0-0.14*(2.2-5.2)^2});
+  \node at (2.2,-0.35) {\scriptsize $\theta_0$};
+  % LR: vertical distance
+  \draw[accent,thick,<->] (2.2,{3.0-0.14*9}) -- (2.2,3.0);
+  \node[accent,right] at (2.3,2.35) {\scriptsize LR: drop in $\loglik$};
+  % Wald: horizontal distance
+  \draw[accent,thick,<->] (2.2,0.28) -- (5.2,0.28);
+  \node[accent] at (3.7,0.6) {\scriptsize Wald: distance in $\theta$};
+  % score: slope at theta0
+  \draw[accent,very thick] (1.5,{3.0-0.14*(1.5-5.2)^2-0.7*(1.5-2.2)})
+                        -- (3.1,{3.0-0.14*(3.1-5.2)^2*0+1.08-0.7*(3.1-2.2)});
+  \node[accent] at (1.5,1.75) {\scriptsize score: slope at $\theta_0$};
+\end{tikzpicture}
+\end{center}
+\vskip-6pt
+All three ask: \emph{is $\theta_0$ far from $\hat\theta$?} They are
+asymptotically equivalent but can differ in finite samples.
+\end{frame}
+
+\begin{frame}{The Likelihood Ratio Test}
+Compare the maximized log-likelihood with and without the restriction:
+\begin{align*}
+  LR = -2\big[\loglik(\hat\theta_{\text{restricted}})
+            - \loglik(\hat\theta_{\text{unrestricted}})\big]
+  \ \dto\ \chi^2_{q} ,
+\end{align*}
+where $q$ is the number of restrictions.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Logic: if the restriction is true, imposing it should not cost much fit.
+  \item The restricted likelihood is always weakly \emph{lower}, so $LR \geq 0$.
+  \item \textbf{Requires estimating both models.} Usually easy, and generally the
+        best-behaved of the three in finite samples --- prefer it when you can.
+  \item \texttt{R}: \texttt{lmtest::lrtest(m0, m1)}, or \texttt{anova(m0, m1,
+        test = "Chisq")} for \texttt{glm}.
+  \item \alert{The models must be nested and fitted on the same observations.}
+        Silently dropping different rows to missingness invalidates the test.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Wald Test}
+Measure the horizontal distance, scaled by the estimated standard error:
+\begin{align*}
+  W = \frac{(\hat\theta - \theta_0)^2}{\widehat{\Var}(\hat\theta)} \ \dto\ \chi^2_1 ,
+  \qquad\text{or }\ z = \frac{\hat\theta-\theta_0}{\SE(\hat\theta)} .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item This is the $t$-ratio you already read off every regression table.
+  \item \textbf{Requires only the unrestricted model} --- convenient when the
+        restricted model is hard to fit.
+  \item Multi-parameter version\adv:
+        $W = (\bm R\hat{\bm\theta}-\bm q)'[\bm R\widehat{\Var}(\hat{\bm\theta})\bm R']^{-1}
+        (\bm R\hat{\bm\theta}-\bm q)$ --- identical in form to Week 2.
+  \item \alert{Caution}: the Wald test is not invariant to how you parameterize
+        the restriction. Testing $\theta = 1$ and $\log\theta = 0$ can give
+        different answers. The LR test does not have this problem.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Score (Lagrange Multiplier) Test}
+Measure the slope of the log-likelihood \emph{at the null}:
+\begin{align*}
+  LM = \frac{S(\theta_0)^2}{\Info(\theta_0)} \ \dto\ \chi^2_q .
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Logic: if $\theta_0$ were the maximum, the slope there would be zero. A
+        steep slope is evidence against it.
+  \item \textbf{Requires only the restricted model} --- useful when the
+        unrestricted model is expensive to fit, e.g.\ testing for overdispersion
+        without fitting the negative binomial.
+  \item Many familiar specification tests are score tests in disguise, including
+        Breusch--Pagan for heteroskedasticity.
+  \item \textbf{Which to use?} Asymptotically the three are identical. In finite
+        samples: LR if you can fit both models, Wald if only the unrestricted is
+        available, score if only the restricted is.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Model Comparison Beyond Nested Tests}
+LR, Wald and score all require \emph{nested} models. For non-nested comparison:
+\begin{align*}
+  AIC = -2\loglik(\hat\theta) + 2k ,
+  \qquad
+  BIC = -2\loglik(\hat\theta) + k\log n .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Both penalize fit by complexity; \alert{lower is better}.
+  \item BIC penalizes more heavily once $n > 7$, and increasingly so with $n$.
+        BIC targets the ``true'' model if it is in the candidate set; AIC targets
+        predictive accuracy.
+  \item Neither is a hypothesis test; there is no $p$-value and no threshold.
+  \item Comparable only across models fitted on \emph{exactly the same} data with
+        the same outcome scale.
+\end{itemize}
+\vskip3pt
+We return to model selection properly in Week 12, where cross-validation replaces
+these analytic penalties.
+\end{frame}
+
+\begin{frame}{Where This Leaves Us}
+\begin{itemize}\itemsep5pt
+  \item A likelihood is the data's probability read as a function of the
+        parameter. The MLE maximizes it; the score is the derivative you set to
+        zero.
+  \item The \emph{curvature} of the log-likelihood is information, and its
+        inverse is the variance. Everything about precision follows from the shape
+        of the peak.
+  \item The MLE is consistent, asymptotically normal, and efficient --- but not
+        unbiased, and all of the guarantees are asymptotic.
+  \item LR, Wald, and score are three views of the same question.
+\end{itemize}
+\vskip6pt
+\begin{block}{Next}
+\textbf{Thursday}: code a likelihood and maximize it numerically in \texttt{R}. \\
+\textbf{Week 4}: put covariates inside the likelihood --- the generalized linear
+model, and the limited dependent variable models you will actually use.
+\end{block}
+\end{frame}
+
+\begin{frame}{References}
+\footnotesize
+\begin{itemize}\itemsep3pt
+\item Pawitan, Yudi. 2013. \textit{In All Likelihood: Statistical Modeling and
+Inference Using Likelihood}. Oxford University Press. [Ch.\ 2 and 4 required;
+Ch.\ 3 additional]
+\item Casella, George and Roger L. Berger. 2002. \textit{Statistical Inference},
+2nd ed. Duxbury. [Ch.\ 7 and 10, for a fuller treatment]
+\item King, Gary. 1998. \textit{Unifying Political Methodology: The Likelihood
+Theory of Statistical Inference}. University of Michigan Press.
+\item White, Halbert. 1982. ``Maximum Likelihood Estimation of Misspecified
+Models.'' \textit{Econometrica} 50(1): 1--25. [the quasi-MLE sandwich]
+\end{itemize}
+\end{frame}
+
+\end{document}

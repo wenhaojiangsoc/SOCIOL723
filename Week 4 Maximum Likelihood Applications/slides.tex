@@ -1,0 +1,684 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SOCIOL 723 -- Social Statistics II
+%% Week 4: Maximum Likelihood -- Applications (Generalized Linear Models)
+%% Wenhao Jiang, Duke University, Fall 2026
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[aspectratio=169,11pt,xcolor=dvipsnames]{beamer}
+\mode<presentation>
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usefonttheme{serif}
+\renewcommand{\familydefault}{\rmdefault}
+
+\usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[english]{babel}
+
+\newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
+\newcommand{\srct}[1]{#1}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\logit}{logit}
+\DeclareMathOperator{\plim}{plim}
+\newcommand{\indep}{\perp\!\!\!\perp}
+
+\newcommand{\E}{E}
+\newcommand{\En}{\mathbb{E}_n}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\bm{X}}
+\newcommand{\Y}{\bm{y}}
+\newcommand{\bhat}{\hat{\bm{\beta}}}
+\newcommand{\zero}{\bm{0}}
+\newcommand{\Ix}{\bm{I}}
+\newcommand{\dto}{\overset{d}{\longrightarrow}}
+\newcommand{\pto}{\overset{p}{\longrightarrow}}
+\newcommand{\lik}{\mathcal{L}}
+\newcommand{\loglik}{\ell}
+\newcommand{\Info}{\mathcal{I}}
+\newcommand{\SE}{\widehat{\text{SE}}}
+
+\usetheme{default}
+\useoutertheme[subsection=false]{miniframes}
+\setbeamertemplate{mini frames}{}
+
+\definecolor{dukeblue}{RGB}{1,33,105}
+\definecolor{accent}{RGB}{200,78,0}
+\definecolor{softgray}{RGB}{242,242,245}
+
+\setbeamercolor{structure}{fg=dukeblue}
+\setbeamercolor{frametitle}{fg=dukeblue,bg=white}
+\setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{alerted text}{fg=accent}
+\setbeamercolor{block title}{fg=white,bg=dukeblue}
+\setbeamercolor{block body}{fg=black,bg=softgray}
+\setbeamercolor{block title alerted}{fg=white,bg=accent}
+\setbeamercolor{block body alerted}{fg=black,bg=softgray}
+
+\setbeamertemplate{footline}[page number]
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamerfont{footnote}{size=\scriptsize}
+\setbeamerfont{caption}{size=\footnotesize}
+\setbeamertemplate{subsection in head/foot}{}
+\setbeamertemplate{subsection in head/foot shaded}{}
+\setbeamertemplate{caption}[numbered]
+
+\newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+
+\setbeamertemplate{section page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
+  \vskip4pt{\color{dukeblue}\rule{0.35\linewidth}{1pt}\par}
+  \vfill\end{centering}}
+\setbeamertemplate{subsection page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\large\bfseries\insertsubsectionhead\par}
+  \vfill\end{centering}}
+
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{5pt}%
+  \setlength{\belowdisplayskip}{5pt}%
+  \setlength{\abovedisplayshortskip}{2pt}%
+  \setlength{\belowdisplayshortskip}{3pt}%
+}
+\setbeamertemplate{frametitle}{%
+  \vskip4pt\usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}%
+  \insertframetitle\par\vskip2pt}
+\setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
+
+\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
+\subtitle{\large Week 4 --- Maximum Likelihood: Applications\\[-8pt]}
+\author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
+\institute[Duke]{}
+\titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
+\date{\large Department of Sociology, Fall 2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Today}
+  \tableofcontents
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[The GLM]{The Generalized Linear Model}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Putting Covariates Inside the Likelihood}
+Last week the parameter $\theta$ was a single number. Now we let it depend on
+covariates. Three ingredients:
+\vskip4pt
+\begin{block}{The GLM recipe}
+\begin{enumerate}\itemsep3pt
+  \item \textbf{Random component}: a distribution for $Y_i$ with mean
+        $\mu_i = \E[Y_i\mid X_i]$ --- normal, Bernoulli, Poisson, \dots
+  \item \textbf{Systematic component}: a \emph{linear predictor}
+        $\eta_i = X_i'\bm\beta$.
+  \item \textbf{Link function}: $g(\mu_i) = \eta_i$, connecting the two.
+\end{enumerate}
+\end{block}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item The linear predictor is always linear. All the nonlinearity lives in the
+        link, whose job is to map $\mu_i$ from its natural range (a probability in
+        $[0,1]$, a rate in $[0,\infty)$) onto the whole real line.
+  \item This is why we can keep using everything from Weeks 1--2 about $X'\beta$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Standard Family}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{llll}
+\toprule
+Outcome & Distribution & Link $g(\mu)$ & \texttt{R} \\
+\midrule
+Continuous & Normal & identity: $\mu$ & \texttt{glm(..., gaussian)} $=$ \texttt{lm} \\
+Binary & Bernoulli & logit: $\log\frac{\mu}{1-\mu}$ & \texttt{binomial(link="logit")} \\
+Binary & Bernoulli & probit: $\Phi^{-1}(\mu)$ & \texttt{binomial(link="probit")} \\
+Count & Poisson & log: $\log\mu$ & \texttt{poisson(link="log")} \\
+Count, overdispersed & Neg.\ binomial & log & \texttt{MASS::glm.nb} \\
+Nominal, $J$ categories & Multinomial & multi-logit & \texttt{nnet::multinom} \\
+Ordered, $J$ categories & --- & cumulative logit & \texttt{MASS::polr} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip6pt
+The \emph{canonical} link for each distribution (logit for the binomial, log for
+the Poisson) makes the algebra especially clean, but you are free to choose
+another --- probit is not canonical and nobody minds.
+\end{frame}
+
+\begin{frame}{How \texttt{glm()} Actually Fits\adv}
+Every GLM log-likelihood has score equations of the form
+\begin{align*}
+  \sum_{i=1}^n \frac{\partial \mu_i}{\partial \eta_i}\,
+  \frac{Y_i - \mu_i}{V(\mu_i)}\, X_i = \zero ,
+\end{align*}
+where $V(\mu)$ is the variance function implied by the distribution.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Compare with OLS's normal equations $\sum_i X_i(Y_i - X_i'\bm\beta) = \zero$:
+        the difference is the weight $\frac{\partial\mu/\partial\eta}{V(\mu)}$.
+  \item So GLMs are fitted by \alert{iteratively reweighted least squares}: run a
+        weighted regression, update the weights from the new fitted values, repeat.
+        This is Fisher scoring in disguise.
+  \item Practical consequence: \texttt{glm()} usually converges in 4--6
+        iterations, and failure to converge is a real signal (often separation).
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Binary]{Binary Outcomes}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Start With the Linear Probability Model}
+Just run OLS with a $0/1$ outcome: $\Pr(Y_i = 1\mid X_i) = X_i'\bm\beta$.
+\vskip4pt
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\textbf{In its favour}
+\begin{itemize}\small\itemsep2pt
+  \item Coefficients are marginal effects, directly on the probability scale.
+  \item Everything from Weeks 1--2 applies: FWL, fixed effects, IV, clustering.
+  \item Robust to functional form in the sense of being the best linear
+        approximation to the CEF.
+\end{itemize}
+\end{column}
+\begin{column}{0.49\textwidth}
+\textbf{Against}
+\begin{itemize}\small\itemsep2pt
+  \item Fitted probabilities can fall outside $[0,1]$.
+  \item Errors are \emph{necessarily} heteroskedastic:
+        $\Var(Y_i\mid X_i)=p_i(1-p_i)$. (Use robust SEs --- Week 2.)
+  \item Constant marginal effects are implausible near 0 and 1.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip6pt
+\begin{block}{A reasonable position}
+For a causal contrast with a binary treatment, the LPM is often fine and easier
+to interpret. For prediction, extrapolation, or when the probabilities are near
+the boundary, you want logit or probit.
+\end{block}
+\end{frame}
+
+\begin{frame}{A Latent-Variable Motivation}
+Imagine an unobserved continuous propensity $Y_i^{*}$ --- a taste for voting, a
+level of labour-market attachment:
+\begin{align*}
+  Y_i^{*} = X_i'\bm\beta + \epsilon_i ,
+  \qquad
+  Y_i = \begin{cases} 1 & \text{if } Y_i^{*} > 0 \\ 0 & \text{otherwise.}\end{cases}
+\end{align*}
+Then
+\begin{align*}
+  \Pr(Y_i = 1\mid X_i) = \Pr(\epsilon_i > -X_i'\bm\beta) = F(X_i'\bm\beta)
+\end{align*}
+for $F$ the CDF of $-\epsilon_i$.
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item $\epsilon_i \sim$ \textbf{logistic} $\Rightarrow$
+        $F(z) = \frac{e^{z}}{1+e^{z}} = \Lambda(z)$: the \alert{logit} model.
+  \item $\epsilon_i \sim \mathcal N(0,1)$ $\Rightarrow$ $F(z) = \Phi(z)$: the
+        \alert{probit} model.
+\end{itemize}
+\vskip3pt
+The choice between them is a choice about the tails of an unobservable. It almost
+never matters empirically.
+\end{frame}
+
+\begin{frame}{The Logit Likelihood}
+With $p_i \equiv \Lambda(X_i'\bm\beta) = \dfrac{\exp(X_i'\bm\beta)}{1+\exp(X_i'\bm\beta)}$,
+the Bernoulli log-likelihood from last week becomes
+\begin{align*}
+  \loglik(\bm\beta) = \sum_{i=1}^{n}\Big[\, Y_i \log p_i + (1-Y_i)\log(1-p_i)\Big] .
+\end{align*}
+\pause
+Substituting and simplifying (using $\log\frac{p_i}{1-p_i} = X_i'\bm\beta$ and
+$\log(1-p_i) = -\log(1+e^{X_i'\bm\beta})$):
+\begin{align*}
+  \loglik(\bm\beta) = \sum_{i=1}^{n}\Big[\, Y_i\, X_i'\bm\beta
+  - \log\big(1+e^{X_i'\bm\beta}\big)\Big] .
+\end{align*}
+\vskip2pt
+This is globally concave in $\bm\beta$, so the maximum is unique whenever it
+exists --- a genuinely nice property that probit shares.
+\end{frame}
+
+\begin{frame}{The Logit Score}
+Differentiate. The key fact is $\dfrac{\partial \Lambda(z)}{\partial z} = \Lambda(z)\big(1-\Lambda(z)\big)$:
+\begin{align*}
+  \frac{\partial\loglik}{\partial\bm\beta}
+  = \sum_{i=1}^n \left[ Y_i X_i - \frac{e^{X_i'\bm\beta}}{1+e^{X_i'\bm\beta}}X_i\right]
+  = \sum_{i=1}^n \big(Y_i - p_i\big)X_i \ \overset{!}{=}\ \zero .
+\end{align*}
+\vskip4pt
+\begin{alertblock}{Look at what this says}
+$\sum_i (Y_i - \hat p_i)X_i = \zero$: the residuals $Y_i - \hat p_i$ are
+orthogonal to the regressors. \alert{Exactly the OLS normal equations}, with the
+fitted probability in place of the fitted value.
+\end{alertblock}
+\vskip3pt
+There is no closed-form solution because $p_i$ depends on $\bm\beta$
+nonlinearly --- hence the numerical optimization from last week. The information
+matrix\adv{} is $\Info(\bm\beta) = \sum_i p_i(1-p_i)X_iX_i'$.
+\end{frame}
+
+\begin{frame}[shrink=10]{Logit Versus Probit}
+\begin{center}
+\begin{tikzpicture}[scale=1]
+  \draw[->] (-4.4,0) -- (4.6,0) node[right]{\small $X'\beta$};
+  \draw[->] (0,0) -- (0,2.9) node[above]{\small $\Pr(Y=1)$};
+  \draw[gray,dashed] (-4.4,2.5) -- (4.4,2.5) node[right]{\scriptsize 1};
+  \draw[dukeblue,very thick,smooth,samples=90,domain=-4.3:4.3,variable=\x]
+    plot ({\x},{2.5/(1+exp(-\x))});
+  \draw[accent,very thick,dash pattern=on 4pt off 2pt,smooth,samples=90,domain=-4.3:4.3,variable=\x]
+    plot ({\x},{2.5*(1/(1+exp(-1.702*\x)))});
+  \node[dukeblue] at (3.0,1.6) {\scriptsize logit};
+  \node[accent] at (1.5,2.2) {\scriptsize probit, rescaled};
+\end{tikzpicture}
+\end{center}
+\vskip-6pt
+{\footnotesize (The sketched ``probit'' curve is the standard logistic
+approximation $\Lambda(1.702x)$ to $\Phi(x)$; the two agree to within $0.01$
+everywhere, which is itself the point of the slide.)}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The two curves are nearly indistinguishable after rescaling: logit
+        coefficients are roughly $1.6$--$1.8$ times probit coefficients.
+  \item Choose logit if you want odds ratios; probit if you want a normal latent
+        variable (useful for bivariate probit and selection models).
+  \item \alert{Marginal effects and predicted probabilities from the two are
+        essentially identical.} Do not agonize over this choice.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Scale Is Not Identified --- and Why It Matters}
+In the latent-variable setup, only $\bm\beta/\sigma_\epsilon$ is identified: we
+normalize $\sigma_\epsilon$ (to $\pi/\sqrt3$ for logit, to 1 for probit) because
+the data cannot tell us anything about it.
+\vskip4pt
+\begin{alertblock}{The consequence \srcp{Allison 1999; Mood 2010}}
+Adding a covariate changes the residual variance and therefore \emph{rescales all
+the coefficients}, even ones whose true effect is unchanged:
+\begin{itemize}\itemsep0pt
+  \item You cannot compare logit coefficients \alert{across nested models} the way
+        you compare OLS coefficients.
+  \item You cannot compare logit coefficients \alert{across groups or samples}
+        with different residual variance.
+  \item ``The coefficient shrank when I added controls'' may be pure rescaling
+        rather than confounding.
+\end{itemize}
+\end{alertblock}
+\vskip3pt
+\textbf{The fix}: compare \emph{marginal effects} or \emph{predicted
+probabilities}, which are on the probability scale and do not suffer from this.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Interpretation]{Interpretation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Three Scales, Three Meanings}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{lll}
+\toprule
+Scale & Quantity & Interpretation of $\beta_j$ \\
+\midrule
+Log-odds & $\log\frac{p}{1-p} = X'\bm\beta$ & additive: linear, but nobody thinks
+  in log-odds \\
+Odds & $\frac{p}{1-p} = e^{X'\bm\beta}$ & multiplicative: $e^{\beta_j}$ is the
+  \emph{odds ratio} \\
+Probability & $p = \Lambda(X'\bm\beta)$ & \alert{what we care about}, but the
+  effect is not constant \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip6pt
+\begin{itemize}\itemsep3pt
+  \item The model is linear on the first scale and nonlinear on the third. That
+        tension is the whole interpretation problem.
+  \item \alert{An odds ratio is not a risk ratio}, and it is not a probability
+        difference. An odds ratio of 2 can correspond to a probability change from
+        $0.01$ to $0.02$ or from $0.33$ to $0.50$.
+  \item Report probabilities or marginal effects. Report odds ratios only if your
+        audience genuinely works in odds.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Marginal Effects}
+For a \emph{continuous} $X_j$, the marginal effect on the probability is
+\begin{align*}
+  \frac{\partial \Pr(Y_i=1\mid X_i)}{\partial X_{ij}}
+  = \underbrace{\lambda(X_i'\bm\beta)}_{\text{density at } X_i}\ \beta_j ,
+  \qquad \lambda(z) = \Lambda(z)\big(1-\Lambda(z)\big) .
+\end{align*}
+\vskip-2pt
+{\footnotesize For a \emph{binary or categorical} $X_j$ a derivative is
+meaningless; report the average \emph{discrete change}
+$\frac1n\sum_i[\hat p_i(X_j{=}1) - \hat p_i(X_j{=}0)]$ instead. This is what
+\texttt{avg\_comparisons()} does automatically.}
+\alert{It depends on $X_i$}, so there is no single ``the'' marginal effect. Two
+standard summaries:
+\vskip3pt
+\begin{block}{}
+\begin{itemize}\itemsep2pt
+  \item \textbf{Marginal effect at the mean (MEM)}:
+        $\lambda(\bar X'\bhat)\,\hat\beta_j$. Fast, but evaluated at a
+        hypothetical person who may not exist (mean of a dummy $=$ $0.53$ female).
+  \item \textbf{Average marginal effect (AME)}:
+        $\frac1n\sum_i \lambda(X_i'\bhat)\,\hat\beta_j$. Computed for every real
+        respondent, then averaged. \alert{This is the default you should use.}
+\end{itemize}
+\end{block}
+\vskip3pt
+\srct{Hanmer and Kalkan (2013)} make the case for the AME (``observed-value'')
+approach over the MEM (``average-case'') approach.
+\end{frame}
+
+\begin{frame}{Predicted Probabilities Done Right}
+Most readers want: \emph{what is the predicted probability at $X_j = a$ versus
+$X_j = b$, holding everything else at realistic values?}
+\vskip2pt
+\begin{block}{The observed-value approach \srcp{Hanmer and Kalkan 2013}}
+\begin{enumerate}\itemsep1pt
+  \item Take the whole sample as it is.
+  \item Set $X_j = a$ for \emph{everyone}, leaving all other covariates at their
+        actual values. Compute $\hat p_i$ for each $i$ and average.
+  \item Repeat with $X_j = b$.
+  \item Report both, and their difference.
+\end{enumerate}
+\end{block}
+\vskip2pt
+\begin{itemize}\itemsep1pt
+  \item This targets a population-level quantity, and is exactly the
+        \emph{g-computation} estimator we meet again in Week 6.
+  \item Contrast with fixing every other covariate at its mean, which describes a
+        person who may not exist.
+  \item \texttt{R}: \texttt{marginaleffects::avg\_predictions()},
+        \texttt{avg\_slopes()}, \texttt{avg\_comparisons()}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Uncertainty for These Quantities}
+Predicted probabilities and marginal effects are \emph{nonlinear} functions of
+$\bhat$, so you cannot read their standard errors off the regression table. Three
+options:
+\vskip3pt
+\begin{enumerate}\itemsep4pt
+  \item \textbf{Delta method} (Week 2): linearize and use
+        $\nabla g(\bhat)'\widehat{\Var}(\bhat)\nabla g(\bhat)$. Fast, analytic,
+        and the default in \texttt{marginaleffects}.
+  \item \textbf{Simulation} \srcp{King, Tomz, and Wittenberg 2000}: draw
+        $\tilde{\bm\beta}^{(s)} \sim \mathcal N\big(\bhat, \widehat{\Var}(\bhat)\big)$
+        for $s = 1,\dots,S$, compute the quantity of interest at each draw, and
+        take percentiles. Trivial to implement, handles any nonlinearity.
+  \item \textbf{Bootstrap}: resample the data, refit, recompute. Slowest, makes
+        the fewest assumptions about the shape of the sampling distribution.
+\end{enumerate}
+\vskip3pt
+\alert{Do not} compute a confidence interval on the log-odds scale and then
+transform its endpoints if what you want is an interval for a
+\emph{difference} in probabilities.
+\end{frame}
+
+\begin{frame}{Interactions in Nonlinear Models}
+In a logit, the effect of $X_1$ on the probability depends on $X_2$ \emph{even
+with no product term in the model}: the curve is steepest in the middle and flat
+at the ends.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item So a significant $\hat\beta_{12}$ on the log-odds scale is neither
+        necessary nor sufficient for interaction on the probability scale
+        \srcp{Ai and Norton 2003}.
+  \item Conversely, \srct{Berry, DeMeritt, and Esarey (2010)} show that omitting
+        the product term imposes a very specific --- and usually unmotivated ---
+        form of interaction.
+  \item \textbf{Practical advice}: include the product term if your theory says
+        the latent-scale effects interact, and then \alert{report the interaction
+        you care about as a difference in average marginal effects}, with an
+        interval.
+\end{itemize}
+\vskip3pt
+\texttt{marginaleffects::avg\_comparisons(m, variables = "x1", by = "x2")}.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[More Outcomes]{Multinomial, Ordered, and Count Outcomes}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Multinomial Logit}
+For an unordered outcome with $J$ categories, pick a base category $J$ and model
+\begin{align*}
+  \Pr(Y_i = j \mid X_i) = \frac{\exp(X_i'\bm\beta_j)}{1 + \sum_{m=1}^{J-1}\exp(X_i'\bm\beta_m)} ,
+  \qquad \bm\beta_J \equiv \zero .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item You estimate $J-1$ coefficient vectors --- interpretation burden grows
+        fast. Report predicted probabilities by category, not coefficient tables.
+  \item Every coefficient is relative to the omitted base category. Changing the
+        base changes every number without changing the model.
+  \item \textbf{IIA}: the ratio $\Pr(Y=j)/\Pr(Y=m)$ does not depend on what other
+        options exist --- the ``red bus / blue bus'' problem. Testable in
+        principle (Hausman--McFadden), but the tests behave poorly; think
+        substantively instead.
+  \item Alternatives when IIA is untenable: nested logit, multinomial probit,
+        mixed logit.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Ordered Logit}
+For an ordered outcome, one latent variable and $J-1$ cutpoints:
+\begin{align*}
+  Y_i^{*} = X_i'\bm\beta + \epsilon_i ,
+  \qquad
+  Y_i = j \ \text{ if } \ \tau_{j-1} < Y_i^{*} \leq \tau_j .
+\end{align*}
+This gives the cumulative-logit form
+$\Pr(Y_i \leq j \mid X_i) = \Lambda(\tau_j - X_i'\bm\beta)$.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Only \emph{one} $\bm\beta$ regardless of $J$: far more parsimonious than
+        multinomial logit. That parsimony is the \alert{proportional odds
+        assumption} --- the effect of $X$ is the same at every cutpoint.
+  \item Test it with a Brant test, or by comparing to a generalized ordered logit
+        that relaxes it (\texttt{VGAM}, \texttt{ordinal::clm}).
+  \item If proportional odds fails badly and the categories are genuinely ordered,
+        a partial proportional odds model is usually the right compromise.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Poisson Regression for Counts}
+\begin{align*}
+  Y_i \mid X_i \sim \text{Poisson}(\mu_i), \qquad \log\mu_i = X_i'\bm\beta .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Log link keeps $\mu_i > 0$; coefficients are \emph{semi-elasticities}:
+        $e^{\beta_j}$ is the multiplicative change in the expected count, so
+        $\beta_j = 0.10$ means about $10\%$ more events.
+  \item \textbf{Exposure}: if units are observed for different lengths of time or
+        have different populations at risk, model the \emph{rate} by adding an
+        \texttt{offset(log(exposure))} --- a coefficient constrained to 1.
+  \item The Poisson imposes $\Var(Y_i\mid X_i) = \E[Y_i\mid X_i]$. That is a
+        strong restriction and it is usually violated.
+\end{itemize}
+\vskip3pt
+Useful fact: with a log link, Poisson regression is \emph{consistent for the
+conditional mean even when the Poisson distribution is wrong}, provided the mean
+is correctly specified. Pair it with robust standard errors and it is a
+workhorse for non-negative outcomes.
+\end{frame}
+
+\begin{frame}{Overdispersion}
+In practice $\Var(Y_i\mid X_i) > \E[Y_i\mid X_i]$ almost always --- unobserved
+heterogeneity makes some units systematically more event-prone.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Consequence: coefficients stay roughly right, but \alert{standard errors
+        are far too small}, sometimes by a factor of two or three.
+  \item \textbf{Quasi-Poisson}: keep the Poisson mean, multiply the variance by a
+        dispersion parameter $\phi$ estimated from the data. Simple; inflates the
+        standard errors by $\sqrt{\hat\phi}$.
+  \item \textbf{Negative binomial}: model the heterogeneity explicitly as a gamma
+        mixture, giving $\Var(Y) = \mu + \mu^2/\theta$. A genuine likelihood, so
+        AIC and LR tests apply. \texttt{MASS::glm.nb}.
+  \item \textbf{Robust standard errors} on a Poisson fit are the pragmatic
+        third option, and are consistent under any variance function.
+\end{itemize}
+\vskip3pt
+Test with a score test for overdispersion (\texttt{AER::dispersiontest}) --- a
+nice example of a test that needs only the restricted model.
+\end{frame}
+
+\begin{frame}{Excess Zeros}
+Many sociological counts have far more zeros than any Poisson or negative
+binomial allows: number of arrests, number of union grievances, hours of
+volunteering.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Zero-inflated}: a mixture of a ``structural zero'' class (people
+        who could never have a positive count) and a count process. Two equations,
+        two sets of coefficients. \texttt{pscl::zeroinfl}.
+  \item \textbf{Hurdle}: a binary model for zero versus positive, then a
+        truncated count model for the positives. \texttt{pscl::hurdle}.
+\end{itemize}
+\vskip4pt
+\begin{alertblock}{Choose on substance, not fit}
+Zero-inflation says some zeros are of a different \emph{kind}; a hurdle says
+crossing from zero to one is a different \emph{process}. Ask which story your
+theory tells before letting AIC decide. And check first whether a negative
+binomial already accommodates the zeros --- often it does.
+\end{alertblock}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Practice]{Diagnostics and Practice}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Separation}
+\vskip-2pt
+If some linear combination of the covariates perfectly predicts the outcome ---
+say, every respondent with a graduate degree voted --- then the likelihood has no
+interior maximum. The coefficient marches off to $\pm\infty$.
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item Symptoms: enormous coefficients (10, 20, 40) with enormous standard
+        errors; convergence warnings; results that change when you change
+        \texttt{maxit}.
+  \item Common with rare outcomes, small samples, and many dummy variables ---
+        i.e.\ very common in practice.
+  \item \textbf{Do not} respond by dropping the variable; that discards the
+        strongest signal in the data.
+  \item \textbf{Fix} \srcp{Zorn 2005}: \alert{Firth's penalized likelihood}, which
+        adds a Jeffreys-prior penalty that guarantees finite estimates and also
+        reduces small-sample bias. \texttt{logistf} or \texttt{brglm2}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Assessing Fit}
+\begin{itemize}\itemsep2pt
+  \item \textbf{Deviance} $= 2\big(\loglik_{\text{saturated}} - \loglik_{\text{fitted}}\big)$:
+        the GLM analogue of the residual sum of squares. The saturated term is
+        common to nested models, so \emph{differences} in deviance are exactly LR
+        tests.
+  \item \textbf{Pseudo-$R^2$} (McFadden: $1 - \loglik_{\text{full}}/\loglik_{\text{null}}$).
+        Interpretable only as a rank ordering, never as ``proportion of variance
+        explained.'' Values of $0.2$--$0.4$ are considered excellent.
+  \item \textbf{Classification accuracy}: needs a threshold, and is misleading
+        with rare outcomes --- always compare against the null model that predicts
+        the majority class.
+  \item \textbf{ROC / AUC}: accuracy across all thresholds. $0.5$ is a coin flip,
+        $1.0$ is perfect.
+  \item \textbf{Predictive distribution checks}: simulate outcomes from the fitted
+        model and compare their distribution to the data. This is the most
+        informative diagnostic and the least often used.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Practical Protocol}
+\begin{enumerate}\itemsep4pt
+  \item Choose the distribution from the \emph{outcome}, and the link from
+        convention. Do not agonize over logit versus probit.
+  \item Fit, then check convergence and look for separation.
+  \item Check overdispersion for counts; check proportional odds for ordered
+        outcomes.
+  \item \alert{Report average marginal effects or predicted probabilities}, with
+        intervals from the delta method or simulation. Coefficient tables belong
+        in an appendix.
+  \item Never compare raw coefficients across nested logit models or across
+        groups. Compare marginal effects.
+  \item Use robust or clustered standard errors, exactly as in Week 2 --- the
+        sandwich applies to \texttt{glm} objects too.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Looking Ahead}
+\begin{itemize}\itemsep5pt
+  \item We now have both estimation engines: least squares and maximum
+        likelihood. Everything in the rest of the course is one of them, applied
+        to a cleverly chosen quantity.
+  \item \alert{Notice what we have \emph{not} done}: nothing in Weeks 1--4 says
+        any coefficient is a causal effect. We have been describing conditional
+        distributions.
+  \item \textbf{Week 5} changes the question. Potential outcomes and DAGs give us
+        a language for saying what we \emph{want} to estimate, and what would have
+        to be true to get it.
+\end{itemize}
+\vskip6pt
+\begin{block}{Problem Set 2}
+Assigned today, due Monday September 28. Covers Weeks 3--4: deriving and coding
+likelihoods, information and standard errors, and interpreting limited dependent
+variable models on the GSS.
+\end{block}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+\footnotesize
+\begin{itemize}\itemsep3pt
+\item Ai, Chunrong and Edward C. Norton. 2003. ``Interaction Terms in Logit and
+Probit Models.'' \textit{Economics Letters} 80(1): 123--129.
+\item Allison, Paul D. 1999. ``Comparing Logit and Probit Coefficients Across
+Groups.'' \textit{Sociological Methods \& Research} 28(2): 186--208.
+\item Berry, William D., Jacqueline H.R. DeMeritt, and Justin Esarey. 2010.
+``Testing for Interaction in Binary Logit and Probit Models: Is a Product Term
+Essential?'' \textit{American Journal of Political Science} 54(1): 248--266.
+\item Hanmer, Michael J. and Kerem Ozan Kalkan. 2013. ``Behind the Curve:
+Clarifying the Best Approach to Calculating Predicted Probabilities and Marginal
+Effects from Limited Dependent Variable Models.''
+\textit{American Journal of Political Science} 57(1): 263--277.
+\item James, Gareth et al. 2021. \textit{An Introduction to Statistical Learning},
+2nd ed. Springer. [Ch.\ 4]
+\item King, Gary, Michael Tomz, and Jason Wittenberg. 2000. ``Making the Most of
+Statistical Analyses: Improving Interpretation and Presentation.''
+\textit{American Journal of Political Science} 44(2): 347--361.
+\item Long, J. Scott. 1997. \textit{Regression Models for Categorical and Limited
+Dependent Variables}. Sage. [the standard sociological reference]
+\item Mood, Carina. 2010. ``Logistic Regression: Why We Cannot Do What We Think We
+Can Do, and What We Can Do About It.'' \textit{European Sociological Review}
+26(1): 67--82.
+\item Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response
+Models.'' \textit{Political Analysis} 13: 157--170.
+\end{itemize}
+\end{frame}
+
+\end{document}
