@@ -10,3 +10,4 @@ logs/
 *.synctex.gz
 *_files/
 .Rhistory
+syllabus/main.pdf

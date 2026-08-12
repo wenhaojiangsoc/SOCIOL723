@@ -15,7 +15,7 @@ regularization, and double/debiased ML).
 
 Tuesday sessions are lectures; Thursday sessions are hands-on `R` labs.
 
-- [Syllabus](./syllabus/SOCIOL723_syllabus.pdf)
+- [Syllabus](./Syllabus.pdf)
 - Lab data: [`Data/gss_earnings.rds`](./Data) — a GSS 2010–2022 extract of
   full-time workers aged 25–64 (*n* = 3,509), built by
   [`Data/build_gss_extract.R`](./Data/build_gss_extract.R).
