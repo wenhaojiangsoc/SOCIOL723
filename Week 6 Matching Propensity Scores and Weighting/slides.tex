@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 6 --- Matching, Propensity Scores, and Weighting\\[-8pt]}
+\subtitle{\large Week 6, Matching, Propensity Scores, and Weighting\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -185,7 +199,7 @@ Substituting,
 \end{align*}
 \vskip3pt
 \alert{The matching-based ATT weights each cell effect in proportion to the
-probability of treatment in that cell} --- that is, in proportion to the
+probability of treatment in that cell}; that is, in proportion to the
 propensity score $e(x)$. Cells where treatment is common count for more, which
 is exactly what ``the effect on the treated'' should mean.
 \end{frame}
@@ -249,22 +263,26 @@ $\sigma^2_D(x) = e(x)\big(1-e(x)\big)$, so
 \vskip2pt
 \alert{Regression weights each cell by the \emph{conditional variance} of
 treatment.} Compare with matching, which weighted by $e(x)$ itself. Cells with
-$e(x)\approx 0.5$ dominate the regression; cells that are nearly all treated or
-nearly all control contribute almost nothing --- to either estimator.
+$e(x)\approx 0.5$ dominate the regression, and cells that are nearly all treated
+or nearly all control contribute almost nothing \emph{to $\delta_R$}. Matching
+behaves differently at the top end, which is the next slide.
 \end{frame}
 
-\begin{frame}[shrink=10]{Two Consequences Worth Stating Plainly}
+\begin{frame}[allowframebreaks,t]{Two Consequences Worth Stating Plainly}
 \begin{itemize}\itemsep4pt
-  \item \textbf{Regression and matching answer different questions} even under
-        identical assumptions and with the same saturated specification. Neither
-        is ``the'' ATE unless effects are homogeneous.
+  \item \textbf{The two weightings answer different questions} even under
+        identical assumptions and with the same saturated specification. Matching
+        is a \emph{method}, not an estimand, and can be pointed at the ATE or the
+        ATT by changing the cell weights; the ATT weighting above is the one that
+        necessarily differs from $\delta_R$. Neither $\delta_R$ nor the ATT is
+        ``the'' ATE unless effects are homogeneous.
   \item \textbf{The regression weight $e(x)(1-e(x))$ vanishes at $e(x)\in\{0,1\}$},
         so cells with no comparison units drop out of $\delta_R$ silently.
         \alert{Positivity failures do not produce an error message; they produce a
         quietly redefined estimand.}
   \item Matching is different: a cell with $e(x)\approx1$ carries a \emph{large}
         ATT weight. But at $e(x)=1$ there is no control unit, so $\delta(x)$ is
-        simply not identified --- the estimator has nothing to average, and the
+        simply not identified; the estimator has nothing to average, and the
         honest response is to say which cells you dropped.
 \end{itemize}
 \vskip4pt
@@ -291,17 +309,17 @@ and untreated units occur:
   \item In that sense, regression with continuous covariates \emph{is} a fuzzy
         matching method, giving the largest weights to neighbourhoods with the
         most balanced overlap.
-  \item \alert{Without common support, regression still returns a number} --- by
+  \item \alert{Without common support, regression still returns a number}, by
         extending the fitted control line into the treated region. That recovers
         the truth only if the control surface $\E[Y\mid D=0,X]$ is correctly
         specified out there \emph{and} the treatment effect is constant across
-        $X_i$ --- two functional-form claims, neither checkable where there are no
+        $X_i$, two functional-form claims, neither checkable where there are no
         data.
   \item This is the deepest reason to look at overlap before running anything.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Does It Matter Empirically? Angrist (1998)}
+\begin{frame}[allowframebreaks,t]{Does It Matter Empirically? Angrist (1998)}
 Effect of \emph{voluntary} military service on 1988--91 Social Security earnings,
 among men who applied to enter the armed forces 1979--82. Matching and regression
 both control for year of birth, education at application, and AFQT score.
@@ -324,7 +342,7 @@ Non-whites & 11{,}664 & 2{,}449.1 & 839.7 & 1{,}074.4 & 234.7 \\
 $175{,}262$ non-whites.}
 \vskip3pt
 \begin{itemize}\itemsep1pt
-  \item Adjustment reverses the sign for whites --- selection into service is
+  \item Adjustment reverses the sign for whites, selection into service is
         strongly positive on earnings potential.
   \item Matching and regression differ by about $100$--$235$ dollars, and the
         \emph{difference} is statistically significant. Small, but exactly the
@@ -359,7 +377,7 @@ choosing:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Curse of Dimensionality}
+\begin{frame}[allowframebreaks,t]{The Curse of Dimensionality}
 With $p$ binary covariates there are $2^p$ cells: $p=10$ gives 1{,}024, $p=20$
 gives over a million. Exact matching becomes impossible long before the
 covariates run out.
@@ -367,21 +385,24 @@ covariates run out.
 Practical responses, in rough order of desperation:
 \begin{itemize}\itemsep3pt
   \item \textbf{Coarsened exact matching} (CEM): bin continuous covariates
-        coarsely --- age in five-year bands, income in quintiles --- then match
+        coarsely, age in five-year bands, income in quintiles, then match
         exactly on the bins. Transparent, and you see immediately what you had to
         discard.
   \item \textbf{Nearest-neighbour matching} on a distance: Euclidean, or
         \emph{Mahalanobis} $\big[(X_i - X_j)'\hat{\bm\Sigma}^{-1}(X_i - X_j)\big]^{1/2}$,
         which scales by the covariance so no variable dominates by its units.
-  \item \textbf{Propensity score matching}: collapse $X$ to a single number ---
+  \item \textbf{Propensity score matching}: collapse $X$ to a single number, 
         the next section.
 \end{itemize}
 \vskip3pt
-\alert{Every one of these is a way of admitting that positivity fails somewhere.}
-Being explicit about where is a feature.
+\alert{Every one of these is a way of admitting that exact comparisons run out in
+\emph{your sample}.} That is finite-sample sparsity, which is not the same thing
+as a structural positivity failure ($e(x)\in\{0,1\}$ in the population), though
+in practice you often cannot tell them apart. Being explicit about where the
+comparisons thinned is a feature.
 \end{frame}
 
-\begin{frame}[shrink=8]{Choices That Actually Matter}
+\begin{frame}[allowframebreaks,t]{Choices That Actually Matter}
 \begin{itemize}\itemsep2pt
   \item \textbf{With or without replacement}. With replacement gives better
         matches and lower bias but higher variance, and the same control unit may
@@ -420,8 +441,10 @@ much your final model has to do.
 \end{enumerate}
 \vskip2pt
 {\small\alert{Never use a balance $t$-test.} Balance is a property of the sample you
-have, not a hypothesis about a population; its $p$-value falls mechanically as
-matching discards observations \srcp{Imai, King, and Stuart 2008}.}
+have, not a hypothesis about a population. Its $p$-value depends on sample size,
+so pruning observations makes it \emph{rise} through lost power even when
+imbalance is unchanged: passing the test can mean you simply have less data
+\srcp{Imai, King, and Stuart 2008}. Report standardized differences instead.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -447,7 +470,7 @@ If $\big(Y_i(0),Y_i(1)\big)\indep D_i \mid X_i$, then
   \item $e(X)$ is a \emph{balancing score}: within strata of $e(X)$, the whole
         covariate vector is distributed identically in the two groups.
   \item This is why the propensity score is everywhere. It is also why it is
-        routinely oversold --- it does nothing about \emph{unobserved}
+        routinely oversold; it does nothing about \emph{unobserved}
         confounders.
 \end{itemize}
 \end{frame}
@@ -470,7 +493,7 @@ $\blacksquare$
 \vskip4pt
 \begin{itemize}\itemsep2pt
   \item Note this is a statement about the \emph{true} $e(x)$. In practice we
-        estimate it, and the properties of $\hat e$ matter --- Week 13.
+        estimate it, and the properties of $\hat e$ matter, Week 13.
   \item Any function of $X$ that is finer than $e(X)$ is also a balancing score;
         $e(X)$ is the coarsest one.
 \end{itemize}
@@ -479,7 +502,7 @@ $\blacksquare$
 \begin{frame}{Estimating and Checking It}
 \begin{itemize}\itemsep3pt
   \item Usually a logit of $D$ on $X$ (Week 4). \alert{The model is not judged by
-        fit.} A propensity model with a high AUC is often a bad sign --- it means
+        fit.} A propensity model with a high AUC is often a bad sign, it means
         treated and control units are easy to tell apart, i.e.\ poor overlap.
   \item Judge it by \textbf{balance}: does weighting or matching on $\hat e$
         equalize the covariate distributions? Iterate on the specification until
@@ -516,7 +539,7 @@ pull in opposite directions.
   \item \textbf{Trim} to a range of $\hat e$ (say $[0.1,0.9]$), and say so. You
         have changed the estimand to that subpopulation.
   \item \textbf{Redefine the population} to the region where comparison is
-        possible --- often the honest and more interesting move.
+        possible, often the honest and more interesting move.
   \item \textbf{Change the estimand}: the ATT needs overlap only for the treated;
         the ``overlap-weighted'' estimand \srcp{Li, Morgan, and Zaslavsky 2018}
         deliberately targets the region where comparison is best.
@@ -553,7 +576,7 @@ This is the Horvitz--Thompson estimator from survey sampling, applied to a
 ``sample'' created by the treatment assignment mechanism.
 \end{frame}
 
-\begin{frame}[shrink=10]{One Class of Estimands, Three Members}
+\begin{frame}[allowframebreaks,t]{One Class of Estimands, Three Members}
 \srct{Hirano, Imbens, and Ridder (2003)}: IPW for the ATE, IPW for the ATT, and
 the regression estimand are all members of one weighted-average family,
 \begin{align*}
@@ -601,7 +624,7 @@ The rescaling cancels in the ratio, so the estimand is unchanged:
 because the denominator is $\E[e(X_i)/e(X_i)] = 1$.
 \end{frame}
 
-\begin{frame}[shrink=10]{Horvitz--Thompson versus H\'ajek}
+\begin{frame}[allowframebreaks,t]{Horvitz--Thompson versus H\'ajek}
 The variance gain comes from \emph{normalizing}, not from the constant. Compare
 a raw average with a ratio:
 \begin{align*}
@@ -620,7 +643,7 @@ a raw average with a ratio:
         artificially inflated, the estimate respects the range of $Y$, and its
         variance is typically much smaller.
   \item Stabilized weights \emph{do} matter when the weights enter a regression
-        rather than a ratio --- the marginal structural model setting.
+        rather than a ratio, the marginal structural model setting.
   \item \alert{Neither fixes poor overlap.} Extreme weights survive both; they
         are a positivity problem wearing a disguise. Diagnose with the largest
         weights and the \emph{effective sample size}
@@ -628,7 +651,7 @@ a raw average with a ratio:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{IPW Is a Weighted Regression}
+\begin{frame}[allowframebreaks,t]{IPW Is a Weighted Regression}
 Define the \alert{Horvitz--Thompson transformation}
 \begin{align*}
   H_i = \frac{D_i}{e(X_i)} - \frac{1-D_i}{1-e(X_i)} .
@@ -640,7 +663,7 @@ term. Equivalently:
 The coefficient on $D_i$ from a \textbf{weighted least squares} regression of
 $Y_i$ on $D_i$ (with an intercept) and weights $1/\hat e(X_i)$ for the treated,
 $1/(1-\hat e(X_i))$ for the controls, equals the \emph{normalized} (H\'ajek) IPW
-estimator --- a difference in weighted means. It is not the raw
+estimator, a difference in weighted means. It is not the raw
 Horvitz--Thompson average, which divides by $n$ instead.
 \end{block}
 \vskip3pt
@@ -650,12 +673,12 @@ Horvitz--Thompson average, which divides by $n$ instead.
   \item Conceptually important: it makes the continuity between ``weighting'' and
         ``regression'' explicit, and it is the bridge to the doubly robust
         estimator below.
-  \item Note the standard errors from \texttt{lm} will be wrong --- they ignore
+  \item Note the standard errors from \texttt{lm} will be wrong, they ignore
         that $\hat e$ was estimated. Bootstrap the whole pipeline.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Weighting to Different Estimands}
+\begin{frame}[allowframebreaks,t]{Weighting to Different Estimands}
 Every adjustment method is a choice of weights on covariate cells. Writing them
 side by side makes the choice explicit:
 \begin{center}\small
@@ -674,16 +697,16 @@ Overlap (ATO) & $1-e(X)$ & $e(X)$ \\
 \vskip4pt
 \begin{itemize}\itemsep2pt
   \item The ATT weights leave the treated alone and reweight controls to look
-        like them --- which is what ``the effect on the treated'' means.
+        like them, which is what ``the effect on the treated'' means.
   \item The \emph{overlap} weights are bounded and largest at $e = 0.5$; they
         never explode. Note that they reproduce exactly the regression weighting
-        $e(x)(1-e(x))$ from the anatomy --- so ``ATO'' is the estimand OLS was
+        $e(x)(1-e(x))$ from the anatomy, so ``ATO'' is the estimand OLS was
         targeting all along, now chosen deliberately
         \srcp{Li, Morgan, and Zaslavsky 2018}.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{G-Computation: the Other Half}
+\begin{frame}[allowframebreaks,t]{G-Computation: the Other Half}
 Instead of modelling treatment, model the outcome. Under ignorability and common
 support, fit
 \begin{align*}
@@ -702,7 +725,7 @@ then \emph{impute both potential outcomes for everyone} and average:
         computed even for $x$ where nobody was treated.
   \item Note the symmetry: IPW models $\Pr(D\mid X)$ and never touches $Y$;
         g-computation models $\E[Y\mid D,X]$ and never touches assignment.
-        Each is exposed to a different misspecification --- which is the opening
+        Each is exposed to a different misspecification, which is the opening
         for the next section.
 \end{itemize}
 \end{frame}
@@ -729,7 +752,7 @@ $m_d(x) = \E[Y_i\mid D_i=d,X_i=x]$ and $e(x) = \Pr(D_i=1\mid X_i=x)$, the
 \vskip3pt
 \begin{block}{Double robustness}
 $\theta = \E[Y_i(1)-Y_i(0)]$ if \alert{either} $m_d$ \alert{or} $e$ is correctly
-specified --- not necessarily both. And when both are right, AIPW attains the
+specified, not necessarily both. And when both are right, AIPW attains the
 semiparametric efficiency bound.
 \end{block}
 \end{frame}
@@ -785,7 +808,7 @@ AIPW; it is a property the estimating equation was built to have.
 \begin{block}{The consequence}
 The bias of AIPW is roughly the \emph{product} of the two nuisance errors, not
 their sum. So if both $\hat e$ and $\hat m_d$ are merely \emph{approximately}
-right, the bias is second-order small --- much smaller than either model's own
+right, the bias is second-order small, much smaller than either model's own
 error.
 \end{block}
 \vskip4pt
@@ -827,7 +850,7 @@ unobserved confounder have to be to overturn my conclusion?}
   \item \textbf{Partial $R^2$ / robustness value} \srcp{Cinelli and Hazlett 2020}:
         express the required confounder strength as the share of residual
         variation in $D$ and in $Y$ it would have to explain, then benchmark it
-        against an \emph{observed} covariate --- ``the confounder would need to
+        against an \emph{observed} covariate, ``the confounder would need to
         be three times as strong as parental education.''
   \item \textbf{$E$-value}: the minimum risk ratio a confounder would need with
         both treatment and outcome.
@@ -837,7 +860,7 @@ unobserved confounder have to be to overturn my conclusion?}
 claim your reader can argue with.
 \end{frame}
 
-\begin{frame}[shrink=10]{Choosing Among the Methods}
+\begin{frame}[allowframebreaks,t]{Choosing Among the Methods}
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{lll}
@@ -857,19 +880,19 @@ AIPW & both & unstable weights; still needs ignorability \\
 \begin{itemize}\itemsep2pt
   \item \alert{If the answers differ a lot, that is worth chasing down.} By the
         anatomy results, systematic differences can mean the cell-level effects
-        $\delta(x)$ are heterogeneous and the methods weight them differently ---
+        $\delta(x)$ are heterogeneous and the methods weight them differently, 
         but they can equally reflect a misspecified model, poor overlap, or
         sampling noise. Distinguish these before concluding anything.
   \item Report the primary estimator you pre-committed to, plus the others as
-        robustness --- never the reverse.
+        robustness, never the reverse.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{A Workflow}
+\begin{frame}{A Workflow}
 \begin{enumerate}\itemsep2pt
   \item State the estimand (ATE? ATT? ATO? on which population?) before touching
         data.
-  \item Draw the DAG. Decide what to condition on --- and what \emph{not} to.
+  \item Draw the DAG. Decide what to condition on, and what \emph{not} to.
   \item Estimate the propensity score. Look at overlap. Trim or redefine if needed
         and say so.
   \item Match or weight. Check balance with standardized mean differences and
@@ -879,23 +902,23 @@ AIPW & both & unstable weights; still needs ignorability \\
   \item Get standard errors that respect the design: bootstrap the whole
         estimation pipeline for weighting and regression estimators, and cluster
         where treatment was assigned. \alert{Do not bootstrap nearest-neighbour
-        matching} --- the ordinary bootstrap is invalid for it
+        matching}, the ordinary bootstrap is invalid for it
         \srcp{Abadie and Imbens 2008}; use their analytic variance instead.
   \item Report a sensitivity analysis.
 \end{enumerate}
 \end{frame}
 
-\begin{frame}{Looking Ahead}
+\begin{frame}[allowframebreaks,t]{Looking Ahead}
 \begin{itemize}\itemsep4pt
   \item Everything today rested on \alert{conditional ignorability}: the claim
         that we measured every confounder. Matching, weighting, and AIPW make
-        that assumption easier to implement --- they do not make it more likely
+        that assumption easier to implement; they do not make it more likely
         to be true.
   \item The anatomy results are the transferable lesson: \emph{every} adjustment
         method is a weighting of cell-level effects, and knowing the weights tells
         you what your number means.
   \item \textbf{Weeks 7--11} abandon ignorability and look for special structure
-        --- an instrument, a discontinuity, parallel trends --- that identifies an
+ (an instrument, a discontinuity, parallel trends) that identifies an
         effect \emph{despite} unobserved confounding.
   \item \textbf{Week 13} returns to today's AIPW estimator and asks what changes
         when the covariate set is large enough that logit and OLS will not do.
@@ -906,7 +929,7 @@ Assigned today, due Monday October 12. Covers Weeks 5--6.
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Abadie, Alberto and Guido W. Imbens. 2008. ``On the Failure of the

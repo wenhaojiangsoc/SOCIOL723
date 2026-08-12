@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 2: Calculus, Simulation, and Robust Inference}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, September 3"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, September 3"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -156,7 +156,7 @@ rbind(optim = fit_optim$par,
 ```
 
 The OLS problem is *convex*, so `optim()` finds the same answer as the closed
-form from any starting point. Most likelihoods are not so friendly --- which is
+form from any starting point. Most likelihoods are not so friendly, which is
 why next week we care about starting values, convergence codes, and the Hessian.
 
 ```{r}
@@ -251,7 +251,7 @@ uncertainty*.
 The scalar formula from lecture, for the bivariate case:
 
 $$
-\widehat{\Var}_{\text{HC0}}(\hat\beta_1)
+\hat{V}_{\text{HC0}}(\hat\beta_1)
 = \frac{\sum_i d_i^2 \hat e_i^2}{\left(\sum_i d_i^2\right)^2},
 \qquad d_i = X_i - \bar X .
 $$
@@ -440,7 +440,7 @@ quantile(boot_b, c(.025, .975))       # percentile interval
 
 The pairs bootstrap resamples $(Y_i, X_i)$ jointly, so it makes no assumption
 about $\sigma_i^2$. Asymptotically it targets the same sandwich variance that
-the HC estimators do, which is why it lands in the same neighbourhood --- the
+the HC estimators do, which is why it lands in the same neighbourhood, the
 small gaps among HC0/HC3/bootstrap here are finite-sample, not conceptual.
 
 ```{r}
@@ -469,8 +469,8 @@ boot.ci(bo, type = c("norm", "perc", "bca"),
 ```
 
 ::: callout-note
-The BCa interval needs *empirical influence values* --- roughly, how much each
-observation pulls the estimate --- to compute its acceleration constant. The
+The BCa interval needs *empirical influence values*, roughly, how much each
+observation pulls the estimate, to compute its acceleration constant. The
 default way `boot` estimates them (a regression approximation) fails here, so we
 supply the jackknife version explicitly with `empinf(bo, type = "jack")`. If you
 ever see `estimated adjustment 'a' is NA`, this is the fix.
@@ -497,7 +497,7 @@ c(cluster_boot = sd(boot_cl),
 ::: callout-warning
 If you had resampled *individuals* here, the bootstrap would have reproduced the
 too-small non-clustered standard error just as faithfully as the analytic formula
-does. The bootstrap does not know your design --- you have to tell it.
+does. The bootstrap does not know your design; you have to tell it.
 :::
 
 # A convenient shortcut: `fixest`
@@ -540,7 +540,7 @@ and `cluster = ~ psu` supplies the cluster-robust variance.
     standard error two ways: `car::deltaMethod()` and a pairs bootstrap. Do they
     agree? Which interval would you report?
 
-6.  **A robust $F$-test by hand.** Using $\bm R$, $\widehat{\Var}(\hat{\bm\beta})$
+6.  **A robust $F$-test by hand.** Using $\bm R$, $\hat{V}(\hat{\bm\beta})$
     and the Wald formula from lecture, compute the joint test that `wordsum` and
     `pareduc` are both zero, with an HC3 variance. Confirm it matches
     `waldtest()`.

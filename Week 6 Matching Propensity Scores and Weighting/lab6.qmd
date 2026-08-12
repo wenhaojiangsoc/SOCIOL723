@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 6: Matching, Weighting, and Doubly Robust Estimation}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 1"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, October 1"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -54,7 +54,7 @@ if you write it up.
 
 We also exclude `hours` from the adjustment set. Hours worked is plausibly a
 *consequence* of completing college, so conditioning on it would be the
-post-treatment error from Week 5 --- it would answer a different question.
+post-treatment error from Week 5; it would answer a different question.
 
 This is an *observational* question with obvious confounding: people who complete
 college differ from those who do not in family background, measured ability, and
@@ -106,7 +106,7 @@ bal.tab(reg_formula <- D ~ pareduc + wordsum + female + black + otherace +
 ```
 
 The `Diff.Un` column is the standardized mean difference. Values well above
-$0.1$ --- here `pareduc` and `wordsum` especially --- mean the two groups are not
+$0.1$, here `pareduc` and `wordsum` especially, mean the two groups are not
 comparable as they stand.
 
 # The propensity score
@@ -177,7 +177,7 @@ fit_nn <- lm(Y ~ D + pareduc + wordsum + female + black + otherace +
 coeftest(fit_nn, vcov = vcovCL, cluster = ~ subclass)["D", ]
 ```
 
-Two things to notice. First, we still run a regression on the matched data ---
+Two things to notice. First, we still run a regression on the matched data, 
 matching is *preprocessing*, and the regression mops up residual imbalance.
 Second, the standard errors are clustered on the matched pair, because the
 matching induces dependence.
@@ -213,7 +213,7 @@ summary(m_cal)$nn
 
 Look at the **Unmatched** row for the treated. Those respondents have no
 comparable counterpart in the data, and dropping them silently redefines the
-estimand --- you are now describing the subpopulation of degree-holders who have
+estimand; you are now describing the subpopulation of degree-holders who have
 plausible non-degree counterparts.
 
 ## Coarsened exact matching
@@ -325,7 +325,7 @@ c(estimate = ate_aipw, se = se_aipw,
 ::: callout-tip
 The AIPW estimator is an average of $n$ i.i.d. terms, so its standard error is
 just the standard deviation of those terms over $\sqrt n$. That is not a
-coincidence --- `aipw_terms` is the *efficient influence function*, and this is
+coincidence, `aipw_terms` is the *efficient influence function*, and this is
 the pattern that Week 13 generalizes.
 :::
 
@@ -425,7 +425,7 @@ robust; if half of one would do it, it is not.
     this means for the "propensity score paradox" from lecture.
 
 6.  **Effective sample size.** Plot the IPW weights against $\hat e$. Identify the
-    ten most heavily weighted observations. Refit without them --- how much does
+    ten most heavily weighted observations. Refit without them, how much does
     the estimate move relative to its standard error?
 
 # Session information

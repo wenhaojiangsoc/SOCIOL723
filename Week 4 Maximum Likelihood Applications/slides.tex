@@ -22,8 +22,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\logit}{logit}
@@ -43,11 +46,19 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -56,6 +67,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -64,6 +76,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -97,7 +111,7 @@
 \setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
 
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 4 --- Maximum Likelihood: Applications\\[-8pt]}
+\subtitle{\large Week 4, Maximum Likelihood: Applications\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -125,7 +139,7 @@ covariates. Three ingredients:
 \begin{block}{The GLM recipe}
 \begin{enumerate}\itemsep3pt
   \item \textbf{Random component}: a distribution for $Y_i$ with mean
-        $\mu_i = \E[Y_i\mid X_i]$ --- normal, Bernoulli, Poisson, \dots
+        $\mu_i = \E[Y_i\mid X_i]$, normal, Bernoulli, Poisson, \dots
   \item \textbf{Systematic component}: a \emph{linear predictor}
         $\eta_i = X_i'\bm\beta$.
   \item \textbf{Link function}: $g(\mu_i) = \eta_i$, connecting the two.
@@ -153,14 +167,14 @@ Binary & Bernoulli & probit: $\Phi^{-1}(\mu)$ & \texttt{binomial(link="probit")}
 Count & Poisson & log: $\log\mu$ & \texttt{poisson(link="log")} \\
 Count, overdispersed & Neg.\ binomial & log & \texttt{MASS::glm.nb} \\
 Nominal, $J$ categories & Multinomial & multi-logit & \texttt{nnet::multinom} \\
-Ordered, $J$ categories & --- & cumulative logit & \texttt{MASS::polr} \\
+Ordered, $J$ categories &, & cumulative logit & \texttt{MASS::polr} \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip6pt
 The \emph{canonical} link for each distribution (logit for the binomial, log for
 the Poisson) makes the algebra especially clean, but you are free to choose
-another --- probit is not canonical and nobody minds.
+another, probit is not canonical and nobody minds.
 \end{frame}
 
 \begin{frame}{How \texttt{glm()} Actually Fits\adv}
@@ -205,7 +219,7 @@ Just run OLS with a $0/1$ outcome: $\Pr(Y_i = 1\mid X_i) = X_i'\bm\beta$.
 \begin{itemize}\small\itemsep2pt
   \item Fitted probabilities can fall outside $[0,1]$.
   \item Errors are \emph{necessarily} heteroskedastic:
-        $\Var(Y_i\mid X_i)=p_i(1-p_i)$. (Use robust SEs --- Week 2.)
+        $\Var(Y_i\mid X_i)=p_i(1-p_i)$. (Use robust SEs, Week 2.)
   \item Constant marginal effects are implausible near 0 and 1.
 \end{itemize}
 \end{column}
@@ -219,7 +233,7 @@ the boundary, you want logit or probit.
 \end{frame}
 
 \begin{frame}{A Latent-Variable Motivation}
-Imagine an unobserved continuous propensity $Y_i^{*}$ --- a taste for voting, a
+Imagine an unobserved continuous propensity $Y_i^{*}$, a taste for voting, a
 level of labour-market attachment:
 \begin{align*}
   Y_i^{*} = X_i'\bm\beta + \epsilon_i ,
@@ -258,7 +272,7 @@ $\log(1-p_i) = -\log(1+e^{X_i'\bm\beta})$):
 \end{align*}
 \vskip2pt
 This is globally concave in $\bm\beta$, so the maximum is unique whenever it
-exists --- a genuinely nice property that probit shares.
+exists, a genuinely nice property that probit shares.
 \end{frame}
 
 \begin{frame}{The Logit Score}
@@ -276,11 +290,11 @@ fitted probability in place of the fitted value.
 \end{alertblock}
 \vskip3pt
 There is no closed-form solution because $p_i$ depends on $\bm\beta$
-nonlinearly --- hence the numerical optimization from last week. The information
+nonlinearly, hence the numerical optimization from last week. The information
 matrix\adv{} is $\Info(\bm\beta) = \sum_i p_i(1-p_i)X_iX_i'$.
 \end{frame}
 
-\begin{frame}[shrink=10]{Logit Versus Probit}
+\begin{frame}[allowframebreaks,t]{Logit Versus Probit}
 \begin{center}
 \begin{tikzpicture}[scale=1]
   \draw[->] (-4.4,0) -- (4.6,0) node[right]{\small $X'\beta$};
@@ -309,7 +323,7 @@ everywhere, which is itself the point of the slide.)}
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Scale Is Not Identified --- and Why It Matters}
+\begin{frame}{The Scale Is Not Identified, and Why It Matters}
 In the latent-variable setup, only $\bm\beta/\sigma_\epsilon$ is identified: we
 normalize $\sigma_\epsilon$ (to $\pi/\sqrt3$ for logit, to 1 for probit) because
 the data cannot tell us anything about it.
@@ -425,10 +439,10 @@ options:
 \vskip3pt
 \begin{enumerate}\itemsep4pt
   \item \textbf{Delta method} (Week 2): linearize and use
-        $\nabla g(\bhat)'\widehat{\Var}(\bhat)\nabla g(\bhat)$. Fast, analytic,
+        $\nabla g(\bhat)'\hat{V}(\bhat)\nabla g(\bhat)$. Fast, analytic,
         and the default in \texttt{marginaleffects}.
   \item \textbf{Simulation} \srcp{King, Tomz, and Wittenberg 2000}: draw
-        $\tilde{\bm\beta}^{(s)} \sim \mathcal N\big(\bhat, \widehat{\Var}(\bhat)\big)$
+        $\tilde{\bm\beta}^{(s)} \sim \mathcal N\big(\bhat, \hat{V}(\bhat)\big)$
         for $s = 1,\dots,S$, compute the quantity of interest at each draw, and
         take percentiles. Trivial to implement, handles any nonlinearity.
   \item \textbf{Bootstrap}: resample the data, refit, recompute. Slowest, makes
@@ -450,7 +464,7 @@ at the ends.
         necessary nor sufficient for interaction on the probability scale
         \srcp{Ai and Norton 2003}.
   \item Conversely, \srct{Berry, DeMeritt, and Esarey (2010)} show that omitting
-        the product term imposes a very specific --- and usually unmotivated ---
+        the product term imposes a very specific, and usually unmotivated, 
         form of interaction.
   \item \textbf{Practical advice}: include the product term if your theory says
         the latent-scale effects interact, and then \alert{report the interaction
@@ -473,12 +487,12 @@ For an unordered outcome with $J$ categories, pick a base category $J$ and model
   \qquad \bm\beta_J \equiv \zero .
 \end{align*}
 \begin{itemize}\itemsep3pt
-  \item You estimate $J-1$ coefficient vectors --- interpretation burden grows
+  \item You estimate $J-1$ coefficient vectors, interpretation burden grows
         fast. Report predicted probabilities by category, not coefficient tables.
   \item Every coefficient is relative to the omitted base category. Changing the
         base changes every number without changing the model.
   \item \textbf{IIA}: the ratio $\Pr(Y=j)/\Pr(Y=m)$ does not depend on what other
-        options exist --- the ``red bus / blue bus'' problem. Testable in
+        options exist, the ``red bus / blue bus'' problem. Testable in
         principle (Hausman--McFadden), but the tests behave poorly; think
         substantively instead.
   \item Alternatives when IIA is untenable: nested logit, multinomial probit,
@@ -499,7 +513,7 @@ $\Pr(Y_i \leq j \mid X_i) = \Lambda(\tau_j - X_i'\bm\beta)$.
 \begin{itemize}\itemsep3pt
   \item Only \emph{one} $\bm\beta$ regardless of $J$: far more parsimonious than
         multinomial logit. That parsimony is the \alert{proportional odds
-        assumption} --- the effect of $X$ is the same at every cutpoint.
+        assumption}, the effect of $X$ is the same at every cutpoint.
   \item Test it with a Brant test, or by comparing to a generalized ordered logit
         that relaxes it (\texttt{VGAM}, \texttt{ordinal::clm}).
   \item If proportional odds fails badly and the categories are genuinely ordered,
@@ -517,7 +531,7 @@ $\Pr(Y_i \leq j \mid X_i) = \Lambda(\tau_j - X_i'\bm\beta)$.
         $\beta_j = 0.10$ means about $10\%$ more events.
   \item \textbf{Exposure}: if units are observed for different lengths of time or
         have different populations at risk, model the \emph{rate} by adding an
-        \texttt{offset(log(exposure))} --- a coefficient constrained to 1.
+        \texttt{offset(log(exposure))}, a coefficient constrained to 1.
   \item The Poisson imposes $\Var(Y_i\mid X_i) = \E[Y_i\mid X_i]$. That is a
         strong restriction and it is usually violated.
 \end{itemize}
@@ -529,7 +543,7 @@ workhorse for non-negative outcomes.
 \end{frame}
 
 \begin{frame}{Overdispersion}
-In practice $\Var(Y_i\mid X_i) > \E[Y_i\mid X_i]$ almost always --- unobserved
+In practice $\Var(Y_i\mid X_i) > \E[Y_i\mid X_i]$ almost always, unobserved
 heterogeneity makes some units systematically more event-prone.
 \vskip4pt
 \begin{itemize}\itemsep3pt
@@ -545,7 +559,7 @@ heterogeneity makes some units systematically more event-prone.
         third option, and are consistent under any variance function.
 \end{itemize}
 \vskip3pt
-Test with a score test for overdispersion (\texttt{AER::dispersiontest}) --- a
+Test with a score test for overdispersion (\texttt{AER::dispersiontest}), a
 nice example of a test that needs only the restricted model.
 \end{frame}
 
@@ -566,7 +580,7 @@ volunteering.
 Zero-inflation says some zeros are of a different \emph{kind}; a hurdle says
 crossing from zero to one is a different \emph{process}. Ask which story your
 theory tells before letting AIC decide. And check first whether a negative
-binomial already accommodates the zeros --- often it does.
+binomial already accommodates the zeros, often it does.
 \end{alertblock}
 \end{frame}
 
@@ -577,15 +591,15 @@ binomial already accommodates the zeros --- often it does.
 
 \begin{frame}{Separation}
 \vskip-2pt
-If some linear combination of the covariates perfectly predicts the outcome ---
-say, every respondent with a graduate degree voted --- then the likelihood has no
+If some linear combination of the covariates perfectly predicts the outcome, 
+say, every respondent with a graduate degree voted, then the likelihood has no
 interior maximum. The coefficient marches off to $\pm\infty$.
 \vskip4pt
 \begin{itemize}\itemsep2pt
   \item Symptoms: enormous coefficients (10, 20, 40) with enormous standard
         errors; convergence warnings; results that change when you change
         \texttt{maxit}.
-  \item Common with rare outcomes, small samples, and many dummy variables ---
+  \item Common with rare outcomes, small samples, and many dummy variables, 
         i.e.\ very common in practice.
   \item \textbf{Do not} respond by dropping the variable; that discards the
         strongest signal in the data.
@@ -605,7 +619,7 @@ interior maximum. The coefficient marches off to $\pm\infty$.
         Interpretable only as a rank ordering, never as ``proportion of variance
         explained.'' Values of $0.2$--$0.4$ are considered excellent.
   \item \textbf{Classification accuracy}: needs a threshold, and is misleading
-        with rare outcomes --- always compare against the null model that predicts
+        with rare outcomes, always compare against the null model that predicts
         the majority class.
   \item \textbf{ROC / AUC}: accuracy across all thresholds. $0.5$ is a coin flip,
         $1.0$ is perfect.
@@ -627,7 +641,7 @@ interior maximum. The coefficient marches off to $\pm\infty$.
         in an appendix.
   \item Never compare raw coefficients across nested logit models or across
         groups. Compare marginal effects.
-  \item Use robust or clustered standard errors, exactly as in Week 2 --- the
+  \item Use robust or clustered standard errors, exactly as in Week 2, the
         sandwich applies to \texttt{glm} objects too.
 \end{enumerate}
 \end{frame}
@@ -652,7 +666,7 @@ variable models on the GSS.
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Ai, Chunrong and Edward C. Norton. 2003. ``Interaction Terms in Logit and

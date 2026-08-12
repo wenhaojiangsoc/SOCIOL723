@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -47,12 +50,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -61,6 +72,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -103,7 +115,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 3 --- Maximum Likelihood: Theory\\[-8pt]}
+\subtitle{\large Week 3, Maximum Likelihood: Theory\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -205,7 +217,7 @@ model in the sociological literature.
   \item \textbf{Information}: how the \emph{curvature} of the log-likelihood tells
         you how precise your estimate is.
   \item \textbf{Properties}: consistency, asymptotic normality, efficiency,
-        invariance --- and what can go wrong.
+        invariance, and what can go wrong.
   \item \textbf{Testing}: the likelihood ratio, Wald, and score tests, which are
         three ways of measuring the same distance.
 \end{enumerate}
@@ -246,7 +258,7 @@ outcome most probable?''
 \begin{alertblock}{The single most important sentence today}
 The likelihood is \emph{the same formula read backwards}: a function of the
 parameter, with the data nailed down. It is \alert{not} a probability
-distribution over $\theta$ --- it does not integrate to one, and
+distribution over $\theta$; it does not integrate to one, and
 $\lik(\theta)$ is not ``the probability that $\theta$ is true.''
 \end{alertblock}
 \end{frame}
@@ -289,7 +301,7 @@ is the value that does best among \emph{all} $\theta\in[0,1]$.
   \item The height at any $\theta$ is the probability of \emph{these} data if that
         $\theta$ were true.
   \item The peak is the MLE. The \alert{width} of the peak will turn out to be our
-        measure of uncertainty --- that is the whole of Section 4.
+        measure of uncertainty; that is the whole of Section 4.
 \end{itemize}
 \end{frame}
 
@@ -309,7 +321,7 @@ take logs:
 \vskip2pt
 \begin{itemize}\itemsep2pt
   \item $\log$ is strictly increasing, so it \alert{does not move the maximum}.
-  \item A product becomes a sum, so the derivative is a sum --- which is why every
+  \item A product becomes a sum, so the derivative is a sum, which is why every
         MLE formula looks like a sample average.
 \end{itemize}
 \end{frame}
@@ -346,7 +358,7 @@ Let $Y_i$ be a count with $\Pr(Y_i = y\mid\theta) = \dfrac{\theta^{y}e^{-\theta}
 \vskip4pt
 \begin{itemize}\itemsep3pt
   \item The last term does not involve $\theta$ at all. It is an
-        \emph{additive constant} and can be dropped for maximization --- but not
+        \emph{additive constant} and can be dropped for maximization, but not
         if you want to compare log-likelihood \emph{values} across models.
   \item Again the data enter only through $\sum_i y_i$.
 \end{itemize}
@@ -389,13 +401,13 @@ parameter:
 \end{block}
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item The MLE $\hat\theta$ solves $S(\hat\theta) = 0$ --- the
+  \item The MLE $\hat\theta$ solves $S(\hat\theta) = 0$, the
         \alert{first-order condition}, exactly as the normal equations were the
         FOC for least squares.
   \item Second-order condition: $\partial^2\loglik/\partial\theta^2 < 0$ at
         $\hat\theta$, so that we have a maximum rather than a minimum.
   \item A key population fact: $\E[S(\theta_0)] = 0$ at the true parameter. The
-        score is a \emph{mean-zero} random variable --- which is why the CLT will
+        score is a \emph{mean-zero} random variable, which is why the CLT will
         apply to it.
 \end{itemize}
 \end{frame}
@@ -414,7 +426,7 @@ Multiply through by $\theta(1-\theta)$:
   \sum_i y_i - \theta\sum_i y_i - n\theta + \theta\sum_i y_i &= 0 \\
   \boxed{\;\hat\theta = \frac{1}{n}\sum_i y_i = \bar y\;}
 \end{align*}
-The MLE of a probability is the sample proportion --- derived, not assumed.
+The MLE of a probability is the sample proportion, derived, not assumed.
 \end{frame}
 
 \begin{frame}{Poisson: Deriving $\hat\theta$}
@@ -454,8 +466,8 @@ unbiasedness}. What it promises is good behaviour as $n$ grows.
 \end{frame}
 
 \begin{frame}{When There Is No Closed Form}
-Most likelihoods you will meet --- logit, probit, negative binomial, anything
-with covariates --- have no algebraic solution to $S(\theta)=0$. We search
+Most likelihoods you will meet, logit, probit, negative binomial, anything
+with covariates, have no algebraic solution to $S(\theta)=0$. We search
 numerically.
 \vskip4pt
 \begin{block}{Newton--Raphson}
@@ -470,7 +482,7 @@ curvature $\Rightarrow$ small confident steps; flat $\Rightarrow$ large steps.
 \vskip3pt
 Variants you will meet: \textbf{BFGS} (approximates the second derivative),
 \textbf{Fisher scoring} (uses the expected rather than observed second
-derivative --- this is what \texttt{glm()} does, as iteratively reweighted least
+derivative; this is what \texttt{glm()} does, as iteratively reweighted least
 squares).
 \end{frame}
 
@@ -480,7 +492,7 @@ squares).
         pass it the \emph{negative} log-likelihood.
   \item Supply \texttt{par}, the starting values. Poor starting values are the
         most common cause of failed convergence.
-  \item Always check the convergence code (\texttt{\$convergence == 0}) --- a
+  \item Always check the convergence code (\texttt{\$convergence == 0}), a
         returned number is not the same as a converged number.
   \item Ask for \texttt{hessian = TRUE}; you need it for standard errors.
         Remember the sign: if you minimized $-\loglik$, then the returned Hessian
@@ -508,7 +520,7 @@ data cannot distinguish among a set of parameter values.
         Only the \emph{difference} is identified. Optimizers started at different
         points will return different $(\hat\theta_1,\hat\theta_2)$ lying along a
         ridge, all with the same log-likelihood.
-  \item This is the likelihood analogue of \alert{perfect collinearity} in OLS ---
+  \item This is the likelihood analogue of \alert{perfect collinearity} in OLS, 
         and it has the same symptom: a singular Hessian, so no standard errors.
   \item Diagnosis: multiple start values, and inspecting the Hessian's rank.
 \end{itemize}
@@ -542,8 +554,8 @@ data cannot distinguish among a set of parameter values.
 \end{center}
 \vskip2pt
 Both log-likelihoods peak at the same $\hat\theta$. But on the left, many nearby
-values of $\theta$ fit almost as well --- we are uncertain. On the right, moving
-away from $\hat\theta$ costs a lot of fit --- we are confident.
+values of $\theta$ fit almost as well; we are uncertain. On the right, moving
+away from $\hat\theta$ costs a lot of fit; we are confident.
 \vskip3pt
 \alert{The second derivative measures exactly this.}
 \end{frame}
@@ -557,7 +569,7 @@ away from $\hat\theta$ costs a lot of fit --- we are confident.
 \end{align*}
 \end{block}
 \vskip4pt
-The second equality is the \alert{information equality} --- it holds when the
+The second equality is the \alert{information equality}, it holds when the
 model is correctly specified, and it will matter a great deal in a moment.
 \vskip4pt
 \begin{itemize}\itemsep3pt
@@ -576,18 +588,23 @@ model is correctly specified, and it will matter a great deal in a moment.
 
 \begin{frame}{The Variance of the MLE}
 \begin{align*}
-  \boxed{\;\widehat{\Var}(\hat\theta) = \Info(\hat\theta)^{-1}
-  = \left[-\frac{\partial^2\loglik}{\partial\theta^2}\bigg|_{\hat\theta}\right]^{-1}\;}
+  \boxed{\;\hat{V}(\hat\theta) = \Info(\hat\theta)^{-1}
+  \qquad\text{or}\qquad
+  \left[-\frac{\partial^2\loglik}{\partial\theta^2}\bigg|_{\hat\theta}\right]^{-1}\;}
 \end{align*}
-\vskip4pt
+\vskip3pt
 Read it as a sentence: \emph{the variance of the estimate is the reciprocal of
 the curvature of the log-likelihood at its peak}.
-\vskip4pt
+\vskip3pt
+{\footnotesize These are two \emph{different} estimators, expected and observed
+information, equal only asymptotically and under correct specification. Pick one
+and say which.}
+\vskip3pt
 \begin{itemize}\itemsep3pt
   \item Sharper peak $\Rightarrow$ larger information $\Rightarrow$ smaller
         variance.
   \item With several parameters\adv, $\Info$ is a matrix and
-        $\widehat{\Var}(\hat{\bm\theta}) = \Info(\hat{\bm\theta})^{-1}$; the
+        $\hat{V}(\hat{\bm\theta}) = \Info(\hat{\bm\theta})^{-1}$; the
         standard errors are the square roots of its diagonal.
   \item This is why \texttt{optim(..., hessian = TRUE)} is not optional.
 \end{itemize}
@@ -610,7 +627,7 @@ Taking expectations, using $\E[\sum_i y_i] = n\theta$:
 \begin{align*}
   \Var(\hat\theta) = \Info(\theta)^{-1} = \frac{\theta(1-\theta)}{n} . \quad\checkmark
 \end{align*}
-Exactly the variance of a sample proportion you already know --- now \emph{derived}
+Exactly the variance of a sample proportion you already know, now \emph{derived}
 from the shape of the likelihood.
 \end{frame}
 
@@ -625,14 +642,14 @@ so
 \begin{align*}
   \Var(\hat\theta) = \frac{\theta}{n},
   \qquad
-  \widehat{\Var}(\hat\theta) = \frac{\bar y}{n} .
+  \hat{V}(\hat\theta) = \frac{\bar y}{n} .
 \end{align*}
 \vskip4pt
 Sanity check by direct calculation: $\hat\theta = \bar y$ and
 $\Var(\bar Y) = \Var(Y)/n = \theta/n$ because the Poisson mean equals its
 variance. \checkmark
 \vskip4pt
-Two routes, same answer. When you can compute the variance directly, do so ---
+Two routes, same answer. When you can compute the variance directly, do so; 
 it is a free check on your information calculation.
 \end{frame}
 
@@ -649,7 +666,7 @@ Under regularity conditions, as $n\to\infty$:
         $\hat\theta \overset{a}{\sim} \mathcal N\big(\theta_0, \Info(\theta_0)^{-1}\big)$.
   \item \textbf{Asymptotic efficiency}: among \emph{regular} estimators, and when
         the model is correctly specified, none has a smaller asymptotic variance
-        --- the MLE attains the \alert{Cramér--Rao lower bound}. This is much
+, the MLE attains the \alert{Cramér--Rao lower bound}. This is much
         stronger than Gauss--Markov, which only ranked \emph{linear} unbiased
         estimators.
   \item \textbf{Invariance}: if $\hat\theta$ is the MLE of $\theta$, then
@@ -657,7 +674,7 @@ Under regularity conditions, as $n\to\infty$:
         Wonderfully convenient: the MLE of the odds is the odds of the MLE.
 \end{enumerate}
 \vskip6pt
-\alert{The first three are asymptotic} --- none of them says anything about
+\alert{The first three are asymptotic}, none of them says anything about
 $n = 40$. Invariance, by contrast, holds exactly in any sample.
 \end{frame}
 
@@ -686,7 +703,7 @@ average in the numerator, a sample average in the denominator, LLN below and CLT
 above.
 \end{frame}
 
-\begin{frame}{Regularity Conditions --- and When They Fail}
+\begin{frame}{Regularity Conditions, and When They Fail}
 The theory needs: a correctly specified and identified model; a parameter space
 in which $\theta_0$ is an \emph{interior} point; a support for $y$ that does not
 depend on $\theta$; and enough smoothness to differentiate twice under the
@@ -697,7 +714,7 @@ integral.
   \item \textbf{Boundary}: testing whether a variance component is zero. The
         usual $\chi^2$ reference distribution is wrong.
   \item \textbf{Support depends on $\theta$}: $Y_i\sim U[0,\theta]$ gives
-        $\hat\theta = \max_i Y_i$, which is \emph{always} below $\theta$ --- badly
+        $\hat\theta = \max_i Y_i$, which is \emph{always} below $\theta$, badly
         biased and not asymptotically normal.
   \item \textbf{Separation} in logit: the MLE runs off to infinity. Week 4.
   \item \textbf{Too many parameters relative to $n$}: incidental parameters.
@@ -742,7 +759,7 @@ model is correctly specified. When it is not, the two sides differ and
   \item In \texttt{R}: \texttt{sandwich::vcovHC()} works on \texttt{glm} objects
         too, and \texttt{vcovCL()} clusters them.
   \item The estimator $\hat\theta$ then converges to the parameter of the
-        \emph{best-approximating} model in the Kullback--Leibler sense --- the
+        \emph{best-approximating} model in the Kullback--Leibler sense, the
         likelihood analogue of ``best linear approximation to the CEF.''
 \end{itemize}
 \end{frame}
@@ -795,7 +812,7 @@ where $q$ is the number of restrictions.
   \item Logic: if the restriction is true, imposing it should not cost much fit.
   \item The restricted likelihood is always weakly \emph{lower}, so $LR \geq 0$.
   \item \textbf{Requires estimating both models.} Usually easy, and generally the
-        best-behaved of the three in finite samples --- prefer it when you can.
+        best-behaved of the three in finite samples, prefer it when you can.
   \item \texttt{R}: \texttt{lmtest::lrtest(m0, m1)}, or \texttt{anova(m0, m1,
         test = "Chisq")} for \texttt{glm}.
   \item \alert{The models must be nested and fitted on the same observations.}
@@ -806,16 +823,16 @@ where $q$ is the number of restrictions.
 \begin{frame}{The Wald Test}
 Measure the horizontal distance, scaled by the estimated standard error:
 \begin{align*}
-  W = \frac{(\hat\theta - \theta_0)^2}{\widehat{\Var}(\hat\theta)} \ \dto\ \chi^2_1 ,
+  W = \frac{(\hat\theta - \theta_0)^2}{\hat{V}(\hat\theta)} \ \dto\ \chi^2_1 ,
   \qquad\text{or }\ z = \frac{\hat\theta-\theta_0}{\SE(\hat\theta)} .
 \end{align*}
 \begin{itemize}\itemsep3pt
   \item This is the $t$-ratio you already read off every regression table.
-  \item \textbf{Requires only the unrestricted model} --- convenient when the
+  \item \textbf{Requires only the unrestricted model}, convenient when the
         restricted model is hard to fit.
   \item Multi-parameter version\adv:
-        $W = (\bm R\hat{\bm\theta}-\bm q)'[\bm R\widehat{\Var}(\hat{\bm\theta})\bm R']^{-1}
-        (\bm R\hat{\bm\theta}-\bm q)$ --- identical in form to Week 2.
+        $W = (\bm R\hat{\bm\theta}-\bm q)'[\bm R\hat{V}(\hat{\bm\theta})\bm R']^{-1}
+        (\bm R\hat{\bm\theta}-\bm q)$, identical in form to Week 2.
   \item \alert{Caution}: the Wald test is not invariant to how you parameterize
         the restriction. Testing $\theta = 1$ and $\log\theta = 0$ can give
         different answers. The LR test does not have this problem.
@@ -830,7 +847,7 @@ Measure the slope of the log-likelihood \emph{at the null}:
 \begin{itemize}\itemsep2pt
   \item Logic: if $\theta_0$ were the maximum, the slope there would be zero. A
         steep slope is evidence against it.
-  \item \textbf{Requires only the restricted model} --- useful when the
+  \item \textbf{Requires only the restricted model}, useful when the
         unrestricted model is expensive to fit, e.g.\ testing for overdispersion
         without fitting the negative binomial.
   \item Many familiar specification tests are score tests in disguise, including
@@ -870,14 +887,14 @@ these analytic penalties.
   \item The \emph{curvature} of the log-likelihood is information, and its
         inverse is the variance. Everything about precision follows from the shape
         of the peak.
-  \item The MLE is consistent, asymptotically normal, and efficient --- but not
+  \item The MLE is consistent, asymptotically normal, and efficient, but not
         unbiased, and all of the guarantees are asymptotic.
   \item LR, Wald, and score are three views of the same question.
 \end{itemize}
 \vskip6pt
 \begin{block}{Next}
 \textbf{Thursday}: code a likelihood and maximize it numerically in \texttt{R}. \\
-\textbf{Week 4}: put covariates inside the likelihood --- the generalized linear
+\textbf{Week 4}: put covariates inside the likelihood, the generalized linear
 model, and the limited dependent variable models you will actually use.
 \end{block}
 \end{frame}

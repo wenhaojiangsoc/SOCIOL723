@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 3: Coding and Maximizing a Likelihood}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, September 10"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, September 10"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -128,7 +128,7 @@ abline(v = mean(y), col = "firebrick", lty = 2)
 ## Standard errors from the Hessian
 
 We minimized $-\loglik$, so the Hessian `optim()` returns is already
-$-\partial^2\loglik/\partial\theta^2$ --- the observed information. Its inverse
+$-\partial^2\loglik/\partial\theta^2$, the observed information. Its inverse
 is the variance.
 
 ```{r}
@@ -366,13 +366,13 @@ magnitude, as the theory also promises.
     `sum(yb * pnorm(eta, log.p = TRUE) + (1 - yb) * pnorm(-eta, log.p = TRUE))`,
     and reproduce `glm(..., family = binomial(link = "probit"))`. (Note you
     cannot get there by swapping `plogis` for `pnorm` in the *canonical-link*
-    expression above --- that simplification is specific to the logit.) Compare
+    expression above, that simplification is specific to the logit.) Compare
     the two sets of coefficients: is the ratio close to 1.6?
 
 5.  **Invariance.** For the logit model above, the odds ratio for `wordsum` is
     $e^{\hat\beta}$. Get a standard error for it two ways: the delta method
     (`car::deltaMethod`) and by simulating 10,000 draws of $\tilde\beta$ from
-    $\mathcal N(\hat\beta, \widehat{\Var}(\hat\beta))$ and exponentiating. Which
+    $\mathcal N(\hat\beta, \hat{V}(\hat\beta))$ and exponentiating. Which
     interval would you report, and why?
 
 6.  **A misspecified model.** Fit a Poisson model to `childs` and compare the

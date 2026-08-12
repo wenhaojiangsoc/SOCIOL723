@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 1: Matrix Algebra and OLS by Hand}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, August 27"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, August 27"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -147,8 +147,8 @@ gss |>
 
 The points are the **conditional expectation function** estimated cell by cell
 (this is what a *saturated* regression would fit). The line is the **best linear
-approximation** to it. Notice that the CEF is not exactly linear --- it is
-convex above roughly 12 years --- but the line summarizes it reasonably well.
+approximation** to it. Notice that the CEF is not exactly linear; it is
+convex above roughly 12 years, but the line summarizes it reasonably well.
 
 # Matrix algebra in `R`
 
@@ -189,7 +189,7 @@ qr(X_bad)$rank                              # 2, not 3
 try(solve(crossprod(X_bad)), silent = TRUE) |> class()
 ```
 
-`lm()` does not error --- it drops the offending column and reports `NA`:
+`lm()` does not error, it drops the offending column and reports `NA`:
 
 ```{r}
 #| label: rank-lm
@@ -254,7 +254,7 @@ all.equal(as.vector(beta_hat), unname(coef(fit)))
 ::: callout-tip
 `solve(A, b)` solves the linear system directly instead of forming the inverse.
 It is faster and numerically more stable. In production code you would go
-further and use the QR decomposition --- which is what `lm()` actually does:
+further and use the QR decomposition, which is what `lm()` actually does:
 `qr.solve(X, y)`.
 :::
 
@@ -282,7 +282,7 @@ round(summary(fit)$coefficients, 4)
 ```
 
 Identical. The default standard errors that `R` prints are exactly
-$\sqrt{\operatorname{diag}\!\big(s^2(\bm{X}'\bm{X})^{-1}\big)}$ ---
+$\sqrt{\operatorname{diag}\!\big(s^2(\bm{X}'\bm{X})^{-1}\big)}$, 
 i.e. they *assume homoskedasticity*. Next week we replace them.
 
 ## The mechanical orthogonality conditions
@@ -300,7 +300,7 @@ model is. They are not evidence of anything.
 # The geometry: $\bm{P}$ and $\bm{M}$
 
 With $n = `r nrow(X)`$, the matrix $\bm{P}$ is
-$`r nrow(X)` \times `r nrow(X)`$ --- about
+$`r nrow(X)` \times `r nrow(X)`$, about
 `r round(nrow(X)^2 * 8 / 1e9, 1)` GB if we formed it. So we work with a random
 subsample to demonstrate the properties, and use the implicit form for the full
 data.
@@ -422,11 +422,11 @@ c(correct = coef(lm(y_tilde ~ d_tilde))["d_tilde"],
 
 ::: callout-note
 **Why does the second one fail?** Regressing $\tilde Y$ on raw `educ` divides by
-$\widehat{\Var}(\texttt{educ})$ instead of $\widehat{\Var}(\widetilde{\texttt{educ}})$.
+$\Var_n(\texttt{educ})$ instead of $\Var_n(\widetilde{\texttt{educ}})$.
 Since residualizing can only shrink the variance, the denominator is too large
 and the estimate is attenuated. The numerators are all equal because the part
 removed from $Y$ lies in the span of the controls and is orthogonal to
-$\tilde D$. Work this out on paper --- it is Question 2 of Problem Set 1.
+$\tilde D$. Work this out on paper; it is Question 2 of Problem Set 1.
 :::
 
 The residuals are also identical, as the theorem promises:
@@ -501,7 +501,7 @@ modelsummary(list("(1) Bivariate" = lm(lnearn ~ educ, data = gss),
 ::: callout-important
 Everything in this section is *algebra*. It tells you how the estimate moves
 when you add a control. It does **not** tell you whether the long regression
-recovers the causal return to schooling --- for that you would need to argue
+recovers the causal return to schooling, for that you would need to argue
 that nothing else is omitted, which is a substantive claim, not a statistical
 one. That argument is what Weeks 5--11 are about.
 :::
@@ -591,7 +591,7 @@ on them.
     using the OVB formula and the two auxiliary regressions. Then check.
 
 5.  **Leverage.** Find the ten highest-leverage observations. What makes them
-    unusual? Refit dropping them --- how much does the `educ` coefficient move?
+    unusual? Refit dropping them, how much does the `educ` coefficient move?
     (Compare to its standard error before concluding anything.)
 
 6.  **Variance inflation.** Compute $\Var(\hat\beta_{\texttt{educ}})$ from the

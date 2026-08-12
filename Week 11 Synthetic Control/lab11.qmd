@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 11: Synthetic Control}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, November 5"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, November 5"
 author: "Wenhao Jiang"
 format:
   pdf:

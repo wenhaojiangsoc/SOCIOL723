@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 9: Estimating and Stress-Testing an RD}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 22"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, October 22"
 author: "Wenhao Jiang"
 format:
   pdf:

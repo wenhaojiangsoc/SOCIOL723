@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 12 --- Machine Learning: Prediction and Regularization\\[-8pt]}
+\subtitle{\large Week 12, Machine Learning: Prediction and Regularization\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -134,7 +148,7 @@ parameters are means, not ends, and may not even be identified.
 \vskip3pt
 \begin{itemize}\itemsep2pt
   \item These goals conflict. The model that predicts best is usually not the
-        model whose coefficients you would want to interpret --- and vice versa.
+        model whose coefficients you would want to interpret, and vice versa.
   \item \srct{Molina and Garip (2019)}: sociology has plenty of genuine
         \emph{prediction} problems (who drops out, which neighbourhoods gentrify,
         which cases to audit), and separate ML tools for describing heterogeneity.
@@ -147,7 +161,7 @@ parameters are means, not ends, and may not even be identified.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[shrink=10]{Decomposing Prediction Error}
+\begin{frame}[allowframebreaks,t]{Decomposing Prediction Error}
 Let $Y = f(X) + \epsilon$ with $\E[\epsilon\mid X]=0$ and
 $\Var(\epsilon\mid X)=\sigma^2$, and let $\hat f$ be estimated from a training
 sample drawn independently of the new observation. At a new point $x_0$, taking
@@ -167,7 +181,7 @@ expectations over \emph{both} the training sample and the new outcome:
   \item \textbf{Irreducible error}: noise. No method beats it.
   \item \alert{Every tuning parameter in this course is a dial between the first
         two terms.} Penalty size, tree depth, number of neighbours, bandwidth
-        (Week 9!) --- all the same dial.
+        (Week 9!), all the same dial.
 \end{itemize}
 \end{frame}
 
@@ -184,7 +198,7 @@ lowers MSE. Every method today is deliberately biased.
   \item OLS with $k$ regressors has variance growing in $k$: with $p/n$ not small,
         the variance term swamps everything and OLS predicts badly even though it
         is unbiased.
-  \item When $p > n$, OLS is not even defined --- $\X'\X$ is singular.
+  \item When $p > n$, OLS is not even defined, $\X'\X$ is singular.
   \item \textbf{In-sample fit is not evidence.} $R^2$ never falls when you add
         regressors, so training error is a systematically optimistic estimate of
         test error. The gap is the \emph{optimism}, and it grows with model
@@ -192,7 +206,7 @@ lowers MSE. Every method today is deliberately biased.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Estimating Test Error: Cross-Validation}
+\begin{frame}[allowframebreaks,t]{Estimating Test Error: Cross-Validation}
 Split the data, fit on part, evaluate on the rest.
 \vskip3pt
 \begin{block}{$K$-fold cross-validation}
@@ -207,11 +221,11 @@ $k$, predict fold $k$, record the error. Average:
 \begin{itemize}\itemsep2pt
   \item $K = 5$ or $10$ is standard: leave-one-out ($K=n$) has low bias but high
         variance and is expensive.
-  \item \alert{Everything data-dependent must happen inside the fold} ---
+  \item \alert{Everything data-dependent must happen inside the fold}, 
         variable selection, standardization, imputation. Selecting predictors on
         the full sample and then cross-validating is a very common and very
         serious leak.
-  \item With dependence --- panels, clusters, time --- \alert{split on the
+  \item With dependence (panels, clusters, time) \alert{split on the
         independent unit}, not on rows. Same rule as the bootstrap in Week 2.
 \end{itemize}
 \end{frame}
@@ -221,7 +235,7 @@ $k$, predict fold $k$, record the error. Average:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[shrink=10]{Ridge Regression}
+\begin{frame}[allowframebreaks,t]{Ridge Regression}
 Add a penalty on the squared size of the coefficients:
 \begin{align*}
   \hat{\bm\beta}^{\text{ridge}}
@@ -230,14 +244,14 @@ Add a penalty on the squared size of the coefficients:
   \qquad
   \hat{\bm\beta}^{\text{ridge}} = (\X'\X + \lambda \Ix)^{-1}\X'\Y ,
 \end{align*}
-where --- as always with a penalty --- $\X$ and $\Y$ are centred and the
+where, as always with a penalty, $\X$ and $\Y$ are centred and the
 intercept is left out of both the penalty and the displayed matrix.
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item Adding $\lambda\Ix$ makes the matrix invertible \alert{even when
         $p > n$}, which is why ridge works where OLS does not exist.
   \item Coefficients shrink toward zero but never reach it: ridge does not select.
-  \item \textbf{Always standardize the predictors first} --- the penalty is not
+  \item \textbf{Always standardize the predictors first}; the penalty is not
         scale-invariant, and the intercept is not penalized.
   \item Ridge shines under \alert{dense} signals: many small effects, and
         correlated predictors whose coefficients OLS cannot separate.
@@ -260,7 +274,7 @@ Penalize the \emph{absolute} size instead:
         performs variable selection and estimation simultaneously.
   \item Geometrically: the $\ell_1$ constraint region is a diamond with corners on
         the axes, and the contours of the sum of squares typically first touch it
-        at a corner. The $\ell_2$ region is a ball with no corners --- hence no
+        at a corner. The $\ell_2$ region is a ball with no corners, hence no
         exact zeros.
   \item Lasso suits \alert{approximate sparsity}: a few predictors matter, the
         rest are approximately irrelevant.
@@ -273,7 +287,7 @@ Penalize the \emph{absolute} size instead:
 \begin{frame}{Choosing $\lambda$, and a Warning About Interpretation}
 \begin{itemize}\itemsep3pt
   \item \textbf{Cross-validation} over a grid of $\lambda$: pick the minimizer, or
-        the ``one standard error'' rule --- the largest $\lambda$ within one
+        the ``one standard error'' rule, the largest $\lambda$ within one
         standard error of the minimum, which buys a simpler model at almost no
         predictive cost.
   \item There are also \textbf{theoretically derived} penalties that set
@@ -286,7 +300,7 @@ Penalize the \emph{absolute} size instead:
 Among correlated predictors, lasso picks one essentially arbitrarily and zeroes
 the rest. Re-run on a bootstrap sample and you may get a different set. \alert{Do
 not interpret the selected set as ``the variables that matter'',} and do not
-report post-lasso $p$-values from a naive refit --- the selection invalidates
+report post-lasso $p$-values from a naive refit, the selection invalidates
 them. Valid post-selection inference is exactly what Week 13 is for.
 \end{alertblock}
 \end{frame}
@@ -296,7 +310,7 @@ them. Valid post-selection inference is exactly what Week 13 is for.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Regression Trees}
+\begin{frame}[allowframebreaks,t]{Regression Trees}
 Recursively split the covariate space to minimize within-node sum of squares; the
 prediction in a leaf is the mean of the training outcomes there.
 \vskip3pt
@@ -316,7 +330,7 @@ prediction in a leaf is the mean of the training outcomes there.
 \begin{itemize}\itemsep2pt
   \item \textbf{Strengths}: automatic interactions and nonlinearity; invariant to
         monotone transformations; handles mixed variable types; readable.
-  \item \alert{Weaknesses}: high variance --- a small change in the data can
+  \item \alert{Weaknesses}: high variance, a small change in the data can
         change the first split and hence everything below it. A single deep tree
         overfits badly; a shallow one underfits.
   \item Pruning with a complexity penalty helps but does not solve it. The real
@@ -328,8 +342,8 @@ prediction in a leaf is the mean of the training outcomes there.
 \begin{itemize}\itemsep4pt
   \item \textbf{Bagging}: fit trees on bootstrap resamples and average. Averaging
         $B$ nearly independent estimates cuts variance by roughly $1/B$ without
-        adding bias. But bootstrap trees are \emph{correlated} --- they all split
-        on the same dominant predictor first --- which caps the gain.
+        adding bias. But bootstrap trees are \emph{correlated}, they all split
+        on the same dominant predictor first, which caps the gain.
   \item \textbf{Random forests}: bag, but at each split consider only a random
         subset of $m$ predictors. Decorrelating the trees is what makes the
         averaging work. $m$ is the main tuning parameter, alongside node size.
@@ -345,13 +359,13 @@ prediction in a leaf is the mean of the training outcomes there.
 is the cleanest way to keep them straight.
 \end{frame}
 
-\begin{frame}{What ML Buys, and What It Does Not}
+\begin{frame}[allowframebreaks,t]{What ML Buys, and What It Does Not}
 \begin{columns}[T]
 \begin{column}{0.47\textwidth}
 \textbf{Buys}
 \begin{itemize}\small\itemsep2pt
   \item Prediction with many predictors, including $p > n$.
-  \item Automatic nonlinearity and interactions --- no functional form to guess.
+  \item Automatic nonlinearity and interactions, no functional form to guess.
   \item Honest out-of-sample performance estimates.
 \end{itemize}
 \end{column}
@@ -361,7 +375,8 @@ is the cleanest way to keep them straight.
   \item \alert{Causal interpretation.} A variable importance score is not an
         effect.
   \item Valid standard errors for the coefficients it selects.
-  \item Extrapolation: trees cannot predict outside the training range at all.
+  \item Extrapolation: trees do return a prediction for out-of-range inputs, but
+        only the boundary leaf's constant, so they cannot extend a trend.
   \item Freedom from the identification problems of Weeks 5--11.
 \end{itemize}
 \end{column}
@@ -371,7 +386,7 @@ is the cleanest way to keep them straight.
 \emph{Prediction as the goal} (screening, triage, forecasting);
 \emph{measurement} (constructing variables from text or images);
 \emph{describing heterogeneity}; and \alert{estimating nuisance functions inside a
-causal estimator} --- which is next week.
+causal estimator}, which is next week.
 \end{block}
 \end{frame}
 
@@ -382,7 +397,7 @@ causal estimator} --- which is next week.
         and read off a coefficient: they are \emph{deliberately biased} and
         converge slowly.
   \item \textbf{Next week}: what has to change before an estimate this biased can
-        be used as an ingredient in a causal estimator --- and what it buys us when
+        be used as an ingredient in a causal estimator, and what it buys us when
         it can.
 \end{itemize}
 \vskip4pt

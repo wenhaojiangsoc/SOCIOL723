@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 5: Simulating Confounding, Colliders, and DAGs}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, September 24"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, September 24"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -203,7 +203,7 @@ c(total_effect   = coef(lm(y ~ d, data = dat3))["d"],
   truth_direct   = 1.0)
 ```
 
-Both numbers are "correct" --- they estimate *different estimands*. The mistake
+Both numbers are "correct", they estimate *different estimands*. The mistake
 is not computing the second; it is reporting it as though it were the first.
 
 ::: callout-warning
@@ -307,7 +307,7 @@ localTests(g, sim, type = "cis.loess", R = 50) |> round(3) |> head(5)
 ```
 
 ::: callout-note
-A DAG that passes its testable implications is not thereby "correct" --- many
+A DAG that passes its testable implications is not thereby "correct", many
 different DAGs imply the same independencies. But a DAG that *fails* them is
 wrong, and that is worth knowing.
 :::
@@ -317,7 +317,7 @@ wrong, and that is worth knowing.
 1.  **Bad control that predicts treatment.** Simulate $Z \to D \to Y$ with $Z$
     having no effect on $Y$, plus an unobserved confounder $U \to D$, $U \to Y$.
     Compare the bias in $\hat\tau$ with and without controlling for $Z$. You
-    should find that controlling for $Z$ makes the bias *worse* --- this is
+    should find that controlling for $Z$ makes the bias *worse*; this is
     **bias amplification**. Explain why using the FWL logic from Week 1.
 
 2.  **Positivity.** Modify `sim_confound()` so that everyone with $x > 1$ is
@@ -332,7 +332,7 @@ wrong, and that is worth knowing.
 
 4.  **Your own DAG.** Draw the DAG for a causal question in your own research in
     `dagitty`. Mark unobserved variables. Ask for `adjustmentSets()`. Is there
-    any set you can actually measure? If not, that is a finding --- and it points
+    any set you can actually measure? If not, that is a finding, and it points
     you toward Weeks 7--11.
 
 5.  **The birth-weight paradox.** Simulate: smoking $\to$ birth weight, an

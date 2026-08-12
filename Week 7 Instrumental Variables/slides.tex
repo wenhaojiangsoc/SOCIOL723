@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 7 --- Instrumental Variables\\[-8pt]}
+\subtitle{\large Week 7, Instrumental Variables\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -128,7 +142,7 @@ adjust. That assumption is usually false, and no diagnostic can rescue it.
 \vskip3pt
 \begin{alertblock}{The instrumental variables idea}
 Give up on controlling for confounders. Instead, find a source of variation in
-the treatment that is \emph{as good as randomly assigned} --- and use only that
+the treatment that is \emph{as good as randomly assigned}, and use only that
 variation.
 \end{alertblock}
 \vskip3pt
@@ -136,7 +150,7 @@ variation.
   \item We throw away most of the variation in $D$ and keep a sliver we can
         defend. Precision falls; credibility rises.
   \item The price is steep and often hidden: we no longer estimate the ATE, and
-        the assumptions are as untestable as ignorability was --- just different,
+        the assumptions are as untestable as ignorability was, just different,
         and usually easier to argue about in substantive terms.
 \end{itemize}
 \end{frame}
@@ -150,7 +164,7 @@ variation.
 We want $\beta$ in $Y_i = \alpha + \beta D_i + \epsilon_i$, but $D_i$ is
 \alert{endogenous}: $\Cov(D_i,\epsilon_i)\neq 0$. From Week 1,
 \begin{align*}
-  \hat\beta = \frac{\widehat\Cov(D_i, Y_i)}{\widehat\Var(D_i)}
+  \hat\beta = \frac{\Cov_n(D_i, Y_i)}{\Var_n(D_i)}
   \ \pto\ \beta + \frac{\Cov(D_i,\epsilon_i)}{\Var(D_i)} .
 \end{align*}
 \vskip2pt
@@ -160,7 +174,7 @@ biased. More data buys precision around the wrong number.
 \begin{itemize}\itemsep2pt
   \item \textbf{Omitted variables}: unmeasured ability, motivation, family
         resources. This is the OVB formula from Week 1, restated.
-  \item \textbf{Simultaneity}: $Y$ also causes $D$ --- police and crime, aid and
+  \item \textbf{Simultaneity}: $Y$ also causes $D$, police and crime, aid and
         growth, marriage and earnings.
   \item \textbf{Measurement error in $D$}: classical error attenuates
         $\hat\beta$ toward zero, by a factor equal to the reliability ratio.
@@ -180,7 +194,7 @@ $\epsilon_i = \gamma A_i + u_i$ with $A_i$ an unmeasured confounder,
         positively selected into schooling, so OLS is biased \emph{up}.
   \item Measurement error in reported schooling pushes the other way. The two
         biases are of unknown relative size, which is why the sign of the total
-        OLS bias is genuinely uncertain --- and why the empirical finding that IV
+        OLS bias is genuinely uncertain, and why the empirical finding that IV
         estimates \emph{exceed} OLS is not automatically evidence of a bad
         instrument.
   \item \alert{Before running IV, say which bias you are trying to remove and in
@@ -188,7 +202,7 @@ $\epsilon_i = \gamma A_i + u_i$ with $A_i$ an unmeasured confounder,
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{An Instrument}
+\begin{frame}[allowframebreaks,t]{An Instrument}
 An instrument $Z_i$ moves $D_i$ but is otherwise unrelated to $Y_i$.
 \vskip-2pt
 \begin{center}
@@ -206,7 +220,7 @@ An instrument $Z_i$ moves $D_i$ but is otherwise unrelated to $Y_i$.
 \begin{block}{Three conditions, stated carefully}
 \begin{enumerate}\itemsep1pt
   \item \textbf{Relevance}: $\Cov(Z_i, D_i) \neq 0$. \alert{Testable.}
-  \item \textbf{Independence}: $Z_i$ is as good as randomly assigned --- no
+  \item \textbf{Independence}: $Z_i$ is as good as randomly assigned, no
         arrow into $Z$ from anything that also causes $Y$.
   \item \textbf{Exclusion}: $Z$ affects $Y$ \emph{only} through $D$. \alert{Not
         testable.}
@@ -260,7 +274,7 @@ Divide numerator and denominator by $\Var(Z_i)$:
         $\gamma\beta$. The first stage recovers $\gamma$. Dividing isolates
         $\beta$.
   \item \alert{If $\gamma$ is small, we are dividing by something close to zero.}
-        Hold that thought --- it is the whole of the weak-instrument problem.
+        Hold that thought; it is the whole of the weak-instrument problem.
 \end{itemize}
 \end{frame}
 
@@ -280,7 +294,7 @@ quality ($D$, protection from expropriation risk) on GDP per capita ($Y$).
   \item \textbf{The instrument}: mortality rates faced by European settlers in the
         colonial period.
   \item \textbf{The mechanism argument}: where settlers could survive, they
-        settled and built inclusive institutions --- property rights, rule of law.
+        settled and built inclusive institutions, property rights, rule of law.
         Where mortality was high, colonization was extractive. Those institutional
         forms persisted long after the disease environment ceased to matter.
   \item \textbf{Relevance}: strongly supported by the first stage.
@@ -294,7 +308,7 @@ only through institutions.
 \begin{itemize}\itemsep3pt
   \item \alert{The leading threat is geography.} The disease environment that
         killed settlers also shapes agricultural productivity, the modern disease
-        burden, and human capital --- all of which affect income directly.
+        burden, and human capital, all of which affect income directly.
   \item AJR's response is an \emph{assumption}: that the confounding role of
         geography is adequately captured by a linear term in distance from the
         equator plus continent dummies.
@@ -315,20 +329,20 @@ only through institutions.
   \item \textbf{The mechanism}: children start school in the year they turn six,
         but may leave at a fixed \emph{age} (16 or 17). Those born early in the
         calendar year reach the leaving age having completed less schooling.
-  \item \textbf{Relevance}: the first stage is real but small --- a fraction of a
+  \item \textbf{Relevance}: the first stage is real but small, a fraction of a
         year of schooling.
   \item \textbf{Exclusion}: birth quarter should not affect earnings except
         through schooling. Contested, because season of birth correlates with
         maternal characteristics, health at birth, and relative age in class.
   \item \textbf{The compliers} are people who would have dropped out at the
         minimum age. The LATE is therefore a return to schooling \emph{at the
-        bottom of the schooling distribution} --- a different quantity from the
+        bottom of the schooling distribution}, a different quantity from the
         average return, and arguably the policy-relevant one for compulsory
         attendance laws.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{The Cautionary Half of Angrist--Krueger}
+\begin{frame}[allowframebreaks,t]{The Cautionary Half of Angrist--Krueger}
 The paper is also the standard illustration of what goes wrong with many weak
 instruments.
 \vskip3pt
@@ -378,7 +392,7 @@ With covariates and possibly several instruments:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{IV in Matrix Form\adv}
+\begin{frame}{IV in Matrix Form\adv}
 Start from the moment condition $\E[\bm Z' u] = \zero$ with $Y = D\beta_0 + u$.
 The sample analogue $\bm Z'(\bm Y - \bm D\hat\beta) = \zero$ has no solution
 when there are more instruments than regressors, so instead \emph{minimize} the
@@ -392,8 +406,10 @@ The first-order condition gives
   \hat\beta = \Big(\bm D'\bm Z(\bm Z'\bm Z)^{-1}\bm Z'\bm D\Big)^{-1}
               \bm D'\bm Z(\bm Z'\bm Z)^{-1}\bm Z'\bm Y .
 \end{align*}
-\pause
-Define the projection matrix $\bm P_Z = \bm Z(\bm Z'\bm Z)^{-1}\bm Z'$ --- the
+\end{frame}
+
+\begin{frame}{IV in Matrix Form: The 2SLS Estimator\adv}
+Define the projection matrix $\bm P_Z = \bm Z(\bm Z'\bm Z)^{-1}\bm Z'$, the
 same object as Week 1, now projecting onto the instrument space:
 \begin{align*}
   \boxed{\;\hat\beta_{2SLS} = \big(\bm D'\bm P_Z \bm D\big)^{-1}\bm D'\bm P_Z\bm Y\;}
@@ -420,11 +436,11 @@ so by Slutsky $\sqrt n(\hat\beta-\beta_0)\dto \mathcal N(\zero, \bm A^{-1}\bm S\
 \vskip3pt
 The robust variance estimator is the familiar sandwich:
 \begin{align*}
-  \widehat{\Var}(\hat\beta)
+  \hat{V}(\hat\beta)
   = (\bm D'\bm P_Z\bm D)^{-1}\,\bm D'\bm P_Z\,
-    \widehat{\Var}(\bm u)\,\bm P_Z\bm D\,(\bm D'\bm P_Z\bm D)^{-1} ,
+    \hat{V}(\bm u)\,\bm P_Z\bm D\,(\bm D'\bm P_Z\bm D)^{-1} ,
 \end{align*}
-plugging in $\widehat{\Var}(\bm u) = \mathrm{diag}(\hat u_i^2)$ --- and clustering
+plugging in $\hat{V}(\bm u) = \mathrm{diag}(\hat u_i^2)$, and clustering
 exactly as in Week 2. \alert{Note the residuals $\hat u_i$ must be computed with
 the actual $D_i$, not $\hat D_i$}; this is the other reason not to run the stages
 by hand.
@@ -435,7 +451,7 @@ by hand.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[shrink=10]{Four Types of People}
+\begin{frame}[allowframebreaks,t]{Four Types of People}
 With a binary instrument and binary treatment, write $D_i(z)$ for the treatment
 unit $i$ would take if assigned $Z_i = z$. Every unit is one of four types:
 \begin{center}\small
@@ -476,7 +492,7 @@ potential outcomes and types,
 \vskip2pt
 Always- and never-takers take the \emph{same} treatment under both values of
 $Z$, so \alert{by exclusion} their outcomes are unchanged and they contribute
-zero. \alert{Monotonicity} kills the last line by assuming $\Pr(\text{D})=0$ ---
+zero. \alert{Monotonicity} kills the last line by assuming $\Pr(\text{D})=0$, 
 note that defiers would enter with the \emph{wrong sign}.
 \end{frame}
 
@@ -497,7 +513,7 @@ Dividing:
 \end{block}
 \vskip3pt
 \alert{IV does not estimate the ATE.} It estimates the average effect for the
-subpopulation whose treatment status the instrument actually changed --- a group
+subpopulation whose treatment status the instrument actually changed, a group
 you cannot identify by name, defined by the instrument you happened to choose.
 \end{frame}
 
@@ -507,7 +523,7 @@ you cannot identify by name, defined by the instrument you happened to choose.
         rarely a defensible assumption in sociology.
   \item Different instruments for the same treatment estimate \emph{different}
         LATEs. When two IV papers disagree, that is not necessarily a
-        contradiction --- it may be two correct answers to two different questions.
+        contradiction; it may be two correct answers to two different questions.
   \item \textbf{You can describe the compliers even though you cannot name them}:
         their share is the first stage, and their covariate means are recoverable
         by reweighting (Abadie's $\kappa$).
@@ -527,7 +543,7 @@ interpretable LATE and a number.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Weak Instruments Are Worse Than No Instrument}
-Recall $\hat\beta_{IV} = \widehat\Cov(Z,Y)/\widehat\Cov(Z,D)$. If the denominator
+Recall $\hat\beta_{IV} = \Cov_n(Z,Y)/\Cov_n(Z,D)$. If the denominator
 is near zero, small violations of exclusion get \emph{divided by} a small number:
 \begin{align*}
   \plim \hat\beta_{IV} = \beta + \frac{\Cov(Z,\epsilon)}{\Cov(Z,D)} .
@@ -543,7 +559,7 @@ is near zero, small violations of exclusion get \emph{divided by} a small number
         limit}: the limiting distribution is non-normal and heavy-tailed, so the
         conventional $t$-test fails no matter how large $n$ is.
   \item The problem \emph{worsens} with more instruments, because many weak
-        instruments overfit the first stage --- the Bound--Jaeger--Baker point.
+        instruments overfit the first stage, the Bound--Jaeger--Baker point.
 \end{itemize}
 \end{frame}
 
@@ -575,7 +591,7 @@ To test $H_0: \beta = \beta_0$, note that under the null
 $\E\big[(Y_i - \beta_0 D_i)Z_i\big] = 0$. Form the statistic
 \begin{align*}
   C(\beta_0) = \frac{\Big|\En\big[(Y_i - \beta_0 D_i)\,Z_i\big]\Big|^2}
-                    {\widehat{\Var}_n\big[(Y_i-\beta_0D_i)Z_i\big]/n}
+                    {\Var_n\big[(Y_i-\beta_0D_i)Z_i\big]/n}
   \ \dto\ \chi^2_1 \quad\text{under } H_0 ,
 \end{align*}
 (with variables residualized on any exogenous controls first). Reject at level
@@ -589,7 +605,7 @@ $a$ if $C(\beta_0) > c_{1-a}$, the $(1-a)$ quantile of $\chi^2_1$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Inverting the Test}
+\begin{frame}{Inverting the Test}
 A confidence region is the set of null values the data cannot reject:
 \begin{align*}
   CR(\beta) = \big\{\beta_0 \in \Theta : C(\beta_0) \leq c_{1-a}\big\} .
@@ -601,13 +617,13 @@ survive.
   \item The region can be an interval, a \emph{union} of disjoint intervals, the
         whole real line, or \emph{empty}. None of these is a bug.
   \item An \textbf{unbounded} region is the honest statement that the data cannot
-        pin $\beta$ down --- which is precisely what a conventional interval hides
+        pin $\beta$ down, which is precisely what a conventional interval hides
         when the instrument is weak.
   \item An \textbf{empty} region can arise only when the model is
-        \emph{overidentified} --- with one instrument and one endogenous regressor
+        \emph{overidentified}, with one instrument and one endogenous regressor
         the 2SLS value always satisfies the moment exactly. When it does happen it
         is evidence against the overidentifying restrictions.
-  \item \texttt{ivmodel}, \texttt{ivDiag}, or a hand-coded grid --- it is ten
+  \item \texttt{ivmodel}, \texttt{ivDiag}, or a hand-coded grid; it is ten
         lines of code, and we write them in lab.
 \end{itemize}
 \end{frame}
@@ -617,7 +633,7 @@ With more instruments than endogenous regressors, the Sargan--Hansen $J$ test
 asks whether the instruments agree with one another.
 \vskip3pt
 \begin{itemize}\itemsep3pt
-  \item \textbf{Rejection} says at least one instrument is invalid --- \emph{or}
+  \item \textbf{Rejection} says at least one instrument is invalid, \emph{or}
         that effects are heterogeneous, so the instruments estimate different
         LATEs and are supposed to disagree. It does not say which.
   \item \textbf{Non-rejection is nearly worthless.} It is consistent with all the
@@ -635,18 +651,18 @@ asks whether the instruments agree with one another.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[shrink=10]{A Reader's Checklist}
+\begin{frame}[allowframebreaks,t]{A Reader's Checklist}
 Adapted from \srct{Sovey and Green (2011)}. Any IV paper should report:
 \begin{enumerate}\itemsep2pt
-  \item The instrument, and an explicit argument for exclusion --- not just a
+  \item The instrument, and an explicit argument for exclusion, not just a
         citation to a prior paper that used it.
   \item The \textbf{first stage}, its coefficient, and its robust $F$.
   \item The \textbf{reduced form} ($Y$ on $Z$), with its estimate and interval.
         It needs no instrument-strength assumption, so it is the most robust piece
-        of evidence in the design --- and if it is indistinguishable from zero the
+        of evidence in the design, and if it is indistinguishable from zero the
         IV estimate rests on very little.
   \item The \textbf{OLS} estimate alongside, so the reader can see the direction
-        and size of the correction --- and whether it goes the way theory predicts.
+        and size of the correction, and whether it goes the way theory predicts.
   \item Who the \textbf{compliers} are, and their share.
   \item Weak-instrument-robust inference if $F$ is not comfortably large.
   \item The just-identified estimate if the paper is overidentified.
@@ -656,7 +672,7 @@ Adapted from \srct{Sovey and Green (2011)}. Any IV paper should report:
 \alert{If a paper reports only the 2SLS coefficient, that is a red flag.}
 \end{frame}
 
-\begin{frame}[shrink=10]{When IV Is the Wrong Tool}
+\begin{frame}[allowframebreaks,t]{When IV Is the Wrong Tool}
 \begin{itemize}\itemsep3pt
   \item \textbf{No credible instrument exists.} This is the normal state of
         affairs. An implausible instrument is worse than an honest
@@ -666,13 +682,13 @@ Adapted from \srct{Sovey and Green (2011)}. Any IV paper should report:
   \item \textbf{Interpretation drifts.} Papers routinely estimate a LATE and then
         discuss it as if it were an ATE.
   \item \textbf{Monotonicity is doing hidden work.} In judge-leniency and
-        examiner designs, it must hold for \emph{every} judge simultaneously ---
+        examiner designs, it must hold for \emph{every} judge simultaneously, 
         a much stronger claim than it first appears.
 \end{itemize}
 \vskip3pt
 \begin{block}{The design-based cousins}
 When the instrument is a discontinuity in an assignment rule, you have
-\textbf{RDD} (Week 9) --- and indeed fuzzy RD \emph{is} local IV. When it is a
+\textbf{RDD} (Week 9), and indeed fuzzy RD \emph{is} local IV. When it is a
 policy change over time, you have \textbf{DID} (Week 10).
 \end{block}
 \end{frame}
@@ -681,12 +697,12 @@ policy change over time, you have \textbf{DID} (Week 10).
 \begin{itemize}\itemsep4pt
   \item IV replaces ``I measured all confounders'' with ``I found variation that
         is as good as random.'' Both are assumptions; the second is easier to
-        argue about substantively, and easier for readers to attack --- which is
+        argue about substantively, and easier for readers to attack, which is
         a virtue.
   \item The price is the estimand: LATE, for compliers you cannot name, defined
         by the instrument you chose.
   \item Notice how much identification work was done by \emph{functional form} in
-        AJR --- ``linear in distance from the equator, plus continent dummies.''
+        AJR, ``linear in distance from the equator, plus continent dummies.''
         Week 13 asks briefly what can be done when you are unwilling to assume
         that.
 \end{itemize}
@@ -697,7 +713,7 @@ note, timed, no coding. Tuesday October 13 is Fall break.
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Acemoglu, Daron, Simon Johnson, and James A. Robinson. 2001. ``The Colonial

@@ -1,17 +1,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SOCIOL 723 -- Social Statistics II
-%% Week 1: The Linear Model and OLS
+%% Week 1: The Linear Model and OLS  --  SANS-SERIF VARIANT (text + math)
 %% Wenhao Jiang, Duke University, Fall 2026
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \documentclass[aspectratio=169,11pt,xcolor=dvipsnames]{beamer}
 \mode<presentation>
 
-%% ---- fonts: Latin Modern Roman (the LaTeX default), serif throughout -------
+%% ---- fonts: Latin Modern SANS, for BOTH text and math ----------------------
+%% This is the sans experiment: identical to slides.tex in every other respect.
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usefonttheme{serif}
-\renewcommand{\familydefault}{\rmdefault}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{sansmath}
+\AtBeginDocument{\sansmath}
 
 %% ---- packages --------------------------------------------------------------
 \usepackage{amsmath,amsfonts,amssymb,bm}
@@ -1223,8 +1225,8 @@ error'' is.
 and with more regressors,
 $\Var(\hat\beta_j) = \dfrac{\sigma^2}{n\,\Var_n(X_j)\,(1-R_j^2)}$
 where $R_j^2$ is from regressing $X_j$ on the other regressors.
-\vskip4pt
-\begin{itemize}\itemsep3pt
+\vskip2pt
+\begin{itemize}\itemsep2pt
   \item \textbf{Noise} $\sigma^2$ up $\Rightarrow$ variance up.
   \item \textbf{Sample size} $n$ up $\Rightarrow$ variance down like $1/n$;
         standard error down like $1/\sqrt n$.

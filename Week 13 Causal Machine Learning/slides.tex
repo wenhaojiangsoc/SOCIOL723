@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 13 --- Causal Machine Learning\\[-8pt]}
+\subtitle{\large Week 13, Causal Machine Learning\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -125,18 +139,18 @@
 \begin{itemize}\itemsep3pt
   \item \textbf{Weeks 5--11} gave us identification: what must be true for a
         parameter to be causal. Almost every design ended with a nuisance
-        function to estimate --- a propensity score, an outcome regression, a
+        function to estimate, a propensity score, an outcome regression, a
         first stage, a conditional trend.
   \item \textbf{Week 12} gave us flexible estimators for exactly such functions,
         which work with many covariates and unknown functional form.
-  \item \alert{The obvious move --- plug ML into the causal estimator --- fails.}
+  \item \alert{The obvious move, plug ML into the causal estimator, fails.}
         Today is about why, and what fixes it.
 \end{itemize}
 \vskip4pt
 \begin{block}{The payoff}
 We get to relax the functional-form assumptions that identification arguments
-have been quietly leaning on all semester --- AJR's linear geography control,
-the linear propensity score, the additive conditional trend --- \emph{without}
+have been quietly leaning on all semester, AJR's linear geography control,
+the linear propensity score, the additive conditional trend, \emph{without}
 giving up $\sqrt n$ inference.
 \end{block}
 \end{frame}
@@ -156,7 +170,7 @@ The workhorse specification for the rest of the course:
 \begin{itemize}\itemsep3pt
   \item $\theta$ is the target: the effect of $D$ holding $W$ fixed, and it is
         assumed constant (relaxed in the last section).
-  \item $g$ and $m$ are \alert{nuisance functions} --- we do not care about them,
+  \item $g$ and $m$ are \alert{nuisance functions}; we do not care about them,
         but we must handle them. They may be highly nonlinear, and $W$ may be
         high-dimensional.
   \item Under conditional ignorability given $W$ (Week 5), $\theta$ is the ATE.
@@ -165,8 +179,10 @@ The workhorse specification for the rest of the course:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Attempt 1: Regularization Bias}
-The naive approach: estimate $\hat g$ by ML, then regress $Y_i - \hat g(W_i)$ on
+\begin{frame}[allowframebreaks,t]{Attempt 1: Regularization Bias}
+The naive approach: fit the partially linear model by ML to get $\hat g$, taking
+it from a joint fit of $Y$ on $(D_i, W_i)$ with $D_i$ left \emph{unpenalized} so
+that $\hat g$ targets the structural $g$. Then regress $Y_i - \hat g(W_i)$ on
 $D_i$.
 \begin{align*}
   \hat\theta_{\text{naive}}
@@ -182,12 +198,18 @@ Substituting the true model and rescaling,
 \begin{itemize}\itemsep2pt
   \item Regularized estimators are \emph{deliberately biased} (Week 12), and
         typically converge more slowly than the parametric $n^{-1/2}$.
-  \item Then the second term does not vanish on the $\sqrt n$ scale --- the
+  \item Then the second term does not vanish on the $\sqrt n$ scale, the
         nuisance bias is of the same order as, or larger than, the sampling noise
         we are trying to describe.
   \item \alert{The point estimate may be fine; the inference is not.} Confidence
         intervals are centred in the wrong place, and collecting more data does
         not fix it.
+  \item \textbf{A trap worth naming.} If you instead regress $Y$ on $W$ alone you
+        estimate $\ell(W) = \E[Y\mid W] = \theta\, m(W) + g(W)$, which already
+        contains the effect you are after. Subtracting that removes the signal.
+        And even with the true $\ell$, regressing $Y - \ell(W)$ on \emph{raw}
+        $D_i$ does not recover $\theta$: $D_i$ must be residualized too, which is
+        exactly what the next slide does.
 \end{itemize}
 \end{frame}
 
@@ -208,7 +230,7 @@ The bias term now involves the \alert{product} of the two estimation errors:
 \end{align*}
 \vskip2pt
 \alert{This vanishes when
-$\|\hat m - m\|_2\,\|\hat\ell - \ell\|_2 = o_p(n^{-1/2})$} --- for which it is
+$\|\hat m - m\|_2\,\|\hat\ell - \ell\|_2 = o_p(n^{-1/2})$}, for which it is
 sufficient that \emph{each} converge faster than $n^{-1/4}$. Lasso and forests
 can do that under sparsity or smoothness assumptions.
 \textbf{First-order bias has become second-order.}
@@ -245,7 +267,7 @@ and it satisfies
 \begin{frame}{The Second Ingredient: Cross-Fitting}
 Orthogonality is not quite enough. If $\hat m$ is fitted on the \emph{same}
 observations where it is evaluated, its errors correlate with those units'
-outcomes --- \alert{overfitting bias}, which orthogonality does not remove.
+outcomes, \alert{overfitting bias}, which orthogonality does not remove.
 \vskip3pt
 \begin{block}{Cross-fitting}
 Split the sample into $K$ folds. For each fold $k$: estimate
@@ -260,22 +282,24 @@ only for observations \emph{in} fold $k$. Then pool.
        {\frac1n\sum_{k}\sum_{i \in \mathcal I_k}\big(D_i - \hat m^{(-k)}(W_i)\big)^2}
 \end{align*}
 \vskip2pt
-This is the same device as cross-validation in Week 12 --- but used to protect
+This is the same device as cross-validation in Week 12, but used to protect
 \emph{inference}, not to select a tuning parameter.
 \end{frame}
 
-\begin{frame}{The DML Recipe}
+\begin{frame}[allowframebreaks,t]{The DML Recipe}
 \begin{enumerate}\itemsep3pt
   \item Split the sample into $K$ folds (typically $K = 5$; split on the
         \emph{independent unit} if data are clustered).
   \item On the training folds, estimate $\hat\ell(W) = \hat\E[Y\mid W]$ and
-        $\hat m(W) = \hat\E[D\mid W]$ with any ML method --- lasso, random forest,
+        $\hat m(W) = \hat\E[D\mid W]$ with any ML method, lasso, random forest,
         boosting, or an ensemble.
   \item On the held-out fold, form residuals $\tilde Y_i$ and $\tilde D_i$.
   \item Pool across folds and regress $\tilde Y$ on $\tilde D$.
-  \item The standard error is the usual heteroskedasticity-robust one from that
-        final bivariate regression --- \alert{orthogonality is what makes it
-        valid} despite the ML first stage.
+  \item With independent observations, the standard error is the usual
+        heteroskedasticity-robust one from that final bivariate regression:
+        \alert{orthogonality is what makes it valid} despite the ML first stage.
+        \emph{With clustered data, keeping clusters intact within folds is not
+        enough}, the score variance must also be clustered at the independent unit.
   \item Repeat the whole split several times with different seeds and take the
         median; the answer should not depend on the partition.
 \end{enumerate}
@@ -284,15 +308,16 @@ This is the same device as cross-validation in Week 12 --- but used to protect
 \texttt{mlr3} learners.
 \end{frame}
 
-\begin{frame}{What the Theory Requires --- and What It Does Not}
+\begin{frame}[allowframebreaks,t]{What the Theory Requires, and What It Does Not}
 \begin{columns}[T]
 \begin{column}{0.47\textwidth}
 \textbf{Requires}
 \begin{itemize}\small\itemsep2pt
   \item Conditional ignorability given $W$ (unchanged!).
   \item Overlap: $\hat m(W)$ bounded away from 0 and 1 for binary $D$.
-  \item Nuisance convergence faster than $n^{-1/4}$ --- e.g.\ approximate
-        sparsity for lasso, smoothness for forests.
+  \item Nuisance convergence fast enough that the \emph{product} of the two
+        rates is $o(n^{-1/2})$; each faster than $n^{-1/4}$ is sufficient but not
+        necessary. Approximate sparsity for lasso, smoothness for forests.
   \item Orthogonal moment $+$ cross-fitting.
 \end{itemize}
 \end{column}
@@ -302,7 +327,7 @@ This is the same device as cross-validation in Week 12 --- but used to protect
   \item Correct functional form for $g$ or $m$.
   \item Knowing which of the $p$ covariates matter.
   \item $p \ll n$. High-dimensional $W$ is the point.
-  \item Consistent \emph{model selection} --- lasso may pick the wrong variables
+  \item Consistent \emph{model selection}, lasso may pick the wrong variables
         and $\hat\theta$ is still fine.
 \end{itemize}
 \end{column}
@@ -315,8 +340,8 @@ confounder, no amount of machine learning helps.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}[shrink=10]{Where DML Plugs In}
-The same two ingredients --- an orthogonal score plus cross-fitting --- apply to
+\begin{frame}[allowframebreaks,t]{Where DML Plugs In}
+The same two ingredients, an orthogonal score plus cross-fitting, apply to
 almost every design in this course:
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.3}
@@ -359,13 +384,13 @@ Drop the constant-effect assumption. The target becomes the
   \item Sociologically this is often the substantive question: \emph{for whom}
         does college pay off, \emph{which} neighbourhoods benefit, \emph{who} is
         harmed.
-  \item \alert{The naive approach --- run subgroup regressions, report the
-        significant ones --- is a multiple-testing disaster} and does not
+  \item \alert{The naive approach, run subgroup regressions, report the
+        significant ones, is a multiple-testing disaster} and does not
         replicate. It is the specification search of Week 2 with more rooms to
         search.
   \item The modern approach: build an orthogonal, doubly robust
         \emph{pseudo-outcome} whose conditional mean is $\tau(x)$, then use ML to
-        estimate that conditional mean --- with honest sample splitting so that
+        estimate that conditional mean, with honest sample splitting so that
         the subgroups are not chosen using the same data that tests them.
 \end{itemize}
 \end{frame}
@@ -379,7 +404,7 @@ Take the AIPW summand from Week 6, unit by unit:
 \end{align*}
 \vskip3pt
 \begin{itemize}\itemsep3pt
-  \item Its \emph{average} is the AIPW estimate of the ATE --- that was Week 6.
+  \item Its \emph{average} is the AIPW estimate of the ATE; that was Week 6.
   \item With the \emph{true} nuisance functions, its conditional mean is exactly
         the CATE: $\E[\Gamma_i \mid X_i = x] = \tau(x)$. With cross-fitted
         estimates it holds approximately, at a rate governed by the same product
@@ -405,7 +430,7 @@ treatment effect} rather than in the outcome.
   \item \textbf{Honesty}: within each tree, one subsample chooses the splits and a
         \emph{disjoint} subsample estimates the effects in the resulting leaves.
         This is what delivers asymptotic normality and valid pointwise intervals
-        --- without it, leaves are selected \emph{because} they show large
+, without it, leaves are selected \emph{because} they show large
         effects.
   \item \textbf{Local centering}: residualize $Y$ and $D$ on $X$ first (i.e.\
         orthogonalize), exactly as in DML.
@@ -417,7 +442,7 @@ treatment effect} rather than in the outcome.
 
 \begin{frame}{Reporting Heterogeneity Honestly}
 An estimated $\hat\tau(x)$ that varies is not by itself evidence of
-heterogeneity --- noise varies too.
+heterogeneity, noise varies too.
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item \textbf{Calibration test}: regress the doubly robust scores on
@@ -440,8 +465,8 @@ heterogeneity --- noise varies too.
         robustness and Neyman orthogonality (Week 6) $\to$ DML and causal forests
         (today). Each generalizes the last; none replaces identification.
   \item \textbf{ML relaxes functional-form assumptions, not identifying
-        assumptions.} That is a real and substantial gain --- many published
-        identification arguments lean on linearity they never defended --- but it
+        assumptions.} That is a real and substantial gain, many published
+        identification arguments lean on linearity they never defended, but it
         is a bounded one.
   \item \textbf{The binding constraint is still the design.} A causal forest on a
         confounded comparison estimates heterogeneity in a bias.
@@ -452,7 +477,7 @@ Synthesis, and the final project workshop. The project is due December 14.
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied

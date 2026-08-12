@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 10: Fixed Effects, DID, and the Staggered-Adoption Problem}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 29"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, October 29"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -337,7 +337,7 @@ the whole post-treatment effect? A small number means the design is fragile.
 This is a back-of-envelope diagnostic, not a formal sensitivity analysis. It
 treats the estimated pre-trend as if it were known, ignores uncertainty in both
 pieces, and assumes any violation is linear. For the real thing, use `HonestDiD`
-and report the **breakdown value** $\bar M$ --- how large the post-treatment
+and report the **breakdown value** $\bar M$, how large the post-treatment
 violation may be, relative to the largest violation seen before treatment, before
 your conclusion reverses.
 :::
@@ -367,7 +367,7 @@ your conclusion reverses.
     `emp <- exp(lemp)` and re-run the minimum-wage analysis in levels. Do the
     conclusions change? Which scale would you have pre-committed to, and why?
     (Recall from lecture that parallel trends in levels and in logs are different
-    --- and generally incompatible --- assumptions.)
+, and generally incompatible, assumptions.)
 
 6.  **Clustering.** Re-estimate the `mpdta` TWFE model clustering on state
     (`countyreal %/% 1000` gives the state FIPS code) rather than county. How many clusters are there, and what does Week 2 say you should

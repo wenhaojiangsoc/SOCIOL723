@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 9 --- Regression Discontinuity Designs\\[-8pt]}
+\subtitle{\large Week 9, Regression Discontinuity Designs\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -168,7 +182,7 @@ cut-off, a vote share above 50\%, an age of eligibility.
 \end{tikzpicture}
 \end{center}
 \vskip-6pt
-\alert{Just below and just above the cutoff, units are essentially identical} ---
+\alert{Just below and just above the cutoff, units are essentially identical}, 
 except that one group got the treatment. The jump in the outcome at $c$ is the
 effect.
 \end{frame}
@@ -178,7 +192,7 @@ effect.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Setup and Identification}
+\begin{frame}[allowframebreaks,t]{Setup and Identification}
 A \alert{running variable} (or forcing variable) $X_i$ determines treatment
 deterministically:
 \begin{align*}
@@ -200,8 +214,12 @@ Then
 \begin{itemize}\itemsep2pt
   \item Note what is \emph{not} assumed: nothing about the shape of $\E[Y\mid X]$
         away from the cutoff, and no ignorability anywhere else.
-  \item Positivity fails everywhere except in the limit --- which is why the
-        estimand is local.
+  \item \alert{Positivity fails at every $x$, the cutoff included}: assignment is
+        deterministic, so $\Pr(D=1\mid X=x)$ is $0$ or $1$ and never strictly
+        between. Identification therefore does \emph{not} come from overlap. It
+        comes from \textbf{continuity} of $x\mapsto\E[Y_i(d)\mid X_i=x]$, which
+        lets the two one-sided limits stand in for the missing counterfactual at
+        $c$. That is also why the estimand is local to $c$.
 \end{itemize}
 \end{frame}
 
@@ -290,8 +308,8 @@ with $D_i = \mathbf 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
 \vskip-10pt
 \begin{itemize}\small\itemsep1pt
   \item \textbf{Wide} $h$: more data, lower variance, but the linear
-        approximation is worse far from $c$ --- bias.
-  \item \textbf{Narrow} $h$: less bias, but few observations --- variance.
+        approximation is worse far from $c$, bias.
+  \item \textbf{Narrow} $h$: less bias, but few observations, variance.
   \item Choose $h$ by minimizing estimated MSE (Imbens--Kalyanaraman; the
         Calonico--Cattaneo--Titiunik version in \texttt{rdrobust}).
   \item \alert{The MSE-optimal bandwidth leaves a bias that invalidates the
@@ -299,7 +317,7 @@ with $D_i = \mathbf 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
         interval, which \texttt{rdrobust} reports by default.
 \end{itemize}
 \end{frame}
-\begin{frame}[shrink=10]{Why the Optimal Bandwidth Breaks the Confidence Interval}
+\begin{frame}[allowframebreaks,t]{Why the Optimal Bandwidth Breaks the Confidence Interval}
 The local linear estimator has an asymptotic expansion
 \begin{align*}
   \hat\tau_h - \tau \;\approx\; \underbrace{B\,h^2}_{\text{bias}}
@@ -321,7 +339,7 @@ so squared bias grows like $h^4$ while variance falls like $1/(nh)$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Covariates, Power, and What to Report}
+\begin{frame}[allowframebreaks,t]{Covariates, Power, and What to Report}
 \begin{itemize}\itemsep3pt
   \item \textbf{Covariates are for precision only.} They must be
         \emph{pre-determined}, they should enter additively (not interacted with
@@ -334,8 +352,8 @@ so squared bias grows like $h^4$ while variance falls like $1/(nh)$.
         read accordingly.
   \item \textbf{Power}: RD is a local method and is inherently data-hungry. The
         required sample size is a substantial multiple of an experiment's for the
-        same power --- often quoted as around $3\times$, though the exact factor
-        depends on the design --- because we are extrapolating to a boundary from
+        same power, often quoted as around $3\times$, though the exact factor
+        depends on the design, because we are extrapolating to a boundary from
         one side at a time.
   \item \textbf{Discrete running variables and heaping}: rounded ages, coarse
         test-score grids, or income bunched at round numbers do not invalidate the
@@ -370,16 +388,16 @@ The fuzzy RD estimator is a ratio of two sharp RD estimates:
   \item \alert{This is exactly the Wald estimator of Week 7}, with
         $\mathbf 1\{X\geq c\}$ as the instrument, estimated locally.
   \item The numerator alone is the \textbf{intention-to-treat} effect of crossing
-        the cutoff, and it is worth reporting on its own --- it needs no
+        the cutoff, and it is worth reporting on its own, it needs no
         first-stage assumption.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Fuzzy RD Inherits Everything From IV}
+\begin{frame}[allowframebreaks,t]{Fuzzy RD Inherits Everything From IV}
 \begin{itemize}\itemsep3pt
   \item \textbf{Exclusion}: crossing the cutoff must affect $Y$ only through $D$.
-        If the threshold also triggers something else --- a different school, a
-        different caseworker, a label --- exclusion fails.
+        If the threshold also triggers something else, a different school, a
+        different caseworker, a label, exclusion fails.
   \item \textbf{Monotonicity}: no one is treated \emph{because} they fell below
         the cutoff.
   \item \textbf{The estimand is doubly local}: the effect for \alert{compliers at
@@ -405,7 +423,7 @@ different units face different thresholds, which can be normalized and pooled.
 
 \begin{frame}{The Threat: Manipulation}
 Continuity fails if units can \emph{precisely} control which side of the cutoff
-they land on --- retaking a test until you pass, reporting income just under a
+they land on, retaking a test until you pass, reporting income just under a
 threshold, a firm holding hiring just below a regulatory headcount.
 \vskip3pt
 \begin{itemize}\itemsep3pt
@@ -461,7 +479,7 @@ threshold, a firm holding hiring just below a regulatory headcount.
 \begin{itemize}\itemsep4pt
   \item RD buys extraordinary credibility at the cost of a very local estimand.
         The identifying variation is visible in a scatterplot, and the main
-        threats --- sorting, bandwidth dependence --- are checkable.
+        threats (sorting, bandwidth dependence) are checkable.
   \item Note the family resemblance: sharp RD is a local experiment; fuzzy RD is
         local IV. The tools recombine rather than multiply.
   \item \textbf{Next week}: designs that use variation over \emph{time} rather
@@ -475,7 +493,7 @@ Assigned today, due Monday November 2. Covers Weeks 7 and 9.
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Calonico, Sebastian, Matias D. Cattaneo, and Roc\'{\i}o Titiunik. 2014.

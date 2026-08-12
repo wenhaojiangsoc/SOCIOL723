@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 13: Double Machine Learning and Causal Forests}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, November 19"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, November 19"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -78,7 +78,7 @@ make_data <- function(n = 500, p = 200, theta = 0.5) {
 
 Note the structure: the *same* covariates drive both $D$ and $Y$, so $W$ is
 genuinely confounding. With $p = 200$ and $n = 500$ OLS is estimable, but it is
-so high-variance and poorly conditioned as to be useless --- which is why we
+so high-variance and poorly conditioned as to be useless, which is why we
 regularize.
 
 ```{r}
@@ -314,7 +314,7 @@ forest found variation, not why.
 # Exercises
 
 1.  **How slow can the learner be?** In `estimators()`, replace `cv.glmnet` with
-    a deliberately crude learner --- a single shallow tree via
+    a deliberately crude learner, a single shallow tree via
     `ranger(x = as.data.frame(W), y = Y, num.trees = 1, max.depth = 2)`. Does DML
     still recover 0.5? At what point does the rate condition plausibly fail?
 
@@ -338,7 +338,7 @@ forest found variation, not why.
     the PLR estimate. Which estimand is each targeting?
 
 6.  **Honest heterogeneity.** The group ATEs above already use out-of-bag
-    predictions and doubly robust scores, which removes most --- but not all ---
+    predictions and doubly robust scores, which removes most, but not all, 
     of the optimism, because the same units informed the forest's structure. Split
     the sample in half: fit the causal forest on the first half, predict
     $\hat\tau$ on the second, and estimate group ATEs in the second half only.

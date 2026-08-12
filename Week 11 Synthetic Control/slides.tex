@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 11 --- Synthetic Control and Event Studies\\[-8pt]}
+\subtitle{\large Week 11, Synthetic Control and Event Studies\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -132,7 +146,7 @@ is California, or East Germany, or a single firm?
   \item \alert{Synthetic control} makes that choice a data-driven, transparent,
         pre-registered procedure: construct a weighted average of untreated units
         that reproduces the treated unit's pre-treatment trajectory.
-  \item ``Perhaps the most important innovation in the policy evaluation
+  \item ``Arguably the most important innovation in the policy evaluation
         literature in the last 15 years'' \srcp{Athey and Imbens 2017}.
 \end{itemize}
 \vskip4pt
@@ -146,8 +160,8 @@ algorithm, reported in a table, and checked against placebo units.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Setup}
-Unit 1 is treated from period $T_0+1$ onward. Units $2,\dots,J+1$ --- the
-\alert{donor pool} --- are never treated. The estimand is
+Unit 1 is treated from period $T_0+1$ onward. Units $2,\dots,J+1$, the
+\alert{donor pool}, are never treated. The estimand is
 \begin{align*}
   \tau_{1t} = Y_{1t}(1) - Y_{1t}(0), \qquad t > T_0 .
 \end{align*}
@@ -178,7 +192,7 @@ unit and $\bm X_0$ the $k\times J$ matrix for the donors. Choose weights
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item $\bm V$ is a diagonal matrix of \alert{predictor importance} weights. It
-        is itself chosen --- usually to minimize pre-treatment prediction error
+        is itself chosen, usually to minimize pre-treatment prediction error
         of the \emph{outcome}:
         $\bm V^{*} = \argmin_{\bm V} \sum_{t\leq T_0}\big(Y_{1t} - \sum_j w_j^{*}(\bm V) Y_{jt}\big)^2$.
   \item So there are two nested optimizations, and the inner one is a constrained
@@ -189,7 +203,7 @@ unit and $\bm X_0$ the $k\times J$ matrix for the donors. Choose weights
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{The Factor-Model Justification}
+\begin{frame}[allowframebreaks,t]{The Factor-Model Justification}
 Suppose untreated outcomes follow a linear factor model
 \begin{align*}
   Y_{jt}(0) = \delta_t + \bm\theta_t'\bm Z_j + \bm\lambda_t'\bm\mu_j + \epsilon_{jt} ,
@@ -205,8 +219,8 @@ loadings.
   \item \srct{Abadie, Diamond, and Hainmueller (2010)} show that if a convex
         combination of donors reproduces the treated unit's outcomes over a
         \emph{long} pre-period \emph{and} its observed predictors, then under
-        regularity conditions --- enough pre-periods relative to the noise, and a
-        factor structure of bounded rank --- the weighted donors also approximately
+        regularity conditions, enough pre-periods relative to the noise, and a
+        factor structure of bounded rank, the weighted donors also approximately
         match the \alert{unobserved loadings} $\bm\mu_1$, and a bound on the
         post-treatment bias shrinks with the number of pre-periods.
   \item \alert{Length of the pre-period is doing the identification work.} A
@@ -229,8 +243,8 @@ are the heart of the method.
         readers judge whether the comparison is sensible.
   \item \textbf{Transparency}: the counterfactual is a named, weighted set of real
         places, not a regression coefficient.
-  \item If no convex combination matches the treated unit --- if California is
-        richer than every donor --- \alert{the method tells you}, through poor
+  \item If no convex combination matches the treated unit, if California is
+        richer than every donor, \alert{the method tells you}, through poor
         pre-treatment fit. That is a feature.
 \end{itemize}
 \end{frame}
@@ -248,7 +262,7 @@ and with an added intercept shift.
         continues.
   \item The formal justification is a linear factor model
         $Y_{jt}(0) = \delta_t + \bm\theta_t'Z_j + \bm\lambda_t'\bm\mu_j + \epsilon_{jt}$:
-        if the synthetic control matches the treated unit on a long pre-period,
+        if the synthetic control matches the treated unit on a long pre-period;
         it must also match on the unobserved factor loadings $\bm\mu_j$
         \srcp{Abadie, Diamond, and Hainmueller 2010}.
   \item \alert{Length of the pre-period is doing the identification work.} A
@@ -257,7 +271,7 @@ and with an added intercept shift.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=8]{Inference With One Treated Unit}
+\begin{frame}[allowframebreaks,t]{Inference With One Treated Unit}
 Conventional standard errors are meaningless here: $n_{\text{treated}} = 1$.
 Instead, \alert{permutation inference}.
 \vskip3pt
@@ -273,15 +287,15 @@ distribution, that is evidence.
         result.
   \item The treated unit's rank among the $J+1$ units gives a permutation-style
         $p$-value, with a hard floor of $1/39 \approx 0.026$ for a donor pool of
-        38. It is a placebo rank, not an exact test --- exactness would require
+        38. It is a placebo rank, not an exact test, exactness would require
         random assignment among these units.
-  \item \textbf{Discard poorly fitting placebos} --- a donor the method could not
+  \item \textbf{Discard poorly fitting placebos}, a donor the method could not
         match will show a huge gap for reasons unrelated to treatment.
   \item \textbf{In-time placebo}: pretend treatment happened earlier. A ``gap''
         should not appear before the real intervention.
 \end{itemize}
 \end{frame}
-\begin{frame}[shrink=10]{Placebo Inference, Mechanically}
+\begin{frame}[allowframebreaks,t]{Placebo Inference, Mechanically}
 With one treated unit there is no sampling distribution to appeal to. Use
 \alert{permutation}: pretend each donor was treated, and compare.
 \vskip3pt
@@ -301,7 +315,7 @@ and rank units by the \alert{ratio} $\text{RMSPE}^{\text{post}}_j /
   \item The rank of the treated unit among the $J+1$ units gives a
         permutation-style $p$-value: with 38 donors the smallest attainable value
         is $1/39 \approx 0.026$. \alert{Call it a placebo rank, not an exact
-        $p$-value} --- exactness would require treatment to have been randomly
+        $p$-value}, exactness would require treatment to have been randomly
         assigned among these units under a sharp null, which it was not.
   \item \textbf{In-time placebo}: re-run pretending treatment began earlier. A gap
         should not appear before the real intervention.
@@ -310,14 +324,14 @@ and rank units by the \alert{ratio} $\text{RMSPE}^{\text{post}}_j /
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{The Canonical Application: California Proposition 99}
+\begin{frame}[allowframebreaks,t]{The Canonical Application: California Proposition 99}
 \srct{Abadie, Diamond, and Hainmueller (2010)} study California's 1988 tobacco
 control programme.
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item \textbf{Outcome}: per-capita cigarette sales, 1970--2000.
         \textbf{Donor pool}: the 38 states that never adopted comparable
-        programmes over the period --- states with their own large tax increases
+        programmes over the period, states with their own large tax increases
         or programmes are excluded \emph{a priori}, on substantive grounds.
   \item \textbf{Synthetic California} is a weighted average of Colorado,
         Connecticut, Montana, Nevada, and Utah. The weight table is printed in the
@@ -359,7 +373,7 @@ eye}: the weight table, the pre-treatment overlap, and the placebo plot.
 \begin{frame}{When the Convex Hull Is Empty}
 \begin{itemize}\itemsep3pt
   \item \textbf{Augmented synthetic control} \srcp{Ben-Michael, Feller, and Rothstein
-        2021}: when no convex combination fits, allow a \emph{bias correction} ---
+        2021}: when no convex combination fits, allow a \emph{bias correction}, 
         fit an outcome model to the residual imbalance, exactly the augmentation
         logic of AIPW in Week 6. Relaxes the no-extrapolation constraint by a
         controlled amount.
@@ -396,7 +410,7 @@ Many units, staggered, covariates & Callaway--Sant'Anna (Wk 10) & \texttt{did} \
 \begin{itemize}\itemsep2pt
   \item These are not rivals so much as points on a spectrum between ``trust the
         weights'' and ``trust the outcome model.'' The augmented versions
-        deliberately use both --- the same insurance logic as AIPW.
+        deliberately use both, the same insurance logic as AIPW.
   \item Report the classic estimator alongside whichever you prefer, so readers
         can see how much the extrapolation is doing.
 \end{itemize}
@@ -429,8 +443,8 @@ on top of one another, no test rescues the design.
         (Week 6), choose an exogenous slice of variation (Weeks 7, 9), choose a
         differencing scheme (Week 10), choose a weighted donor pool (Week 11).
   \item \textbf{Weeks 12--13} change the question again: what happens when
-        prediction rather than identification is the goal, and what --- if
-        anything --- flexible prediction can contribute back to causal work.
+        prediction rather than identification is the goal, and what, if
+        anything, flexible prediction can contribute back to causal work.
 \end{itemize}
 \vskip4pt
 \begin{block}{Final projects}
@@ -439,7 +453,7 @@ Article sign-up and confirmation of replication data availability due
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Abadie, Alberto. 2021. ``Using Synthetic Controls: Feasibility, Data

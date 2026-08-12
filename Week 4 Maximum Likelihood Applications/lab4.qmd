@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 4: Limited Dependent Variable Models}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, September 17"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, September 17"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -80,8 +80,8 @@ round(cbind(LPM = coef(m_lpm),
 ```
 
 The logit-to-probit ratio hovers around 1.7, as the theory predicts. The two are
-*different* models --- different link functions, different assumed error
-distributions --- but they are close enough empirically that the choice between
+*different* models, different link functions, different assumed error
+distributions, but they are close enough empirically that the choice between
 them almost never matters for the quantities we report.
 
 ```{r}
@@ -92,7 +92,7 @@ range(fitted(m_lpm))
 ```
 
 ::: callout-note
-The linear probability model is not automatically wrong --- but check this
+The linear probability model is not automatically wrong, but check this
 number. If a substantial share of fitted values leaves $[0,1]$, the linear
 approximation is being asked to do something it cannot.
 :::
@@ -106,7 +106,7 @@ round(exp(cbind(OR = coef(m_logit), confint.default(m_logit))), 3)
 
 Read the `wordsum` row as: each additional correct word multiplies the *odds* of
 holding a BA by about 1.5. Whether that corresponds to a big or small change in
-the *probability* depends entirely on where you start --- which is why we now
+the *probability* depends entirely on where you start, which is why we now
 move to the probability scale.
 
 ## Average marginal effects
@@ -172,7 +172,7 @@ avg_comparisons(m_logit, variables = list(wordsum = c(3, 9)))
 
 ## Robust and clustered standard errors
 
-Everything from Week 2 carries over --- the sandwich works on `glm` objects.
+Everything from Week 2 carries over, the sandwich works on `glm` objects.
 
 ```{r}
 #| label: glm-robust
@@ -232,7 +232,7 @@ m_sep <- glm(ba ~ pareduc + perfect, data = gss2, family = binomial)
 round(coef(summary(m_sep))[, 1:2], 3)
 ```
 
-The `perfect` coefficient is enormous with an enormous standard error --- the
+The `perfect` coefficient is enormous with an enormous standard error, the
 classic signature. The fix is Firth's penalized likelihood:
 
 ```{r}
@@ -416,7 +416,7 @@ c(model = mean(pred == gss$ba),
 3.  **Simulation-based intervals.** Take the logit model and get an interval for
     the difference in predicted probability between `wordsum = 3` and
     `wordsum = 9` by simulating 10,000 draws of $\tilde\beta$ from
-    $\mathcal N(\hat\beta, \widehat{\Var}(\hat\beta))$
+    $\mathcal N(\hat\beta, \hat{V}(\hat\beta))$
     (King, Tomz, and Wittenberg 2000). Compare to the delta-method interval from
     `avg_comparisons()`.
 

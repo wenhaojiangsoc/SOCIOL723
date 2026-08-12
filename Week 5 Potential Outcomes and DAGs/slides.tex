@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 5 --- Potential Outcomes and DAGs\\[-8pt]}
+\subtitle{\large Week 5, Potential Outcomes and DAGs\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -205,7 +219,7 @@ Unit & $D_i$ & $Y_i(0)$ & $Y_i(1)$ & $\tau_i$ & $Y_i$ (observed) \\
   \item $\text{ATE} = \pi\,\text{ATT} + (1-\pi)\,\text{ATU}$ where
         $\pi = \Pr(D_i=1)$.
   \item These differ whenever effects are heterogeneous \emph{and} correlated
-        with selection --- which is the normal case in sociology.
+        with selection, which is the normal case in sociology.
   \item Policy relevance differs too: ``should we expand this programme?''
         is about the ATU; ``was this programme worth running?'' is about the ATT.
   \item \alert{Later we will meet estimands nobody chose}: the LATE (Week 7),
@@ -214,7 +228,7 @@ Unit & $D_i$ & $Y_i(0)$ & $Y_i(1)$ & $\tau_i$ & $Y_i$ (observed) \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Estimands, With Numbers}
+\begin{frame}[allowframebreaks,t]{Estimands, With Numbers}
 Four units, effects that differ, and treatment correlated with the effect:
 \begin{center}\small
 \renewcommand{\arraystretch}{1.2}
@@ -238,7 +252,7 @@ Unit & $D_i$ & $Y_i(0)$ & $Y_i(1)$ & $\tau_i$ & $Y_i$ observed \\
 \vskip2pt
 \begin{itemize}\itemsep2pt
   \item The naive comparison is $\tfrac12(10+14) - \tfrac12(5+7) = 12 - 6 = 6$
-        --- which equals none of them.
+, which equals none of them.
   \item Check the decomposition: ATT $+$ selection bias
         $= 7 + \big(\tfrac12(4+6) - \tfrac12(5+7)\big) = 7 - 1 = 6$. \checkmark
   \item ATE $= \pi\,$ATT $+ (1-\pi)\,$ATU $= 0.5(7)+0.5(2) = 4.5$. \checkmark
@@ -259,7 +273,7 @@ and subtract $\E[Y_i(0)\mid D_i=1]$:
 \begin{itemize}\itemsep2pt
   \item Selection bias asks: \emph{would the treated and untreated have differed
         even with no treatment?} Almost always yes.
-  \item Note that it involves \alert{only} $Y_i(0)$ --- a quantity about the
+  \item Note that it involves \alert{only} $Y_i(0)$, a quantity about the
         world as it would have been. No amount of data on $Y_i$ can settle it.
 \end{itemize}
 \end{frame}
@@ -277,7 +291,7 @@ bias term is zero, and
 \end{align*}
 \vskip4pt
 \begin{itemize}\itemsep2pt
-  \item Randomization does not make the groups identical --- it makes them
+  \item Randomization does not make the groups identical, it makes them
         \emph{exchangeable}, so that any difference is chance.
   \item Note what randomization is doing: it is an assumption made \emph{true by
         design} rather than argued for.
@@ -310,7 +324,7 @@ requires the \alert{stable unit treatment value assumption}:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Consistency: the Assumption Hiding in the Notation}
+\begin{frame}[allowframebreaks,t]{Consistency: the Assumption Hiding in the Notation}
 The switching equation $Y_i = D_iY_i(1) + (1-D_i)Y_i(0)$ contains an assumption
 so quiet it usually goes unnamed.
 \vskip3pt
@@ -322,9 +336,9 @@ potential outcome under $d$: $\ Y_i = Y_i(d)$ when $D_i = d$.
 \begin{itemize}\itemsep3pt
   \item Sounds like a tautology. It is not: it requires the treatment to be
         well enough defined that ``the outcome under $d$'' is a single quantity.
-  \item It fails when treatment is heterogeneous in ways that matter --- ``college''
+  \item It fails when treatment is heterogeneous in ways that matter, ``college''
         that is two years at a community college versus four at a research
-        university --- which is the hidden-versions half of SUTVA again.
+        university, which is the hidden-versions half of SUTVA again.
   \item It also fails under \emph{anticipation}: if units respond to the
         assignment before it is realized, the observed outcome reflects both.
   \item \alert{Consistency is the bridge between the causal notation and the
@@ -338,10 +352,10 @@ potential outcome under $d$: $\ Y_i = Y_i(d)$ when $D_i = d$.
         unit, observed or not, so the selection-bias term is zero in expectation.
   \item \textbf{Does not}: make the two groups identical in your sample. Chance
         imbalance is real, and it is why we still adjust for pre-treatment
-        covariates in experiments --- for \emph{precision}, not for bias.
+        covariates in experiments, for \emph{precision}, not for bias.
   \item \textbf{Does not}: rescue you from non-compliance, attrition, or
         interference. Randomizing the \emph{offer} identifies the effect of the
-        offer (intention-to-treat), not the effect of the treatment --- which is
+        offer (intention-to-treat), not the effect of the treatment, which is
         the LATE problem of Week 7.
   \item \alert{A balance table with $p$-values is not a check on randomization.}
         If assignment was truly random, any imbalance is chance by construction,
@@ -399,20 +413,20 @@ $0 < \Pr(D_i=1 \mid X_i = x) < 1$: within every covariate cell, we must see
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Causal Diagrams Are a Sociological Tradition}
+\begin{frame}[allowframebreaks,t]{Causal Diagrams Are a Sociological Tradition}
 \begin{itemize}\itemsep4pt
   \item The earliest formal treatment of causality in statistics was
         \textbf{Sewall Wright}'s \emph{path analysis} (1918, 1921).
   \item Sociology adopted it early. \textbf{Blau and Duncan}'s \textit{The
         American Occupational Structure} (1967) made path diagrams of status
-        attainment --- father's education and occupation $\to$ respondent's
-        education $\to$ first job $\to$ current occupation --- the discipline's
+        attainment, father's education and occupation $\to$ respondent's
+        education $\to$ first job $\to$ current occupation, the discipline's
         central analytic image, and structural equation modelling grew out of it.
   \item But path analysis had \alert{no definition of a causal effect} and no rule
         for deciding which variables to include. The arrows were interpreted, not
         derived.
   \item \textbf{Judea Pearl} (1995) supplied the missing half: a formal graphical
-        language, plus precise criteria --- back-door, front-door --- saying
+        language, plus precise criteria, back-door, front-door, saying
         \emph{when} an effect is identified from observational data.
 \end{itemize}
 \vskip2pt
@@ -420,7 +434,7 @@ So DAGs are not an import into sociology. They are our own tradition, finally
 given its identification theory.
 \end{frame}
 
-\begin{frame}[shrink=10]{What a DAG Is, and What It Leaves Out}
+\begin{frame}[allowframebreaks,t]{What a DAG Is, and What It Leaves Out}
 Write down how you think each variable is generated. For a treatment $D$, an
 outcome $Y$, and a covariate $X$:
 \begin{align*}
@@ -444,7 +458,7 @@ appears on the right of $B$'s equation.
         correlation.
   \item \textbf{Acyclic}: no variable causes itself through a loop.
   \item \alert{The graph keeps only which arrows exist and drops the functional
-        forms $f_D, f_Y$.} That loss is deliberate --- everything below holds for
+        forms $f_D, f_Y$.} That loss is deliberate, everything below holds for
         \emph{any} functional form, linear or not.
   \item \alert{The assumptions are the \emph{missing} arrows}, not the drawn ones.
 \end{itemize}
@@ -528,7 +542,7 @@ them.
 \end{block}
 \vskip3pt
 \begin{itemize}\itemsep2pt
-  \item $d$-separation is purely graphical --- you can check it with a pencil.
+  \item $d$-separation is purely graphical; you can check it with a pencil.
   \item Its content is probabilistic: $d$-separation by $Z$ implies
         $D \indep Y \mid Z$ in \emph{every} distribution compatible with the graph.
   \item Note clause 2's tail: conditioning on a \emph{descendant} of a collider
@@ -612,10 +626,10 @@ treatment.''
 \vskip2pt
 \begin{itemize}\itemsep1pt
   \item \textbf{Scenario 2} ($Z$ predicts only $Y$): including $Z$ is a
-        \emph{precision} variable --- it soaks up residual variance and shrinks
+        \emph{precision} variable, it soaks up residual variance and shrinks
         the standard error. Include it.
   \item \textbf{Scenario 1} ($Z$ predicts only $D$): including $Z$ removes
-        variation in $D$ and \alert{inflates} the variance --- and if any
+        variation in $D$ and \alert{inflates} the variance, and if any
         unmeasured confounding remains, it \alert{amplifies} the bias.
 \end{itemize}
 \end{frame}
@@ -675,7 +689,7 @@ Conditioning on $F$ and $X$ satisfies the back-door criterion, hence
 \end{center}
 \vskip-6pt
 {\footnotesize The \emph{realized} treatment $D$ is still a function of $F$ and
-$X$ --- the arrows into $D$ remain. What changes is that $Y(d)$ and $M(d)$ are
+$X$, the arrows into $D$ remain. What changes is that $Y(d)$ and $M(d)$ are
 now fed by the \emph{set} value $d$ (dashed), so no arrow runs from $D$ into
 them. The picture makes ``$D$ is independent of $Y(d)$ given $F,X$'' visible.}
 \end{frame}
@@ -685,7 +699,7 @@ them. The picture makes ``$D$ is independent of $Y(d)$ given $F,X$'' visible.}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[shrink=8]{The Intuition First}
+\begin{frame}[allowframebreaks,t]{The Intuition First}
 Admission to a selective college requires either high test scores or athletic
 talent; the two are independent in the population.
 \vskip1pt
@@ -704,7 +718,7 @@ talent; the two are independent in the population.
   \item \alert{Among admitted students}: someone with mediocre scores must have
         got in some other way, so they are probably a strong athlete. A
         \emph{negative} association appears out of nowhere.
-  \item Berkson's paradox --- the same mechanism behind ``selection bias'' and
+  \item Berkson's paradox, the same mechanism behind ``selection bias'' and
         the birth-weight paradox.
 \end{itemize}
 \end{frame}
@@ -732,7 +746,7 @@ with $\epsilon_T,\epsilon_B,\epsilon_C$ independent $\mathcal N(0,1)$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Conditioning on the Collider}
+\begin{frame}{Conditioning on the Collider}
 Because $C = T + B + \epsilon_C$, we can write $T = (C-B) - \epsilon_C$. So
 $\E[T\mid B,C]$ is the linear projection of $T$ on $C-B$:
 \begin{align*}
@@ -748,16 +762,23 @@ Read the coefficient on $B$ straight off that conditional expectation:
   \qquad\Longrightarrow\qquad
   \frac{\partial\,\E[T\mid B,C]}{\partial B} = -\tfrac12 .
 \end{align*}
-\vskip2pt
-\alert{Controlling for $C$, the apparent effect of $B$ on $T$ is $-1/2$} ---
-entirely spurious, since nothing in the model connects $B$ to $T$ and indeed
-$\E[T\mid B] = 0$ for every $B$. This is collider bias, the same object as
-Heckman's sample-selection bias.
-\vskip2pt
-{\footnotesize Note you must read the \emph{partial} coefficient. Averaging
-$\tfrac12(C-b)$ over $C$ given $B=b$ gives zero, because $\E[C\mid B=b]=b$ ---
-the bias lives in the comparison at \emph{fixed} $C$, which is exactly what
-``controlling for $C$'' does.}
+\end{frame}
+
+\begin{frame}{Conditioning on the Collider: What It Means}
+\begin{alertblock}{}
+Controlling for $C$, the apparent effect of $B$ on $T$ is $-1/2$: entirely
+spurious, since nothing in the model connects $B$ to $T$, and indeed
+$\E[T\mid B] = 0$ for every $B$.
+\end{alertblock}
+\vskip6pt
+This is \alert{collider bias}, the same object as Heckman's sample-selection
+bias.
+\vskip8pt
+\begin{block}{Read the \emph{partial} coefficient, not the average}
+Averaging $\tfrac12(C-b)$ over $C$ given $B=b$ gives zero, because
+$\E[C\mid B=b]=b$. The bias lives in the comparison at \emph{fixed} $C$, which
+is exactly what ``controlling for $C$'' does.
+\end{block}
 \end{frame}
 
 \begin{frame}{The Damage Spreads to Ancestors}
@@ -785,7 +806,7 @@ of their ancestors}.
         Conditioning on $C$ makes them dependent anyway.
   \item Practical consequence: a control variable can induce bias between
         variables it is not adjacent to. You cannot check for this by inspecting
-        correlations --- only by tracing paths.
+        correlations, only by tracing paths.
   \item And conditioning on a \emph{descendant} of $C$ does a milder version of
         the same thing.
 \end{itemize}
@@ -801,7 +822,7 @@ A famous puzzle from a 1991 US study.
         smokers than for infants of non-smokers.}
 \end{itemize}
 \vskip3pt
-The naive reading is that smoking is protective conditional on LBW --- which
+The naive reading is that smoking is protective conditional on LBW, which
 would be a remarkable public-health finding.
 \vskip3pt
 The plausible reading is that \textbf{low birth weight is a collider}. Both
@@ -843,7 +864,7 @@ $\bm{+2}$.
 \begin{frame}{Where the Sign Flips}
 Projecting $Y$ on $S$ alone recovers the correct total effect of $+2$.
 \vskip3pt
-Projecting $Y$ on $S$ \emph{and} $B$ --- ``controlling for birth weight'' ---
+Projecting $Y$ on $S$ \emph{and} $B$, ``controlling for birth weight'', 
 gives the conditional expectation
 \begin{align*}
   \E[Y \mid S, B] \;=\; \big(1 - \kappa/2\big)\,S \;+\; \big(1 + \kappa/2\big)\,B .
@@ -853,8 +874,8 @@ gives the conditional expectation
   \item The coefficient on $S$ is no longer the direct effect of $1$. It has
         acquired a $-\kappa/2$ term, which comes entirely from the induced
         negative association between $S$ and $U$ within strata of $B$.
-  \item If the competing risks are much more lethal than smoking --- $\kappa \gg 1$
-        --- the coefficient on smoking becomes \alert{large and negative}. Smoking
+  \item If the competing risks are much more lethal than smoking, $\kappa \gg 1$
+, the coefficient on smoking becomes \alert{large and negative}. Smoking
         appears strongly protective.
   \item \alert{Nothing is wrong with the estimator.} The regression faithfully
         reports a conditional expectation. The error is in reading that
@@ -894,14 +915,14 @@ was constructed by any process downstream of treatment or outcome, assume it did
 \toprule
 Variable & Role & Control for it? \\
 \midrule
-Common cause of $D$ and $Y$ & confounder & \textbf{yes} --- this is the point \\
-Pre-treatment predictor of $Y$ only & precision variable & \textbf{yes} --- reduces variance \\
-Pre-treatment predictor of $D$ only & instrument-like & \emph{no} --- inflates variance,
+Common cause of $D$ and $Y$ & confounder & \textbf{yes}; this is the point \\
+Pre-treatment predictor of $Y$ only & precision variable & \textbf{yes}, reduces variance \\
+Pre-treatment predictor of $D$ only & instrument-like & \emph{no}, inflates variance,
   amplifies bias \\
-Consequence of $D$ on the path to $Y$ & mediator & \alert{no} --- removes part of the effect \\
-Common effect of $D$ and $Y$ & collider & \alert{no} --- creates spurious association \\
+Consequence of $D$ on the path to $Y$ & mediator & \alert{no}, removes part of the effect \\
+Common effect of $D$ and $Y$ & collider & \alert{no}, creates spurious association \\
 Consequence of $Y$ & outcome proxy & \alert{no} \\
-Sample selection on a collider & --- & \alert{no} --- and often invisible \\
+Sample selection on a collider &, & \alert{no}, and often invisible \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -923,7 +944,7 @@ Sample selection on a collider & --- & \alert{no} --- and often invisible \\
         formula:
   \begin{itemize}\itemsep1pt
     \item estimating the effect of education on wages using only \emph{employed}
-          individuals --- employment is post-treatment;
+          individuals, employment is post-treatment;
     \item studying occupational outcomes among people who \emph{have} an
           occupation;
     \item defining the outcome as a ratio whose denominator responds to
@@ -934,11 +955,11 @@ Sample selection on a collider & --- & \alert{no} --- and often invisible \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Two Sharper Cases}
+\begin{frame}[allowframebreaks,t]{Two Sharper Cases}
 \begin{columns}[T]
 \begin{column}{0.47\textwidth}
 \textbf{Mediators and the controlled direct effect}
-\vskip3pt
+\vskip1pt
 \begin{center}
 \begin{tikzpicture}[scale=0.72,>=Stealth,thick,
   every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,minimum size=7mm,font=\scriptsize}]
@@ -953,12 +974,12 @@ Sample selection on a collider & --- & \alert{no} --- and often invisible \\
 \vskip2pt
 {\small $M$ is a bad control \emph{even if you want the controlled direct
 effect}: conditioning on $M$ opens the collider path
-$D \to M \leftarrow U \to Y$. Direct effects need stronger assumptions than
-total effects, not weaker ones.}
+$D \to M \leftarrow U \to Y$. Direct effects need \emph{stronger} assumptions
+than total effects.}
 \end{column}
 \begin{column}{0.49\textwidth}
 \textbf{Consequences of the outcome}
-\vskip3pt
+\vskip1pt
 \begin{center}
 \begin{tikzpicture}[scale=0.72,>=Stealth,thick,
   every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,minimum size=7mm,font=\scriptsize}]
@@ -969,13 +990,12 @@ total effects, not weaker ones.}
 \end{center}
 \vskip2pt
 {\small $Z$ happens \emph{after} $Y$ and is caused by it. Controlling for it
-partials out variation in the outcome itself and biases the estimate --- in
-which direction depends on the rest of the graph, so do not assume it is
-conservative. Common in practice as ``controlling for'' a downstream measure of
-the same construct.}
+partials out variation in the outcome itself and biases the estimate. Which
+direction depends on the rest of the graph, so do not assume it is conservative.
+Common as ``controlling for'' a downstream measure of the same construct.}
 \end{column}
 \end{columns}
-\vskip5pt
+\vskip3pt
 \alert{No statistical test distinguishes any of these from a confounder.} The
 distinction is causal, and it must come from the DAG.
 \end{frame}
@@ -986,7 +1006,7 @@ distinction is causal, and it must come from the DAG.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Identification Without Measuring the Confounder}
-Sometimes no back door can be closed --- but the \emph{mechanism} can be measured.
+Sometimes no back door can be closed, but the \emph{mechanism} can be measured.
 \begin{center}
 \begin{tikzpicture}[scale=1.0,>=Stealth,thick,
   every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,minimum size=8.5mm,font=\scriptsize}]
@@ -1006,7 +1026,7 @@ Sometimes no back door can be closed --- but the \emph{mechanism} can be measure
 \end{enumerate}
 \end{block}
 \vskip2pt
-$U$ is unobserved and confounds $D$ and $Y$ --- yet the effect is identified.
+$U$ is unobserved and confounds $D$ and $Y$, yet the effect is identified.
 That is a genuinely surprising result, and worth understanding rather than
 memorizing.
 \end{frame}
@@ -1030,7 +1050,7 @@ identified.
 sub-problems, and that is the whole trick.
 \end{frame}
 
-\begin{frame}[shrink=10]{The Front-Door Formula}
+\begin{frame}[allowframebreaks,t]{The Front-Door Formula}
 \begin{align*}
   P\big(Y(d)\big) &= P\big(Y \mid do(D=d)\big) \\
   &= \sum_m P\big(Y \mid do(D=d), M=m\big)\, P\big(M=m \mid do(D=d)\big) \\[2pt]
@@ -1043,7 +1063,7 @@ sub-problems, and that is the whole trick.
   \item Line 3 uses complete mediation (given $M$, $D$ no longer matters for $Y$)
         and condition 2.
   \item The bracket in line 4 is the back-door adjustment for leg 2, averaging
-        over the \emph{marginal} distribution of $D$ --- note $d'$, not $d$.
+        over the \emph{marginal} distribution of $D$, note $d'$, not $d$.
   \item Everything on the right is estimable. $U$ never appears.
 \end{itemize}
 \end{frame}
@@ -1057,12 +1077,12 @@ with $A$ = age, $P$ = calendar period, $C$ = birth cohort.
 \vskip3pt
 \begin{alertblock}{The identification problem}
 $C = P - A$ exactly. The three regressors are \emph{perfectly collinear}, so
-$\beta_A, \beta_P, \beta_C$ are not separately identified --- for any candidate
+$\beta_A, \beta_P, \beta_C$ are not separately identified, for any candidate
 solution there is a one-parameter family of alternatives fitting equally well.
 \end{alertblock}
 \vskip3pt
-Decades of proposed fixes --- constrained estimators, the intrinsic estimator,
-arbitrary equality restrictions --- amount to choosing a point on that family by
+Decades of proposed fixes, constrained estimators, the intrinsic estimator,
+arbitrary equality restrictions, amount to choosing a point on that family by
 assumption. None of them is identification; they are conventions.
 \end{frame}
 
@@ -1087,7 +1107,7 @@ coefficient in a linear model and start asking for a causal quantity with a
 stated mechanism.
 \end{frame}
 
-\begin{frame}{Critiques of Front-Door Identification}
+\begin{frame}[allowframebreaks,t]{Critiques of Front-Door Identification}
 Be sceptical of front-door claims, including your own.
 \vskip4pt
 \begin{itemize}\itemsep3pt
@@ -1099,8 +1119,11 @@ Be sceptical of front-door claims, including your own.
         unconfounded, and $M \to Y$ identified by adjusting for $D$ alone. If
         something unobserved drives both the mechanism and the outcome, the
         second leg fails.
-  \item \textbf{Measurement.} $M$ must be measured well; classical error in $M$
-        attenuates leg 1 and biases the composition.
+  \item \textbf{Measurement.} $M$ must be measured well, and note \emph{where} the
+        error bites. In leg 1, $M$ is the outcome, so classical error adds noise
+        without attenuating $P(M\mid D)$. In leg 2, $M$ is the variable being
+        intervened on and conditioned on, so error there biases that leg and
+        therefore the composed estimate.
   \item \textbf{Sensitivity.} Because the assumptions are strong, report how the
         estimate moves as you allow a small unmediated path.
 \end{itemize}
@@ -1167,8 +1190,8 @@ being conducted as if they were about step 3.
   \item It forces you to notice when the estimand is chosen \emph{by the method}
         rather than by you: OLS's variance-weighted average (Week 1), the LATE
         for compliers (Week 7), the effect at the cutoff (Week 9).
-  \item It makes ``the coefficient on $X_3$ in Model 4'' --- a quantity nobody
-        can state in words --- an unacceptable answer.
+  \item It makes ``the coefficient on $X_3$ in Model 4'', a quantity nobody
+        can state in words, an unacceptable answer.
   \item It separates two very different objections to a paper: ``your estimand is
         uninteresting'' and ``your estimate does not recover your estimand.''
   \item It clarifies external validity: the target population is part of the
@@ -1181,12 +1204,14 @@ I will ask you for it.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Where This Leaves Us}
+\begin{frame}[allowframebreaks,t]{Where This Leaves Us}
 \begin{itemize}\itemsep4pt
   \item Causal inference is a missing data problem. We target averages because
         individual effects are unknowable.
-  \item The naive comparison equals the ATT plus selection bias; every design in
-        this course is an argument for why the selection bias term is zero.
+  \item The naive comparison equals the ATT plus selection bias. Every design in
+        this course is an argument \emph{about} that term: either that adjustment
+        drives it to zero (Week 6), or that some other comparison sidesteps it
+        entirely, at the price of a narrower estimand (IV's LATE, Weeks 7--11).
   \item Conditional ignorability, positivity, and SUTVA identify the ATE from
         observable quantities. \alert{None of them is testable.}
   \item DAGs turn those assumptions into a picture you can check for colliders
@@ -1195,13 +1220,13 @@ I will ask you for it.
 \vskip4pt
 \begin{block}{Coming next}
 \textbf{Week 6}: if we believe conditional ignorability, how should we actually
-adjust? Matching, propensity scores, weighting, and doubly robust estimation ---
+adjust? Matching, propensity scores, weighting, and doubly robust estimation, 
 and why regression is only one option among several. \\
 \textbf{Weeks 7--11}: what to do when we do \emph{not} believe it.
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.

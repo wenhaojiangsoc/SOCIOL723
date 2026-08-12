@@ -120,7 +120,7 @@ are the residuals from regressing $D_i$ and $Y_i$ on $W_i$.
     $$
     Prove it or give a counterexample.
 
-3.  Now consider what happens if you change the **denominator** as well --- that
+3.  Now consider what happens if you change the **denominator** as well, that
     is, if you simply regress $\tilde Y_i$ on the raw $D_i$:
     $$
     \frac{\Cov(\tilde Y_i, D_i)}{\Var(D_i)} .

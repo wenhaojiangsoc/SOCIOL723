@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 14 --- Synthesis\\[-8pt]}
+\subtitle{\large Week 14, Synthesis\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -172,13 +186,13 @@ they were about 3.
         treatment explained by the controls; use what is left.
   \item Its virtue is \emph{insensitivity}: small errors in how you model the
         controls do not contaminate the parameter you care about.
-  \item Everything else --- matching, weighting, IV, RD, DID, synthetic control
-        --- is a different answer to the question \emph{where does the
+  \item Everything else, matching, weighting, IV, RD, DID, synthetic control
+, is a different answer to the question \emph{where does the
         counterfactual come from?}
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Every Design, in One Table}
+\begin{frame}[allowframebreaks,t]{Every Design, in One Table}
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.25}
 \begin{tabular}{llll}
@@ -186,12 +200,12 @@ they were about 3.
 Design & Key assumption & Estimand & Main threat \\
 \midrule
 Regression / matching / IPW & ignorability given $X$ & ATE, ATT, ATO & unmeasured confounding \\
-AIPW / DML & ignorability $+$ rates & ATE, $\tau(x)$ & same --- ML does not identify \\
+AIPW / DML & ignorability $+$ rates & ATE, $\tau(x)$ & same, ML does not identify \\
 IV / 2SLS & relevance, independence, exclusion, monotonicity & LATE (compliers) & weak or invalid instrument \\
 RD (sharp) & continuity at $c$ & effect at the cutoff & manipulation; bandwidth \\
-RD (fuzzy) & $+$ exclusion & compliers at the cutoff & weak first stage \\
+RD (fuzzy) & $+$ first-stage jump, monotonicity, exclusion & compliers at the cutoff & weak first stage \\
 DID (2$\times$2) & parallel trends, no anticipation & ATT & differential trends \\
-DID, staggered & $+$ modern estimator & ATT$(g,t)$, then aggregate & TWFE contamination \\
+DID, staggered & cohort-wise parallel trends vs.\ not-yet-treated, no anticipation & ATT$(g,t)$, then aggregate & TWFE contamination \\
 Synthetic control & factor model, long pre-period & ATT for one unit & poor pre-fit; interpolation \\
 \bottomrule
 \end{tabular}
@@ -205,7 +219,7 @@ Synthetic control & factor model, long pre-period & ATT for one unit & poor pre-
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Inference, in One Table}
+\begin{frame}[allowframebreaks,t]{Inference, in One Table}
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.25}
 \begin{tabular}{lll}
@@ -225,10 +239,12 @@ ML nuisances & orthogonal score $+$ cross-fitting & 13 \\
 \end{center}
 \vskip5pt
 \alert{The recurring error is a standard error that ignores a step in the
-procedure} --- estimated weights, a selected model, a matched design, a chosen
-bandwidth. When in doubt, bootstrap the whole pipeline --- with the standing
-exception from Week 6 that the ordinary bootstrap is \emph{invalid} for
-nearest-neighbour matching.
+procedure}, estimated weights, a selected model, a matched design, a chosen
+bandwidth. When in doubt, bootstrap the whole pipeline, resampling in a way that
+\emph{reproduces the sampling or assignment structure} (clusters as clusters,
+panels as panels). But the bootstrap is not universal: it is \emph{invalid} for
+nearest-neighbour matching (Week 6), and unreliable more generally for
+non-smooth, boundary, post-selection, and weakly identified procedures.
 \end{frame}
 
 \begin{frame}{A Decision Guide}
@@ -260,8 +276,8 @@ nearest-neighbour matching.
   \item \alert{Robust standard errors} for a problem of bias (Week 2).
   \item \alert{A high $R^2$}, or a high AUC, as evidence of causality (Weeks 1,
         12).
-  \item \alert{A non-significant specification test} --- balance $t$-tests,
-        Sargan, pre-trend tests --- as evidence that an assumption holds. Low
+  \item \alert{A non-significant specification test}, balance $t$-tests,
+        Sargan, pre-trend tests, as evidence that an assumption holds. Low
         power is not confirmation (Weeks 6, 7, 10).
   \item \alert{Machine learning} for an identification problem (Week 13).
   \item \alert{Reporting whichever specification worked.} Pre-commit, then show
@@ -284,7 +300,7 @@ words plus reproducible \texttt{R} code. Due \textbf{December 14}.
 \begin{enumerate}\itemsep3pt
   \item \textbf{State the paper's estimand} in the Lundberg--Johnson--Stewart
         form. Often the paper does not, and stating it is already a contribution.
-  \item \textbf{Reproduce the headline result.} Report honestly if you cannot ---
+  \item \textbf{Reproduce the headline result.} Report honestly if you cannot; 
         that is a finding, not a failure.
   \item \textbf{Identify the identifying assumption} and say where it is
         defended, or where it is merely asserted.
@@ -298,7 +314,7 @@ words plus reproducible \texttt{R} code. Due \textbf{December 14}.
 \begin{frame}{Common Failure Modes}
 \begin{itemize}\itemsep3pt
   \item \textbf{Choosing a paper without replication data.} Confirm availability
-        \emph{before} committing --- this was the November 2 deadline.
+        \emph{before} committing; this was the November 2 deadline.
   \item \textbf{Extending in a direction the data cannot support}: a causal forest
         on 300 observations, a DID with two periods and no pre-trend, an IV with
         a first-stage $F$ of 4.
@@ -333,7 +349,7 @@ loud without reading it.
 Office hours Wednesdays 2--4PM, or by appointment, through December 14.
 \end{frame}
 
-\begin{frame}[shrink=10]{Where to Go Next}
+\begin{frame}[allowframebreaks,t]{Where to Go Next}
 \begin{itemize}\itemsep3pt
   \item \textbf{Depth on design}: Angrist and Pischke, \textit{Mostly Harmless
         Econometrics}; Cunningham, \textit{Causal Inference: The Mixtape};
@@ -347,7 +363,7 @@ Office hours Wednesdays 2--4PM, or by appointment, through December 14.
         Inference Powered by ML and AI}.
   \item \textbf{In this department}: measurement and latent variables,
         computational text analysis, network methods, demographic methods,
-        multilevel models --- each of which assumes what you now know.
+        multilevel models, each of which assumes what you now know.
 \end{itemize}
 \vskip4pt
 \begin{alertblock}{The one thing to keep}

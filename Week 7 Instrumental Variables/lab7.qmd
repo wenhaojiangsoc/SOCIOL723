@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 7: Two-Stage Least Squares and Its Diagnostics}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, October 8"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, October 8"
 author: "Wenhao Jiang"
 format:
   pdf:
@@ -233,7 +233,7 @@ c(F = Fstat, adjusted_crit_value = crit, widening_factor = crit / 1.96,
   significant_at_5pct = abs(b_iv / se_iv) > crit)
 ```
 
-At $F \approx 10$ the honest critical value is about 3.4 rather than 1.96 --- so
+At $F \approx 10$ the honest critical value is about 3.4 rather than 1.96, so
 the interval is roughly 1.75 times wider, and a $t$-statistic that looked
 comfortably significant may not clear the bar. This is the single most important
 diagnostic in the lab.
@@ -272,7 +272,7 @@ summary(m_over, diagnostics = TRUE)$diagnostics
 ```
 
 Read the Sargan row carefully. It also assumes homoskedasticity, unlike
-everything else in this lab --- the heteroskedasticity-robust analogue is
+everything else in this lab, the heteroskedasticity-robust analogue is
 Hansen's $J$. And non-rejection is weak evidence either way: it is entirely
 consistent with both instruments being invalid in the same direction.
 

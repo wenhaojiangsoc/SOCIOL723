@@ -25,8 +25,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}   %% parenthetical
 \newcommand{\srct}[1]{#1}                               %% inline / narrative
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\Corr}{Corr}
@@ -54,12 +57,20 @@
 \newcommand{\Om}{\bm{\Omega}}
 \newcommand{\dto}{\overset{d}{\longrightarrow}}
 \newcommand{\pto}{\overset{p}{\longrightarrow}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}   %% section names only -- no per-frame dots
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -68,6 +79,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -112,7 +124,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 2 --- Regression Inference and Robust Standard Errors\\[-8pt]}
+\subtitle{\large Week 2, Regression Inference and Robust Standard Errors\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -145,7 +157,7 @@ $\Var(\epsilon_i\mid X)$ is the same for every $i$.
 \begin{enumerate}\itemsep1pt
   \item What is the sampling distribution of $\hat\beta_1$, with and without
         normality?
-  \item How do we test hypotheses --- single, joint, and nonlinear?
+  \item How do we test hypotheses, single, joint, and nonlinear?
   \item What if $\Var(\epsilon_i\mid X)$ is \emph{not} constant?
         (Heteroskedasticity, then clustering.)
   \item The bootstrap as a general-purpose alternative.
@@ -207,7 +219,7 @@ $\hat\beta_1 - \beta_1$ is a \emph{weighted sum of the errors}, it is normal:
 \begin{itemize}\itemsep3pt
   \item The $t$ (rather than the normal) appears because we replaced the unknown
         $\sigma^2$ by the estimate $s^2$.
-  \item Exact at any $n$ --- but it requires normal errors, which is rarely
+  \item Exact at any $n$, but it requires normal errors, which is rarely
         credible for earnings, counts, durations, or attitude scales.
 \end{itemize}
 \end{frame}
@@ -224,7 +236,7 @@ Drop A6 and look again at
   \item The \textbf{numerator} is also a sample average, of the mean-zero terms
         $(X_i - \bar X)\epsilon_i$. By the \alert{central limit theorem}, sample
         averages of i.i.d.\ mean-zero terms are approximately normal once $n$ is
-        large --- \emph{whatever} the distribution of $\epsilon_i$.
+        large, \emph{whatever} the distribution of $\epsilon_i$.
 \end{itemize}
 \vskip3pt
 So $\hat\beta_1$ is approximately normal in large samples with no assumption
@@ -248,7 +260,7 @@ Multiplying by $\sqrt n$ and applying the CLT to the second factor,
 \end{align*}
 \vskip2pt
 Note what is \emph{not} assumed: no normality, no homoskedasticity. Note also the
-weaker exogeneity requirement --- $\E[X_i\epsilon_i]=0$ suffices for consistency;
+weaker exogeneity requirement, $\E[X_i\epsilon_i]=0$ suffices for consistency;
 $\E[\epsilon_i\mid X_i]=0$ is not needed.
 \end{frame}
 
@@ -266,7 +278,7 @@ $\E[\epsilon_i\mid X_i]=0$ is not needed.
         lives. Classical, robust, clustered, and HAC standard errors differ
         \alert{only} in how the meat is estimated.
   \item If $\E[\epsilon_i^2\mid X_i] = \sigma^2$ then
-        $\Om^{\!*} = \sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$ --- the
+        $\Om^{\!*} = \sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$, the
         classical formula.
 \end{itemize}
 \vskip3pt
@@ -311,7 +323,7 @@ Exactly the model-comparison $F$ from \textit{Social Statistics I}.
 \vskip3pt
 \begin{alertblock}{An important caveat}
 The sums-of-squares form is valid \alert{only under homoskedasticity}. With
-robust or clustered standard errors you must use the Wald form ---
+robust or clustered standard errors you must use the Wald form, 
 \texttt{car::linearHypothesis(..., vcov = )} or
 \texttt{lmtest::waldtest(..., vcov = )}. Plain \texttt{anova()} on two
 \texttt{lm} objects gives you the \emph{non-robust} test. This is a very common
@@ -338,20 +350,20 @@ All slopes zero & $\bm R = [\zero \ \ \Ix_{k-1}]$ \\
 \vskip3pt
 \begin{align*}
   W = (\bm R\bhat - \bm q)'
-      \big[\bm R\,\widehat{\Var}(\bhat)\,\bm R'\big]^{-1}
+      \big[\bm R\,\hat{V}(\bhat)\,\bm R'\big]^{-1}
       (\bm R\bhat - \bm q)\ \dto\ \chi^2_q ,
   \qquad F = W/q .
 \end{align*}
-Substituting any $\widehat{\Var}(\bhat)$ you like --- robust, clustered --- gives
+Substituting any $\hat{V}(\bhat)$ you like (robust, clustered) gives
 the corresponding robust joint test.
 \end{frame}
 
 \begin{frame}{Nonlinear Restrictions: the Delta Method\adv}
-For a smooth function $g(\bm\beta)$ --- a ratio of coefficients, a turning point
+For a smooth function $g(\bm\beta)$, a ratio of coefficients, a turning point
 $-\beta_1/2\beta_2$, a marginal effect:
 \begin{align*}
-  \widehat{\Var}\big(g(\bhat)\big)
-  = \nabla g(\bhat)'\,\widehat{\Var}(\bhat)\,\nabla g(\bhat) .
+  \hat{V}\big(g(\bhat)\big)
+  = \nabla g(\bhat)'\,\hat{V}(\bhat)\,\nabla g(\bhat) .
 \end{align*}
 \begin{itemize}\itemsep3pt
   \item Intuition: a smooth function is locally a straight line, and we know the
@@ -375,7 +387,7 @@ false rejection is $1-(1-\alpha)^m$: for $m=20$, about $64\%$.
         error rate; conservative.
   \item \textbf{Holm}: sequentially rejective; uniformly more powerful than
         Bonferroni with the same guarantee.
-  \item \textbf{Benjamini--Hochberg}: controls the \emph{false discovery rate} ---
+  \item \textbf{Benjamini--Hochberg}: controls the \emph{false discovery rate}, 
         the right tool with many outcomes or subgroups when you can tolerate some
         false positives.
   \item \texttt{p.adjust(p, method = "holm" / "BH")}.
@@ -418,8 +430,9 @@ spread of the outcome around the line is the same everywhere.
 \end{tikzpicture}
 \end{center}
 \vskip2pt
-Both lines are estimated without bias. Only the \emph{uncertainty} about them
-differs --- and only the right-hand panel needs a different formula.
+Under exogeneity, both lines are estimated without bias: heteroskedasticity by
+itself does not bias $\hat\beta$. Only the \emph{uncertainty} about them differs,
+and only the right-hand panel needs a different formula.
 \end{frame}
 
 \begin{frame}{Heteroskedasticity Is the Norm}
@@ -427,7 +440,7 @@ differs --- and only the right-hand panel needs a different formula.
   \item Earnings dispersion rises steeply with education and experience: at 8
         years of schooling almost everyone earns a modest wage; at 20 years the
         range is enormous.
-  \item Group-level outcomes built from different numbers of individuals --- a
+  \item Group-level outcomes built from different numbers of individuals, a
         county mean over 50 people is noisier than one over 50{,}000.
   \item Binary outcomes: $\Var(Y_i\mid X_i) = p(X_i)(1-p(X_i))$ is
         \emph{necessarily} heteroskedastic, so the linear probability model always
@@ -455,8 +468,8 @@ $\sigma_i^2 \equiv \Var(\epsilon_i \mid X)$ and $d_i \equiv X_i - \bar X$:
   \item If $\sigma_i^2 = \sigma^2$ for all $i$, it factors out and we recover
         $\sigma^2/\sum_i d_i^2$.
   \item If not, the numerator is a \alert{$d_i^2$-weighted average of the
-        individual error variances}. Observations far from $\bar X$ --- the
-        high-leverage ones --- get the most weight.
+        individual error variances}. Observations far from $\bar X$, the
+        high-leverage ones, get the most weight.
   \item \alert{This is the entire idea.} The ``bread'' is $\sum_i d_i^2$, twice;
         the ``meat'' is $\sum_i d_i^2\sigma_i^2$.
 \end{itemize}
@@ -467,11 +480,11 @@ We cannot observe $\sigma_i^2$. But we have $\hat e_i^2$, and
 $\E[\hat e_i^2] \approx \sigma_i^2$. Plug it in:
 \begin{align*}
   \boxed{\;
-  \widehat{\Var}_{\text{HC0}}(\hat\beta_1)
+  \hat{V}_{\text{HC0}}(\hat\beta_1)
   = \frac{\sum_i d_i^2\,\hat e_i^2}{\big(\sum_i d_i^2\big)^2} \;}
   \qquad
   \text{versus}\qquad
-  \widehat{\Var}_{\text{classical}}(\hat\beta_1) = \frac{s^2}{\sum_i d_i^2} .
+  \hat{V}_{\text{classical}}(\hat\beta_1) = \frac{s^2}{\sum_i d_i^2} .
 \end{align*}
 \vskip4pt
 \begin{itemize}\itemsep3pt
@@ -490,7 +503,7 @@ A frequent and reasonable objection: how can we estimate $n$ different variances
 from $n$ observations?
 \vskip4pt
 \begin{itemize}\itemsep4pt
-  \item We never estimate $\sigma^2_i$ consistently for any particular $i$ ---
+  \item We never estimate $\sigma^2_i$ consistently for any particular $i$, 
         and we do not need to.
   \item The object we need is the \emph{sum} $\sum_i d_i^2\sigma_i^2$: a single
         number. Each $\hat e_i^2$ is a noisy but roughly unbiased estimate of
@@ -501,7 +514,7 @@ from $n$ observations?
 \vskip3pt
 The general version\adv:
 $\hat\Om^{\!*} = \En\big[\hat e_i^2\, X_iX_i'\big] \pto \E[\epsilon_i^2 X_iX_i']$,
-so $\widehat{\Var}_{\text{HC0}}(\bhat) =
+so $\hat{V}_{\text{HC0}}(\bhat) =
 (\X'\X)^{-1}\big(\sum_i \hat e_i^2 X_iX_i'\big)(\X'\X)^{-1}$.
 \end{frame}
 
@@ -538,9 +551,9 @@ $n < 250$ or high leverage, use \textbf{HC3}. All four coincide as $n\to\infty$.
   \item The difference is driven by whether the error variance happens to be
         large where $X$ is extreme. In our GSS earnings regression it is modest:
         $\SE(\hat\beta_{\texttt{educ}})$ goes from $0.00510$ (classical) to
-        $0.00547$ (HC0) to $0.00549$ (HC3) --- about $7\%$.
-  \item With a skewed or sparse regressor --- a rare binary treatment, a
-        long-tailed count --- the difference can be a factor of two.
+        $0.00547$ (HC0) to $0.00549$ (HC3), about $7\%$.
+  \item With a skewed or sparse regressor, a rare binary treatment, a
+        long-tailed count; the difference can be a factor of two.
   \item \alert{Clustering, by contrast, routinely changes standard errors by
         factors of three to ten.} In most sociological data that is the bigger
         issue.
@@ -557,7 +570,7 @@ Do not pre-test and then choose. Just report robust standard errors.
   \item A pre-test makes your final inference conditional on the pre-test outcome,
         which distorts the very sampling distribution you are claiming.
   \item The cost of robust standard errors when the errors happen to be
-        homoskedastic is small --- a modest efficiency loss in the \emph{variance
+        homoskedastic is small, a modest efficiency loss in the \emph{variance
         estimate}.
   \item The cost of classical standard errors when they are wrong is invalid
         inference.
@@ -572,7 +585,7 @@ If we knew $\Var(\epsilon_i\mid X_i)=\sigma^2/w_i$, weighted least squares would
 restore efficiency: minimize $\sum_i w_i(Y_i - X_i'b)^2$.
 \vskip3pt
 \begin{itemize}\itemsep3pt
-  \item BLUE under the \emph{correct} weights --- Gauss--Markov applied to the
+  \item BLUE under the \emph{correct} weights, Gauss--Markov applied to the
         transformed model.
   \item But we almost never know the weights, and estimating them (``feasible
         GLS'') introduces problems of its own.
@@ -595,7 +608,7 @@ Sociological data are almost never i.i.d.\ draws:
 \begin{itemize}\itemsep1pt
   \item Students within schools; workers within firms; siblings within families.
   \item Repeated observations on the same individual (panel data).
-  \item Multi-stage survey designs --- the GSS samples tracts, then households.
+  \item Multi-stage survey designs, the GSS samples tracts, then households.
   \item Treatment assigned at the group level (a state law), outcomes measured at
         the individual level.
 \end{itemize}
@@ -625,7 +638,7 @@ The variance of $\hat\beta_1$ involves \emph{all} the covariances of the errors:
   \item Independent sampling makes the second term vanish. Clustering does not.
   \item If errors within a cluster are \emph{positively} correlated and $d_i$ has
         the same sign within clusters, every one of those cross terms is positive
-        --- so the true variance is \alert{larger} than the formula we have been
+, so the true variance is \alert{larger} than the formula we have been
         using, often by a lot.
   \item There are on the order of $n(\bar n - 1)$ such cross terms versus $n$
         terms in the first sum, so even tiny correlations can dominate.
@@ -642,8 +655,8 @@ With equal cluster sizes $\bar n$ and an error-components structure,
 where $\rho_x$ is the intra-class correlation of the regressor.
 \vskip3pt
 \begin{itemize}\itemsep3pt
-  \item If the regressor is \emph{constant within clusters} --- treatment
-        assigned at the cluster level --- then $\rho_x = 1$ and the inflation is
+  \item If the regressor is \emph{constant within clusters}, treatment
+        assigned at the cluster level, then $\rho_x = 1$ and the inflation is
         $1+(\bar n -1)\rho_e$. This is the worst case.
   \item 50 states, 1{,}000 individuals each, $\rho_e = 0.01$ (small!):
         $\sqrt{1 + 999(0.01)} \approx 3.3$. \alert{Standard errors are more than
@@ -658,7 +671,7 @@ Let $g = 1,\dots,G$ index clusters, with $\X_g$ and $\ehat_g$ the stacked
 regressors and residuals in cluster $g$:
 \begin{align*}
   \boxed{\;
-  \widehat{\Var}_{\text{CR}}(\bhat)
+  \hat{V}_{\text{CR}}(\bhat)
   = c\,(\X'\X)^{-1}
     \Big(\sum_{g=1}^{G} \X_g'\ehat_g\ehat_g'\X_g\Big)
     (\X'\X)^{-1} \;}
@@ -668,7 +681,7 @@ with the usual small-sample scaling $c = \frac{G}{G-1}\cdot\frac{n-1}{n-k}$
 \vskip2pt
 \begin{itemize}\itemsep2pt
   \item Same sandwich; the meat now sums outer products of \emph{cluster} score
-        vectors instead of individual ones --- which is exactly how the cross
+        vectors instead of individual ones, which is exactly how the cross
         terms get included.
   \item Allows \alert{arbitrary} correlation within cluster (including serial
         correlation over time) and any heteroskedasticity, while assuming
@@ -685,7 +698,7 @@ not a knob to tune.
         the clusters in your data are a small share of the clusters in the
         population.
   \item \textbf{Design-based}: cluster at the level at which \emph{treatment} is
-        assigned. If a policy varies by state, cluster on state --- even with
+        assigned. If a policy varies by state, cluster on state, even with
         individual-level data.
   \item Cluster at the \emph{coarsest} level for which you have a plausible
         argument; never finer than the treatment assignment.
@@ -696,7 +709,7 @@ not a knob to tune.
 \end{frame}
 
 \begin{frame}{The Few-Clusters Problem}
-With small $G$, $\widehat{\Var}_{\text{CR}}$ is biased downward and the reference
+With small $G$, $\hat{V}_{\text{CR}}$ is biased downward and the reference
 distribution is too thin. Worry below $G \approx 40$--$50$; be alarmed below
 $20$. The symptom is rejection rates of $10$--$15\%$ for a nominal $5\%$ test.
 \vskip2pt
@@ -726,7 +739,7 @@ A famous demonstration of what happens when you ignore within-unit correlation.
         $5\%$ in \alert{$45\%$} of the placebo runs.
   \item Cause: state-level outcomes are highly serially correlated over time, and
         the standard errors treated $50 \times 21$ observations as independent.
-  \item Clustering by state fixed it --- with 50 clusters, just barely enough.
+  \item Clustering by state fixed it, with 50 clusters, just barely enough.
 \end{itemize}
 \vskip3pt
 We return to this in Week 10. Design and inference are not separable questions.
@@ -747,7 +760,7 @@ We return to this in Week 10. Design and inference are not separable questions.
 \end{itemize}
 \vskip4pt
 All are the same sandwich with a different meat. Once you can read
-$\widehat{\Var}$, you can read any of these off the formula.
+$\hat{V}$, you can read any of these off the formula.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -761,7 +774,7 @@ bootstrap instead \alert{simulates} it.
 \vskip4pt
 \begin{block}{Plug-in principle \srcp{Efron 1979}}
 We want the sampling distribution of a statistic when samples are drawn from the
-population $F$. We do not know $F$ --- but the sample \emph{is} our best estimate
+population $F$. We do not know $F$, but the sample \emph{is} our best estimate
 of $F$. So draw new samples from the sample.
 \end{block}
 \vskip4pt
@@ -786,7 +799,7 @@ of $F$. So draw new samples from the sample.
   \item \textbf{Percentile CI}: the $2.5$th and $97.5$th percentiles of
         $\{\hat\theta^{(b)}\}$.
   \item Because it resamples $(Y_i,X_i)$ jointly, the pairs bootstrap is
-        automatically heteroskedasticity-robust --- it makes no assumption about
+        automatically heteroskedasticity-robust, it makes no assumption about
         $\sigma_i^2$ at all.
   \item $B = 1{,}000$ for standard errors; $B \geq 5{,}000$ for percentile
         intervals or $p$-values.
@@ -812,7 +825,7 @@ Wild cluster & cluster-level $v_g$, $H_0$ imposed & \alert{few clusters} \\
 \end{center}
 \vskip4pt
 Rademacher weights: $v_i = +1$ or $-1$ with probability $1/2$ each, so
-$\E[v_i]=0$ and $\E[v_i^2]=1$ --- the resampled errors keep the right variance
+$\E[v_i]=0$ and $\E[v_i^2]=1$, the resampled errors keep the right variance
 observation by observation.
 \end{frame}
 
@@ -831,7 +844,7 @@ observation by observation.
 \end{itemize}
 \vskip3pt
 The wild cluster bootstrap-$t$ is exactly this idea applied to the few-clusters
-problem --- which is why it works so much better than a naive cluster bootstrap.
+problem, which is why it works so much better than a naive cluster bootstrap.
 \end{frame}
 
 \begin{frame}{When the Bootstrap Fails}
@@ -840,7 +853,7 @@ functional of the data.
 \begin{itemize}\itemsep2pt
   \item \textbf{Non-smooth estimators}: the sample maximum or minimum;
         nearest-neighbour matching estimators \srcp{Abadie and Imbens 2008}.
-  \item \textbf{Parameters on a boundary} --- a variance component at zero.
+  \item \textbf{Parameters on a boundary}, a variance component at zero.
   \item \textbf{Heavy tails} with infinite variance.
   \item \textbf{Dependence the resampling scheme does not preserve.} If you
         resample individuals when the data are clustered, the bootstrap reproduces
@@ -865,14 +878,15 @@ most bootstrap mistakes.
 \begin{block}{The argument}
 The sandwich gives a consistent estimate of the variance of $\hat\beta$
 \emph{around the population regression coefficient} $\beta$. If the model is
-misspecified --- if the CEF is not $X_i'\beta$ --- then $\beta$ is merely the
+misspecified, if the CEF is not $X_i'\beta$, then $\beta$ is merely the
 best linear approximation, and a correct standard error for a quantity you do not
 care about is small comfort.
 \end{block}
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item ``The sandwich estimator makes the standard errors right for a model you
-        may not believe.''
+  \item In his words: ``if the model is seriously in error, the sandwich may help
+        on the variance side, but the parameters being estimated\dots\ are likely
+        to be meaningless.''
   \item If the model is right, you did not need the sandwich (much).
   \item If the model is wrong, the sandwich fixes the second-order problem
         (variance) and leaves the first-order problem (bias) untouched.
@@ -887,7 +901,7 @@ care about is small comfort.
 \toprule
 Problem & Robust SEs? & What actually helps \\
 \midrule
-Heteroskedasticity & \textbf{yes} & --- \\
+Heteroskedasticity & \textbf{yes} &, \\
 Within-cluster correlation & \textbf{yes} (cluster-robust) & design-based clustering \\
 Serial correlation in panels & \textbf{yes} & cluster on unit \\
 Non-normal errors & \textbf{yes} (asymptotically) & larger $n$ \\
@@ -917,7 +931,7 @@ $p$-hacking, specification search & \alert{no} & pre-registration \\
   \item If robust and classical standard errors differ dramatically, treat it as a
         diagnostic: something about the specification or the influence structure
         deserves attention.
-  \item Report the specification you pre-committed to, then robustness checks ---
+  \item Report the specification you pre-committed to, then robustness checks, 
         not the reverse.
 \end{enumerate}
 \end{frame}
@@ -926,8 +940,8 @@ $p$-hacking, specification search & \alert{no} & pre-registration \\
 \begin{itemize}\itemsep5pt
   \item We now have a complete account of OLS: what it estimates, and how to
         quantify our uncertainty about it.
-  \item \textbf{Weeks 3--4}: maximum likelihood. The same asymptotic machinery ---
-        score, information, sandwich --- returns in a more general form, and OLS
+  \item \textbf{Weeks 3--4}: maximum likelihood. The same asymptotic machinery, 
+        score, information, sandwich, returns in a more general form, and OLS
         turns out to be a special case.
   \item \textbf{Weeks 5+}: the harder question. Not ``how precise is
         $\hat\beta$?'' but ``is $\beta$ the thing I want?''
@@ -940,7 +954,7 @@ extract.
 \end{block}
 \end{frame}
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \scriptsize
 \begin{itemize}\itemsep2pt
 \item Abadie, Alberto and Guido W. Imbens. 2008. ``On the Failure of the Bootstrap

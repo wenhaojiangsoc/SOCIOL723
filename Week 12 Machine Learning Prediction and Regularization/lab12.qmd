@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{Lab 12: Regularization, Trees, and Cross-Validation}"
-subtitle: "SOCIOL 723 --- Social Statistics II --- Thursday, November 12"
+subtitle: "SOCIOL 723, Social Statistics II, Thursday, November 12"
 author: "Wenhao Jiang"
 format:
   pdf:

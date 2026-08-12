@@ -24,8 +24,11 @@
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
 \newcommand{\srct}[1]{#1}
 
-\DeclareMathOperator*{\argmin}{arg\,min}
-\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
 \DeclareMathOperator{\Cov}{Cov}
 \DeclareMathOperator{\Var}{Var}
 \DeclareMathOperator{\trace}{tr}
@@ -48,12 +51,20 @@
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
-\newcommand{\SE}{\widehat{\text{SE}}}
+\newcommand{\SE}{\mathrm{se}}
 
 %% ---- theme -----------------------------------------------------------------
 \usetheme{default}
-\useoutertheme[subsection=false]{miniframes}
-\setbeamertemplate{mini frames}{}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
 
 \definecolor{dukeblue}{RGB}{1,33,105}
 \definecolor{accent}{RGB}{200,78,0}
@@ -62,6 +73,7 @@
 \setbeamercolor{structure}{fg=dukeblue}
 \setbeamercolor{frametitle}{fg=dukeblue,bg=white}
 \setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
 \setbeamercolor{alerted text}{fg=accent}
 \setbeamercolor{block title}{fg=white,bg=dukeblue}
 \setbeamercolor{block body}{fg=black,bg=softgray}
@@ -70,6 +82,8 @@
 
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -104,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 10 --- Panel Data and Difference-in-Differences\\[-8pt]}
+\subtitle{\large Week 10, Panel Data and Difference-in-Differences\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -127,7 +141,7 @@ threshold (Week 9). Today: use \alert{variation over time within the same unit}.
 \vskip4pt
 \begin{block}{The core idea}
 If we observe the same unit before and after, we can difference away everything
-about that unit that does not change --- including confounders we never measured
+about that unit that does not change, including confounders we never measured
 and could not name.
 \end{block}
 \vskip4pt
@@ -135,8 +149,8 @@ and could not name.
   \item That is a genuinely powerful trick, and it is why panel data are prized.
   \item It buys nothing against confounders that \emph{do} change over time, and
         the price is a new and demanding assumption about counterfactual trends.
-  \item The last decade has shown that the standard implementation ---
-        two-way fixed effects --- is badly behaved in exactly the setting
+  \item The last decade has shown that the standard implementation, 
+        two-way fixed effects, is badly behaved in exactly the setting
         sociologists use most.
 \end{itemize}
 \end{frame}
@@ -155,7 +169,7 @@ With unit $i$ observed at times $t = 1,\dots,T$:
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item $\alpha_i$ absorbs \emph{every} time-invariant characteristic of unit $i$
-        --- observed or not, nameable or not.
+, observed or not, nameable or not.
   \item Pooled OLS is biased whenever $\Cov(D_{it},\alpha_i)\neq 0$: states that
         adopt a policy differ persistently from states that do not.
   \item \textbf{Random effects} assumes $\Cov(D_{it},\alpha_i)=0$ and is more
@@ -165,7 +179,7 @@ With unit $i$ observed at times $t = 1,\dots,T$:
 \end{frame}
 
 
-\begin{frame}[shrink=10]{The Within Transformation, Explicitly}
+\begin{frame}[allowframebreaks,t]{The Within Transformation, Explicitly}
 Average the model within unit and subtract:
 \begin{align*}
   Y_{it} &= \beta D_{it} + \alpha_i + \lambda_t + \epsilon_{it} \\
@@ -176,7 +190,7 @@ Average the model within unit and subtract:
 \end{align*}
 \vskip3pt
 \begin{itemize}\itemsep3pt
-  \item $\alpha_i$ is gone --- \alert{whatever it was}. That is the whole appeal:
+  \item $\alpha_i$ is gone, \alert{whatever it was}. That is the whole appeal:
         we never had to name it, measure it, or model it.
   \item Anything time-invariant is annihilated with it. You cannot estimate the
         effect of race, sex, or birth cohort in a unit-fixed-effects model, not
@@ -188,7 +202,7 @@ Average the model within unit and subtract:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Random Effects, and Why We Usually Do Not Use It}
+\begin{frame}[allowframebreaks,t]{Random Effects, and Why We Usually Do Not Use It}
 Random effects treats $\alpha_i$ as a draw from a distribution and assumes
 \begin{align*}
   \Cov(D_{it}, \alpha_i) = 0 .
@@ -206,12 +220,12 @@ estimators.
         $\Cov(D,\alpha)\neq 0$ and favours FE. But failing to reject is weak
         evidence, as usual.
   \item \alert{The default should be fixed effects}, with random effects reserved
-        for cases where you can defend the exogeneity of the unit effect --- or
+        for cases where you can defend the exogeneity of the unit effect, or
         where the multilevel structure is itself the object of interest.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Nickell Bias and the FE-versus-LDV Choice}
+\begin{frame}[allowframebreaks,t]{Nickell Bias and the FE-versus-LDV Choice}
 Add a lagged dependent variable to a fixed-effects model:
 \begin{align*}
   Y_{it} = \rho Y_{i,t-1} + \beta D_{it} + \alpha_i + \epsilon_{it} .
@@ -255,7 +269,7 @@ Unit dummies & include $n-1$ indicators & numerically identical to within \\
   \item The equivalence of demeaning and dummies is \alert{exactly FWL from
         Week 1}: regressing on unit dummies partials out the unit means.
   \item Anything time-invariant is annihilated. You cannot estimate the effect of
-        race, sex, or birth cohort in a unit-fixed-effects model --- not because
+        race, sex, or birth cohort in a unit-fixed-effects model, not because
         they do not matter but because there is no within-unit variation.
   \item Within and first differences differ when $T > 2$ and disagree under
         serial correlation; report which you used and why.
@@ -265,7 +279,7 @@ Unit dummies & include $n-1$ indicators & numerically identical to within \\
 \begin{frame}{What Fixed Effects Costs}
 \begin{itemize}\itemsep3pt
   \item \textbf{Precision}. You are using only within-unit variation. If $D_{it}$
-        barely moves within units, the standard error explodes --- FWL again.
+        barely moves within units, the standard error explodes, FWL again.
   \item \textbf{Measurement error is amplified}. Differencing removes signal and
         keeps noise, so attenuation bias gets worse.
   \item \textbf{Nickell bias}. With a lagged dependent variable and fixed effects,
@@ -274,7 +288,7 @@ Unit dummies & include $n-1$ indicators & numerically identical to within \\
   \item \textbf{Lagged dependent variable versus fixed effects} is a real choice,
         not a nuisance: FE assumes selection on time-invariant traits, LDV assumes
         selection on prior outcomes. \srct{Angrist and Pischke (2009)} suggest
-        running both --- they typically bracket the truth.
+        running both, they typically bracket the truth.
   \item \alert{Always cluster on the unit} (Week 2). Serial correlation within
         units is the norm.
 \end{itemize}
@@ -311,7 +325,7 @@ Control & $\E[Y\mid g{=}0,t{=}1]$ & $\E[Y\mid g{=}0,t{=}2]$ & $\Delta_0$ \\
 \end{frame}
 
 
-\begin{frame}[shrink=10]{The $2\times2$ in Regression Form}
+\begin{frame}[allowframebreaks,t]{The $2\times2$ in Regression Form}
 Write $g_i \in\{0,1\}$ for group and $t\in\{1,2\}$ for period:
 \begin{align*}
   Y_{it} = \alpha + \gamma\, g_i + \delta\, \text{post}_t
@@ -335,13 +349,34 @@ Control ($g=0$) & $\alpha$ & $\alpha+\delta$ & $\delta$ \\
 \begin{itemize}\itemsep2pt
   \item $\gamma$ absorbs fixed differences in level; $\delta$ absorbs the common
         time trend; $\tau$ is what is left.
-  \item With unit and period fixed effects instead of $g_i$ and $\text{post}_t$,
-        this is the two-way fixed-effects model --- \alert{identical when there are
+  \item With unit and period fixed effects instead of $g_i$ and $\text{post}_t$;
+        this is the two-way fixed-effects model, \alert{identical when there are
         two groups and two periods}, and, as we will see, not identical otherwise.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Parallel Trends Is Not Scale-Free}
+\begin{frame}[allowframebreaks,t]{Parallel Trends}
+\begin{block}{The identifying assumption}
+\begin{align*}
+  \E[Y_{i2}(0) - Y_{i1}(0) \mid g_i = 1] = \E[Y_{i2}(0) - Y_{i1}(0)\mid g_i = 0] .
+\end{align*}
+\emph{Absent treatment}, the two groups' average outcomes would have moved in
+parallel.
+\end{block}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Levels may differ arbitrarily. Only the \emph{trends} in the untreated
+        potential outcome must agree.
+  \item \alert{Untestable}: it concerns a counterfactual trend. Pre-treatment
+        parallelism is suggestive evidence, not proof.
+  \item \textbf{Not scale-free}: parallel trends in levels and parallel trends in
+        logs are different assumptions, and both cannot generally hold. The next
+        slide shows why this is a real choice and not a technicality.
+  \item Needs \textbf{no anticipation}: units must not change behaviour before
+        treatment in expectation of it.
+\end{itemize}
+\end{frame}
+\begin{frame}[allowframebreaks,t]{Parallel Trends Is Not Scale-Free}
 Suppose untreated outcomes would have grown by $10\%$ in both groups, from a base
 of $20$ in the treated group and $40$ in the control group.
 \vskip3pt
@@ -364,57 +399,12 @@ Control & 40 & 44 & $+4$ \\
   \item The two assumptions are mutually exclusive unless base levels are equal.
         \alert{There is no neutral choice}, and the transformation is part of the
         identifying assumption, not a presentational detail.
-  \item Choose on substantive grounds --- is the intervention plausibly additive
-        or multiplicative? --- and \emph{before} looking at the results.
+  \item Choose on substantive grounds, is the intervention plausibly additive
+        or multiplicative?, and \emph{before} looking at the results.
   \item One diagnostic: if pre-treatment levels are far apart, be especially
         careful. If they are similar, the choice matters less.
 \end{itemize}
 \end{frame}
-
-\begin{frame}[shrink=10]{Event Studies: Specification Details That Matter}
-\begin{align*}
-  Y_{it} = \alpha_i + \lambda_t
-  + \sum_{k \neq -1} \tau_k \cdot \mathbf{1}\{t - g_i = k\} + \epsilon_{it}
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Normalization}: one lead must be omitted (here $k=-1$). Every
-        $\tau_k$ is relative to it, so the picture shifts if you change the
-        reference period. Say which you used.
-  \item \textbf{Binning the endpoints}: with unbalanced exposure, far leads and
-        lags are estimated off few units. Bin them ($k \leq -5$, $k \geq 5$) or
-        restrict to a balanced window --- and say which.
-  \item \textbf{Never-treated units} anchor the time effects $\lambda_t$. If there
-        are none, the $\lambda_t$ are identified only off variation in timing, and
-        the contamination problem below is unavoidable.
-  \item \alert{A flat pre-trend is weak evidence.} \srct{Roth (2022)}: these tests
-        often have low power, and conditioning your analysis on passing one
-        distorts the sampling distribution of everything that follows. Report the
-        test's power against economically meaningful trends.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Parallel Trends}
-\begin{block}{The identifying assumption}
-\begin{align*}
-  \E[Y_{i2}(0) - Y_{i1}(0) \mid g_i = 1] = \E[Y_{i2}(0) - Y_{i1}(0)\mid g_i = 0] .
-\end{align*}
-\emph{Absent treatment}, the two groups' average outcomes would have moved in
-parallel.
-\end{block}
-\vskip4pt
-\begin{itemize}\itemsep3pt
-  \item Levels may differ arbitrarily. Only the \emph{trends} in the untreated
-        potential outcome must agree.
-  \item \alert{Untestable}: it concerns a counterfactual trend. Pre-treatment
-        parallelism is suggestive evidence, not proof.
-  \item \textbf{Not scale-free}: parallel trends in levels and parallel trends in
-        logs are different assumptions, and both cannot generally hold. Choose the
-        scale on substantive grounds, before looking.
-  \item Needs \textbf{no anticipation}: units must not change behaviour before
-        treatment in expectation of it.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{Event Studies}
 Generalize to many periods by estimating an effect for each period relative to
 treatment:
@@ -434,6 +424,22 @@ where $g_i$ is unit $i$'s treatment date and $k = -1$ is the omitted reference.
         \srcp{Roth 2022}. Report the power of your pre-trend test.
 \end{itemize}
 \end{frame}
+\begin{frame}[allowframebreaks,t]{Event Studies: Specification Details That Matter}
+That specification looks innocent. Three choices inside it change the picture,
+and each must be reported.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Normalization}: one lead must be omitted (here $k=-1$). Every
+        $\tau_k$ is relative to it, so the picture shifts if you change the
+        reference period. Say which you used.
+  \item \textbf{Binning the endpoints}: with unbalanced exposure, far leads and
+        lags are estimated off few units. Bin them ($k \leq -5$, $k \geq 5$) or
+        restrict to a balanced window, and say which.
+  \item \textbf{Never-treated units} anchor the time effects $\lambda_t$. If there
+        are none, the $\lambda_t$ are identified only off variation in timing, and
+        the contamination problem below is unavoidable.
+\end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Staggered]{The Trouble with Two-Way Fixed Effects}
@@ -450,12 +456,12 @@ Units adopt the policy at \emph{different times}: states pass a law in 1995,
 \vskip3pt
 For thirty years this was assumed to estimate ``the'' treatment effect. It does
 when the effect is \alert{constant across units and over time since treatment}
---- but with heterogeneous or dynamic effects it need not estimate any sensible
+, but with heterogeneous or dynamic effects it need not estimate any sensible
 average at all.
 \vskip4pt
 \begin{alertblock}{Goodman-Bacon (2021)}
 The TWFE estimate is a weighted average of \emph{all possible} $2\times2$ DID
-comparisons in the data --- including comparisons that use
+comparisons in the data, including comparisons that use
 \alert{already-treated units as controls}.
 \end{alertblock}
 \end{frame}
@@ -487,7 +493,7 @@ comparisons in the data --- including comparisons that use
   \item In the shaded window, TWFE uses the \emph{early-treated} unit as a control
         for the late-treated one.
   \item If the early unit's effect is still evolving, that evolution is subtracted
-        from the late unit's effect --- and enters with a \alert{negative weight}.
+        from the late unit's effect, and enters with a \alert{negative weight}.
   \item With dynamic effects, TWFE can be the wrong \emph{sign} even when every
         unit-level effect is positive.
 \end{itemize}
@@ -502,23 +508,23 @@ $2\times2$ comparison in the data:
   \qquad \sum s_{ab} = 1 ,
 \end{align*}
 where the weights $s_{ab}$ depend on group sizes and on the \emph{variance of
-treatment} within each pair --- largest for pairs whose treatment switches
+treatment} within each pair, largest for pairs whose treatment switches
 mid-window.
 \vskip3pt
 Three kinds of comparison arise:
 \begin{enumerate}\itemsep1pt
-  \item Treated versus \textbf{never-treated} --- clean.
+  \item Treated versus \textbf{never-treated}, clean.
   \item \textbf{Earlier} treated versus \textbf{later} treated, before the later
-        group switches --- clean.
+        group switches, clean.
   \item \alert{\textbf{Later} treated versus \textbf{earlier} treated, after the
-        earlier group switches --- the forbidden comparison.}
+        earlier group switches, the forbidden comparison.}
 \end{enumerate}
 \vskip3pt
 Type 3 uses already-treated units as controls. If their effects are still
 evolving, that evolution is subtracted from the late group's effect.
 \end{frame}
 
-\begin{frame}[shrink=10]{Negative Weights}
+\begin{frame}[allowframebreaks,t]{Negative Weights}
 \srct{de Chaisemartin and D'Haultf\oe uille (2020)} write TWFE as a weighted sum
 of \emph{unit-time-level} effects,
 \begin{align*}
@@ -532,10 +538,10 @@ and show that some $w_{it}$ are \alert{negative}.
         $\tau_{it} > 0$. This is not a small-sample problem; it survives
         $n\to\infty$.
   \item The negative weights fall on units treated \emph{early} and observed for a
-        \emph{long} post-period --- exactly the units with the most information.
+        \emph{long} post-period, exactly the units with the most information.
   \item \textbf{Diagnostic}: compute the weights and report how many are negative
         and what share of the total mass they carry. Small negative mass is
-        reassuring about \emph{this particular} problem --- it says nothing about
+        reassuring about \emph{this particular} problem, it says nothing about
         parallel trends or about dynamic-effect contamination, so it is one
         diagnostic, not a validity test.
   \item \srct{Sun and Abraham (2021)} show the same contamination in event-study
@@ -544,7 +550,7 @@ and show that some $w_{it}$ are \alert{negative}.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[shrink=10]{Callaway--Sant'Anna: Build Clean Blocks, Then Aggregate}
+\begin{frame}[allowframebreaks,t]{Callaway--Sant'Anna: Build Clean Blocks, Then Aggregate}
 Define the \alert{group-time average treatment effect} for cohort $g$ at time $t$:
 \begin{align*}
   ATT(g,t) = \E\big[Y_t(g) - Y_t(\infty) \mid G_i = g\big] ,
@@ -555,7 +561,7 @@ never-treated units), using only periods before $g$ as the baseline.
 \begin{itemize}\itemsep2pt
   \item Each $ATT(g,t)$ is a clean $2\times2$: no already-treated controls.
   \item Under \emph{conditional} parallel trends, each block can be estimated by
-        IPW, outcome regression, or a doubly robust estimator --- \alert{Week 6,
+        IPW, outcome regression, or a doubly robust estimator, \alert{Week 6,
         reappearing inside a DID}.
   \item \textbf{Then choose an aggregation}, and the choice is an estimand choice:
   \begin{itemize}\itemsep1pt
@@ -613,10 +619,10 @@ Stacked / cohort DID & one clean event window per cohort & manual \\
 \vskip4pt
 Callaway--Sant'Anna also allows \textbf{conditional} parallel trends: trends
 parallel only after adjusting for covariates, estimated by IPW, regression, or
-doubly robust --- Week 6, reappearing.
+doubly robust, Week 6, reappearing.
 \end{frame}
 
-\begin{frame}[shrink=10]{Honest Inference About Pre-Trends}
+\begin{frame}[allowframebreaks,t]{Honest Inference About Pre-Trends}
 Rather than testing pre-trends and proceeding as if they had passed,
 \srct{Rambachan and Roth (2023)} propose bounding how badly parallel trends could
 fail.
@@ -624,12 +630,12 @@ fail.
 \begin{itemize}\itemsep3pt
   \item Their ``relative magnitudes'' restriction bounds how much the
         \emph{change} in the trend violation after treatment can exceed the
-        largest change observed before it, by a factor $\bar M$ --- and the
+        largest change observed before it, by a factor $\bar M$, and the
         resulting confidence sets account for sampling uncertainty in the
         pre-period estimates rather than treating them as known.
   \item Report the \emph{breakdown value}: how large $\bar M$ would have to be
         before your conclusion reverses.
-  \item This turns an untestable assumption into a quantitative claim --- exactly
+  \item This turns an untestable assumption into a quantitative claim, exactly
         the move sensitivity analysis made in Week 6.
   \item \texttt{HonestDiD}.
 \end{itemize}
@@ -659,7 +665,7 @@ treatment varies. With few clusters, use CR2 or a wild cluster bootstrap
 
 \begin{frame}{Looking Ahead}
 \begin{itemize}\itemsep4pt
-  \item Fixed effects difference away time-invariant confounders --- a real gain,
+  \item Fixed effects difference away time-invariant confounders, a real gain,
         bought with precision and with a new assumption about trends.
   \item The staggered-adoption literature is a case study in how a method can be
         standard for decades and still be wrong. Read papers published before
@@ -677,7 +683,7 @@ Assigned next Tuesday, due Monday November 23. Covers Weeks 10--11.
 \end{frame}
 
 
-\begin{frame}[allowframebreaks]{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.
