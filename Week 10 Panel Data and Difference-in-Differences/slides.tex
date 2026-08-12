@@ -203,10 +203,14 @@ Average the model within unit and subtract:
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Random Effects, and Why We Usually Do Not Use It}
-Random effects treats $\alpha_i$ as a draw from a distribution and assumes
+Random effects treats $\alpha_i$ as a draw from a distribution and assumes the
+unit effect is unrelated to the regressors. The slogan version is
+$\Cov(D_{it}, \alpha_i) = 0$, but consistency needs the stronger statement
 \begin{align*}
-  \Cov(D_{it}, \alpha_i) = 0 .
+  \E\big[\alpha_i \mid D_{i1},\dots,D_{iT}\big] = 0 ,
 \end{align*}
+mean independence from the \emph{whole history} of the regressor, together with
+strict exogeneity of the idiosyncratic error, $\E[\epsilon_{it}\mid D_{i1},\dots,D_{iT},\alpha_i]=0$.
 It then estimates by GLS, a matrix-weighted average of the within and between
 estimators.
 \vskip3pt
@@ -226,6 +230,11 @@ estimators.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Nickell Bias and the FE-versus-LDV Choice}
+Sociologists routinely control for last year's outcome, to absorb differences
+between units that are \emph{changing} rather than fixed. It is a reasonable
+instinct. But combining that move with unit fixed effects creates a new bias, and
+it is worth knowing why before you reach for it.
+\vskip3pt
 Add a lagged dependent variable to a fixed-effects model:
 \begin{align*}
   Y_{it} = \rho Y_{i,t-1} + \beta D_{it} + \alpha_i + \epsilon_{it} .

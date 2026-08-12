@@ -161,7 +161,11 @@ giving up $\sqrt n$ inference.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{The Partially Linear Model}
-The workhorse specification for the rest of the course:
+To see the problem without letting notation hide it, start with the simplest
+causal case there is: \emph{one} treatment effect to estimate, but completely
+flexible relationships between the controls, the treatment, and the outcome.
+That is the \alert{partially linear model}, the workhorse for the rest of the
+course:
 \begin{align*}
   Y_i &= \theta\, D_i + g(W_i) + \epsilon_i, \qquad \E[\epsilon_i \mid D_i, W_i] = 0 \\
   D_i &= m(W_i) + v_i, \qquad\qquad\ \ \E[v_i \mid W_i] = 0 .

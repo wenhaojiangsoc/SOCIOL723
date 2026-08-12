@@ -364,16 +364,18 @@ potential outcome under $d$: $\ Y_i = Y_i(d)$ when $D_i = d$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Identification Under Selection on Observables}
+\begin{frame}[allowframebreaks,t]{Identification Under Selection on Observables}
 When randomization is unavailable, we assume it holds \emph{within cells of
 observed covariates}.
 \vskip3pt
-\begin{block}{The three conditions}
+\begin{block}{The four conditions}
 \begin{enumerate}\itemsep2pt
   \item \textbf{Conditional independence} (unconfoundedness, ignorability):
         $\big(Y_i(0),Y_i(1)\big) \indep D_i \mid X_i$.
   \item \textbf{Positivity} (overlap): $0 < \Pr(D_i = 1\mid X_i = x) < 1$ for all
         $x$ with positive density.
+  \item \textbf{Consistency}: $Y_i = Y_i(D_i)$, so the observed outcome \emph{is}
+        the potential outcome for the treatment actually received.
   \item \textbf{SUTVA}, as above.
 \end{enumerate}
 \end{block}
@@ -385,7 +387,7 @@ Then the ATE is identified:
 \vskip1pt
 {\footnotesize\alert{Read the two lines carefully.} The left side is causal and
 unobservable; the right side is a function of the observed joint distribution.
-Assumptions 1--3 are the bridge, and they are not testable.}
+Assumptions 1--4 are the bridge, and they are not testable.}
 \end{frame}
 
 \begin{frame}{What Positivity Is Really Saying}
@@ -1068,7 +1070,11 @@ sub-problems, and that is the whole trick.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{A Sociological Application: the Age--Period--Cohort Problem}
+\begin{frame}[allowframebreaks,t]{A Sociological Application: the Age--Period--Cohort Problem}
+To see what front-door reasoning actually buys, take a problem sociologists know
+well, and one where the regression coefficient cannot even be \emph{defined}
+uniquely: separating age, period, and cohort.
+\vskip3pt
 The standard APC regression is
 \begin{align*}
   Y_{it} = \alpha + \beta_A A_i + \beta_P P_t + \beta_C C_i + \epsilon_{it} ,
@@ -1212,8 +1218,8 @@ I will ask you for it.
         this course is an argument \emph{about} that term: either that adjustment
         drives it to zero (Week 6), or that some other comparison sidesteps it
         entirely, at the price of a narrower estimand (IV's LATE, Weeks 7--11).
-  \item Conditional ignorability, positivity, and SUTVA identify the ATE from
-        observable quantities. \alert{None of them is testable.}
+  \item Conditional ignorability, positivity, consistency, and SUTVA identify the
+        ATE from observable quantities. \alert{None of them is testable.}
   \item DAGs turn those assumptions into a picture you can check for colliders
         and mediators.
 \end{itemize}

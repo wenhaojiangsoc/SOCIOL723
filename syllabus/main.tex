@@ -78,7 +78,7 @@ This is the second course in the graduate statistics sequence for sociology doct
 
 The core of the course turns to causal inference, the central methodological concern of contemporary empirical social science. We introduce the potential outcomes framework and directed acyclic graphs (DAGs) as complementary languages for defining and identifying causal effects, then work through the standard research designs: selection on observables (matching, propensity scores, and weighting), instrumental variables (IV), regression discontinuity designs (RDD), difference-in-differences (DID) with panel data, and synthetic control. The course closes by introducing machine learning for prediction and its integration with causal inference, including double/debiased machine learning and the estimation of heterogeneous treatment effects.
 
-Each week pairs a Tuesday lecture that develops the theory with a Thursday lab that implements the methods on real data in \texttt{R}. By the end of the course, students should be able to read and critically evaluate the quantitative sociological literature that uses these methods, and to apply them competently in their own research. The course assumes working knowledge of the general linear model and statistical inference at the level of \textit{Social Statistics I}. Familiarity with matrix algebra and calculus is helpful but not required; the necessary tools are reviewed in the first two labs. \texttt{R} is the primary software; \texttt{Python} is introduced as a supplement for machine learning.
+Each week pairs a Tuesday lecture that develops the theory with a Thursday lab that implements the methods on real data in \texttt{R}. By the end of the course, students should be able to read and critically evaluate the quantitative sociological literature that uses these methods, and to apply them competently in their own research. The course assumes working knowledge of the general linear model and statistical inference at the level of \textit{Social Statistics I}. Familiarity with matrix algebra and calculus is helpful but not required; the necessary tools are reviewed in the first two labs. All coursework is in \texttt{R}.
 
 \subsection*{Expectations}
 
@@ -101,7 +101,7 @@ There will be an in-class midterm on \textbf{Thursday, October 15}, covering the
 In lieu of a final exam, you will complete an original project that replicates and extends a published study using one or more of the methods from the course, ideally connected to your own research. You should submit a short report (roughly 2,000--3,000 words) together with reproducible \texttt{R} code. Please sign up for the article you intend to replicate and confirm that replication data are available by \textbf{November 2}. The completed paper is due \textbf{December 14}. Using your own original data is also acceptable with prior approval.
 
 \subsection*{Software}
-This class uses \texttt{R}, and prior experience at the level of \textit{Social Statistics I} is assumed. \texttt{Python} will be used as a supplementary tool in certain cases, such as for machine learning. Please install a recent version of \texttt{R} and \texttt{RStudio} before the first lab, and use \texttt{RMarkdown} or \texttt{Quarto} for your assignments to support reproducibility.
+This class uses \texttt{R} throughout, and prior experience at the level of \textit{Social Statistics I} is assumed. Please install a recent version of \texttt{R} and \texttt{RStudio} before the first lab, and use \texttt{RMarkdown} or \texttt{Quarto} for your assignments to support reproducibility.
 
 \subsection*{Use of Artificial Intelligence (AI)}
 While the use of AI is not permitted during the midterm exam, I encourage students to use AI tools to support their statistical learning, particularly for understanding steps in derivations and for debugging \texttt{R} code. AI assistance is also permitted on problem sets and the final project, but students are expected to fully understand every step of what they submit and to write up results in their own words.
@@ -115,7 +115,10 @@ We will draw regularly on three texts, two of which are free online.
     \item \textcolor{titlecolor}{[CCI]} Morgan, Stephen L. and Christopher Winship. 2015. \textit{Counterfactuals and Causal Inference: Methods and Principles for Social Research}, 2nd ed. Cambridge University Press.
 \end{itemize}
 
-\noindent Within each week, the readings are listed \textit{in the order you should read them}: the first builds the intuition, and those that follow supply the rigour. \textit{Further reading} is there for depth and for your own research; it is not examined.
+\noindent \textit{The Effect} and the Chernozhukov et al.\ text are living online
+books whose chapter numbers shift between editions; chapter titles are given
+where the number alone might mislead. Within each week, the readings are listed
+\textit{in the order you should read them}: the first builds the intuition, and those that follow supply the rigour. \textit{Further reading} is there for depth and for your own research; it is not examined.
 
 \vspace{0.5em}
 
@@ -124,7 +127,7 @@ We will draw regularly on three texts, two of which are free online.
 \begin{itemize}[noitemsep]
     \item Ward, Michael D. and John S. Ahlquist. 2018. \textit{Maximum Likelihood for Social Science: Strategies for Analysis}. Cambridge University Press. (maximum likelihood, written for social scientists)
     \item \textcolor{titlecolor}{[ISL]} James, Gareth et al. 2021. \textit{An Introduction to Statistical Learning: with Applications in R}, 2nd ed. Springer. (\href{https://www.statlearning.com/}{online})
-    \item \textcolor{titlecolor}{[Pawitan]} Pawitan, Yudi. 2013. \textit{In All Likelihood: Statistical Modeling and Inference Using Likelihood}. Oxford University Press.
+    \item \textcolor{titlecolor}{[Pawitan]} Pawitan, Yudi. 2013. \textit{In All Likelihood: Statistical Modelling and Inference Using Likelihood}. Oxford University Press.
     \item \textcolor{titlecolor}{[Mixtape]} Cunningham, Scott. 2021. \textit{Causal Inference: The Mixtape}. Yale University Press. (\href{https://mixtape.scunning.com/}{online})
     \item \textcolor{titlecolor}{[CML]} Chernozhukov, Victor et al. 2025. \textit{Applied Causal Inference Powered by ML and AI}. (\href{https://causalml-book.org/}{online})
 \end{itemize}
@@ -147,7 +150,7 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
     \item[] \textit{Further reading}: CCI, ch.\ 6; ISL, ch.\ 3.
 \end{itemize}
 
-\vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 2 (Sep 1/3): Review: Regression Inference and Robust Standard Errors}}
+\vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 2 (Sep 1/3): Regression Inference and Robust Standard Errors}}
 
 \noindent \textit{Lecture}: Sampling distribution of OLS and hypothesis testing; heteroskedasticity; robust and cluster-robust standard errors; the bootstrap; what robust standard errors can and cannot fix. \textit{Lab}: a review of the calculus used in estimation and optimization; robust and clustered inference and the bootstrap in \texttt{R}.
 \begin{itemize}[noitemsep, topsep=2pt]
@@ -159,7 +162,7 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \noindent \textit{Lecture}: The likelihood and log-likelihood; the score function, Hessian, and Fisher information; identification and numerical maximization; the asymptotic properties of the MLE (consistency, asymptotic normality, and efficiency) under regularity conditions; and likelihood-ratio, Wald, and score tests. \textit{Lab}: coding a likelihood and optimizing it numerically in \texttt{R}.
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item[] \textit{Reading}: Ward and Ahlquist, ch.\ 1--3.
+    \item[] \textit{Reading}: Ward and Ahlquist, ch.\ 1--2 and 4.
     \item[] \textit{Further reading}: Pawitan, ch.\ 2--4.
 \end{itemize}
 
@@ -168,7 +171,7 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 \noindent \textit{Lecture}: The generalized linear model framework (linear predictor, link, and likelihood); binary outcomes with logit and probit, now grounded in likelihood theory; interpretation via marginal effects, predicted probabilities, and interaction terms; multinomial and ordered models; count models (Poisson and negative binomial). \textit{Lab}: estimating and interpreting limited-dependent-variable models in \texttt{R}.
 \begin{itemize}[noitemsep, topsep=2pt]
     \item[] \textit{Reading}: ISL, \S 4.1--4.3; Hanmer, Michael J. and Kerem Ozan Kalkan. 2013. ``Behind the Curve: Clarifying the Best Approach to Calculating Predicted Probabilities and Marginal Effects from Limited Dependent Variable Models.'' \textit{American Journal of Political Science} 57(1), 263--277.
-    \item[] \textit{Further reading}: Mize, Trenton D. 2019. ``Best Practices for Estimating, Interpreting, and Presenting Nonlinear Interaction Effects.'' \textit{Sociological Science} 6, 81--117; Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response Models.'' \textit{Political Analysis} 13, 157--170.
+    \item[] \textit{Further reading}: Ward and Ahlquist, ch.\ 3; Mize, Trenton D. 2019. ``Best Practices for Estimating, Interpreting, and Presenting Nonlinear Interaction Effects.'' \textit{Sociological Science} 6, 81--117; Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response Models.'' \textit{Political Analysis} 13(2), 157--170.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 5 (Sep 22/24): Causal Inference: Potential Outcomes and DAGs}}
@@ -181,7 +184,7 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 6 (Sep 29/Oct 1): Matching, Propensity Scores, and Weighting}}
 
-\noindent \textit{Lecture}: Selection on observables; exact, nearest-neighbor, and coarsened matching; the propensity score; inverse-probability weighting; doubly robust estimation; ``bad controls'' and post-treatment bias. \textit{Lab}: matching and weighting workflows in \texttt{R} (\texttt{MatchIt}, \texttt{WeightIt}).
+\noindent \textit{Lecture}: Selection on observables; exact, nearest-neighbor, and coarsened matching; the propensity score; inverse-probability weighting; doubly robust estimation; and what each method assumes when it fails. \textit{Lab}: matching and weighting workflows in \texttt{R} (\texttt{MatchIt}, \texttt{WeightIt}).
 \begin{itemize}[noitemsep, topsep=2pt]
     \item[] \textit{Reading}: Effect, ch.\ 14; CCI, ch.\ 5; Stuart, Elizabeth A. 2010. ``Matching Methods for Causal Inference: A Review and a Look Forward.'' \textit{Statistical Science} 25(1), 1--21.
     \item[] \textit{Further reading}: CCI, ch.\ 4, 7, and 8; King, Gary and Richard Nielsen. 2019. ``Why Propensity Scores Should Not Be Used for Matching.'' \textit{Political Analysis} 27(4), 435--454.
@@ -191,7 +194,7 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \noindent \textit{Lecture}: Endogeneity and the IV estimator; two-stage least squares; the LATE framework, monotonicity, and compliers; weak instruments and sensitivity. \textit{Lab}: 2SLS and diagnostics in \texttt{R} (\texttt{fixest}/\texttt{ivreg}).
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item[] \textit{Reading}: Effect, ch.\ 19; MHE, \S 4.1--4.2; Angrist, Joshua D., Guido W. Imbens, and Donald B. Rubin. 1996. ``Identification of Causal Effects Using Instrumental Variables.'' \textit{Journal of the American Statistical Association} 91(434), 444--455.
+    \item[] \textit{Reading}: Effect, ch.\ 19; MHE, \S 4.1 and \S 4.4 (the latter is where LATE and the compliance types live); Angrist, Joshua D., Guido W. Imbens, and Donald B. Rubin. 1996. ``Identification of Causal Effects Using Instrumental Variables.'' \textit{Journal of the American Statistical Association} 91(434), 444--455.
     \item[] \textit{Further reading}: CCI, ch.\ 9; Lee, David S., Justin McCrary, Marcelo J. Moreira, and Jack Porter. 2022. ``Valid $t$-ratio Inference for IV.'' \textit{American Economic Review} 112(10), 3260--3290.
 \end{itemize}
 
@@ -209,15 +212,15 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 10 (Oct 27/29): Panel Data and Difference-in-Differences}}
 
-\noindent \textit{Lecture}: Panel data and unobserved heterogeneity; pooled OLS, first-difference, and fixed- and random-effects (within) estimators; two-way (unit and time) fixed effects (TWFE); the canonical 2$\times$2 DID and the parallel-trends assumption; DID and event studies as special cases of TWFE; problems with TWFE under staggered adoption and recent robust estimators. \textit{Lab}: panel and DID estimation in \texttt{R} (\texttt{plm}, \texttt{fixest}, \texttt{did}).
+\noindent \textit{Lecture}: Panel data and unobserved heterogeneity; pooled OLS, first-difference, and fixed-effects (within) and random-effects estimators; two-way (unit and time) fixed effects (TWFE); the canonical 2$\times$2 DID and the parallel-trends assumption; DID and event studies as special cases of TWFE; problems with TWFE under staggered adoption and recent robust estimators. \textit{Lab}: panel and DID estimation in \texttt{R} (\texttt{plm}, \texttt{fixest}, \texttt{did}).
 \begin{itemize}[noitemsep, topsep=2pt]
     \item[] \textit{Reading}: Effect, ch.\ 16 and 18; Roth, Jonathan, Pedro H.C. Sant'Anna, Alyssa Bilinski, and John Poe. 2023. ``What's Trending in Difference-in-Differences? A Synthesis of the Recent Econometrics Literature.'' \textit{Journal of Econometrics} 235(2), 2218--2244.
     \item[] \textit{Further reading}: MHE, ch.\ 5; CCI, ch.\ 11; Goodman-Bacon, Andrew. 2021. ``Difference-in-Differences with Variation in Treatment Timing.'' \textit{Journal of Econometrics} 225(2), 254--277.
 \end{itemize}
 
-\vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 11 (Nov 3/5): Synthetic Control and Event Studies}}
+\vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 11 (Nov 3/5): Synthetic Control and Its Extensions}}
 
-\noindent \textit{Lecture}: Comparative case studies; the synthetic control estimator; inference with few treated units; generalized synthetic control and event-study designs. \textit{Lab}: synthetic control in \texttt{R} (\texttt{Synth}, \texttt{gsynth}).
+\noindent \textit{Lecture}: Comparative case studies; the synthetic control estimator; inference with few treated units; augmented and generalized synthetic control, and synthetic difference-in-differences. \textit{Lab}: synthetic control in \texttt{R} (\texttt{Synth}, \texttt{gsynth}).
 \begin{itemize}[noitemsep, topsep=2pt]
     \item[] \textit{Reading}: Abadie, Alberto. 2021. ``Using Synthetic Controls: Feasibility, Data Requirements, and Methodological Aspects.'' \textit{Journal of Economic Literature} 59(2), 391--425.
     \item[] \textit{Further reading}: Abadie, Alberto, Alexis Diamond, and Jens Hainmueller. 2010. ``Synthetic Control Methods for Comparative Case Studies: Estimating the Effect of California's Tobacco Control Program.'' \textit{Journal of the American Statistical Association} 105(490), 493--505; Xu, Yiqing. 2017. ``Generalized Synthetic Control Method: Causal Inference with Interactive Fixed Effects Models.'' \textit{Political Analysis} 25(1), 57--76.

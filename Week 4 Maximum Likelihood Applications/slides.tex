@@ -271,8 +271,13 @@ $\log(1-p_i) = -\log(1+e^{X_i'\bm\beta})$):
   - \log\big(1+e^{X_i'\bm\beta}\big)\Big] .
 \end{align*}
 \vskip2pt
-This is globally concave in $\bm\beta$, so the maximum is unique whenever it
-exists, a genuinely nice property that probit shares.
+This is globally concave in $\bm\beta$, and \emph{strictly} concave once $\X$ has
+full column rank, which is what makes the maximizer unique when it exists. Probit
+shares the property.
+\vskip2pt
+{\footnotesize ``When it exists'' is doing real work. Concavity alone does not
+deliver a finite maximizer: under perfect separation the likelihood keeps
+climbing and $\hat{\bm\beta}$ diverges. We return to this later.}
 \end{frame}
 
 \begin{frame}{The Logit Score}

@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SOCIOL 723 -- Social Statistics II
-%% Week 11 -- Synthetic Control and Event Studies
+%% Week 11 -- Synthetic Control and Its Extensions
 %% Wenhao Jiang, Duke University, Fall 2026
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -118,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 11, Synthetic Control and Event Studies\\[-8pt]}
+\subtitle{\large Week 11, Synthetic Control and Its Extensions\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -204,6 +204,11 @@ unit and $\bm X_0$ the $k\times J$ matrix for the donors. Choose weights
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{The Factor-Model Justification}
+Matching California's \emph{past} is only useful if it tells us something about
+California's missing \emph{future}. Why should it? The factor model is the answer:
+it states the conditions under which a good pre-treatment fit licenses that
+extrapolation.
+\vskip3pt
 Suppose untreated outcomes follow a linear factor model
 \begin{align*}
   Y_{jt}(0) = \delta_t + \bm\theta_t'\bm Z_j + \bm\lambda_t'\bm\mu_j + \epsilon_{jt} ,
@@ -272,32 +277,15 @@ and with an added intercept shift.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Inference With One Treated Unit}
-Conventional standard errors are meaningless here: $n_{\text{treated}} = 1$.
-Instead, \alert{permutation inference}.
+Conventional standard errors are meaningless here: $n_{\text{treated}} = 1$, and
+the usual asymptotics run in the number of treated units. Instead,
+\alert{permutation inference}.
 \vskip3pt
 \begin{block}{Placebo (in-space) tests}
-Pretend each donor was the treated unit. Estimate its ``effect.'' If the real
+Pretend each donor was the treated unit and estimate its ``effect.'' If the real
 treated unit's post-treatment gap is extreme relative to the placebo
 distribution, that is evidence.
 \end{block}
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item Report the ratio of post- to pre-treatment RMSPE for every unit. A large
-        post/pre ratio for the treated unit and small ratios elsewhere is the
-        result.
-  \item The treated unit's rank among the $J+1$ units gives a permutation-style
-        $p$-value, with a hard floor of $1/39 \approx 0.026$ for a donor pool of
-        38. It is a placebo rank, not an exact test, exactness would require
-        random assignment among these units.
-  \item \textbf{Discard poorly fitting placebos}, a donor the method could not
-        match will show a huge gap for reasons unrelated to treatment.
-  \item \textbf{In-time placebo}: pretend treatment happened earlier. A ``gap''
-        should not appear before the real intervention.
-\end{itemize}
-\end{frame}
-\begin{frame}[allowframebreaks,t]{Placebo Inference, Mechanically}
-With one treated unit there is no sampling distribution to appeal to. Use
-\alert{permutation}: pretend each donor was treated, and compare.
 \vskip3pt
 For each unit $j$ compute
 \begin{align*}
@@ -311,11 +299,11 @@ and rank units by the \alert{ratio} $\text{RMSPE}^{\text{post}}_j /
 \begin{itemize}\itemsep2pt
   \item The ratio, rather than the raw post-treatment gap, is what makes placebos
         comparable: a donor the method could not fit will show a large gap for
-        reasons unrelated to treatment.
+        reasons unrelated to treatment. \textbf{Discard poorly fitting placebos.}
   \item The rank of the treated unit among the $J+1$ units gives a
         permutation-style $p$-value: with 38 donors the smallest attainable value
         is $1/39 \approx 0.026$. \alert{Call it a placebo rank, not an exact
-        $p$-value}, exactness would require treatment to have been randomly
+        $p$-value}: exactness would require treatment to have been randomly
         assigned among these units under a sharp null, which it was not.
   \item \textbf{In-time placebo}: re-run pretending treatment began earlier. A gap
         should not appear before the real intervention.

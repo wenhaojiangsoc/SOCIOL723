@@ -378,7 +378,11 @@ $-\beta_1/2\beta_2$, a marginal effect:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{A Note on Multiple Testing}
+\begin{frame}[allowframebreaks,t]{A Note on Multiple Testing}
+Everything so far controlled the error rate for \emph{one} planned comparison.
+The moment you look at many outcomes, many subgroups, or many specifications, the
+guarantee has to hold across the whole family of claims, and it does not.
+\vskip3pt
 If you run $m$ independent tests at level $\alpha$, the chance of at least one
 false rejection is $1-(1-\alpha)^m$: for $m=20$, about $64\%$.
 \vskip3pt

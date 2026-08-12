@@ -311,6 +311,11 @@ them. Valid post-selection inference is exactly what Week 13 is for.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}[allowframebreaks,t]{Regression Trees}
+Ridge and lasso control complexity, but both still start from an \emph{additive
+linear} rule: you choose the variables, and an interaction exists only if you
+type it. Trees are the first method we meet that finds nonlinearities and
+interactions on its own.
+\vskip3pt
 Recursively split the covariate space to minimize within-node sum of squares; the
 prediction in a leaf is the mean of the training outcomes there.
 \vskip3pt

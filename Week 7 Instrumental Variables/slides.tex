@@ -321,7 +321,7 @@ only through institutions.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Quarter of Birth and Schooling}
+\begin{frame}[allowframebreaks,t]{Quarter of Birth and Schooling}
 \srct{Angrist and Krueger (1991)} estimate the return to schooling using
 \textbf{quarter of birth} as an instrument.
 \vskip3pt
@@ -340,11 +340,19 @@ only through institutions.
         average return, and arguably the policy-relevant one for compulsory
         attendance laws.
 \end{itemize}
+\vskip3pt
+{\footnotesize For now, read \emph{compliers} as ``the people whose schooling was
+actually moved by their birth quarter,'' and \emph{LATE} as ``the average effect
+for those people.'' Later in the lecture we define the four compliance types
+properly and show why the IV ratio can only speak for this one group.}
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{The Cautionary Half of Angrist--Krueger}
 The paper is also the standard illustration of what goes wrong with many weak
-instruments.
+instruments. It previews two objects we formalize in the next two sections:
+\textbf{2SLS}, the machinery for combining several instruments, and \textbf{weak
+identification}, which explains how adding instruments can make an estimate
+worse rather than sharper.
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item To gain precision, the authors interacted quarter of birth with state and
