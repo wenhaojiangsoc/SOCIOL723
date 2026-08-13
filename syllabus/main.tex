@@ -26,8 +26,9 @@
     urlcolor=titlecolor
 }
 
-%% itemize style
-\setlist[itemize]{noitemsep, topsep=2pt}
+%% itemize style: a slightly larger bullet, nudged up to sit on the x-height
+\setlist[itemize]{noitemsep, topsep=2pt,
+                  label=\raisebox{0.12ex}{\large\textbullet}}
 
 %% long hyphenated titles ("Difference-in-Differences") cannot be broken further;
 %% let TeX stretch the line slightly rather than run into the margin
@@ -146,15 +147,15 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \noindent \textit{Lecture}: The general linear model in scalar and matrix form, connecting the model-comparison framework of \textit{Social Statistics I} to matrix notation; the OLS estimator and its geometry; the Frisch--Waugh--Lovell theorem, omitted-variable bias, and regression as a tool for adjustment. \textit{Lab}: \texttt{R} and \texttt{RStudio} refresher; a review of the matrix algebra used in the linear model; fitting and interpreting OLS.
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, ch.\ 13; MHE, \S 3.1--3.2.
-    \item \textit{Further reading}: CCI, ch.\ 6; ISL, ch.\ 3.
+    \item \textit{Reading}: Effect, Chapter 13; MHE, \S 3.1--3.2.
+    \item \textit{Further reading}: CCI, Chapter 6; ISL, Chapter 3.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 2 (Sep 1/3): Regression Inference and Robust Standard Errors}}
 
 \noindent \textit{Lecture}: Sampling distribution of OLS and hypothesis testing; heteroskedasticity; robust and cluster-robust standard errors; the bootstrap; what robust standard errors can and cannot fix. \textit{Lab}: a review of the calculus used in estimation and optimization; robust and clustered inference and the bootstrap in \texttt{R}.
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, ch.\ 15; MHE, ch.\ 8.
+    \item \textit{Reading}: Effect, Chapter 15; MHE, Chapter 8.
     \item \textit{Further reading}: Freedman, David A. 2006. ``On the So-Called `Huber Sandwich Estimator' and `Robust Standard Errors'.'' \textit{The American Statistician} 60(4), 299--302; Bertrand, Marianne, Esther Duflo, and Sendhil Mullainathan. 2004. ``How Much Should We Trust Differences-in-Differences Estimates?'' \textit{Quarterly Journal of Economics} 119(1), 249--275.
 \end{itemize}
 
@@ -162,8 +163,8 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \noindent \textit{Lecture}: The likelihood and log-likelihood; the score function, Hessian, and Fisher information; identification and numerical maximization; the asymptotic properties of the MLE (consistency, asymptotic normality, and efficiency) under regularity conditions; and likelihood-ratio, Wald, and score tests. \textit{Lab}: coding a likelihood and optimizing it numerically in \texttt{R}.
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Ward and Ahlquist, ch.\ 1--2 and 4.
-    \item \textit{Further reading}: Pawitan, ch.\ 2--4.
+    \item \textit{Reading}: Ward and Ahlquist, Chapters 1--2 and 4.
+    \item \textit{Further reading}: Pawitan, Chapters 2--4.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 4 (Sep 15/17): Maximum Likelihood: Applications}}
@@ -171,31 +172,31 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 \noindent \textit{Lecture}: The generalized linear model framework (linear predictor, link, and likelihood); binary outcomes with logit and probit, now grounded in likelihood theory; interpretation via marginal effects, predicted probabilities, and interaction terms; multinomial and ordered models; count models (Poisson and negative binomial). \textit{Lab}: estimating and interpreting limited-dependent-variable models in \texttt{R}.
 \begin{itemize}[noitemsep, topsep=2pt]
     \item \textit{Reading}: ISL, \S 4.1--4.3; Hanmer, Michael J. and Kerem Ozan Kalkan. 2013. ``Behind the Curve: Clarifying the Best Approach to Calculating Predicted Probabilities and Marginal Effects from Limited Dependent Variable Models.'' \textit{American Journal of Political Science} 57(1), 263--277.
-    \item \textit{Further reading}: Ward and Ahlquist, ch.\ 3; Mize, Trenton D. 2019. ``Best Practices for Estimating, Interpreting, and Presenting Nonlinear Interaction Effects.'' \textit{Sociological Science} 6, 81--117; Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response Models.'' \textit{Political Analysis} 13(2), 157--170.
+    \item \textit{Further reading}: Ward and Ahlquist, Chapter 3; Mize, Trenton D. 2019. ``Best Practices for Estimating, Interpreting, and Presenting Nonlinear Interaction Effects.'' \textit{Sociological Science} 6, 81--117; Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response Models.'' \textit{Political Analysis} 13(2), 157--170.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 5 (Sep 22/24): Causal Inference: Potential Outcomes and DAGs}}
 
 \noindent \textit{Lecture}: The potential outcomes framework; SUTVA, ignorability, and identification; average treatment effects; directed acyclic graphs, back-door and front-door criteria, and collider bias; defining a well-posed estimand. \textit{Lab}: simulating confounding and selection; drawing and reading DAGs in \texttt{R} (\texttt{dagitty}).
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, ch.\ 6 and 8; Lundberg, Ian, Rebecca Johnson, and Brandon M. Stewart. 2021. ``What Is Your Estimand? Defining the Target Quantity Connects Statistical Evidence to Theory.'' \textit{American Sociological Review} 86(3), 532--565; Elwert, Felix and Christopher Winship. 2014. ``Endogenous Selection Bias: The Problem of Conditioning on a Collider Variable.'' \textit{Annual Review of Sociology} 40, 31--53.
-    \item \textit{Further reading}: MHE, ch.\ 2; CCI, ch.\ 1--3.
+    \item \textit{Reading}: Effect, Chapters 6 and 8; Lundberg, Ian, Rebecca Johnson, and Brandon M. Stewart. 2021. ``What Is Your Estimand? Defining the Target Quantity Connects Statistical Evidence to Theory.'' \textit{American Sociological Review} 86(3), 532--565; Elwert, Felix and Christopher Winship. 2014. ``Endogenous Selection Bias: The Problem of Conditioning on a Collider Variable.'' \textit{Annual Review of Sociology} 40, 31--53.
+    \item \textit{Further reading}: MHE, Chapter 2; CCI, Chapters 1--3.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 6 (Sep 29/Oct 1): Matching, Propensity Scores, and Weighting}}
 
 \noindent \textit{Lecture}: Selection on observables; exact, nearest-neighbor, and coarsened matching; the propensity score; inverse-probability weighting; doubly robust estimation; and what each method assumes when it fails. \textit{Lab}: matching and weighting workflows in \texttt{R} (\texttt{MatchIt}, \texttt{WeightIt}).
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, ch.\ 14; CCI, ch.\ 5; Stuart, Elizabeth A. 2010. ``Matching Methods for Causal Inference: A Review and a Look Forward.'' \textit{Statistical Science} 25(1), 1--21.
-    \item \textit{Further reading}: CCI, ch.\ 4, 7, and 8; King, Gary and Richard Nielsen. 2019. ``Why Propensity Scores Should Not Be Used for Matching.'' \textit{Political Analysis} 27(4), 435--454.
+    \item \textit{Reading}: Effect, Chapter 14; CCI, Chapter 5; Stuart, Elizabeth A. 2010. ``Matching Methods for Causal Inference: A Review and a Look Forward.'' \textit{Statistical Science} 25(1), 1--21.
+    \item \textit{Further reading}: CCI, Chapters 4, 7, and 8; King, Gary and Richard Nielsen. 2019. ``Why Propensity Scores Should Not Be Used for Matching.'' \textit{Political Analysis} 27(4), 435--454.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 7 (Oct 6/8): Instrumental Variables}}
 
 \noindent \textit{Lecture}: Endogeneity and the IV estimator; two-stage least squares; the LATE framework, monotonicity, and compliers; weak instruments and sensitivity. \textit{Lab}: 2SLS and diagnostics in \texttt{R} (\texttt{fixest}/\texttt{ivreg}).
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, ch.\ 19; MHE, \S 4.1 and \S 4.4 (the latter is where LATE and the compliance types live); Angrist, Joshua D., Guido W. Imbens, and Donald B. Rubin. 1996. ``Identification of Causal Effects Using Instrumental Variables.'' \textit{Journal of the American Statistical Association} 91(434), 444--455.
-    \item \textit{Further reading}: CCI, ch.\ 9; Lee, David S., Justin McCrary, Marcelo J. Moreira, and Jack Porter. 2022. ``Valid $t$-ratio Inference for IV.'' \textit{American Economic Review} 112(10), 3260--3290.
+    \item \textit{Reading}: Effect, Chapter 19; MHE, \S 4.1 and \S 4.4 (the latter is where LATE and the compliance types live); Angrist, Joshua D., Guido W. Imbens, and Donald B. Rubin. 1996. ``Identification of Causal Effects Using Instrumental Variables.'' \textit{Journal of the American Statistical Association} 91(434), 444--455.
+    \item \textit{Further reading}: CCI, Chapter 9; Lee, David S., Justin McCrary, Marcelo J. Moreira, and Jack Porter. 2022. ``Valid $t$-ratio Inference for IV.'' \textit{American Economic Review} 112(10), 3260--3290.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 8 (Oct 13/15): Fall Break / In-Class Midterm}}
@@ -206,16 +207,16 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \noindent \textit{Lecture}: Sharp and fuzzy RD; identification at the cutoff; local linear estimation, bandwidth choice, and kernel weighting; validity, sorting, and placebo checks. \textit{Lab}: RD estimation and diagnostics in \texttt{R} (\texttt{rdrobust}).
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, ch.\ 20; Cattaneo, Matias D. and Roc\'{i}o Titiunik. 2022. ``Regression Discontinuity Designs.'' \textit{Annual Review of Economics} 14, 821--851.
-    \item \textit{Further reading}: MHE, ch.\ 6; McCrary, Justin. 2008. ``Manipulation of the Running Variable in the Regression Discontinuity Design: A Density Test.'' \textit{Journal of Econometrics} 142(2), 698--714.
+    \item \textit{Reading}: Effect, Chapter 20; Cattaneo, Matias D. and Roc\'{i}o Titiunik. 2022. ``Regression Discontinuity Designs.'' \textit{Annual Review of Economics} 14, 821--851.
+    \item \textit{Further reading}: MHE, Chapter 6; McCrary, Justin. 2008. ``Manipulation of the Running Variable in the Regression Discontinuity Design: A Density Test.'' \textit{Journal of Econometrics} 142(2), 698--714.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 10 (Oct 27/29): Panel Data and Difference-in-Differences}}
 
 \noindent \textit{Lecture}: Panel data and unobserved heterogeneity; pooled OLS, first-difference, and fixed-effects (within) and random-effects estimators; two-way (unit and time) fixed effects (TWFE); the canonical 2$\times$2 DID and the parallel-trends assumption; DID and event studies as special cases of TWFE; problems with TWFE under staggered adoption and recent robust estimators. \textit{Lab}: panel and DID estimation in \texttt{R} (\texttt{plm}, \texttt{fixest}, \texttt{did}).
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, ch.\ 16 and 18; Roth, Jonathan, Pedro H.C. Sant'Anna, Alyssa Bilinski, and John Poe. 2023. ``What's Trending in Difference-in-Differences? A Synthesis of the Recent Econometrics Literature.'' \textit{Journal of Econometrics} 235(2), 2218--2244.
-    \item \textit{Further reading}: MHE, ch.\ 5; CCI, ch.\ 11; Goodman-Bacon, Andrew. 2021. ``Difference-in-Differences with Variation in Treatment Timing.'' \textit{Journal of Econometrics} 225(2), 254--277.
+    \item \textit{Reading}: Effect, Chapters 16 and 18; Roth, Jonathan, Pedro H.C. Sant'Anna, Alyssa Bilinski, and John Poe. 2023. ``What's Trending in Difference-in-Differences? A Synthesis of the Recent Econometrics Literature.'' \textit{Journal of Econometrics} 235(2), 2218--2244.
+    \item \textit{Further reading}: MHE, Chapter 5; CCI, Chapter 11; Goodman-Bacon, Andrew. 2021. ``Difference-in-Differences with Variation in Treatment Timing.'' \textit{Journal of Econometrics} 225(2), 254--277.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 11 (Nov 3/5): Synthetic Control and Its Extensions}}
@@ -238,8 +239,8 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \noindent \textit{Lecture}: Why naive ML is biased for causal parameters; Neyman orthogonality and double/debiased machine learning (DML); partialling-out and cross-fitting; heterogeneous treatment effects and causal forests. \textit{Lab}: DML and heterogeneous effects in \texttt{R} (\texttt{DoubleML}, \texttt{grf}).
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied Econometrics: Causality and Policy Evaluation.'' \textit{Journal of Economic Perspectives} 31(2), 3--32; CML, ch.\ 4.
-    \item \textit{Further reading}: CML, ch.\ 10; Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the American Statistical Association} 113(523), 1228--1242.
+    \item \textit{Reading}: Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied Econometrics: Causality and Policy Evaluation.'' \textit{Journal of Economic Perspectives} 31(2), 3--32; CML, Chapter 4.
+    \item \textit{Further reading}: CML, Chapter 10; Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the American Statistical Association} 113(523), 1228--1242.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 14 (Nov 24): Synthesis and Final Project Workshop}}
