@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SOCIOL 723 -- Social Statistics II
-%% Week 14 -- Synthesis
+%% Week 14 -- Synthesis and Exam Review
 %% Wenhao Jiang, Duke University, Fall 2026
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -118,7 +118,7 @@
 
 %% ---- title -----------------------------------------------------------------
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 14, Synthesis\\[-8pt]}
+\subtitle{\large Week 14, Synthesis and Exam Review\\[-8pt]}
 \author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
@@ -135,12 +135,12 @@
 \begin{itemize}\itemsep6pt
   \item A synthesis: what the semester was actually about.
   \item A decision guide you can use on your own data.
-  \item The final project: expectations, common failure modes, and the workshop.
+  \item The final exam: what it covers, how it is run, and how to prepare.
 \end{itemize}
 \vskip8pt
 \begin{block}{Logistics}
 No lab Thursday November 26 (Thanksgiving recess). \\
-\textbf{Final project due December 14.}
+\textbf{Cumulative final exam} in the December examination period.
 \end{block}
 \end{frame}
 
@@ -289,64 +289,59 @@ vocabulary to say precisely why it fails.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Final Project]{The Final Project}
+\section[Final Exam]{The Final Exam}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{What I Am Asking For}
-A replication \emph{and extension} of a published study, roughly 2{,}000--3{,}000
-words plus reproducible \texttt{R} code. Due \textbf{December 14}.
-\vskip3pt
-\begin{enumerate}\itemsep3pt
-  \item \textbf{State the paper's estimand} in the Lundberg--Johnson--Stewart
-        form. Often the paper does not, and stating it is already a contribution.
-  \item \textbf{Reproduce the headline result.} Report honestly if you cannot; 
-        that is a finding, not a failure.
-  \item \textbf{Identify the identifying assumption} and say where it is
-        defended, or where it is merely asserted.
-  \item \textbf{Extend.} A sensitivity analysis; a modern estimator where the
-        paper used TWFE; robust or clustered inference where it was missing;
-        heterogeneity done honestly; a DML version relaxing a functional form.
-  \item \textbf{Say what would change your mind.}
-\end{enumerate}
+\begin{frame}{What the Exam Covers}
+Cumulative, but \alert{weighted towards Weeks 9--13}: the midterm already
+examined Weeks 1--7, and this is the only assessment that reaches the second
+half of the course.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Everything developed in scalar form is examinable.} Frames marked
+        \adv{} are not: matrix derivations, projection geometry, asymptotic
+        arguments.
+  \item For every design, you should be able to state \emph{what it assumes},
+        \emph{what it estimates}, and \emph{how it fails}. That is the table from
+        earlier today, and it is the spine of the exam.
+  \item Expect to read a short description of a study and say which design it is,
+        what its estimand is, and what you would need to believe.
+  \item No code. You may be asked to interpret \texttt{R} output.
+\end{itemize}
 \end{frame}
 
-\begin{frame}{Common Failure Modes}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Choosing a paper without replication data.} Confirm availability
-        \emph{before} committing; this was the November 2 deadline.
-  \item \textbf{Extending in a direction the data cannot support}: a causal forest
-        on 300 observations, a DID with two periods and no pre-trend, an IV with
-        a first-stage $F$ of 4.
-  \item \textbf{Reporting a battery of estimators with no argument.} Six numbers
-        without a story is worse than one number with a defence.
-  \item \textbf{Burying the estimand.} If I cannot tell from your first paragraph
-        what quantity you are estimating and for whom, start again.
-  \item \textbf{Unreproducible code.} Restart \texttt{R}, render from scratch,
-        set seeds.
-\end{itemize}
-\vskip3pt
-\alert{Scope down rather than up.} A careful, well-defended small extension beats
-an ambitious one you cannot support.
-\end{frame}
-
-\begin{frame}{Workshop Format}
-For the rest of today, in turn:
-\begin{itemize}\itemsep3pt
-  \item \textbf{Two minutes}: the paper, the estimand in one sentence, and the
-        identifying assumption.
-  \item \textbf{Two minutes}: your planned extension and why the data can support
-        it.
-  \item \textbf{Five minutes}: questions from the room. Everyone should come with
-        one question for someone else.
-\end{itemize}
-\vskip5pt
-\begin{block}{What to bring}
-One slide, or nothing at all. What matters is that you can say the estimand out
-loud without reading it.
+\begin{frame}{Format and Rules}
+\begin{block}{Logistics}
+Held in the University examination period in December; the Registrar sets the
+date and time. Open book and open note, but \textbf{timed}.
 \end{block}
 \vskip5pt
-Office hours Wednesdays 2--4PM, or by appointment, through December 14.
+\begin{alertblock}{No AI}
+Unlike the problem sets, no AI assistance of any kind. This is deliberate. It is
+the one place in the course where what is being assessed is unambiguously
+\emph{your} understanding rather than what a tool can produce for you.
+\end{alertblock}
+\vskip5pt
+Bring the slides and your own notes. Notes you wrote yourself are far more useful
+under time pressure than a printout you have never read.
+\end{frame}
+
+\begin{frame}{How to Prepare}
+\begin{enumerate}\itemsep4pt
+  \item \textbf{Work the checkpoints.} Each deck has a ``what you should be able
+        to do'' frame. If you can do those without notes, you are ready.
+  \item \textbf{Rebuild the four tables} from today: design, assumption, estimand,
+        threat; and the inference table. Write them from memory, then check.
+  \item \textbf{Re-derive the short results by hand}: the normal equations, the
+        scalar variance, omitted-variable bias, the Wald ratio, the $2\times2$
+        DID. None takes more than a few lines.
+  \item \textbf{Re-read your own problem sets}, especially anything you got wrong.
+        That is the highest-yield hour you can spend.
+\end{enumerate}
+\vskip5pt
+\alert{The exam rewards judgement, not recall.} If you can say why a design is
+the wrong one for a question, you understand it.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Where to Go Next}

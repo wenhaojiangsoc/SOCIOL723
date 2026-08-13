@@ -527,7 +527,7 @@ understanding why is the point of the week.
 </details>
 
 <details>
-  <summary><h2>Week 14 &nbsp;·&nbsp; Synthesis and Final Project Workshop</h2></summary>
+  <summary><h2>Week 14 &nbsp;·&nbsp; Synthesis and Exam Review</h2></summary>
 
 ### Roadmap
 - **Three questions, in order**: what am I estimating; what would have to be
@@ -541,13 +541,12 @@ understanding why is the point of the week.
   are never a solution (more controls without a DAG; robust standard errors for a
   bias problem; a non-significant specification test as confirmation; machine
   learning for an identification problem).
-- The **final project**: expectations, common failure modes, and the workshop
-  format.
+- The **final exam**: what it covers, how it is run, and how to prepare for it.
 
 ### Materials
 - [Slides: Week 14 — Synthesis](./Week%2014%20Synthesis/slides.pdf)
 
-No Thursday lab (Thanksgiving recess). **Final project due December 14.**
+No Thursday lab (Thanksgiving recess). **Cumulative final exam** in the December examination period.
 
 ---
 </details>
