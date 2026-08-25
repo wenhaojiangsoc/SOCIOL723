@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -134,6 +137,8 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
 \begin{frame}{The Pivot}
@@ -157,7 +162,7 @@ graphs} (how the world is wired). Everything in Weeks 6--13 applies one or both.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Two Worlds Per Person}
+\begin{frame}{Two Worlds Per Person\core}
 For a binary treatment $D_i \in \{0,1\}$, imagine that each unit $i$ has
 \emph{two} outcomes written into it before treatment is assigned:
 \begin{align*}
@@ -207,7 +212,7 @@ Unit & $D_i$ & $Y_i(0)$ & $Y_i(1)$ & $\tau_i$ & $Y_i$ (observed) \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Estimands: Say Which Average You Want}
+\begin{frame}{Estimands: Say Which Average You Want\core}
 \begin{align*}
   \text{ATE} &= \E[Y_i(1) - Y_i(0)] && \text{average treatment effect} \\
   \text{ATT} &= \E[Y_i(1) - Y_i(0) \mid D_i = 1] && \text{on the treated} \\
@@ -260,7 +265,7 @@ Unit & $D_i$ & $Y_i(0)$ & $Y_i(1)$ & $\tau_i$ & $Y_i$ observed \\
 \end{frame}
 
 
-\begin{frame}{Why the Naive Comparison Fails}
+\begin{frame}{Why the Naive Comparison Fails\core}
 The quantity we can compute from data is the difference in observed means. Add
 and subtract $\E[Y_i(0)\mid D_i=1]$:
 \begin{align*}
@@ -278,7 +283,7 @@ and subtract $\E[Y_i(0)\mid D_i=1]$:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Randomization Solves It}
+\begin{frame}{Randomization Solves It\core}
 If $D_i$ is assigned by a coin flip, then $D_i$ is independent of everything
 about the unit, including its potential outcomes:
 \begin{align*}
@@ -300,7 +305,7 @@ bias term is zero, and
 \end{itemize}
 \end{frame}
 
-\begin{frame}{SUTVA: The Assumption Nobody States}
+\begin{frame}{SUTVA: The Assumption Nobody States\core}
 The framework quietly assumed that writing ``$Y_i(1)$'' makes sense. That
 requires the \alert{stable unit treatment value assumption}:
 \vskip1pt
@@ -364,7 +369,7 @@ potential outcome under $d$: $\ Y_i = Y_i(d)$ when $D_i = d$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Identification Under Selection on Observables}
+\begin{frame}[allowframebreaks,t]{Identification Under Selection on Observables\core}
 When randomization is unavailable, we assume it holds \emph{within cells of
 observed covariates}.
 \vskip3pt
@@ -390,7 +395,7 @@ unobservable; the right side is a function of the observed joint distribution.
 Assumptions 1--4 are the bridge, and they are not testable.}
 \end{frame}
 
-\begin{frame}{What Positivity Is Really Saying}
+\begin{frame}{What Positivity Is Really Saying\core}
 $0 < \Pr(D_i=1 \mid X_i = x) < 1$: within every covariate cell, we must see
 \emph{both} treated and untreated units.
 \vskip4pt
@@ -498,7 +503,7 @@ position. There is no control set that is correct for all questions at once.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Three Building Blocks}
+\begin{frame}{The Three Building Blocks\core}
 \begin{center}
 \begin{tikzpicture}[scale=1,>=Stealth,
   every node/.style={circle,draw=dukeblue,fill=white,inner sep=1.6pt,minimum size=7mm,font=\small}]
@@ -531,7 +536,7 @@ The collider row is the one that surprises people, and it is the source of most
 of the damage done by ``controlling for everything.''
 \end{frame}
 
-\begin{frame}{$d$-Separation}
+\begin{frame}{$d$-Separation\core}
 \begin{block}{Blocking}
 A path between $D$ and $Y$ is \alert{blocked} by a set $Z$ if either
 \begin{enumerate}\itemsep1pt
@@ -553,7 +558,7 @@ them.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Back-Door Criterion and the $do$-Operator}
+\begin{frame}{The Back-Door Criterion and the $do$-Operator\core}
 \begin{block}{Back-door criterion \srcp{Pearl 1995}}
 A set $Z$ satisfies the back-door criterion relative to the ordered pair $(D,Y)$
 if
@@ -578,7 +583,7 @@ If $Z$ satisfies it, the causal effect is identified by the
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The First Law of Causal Inference}
+\begin{frame}{The First Law of Causal Inference\core}
 \begin{alertblock}{Equivalence}
 The DAG (with its structural equations) and the potential-outcomes framework
 express the same underlying assumptions in two notations. A graph that satisfies
@@ -664,7 +669,7 @@ $D \leftarrow F \leftarrow U \to X \to Y$. Conditioning on
 $\{F, X\}$ blocks both.
 \end{frame}
 
-\begin{frame}{Reading the Same Graph in Potential-Outcome Notation}
+\begin{frame}{The Same Graph, in Potential-Outcome Notation\adv}
 Conditioning on $F$ and $X$ satisfies the back-door criterion, hence
 \begin{align*}
   Y(d) \indep D \mid F, X ,
@@ -701,7 +706,7 @@ them. The picture makes ``$D$ is independent of $Y(d)$ given $F,X$'' visible.}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{The Intuition First}
+\begin{frame}[allowframebreaks,t]{The Intuition First\core}
 Admission to a selective college requires either high test scores or athletic
 talent; the two are independent in the population.
 \vskip1pt
@@ -725,7 +730,7 @@ talent; the two are independent in the population.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Now the Algebra}
+\begin{frame}{Now the Algebra\adv}
 Consider the structural model
 \begin{align*}
   T := \epsilon_T, \qquad B := \epsilon_B, \qquad C := T + B + \epsilon_C ,
@@ -748,7 +753,7 @@ with $\epsilon_T,\epsilon_B,\epsilon_C$ independent $\mathcal N(0,1)$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Conditioning on the Collider}
+\begin{frame}{Conditioning on the Collider\adv}
 Because $C = T + B + \epsilon_C$, we can write $T = (C-B) - \epsilon_C$. So
 $\E[T\mid B,C]$ is the linear projection of $T$ on $C-B$:
 \begin{align*}
@@ -834,7 +839,7 @@ smoking. Among LBW babies, ``not a smoker'' becomes evidence for ``something
 worse.''
 \end{frame}
 
-\begin{frame}{The Birth-Weight Paradox, Structurally}
+\begin{frame}{The Birth-Weight Paradox, Structurally\adv}
 \begin{center}
 \begin{tikzpicture}[scale=0.72,>=Stealth,thick,
   every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,minimum size=7.5mm,font=\scriptsize}]
@@ -863,7 +868,7 @@ effect: direct $1$, plus indirect $1\times1$ through birth weight, total
 $\bm{+2}$.
 \end{frame}
 
-\begin{frame}{Where the Sign Flips}
+\begin{frame}{Where the Sign Flips\adv}
 Projecting $Y$ on $S$ alone recovers the correct total effect of $+2$.
 \vskip3pt
 Projecting $Y$ on $S$ \emph{and} $B$, ``controlling for birth weight'', 
@@ -885,7 +890,7 @@ gives the conditional expectation
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Selection Bias Is Collider Bias}
+\begin{frame}{Selection Bias Is Collider Bias\core}
 The most common invisible collider in sociology is \emph{the sample itself}.
 \vskip3pt
 \begin{itemize}\itemsep3pt
@@ -910,7 +915,7 @@ was constructed by any process downstream of treatment or outcome, assume it did
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Taxonomy}
+\begin{frame}{The Taxonomy\core}
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{lll}
@@ -924,7 +929,7 @@ Pre-treatment predictor of $D$ only & instrument-like & \emph{no}, inflates vari
 Consequence of $D$ on the path to $Y$ & mediator & \alert{no}, removes part of the effect \\
 Common effect of $D$ and $Y$ & collider & \alert{no}, creates spurious association \\
 Consequence of $Y$ & outcome proxy & \alert{no} \\
-Sample selection on a collider &, & \alert{no}, and often invisible \\
+Sample selection on a collider & implicit conditioning & \alert{no}, and often invisible \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1052,7 +1057,7 @@ identified.
 sub-problems, and that is the whole trick.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{The Front-Door Formula}
+\begin{frame}[allowframebreaks,t]{The Front-Door Formula\adv}
 \begin{align*}
   P\big(Y(d)\big) &= P\big(Y \mid do(D=d)\big) \\
   &= \sum_m P\big(Y \mid do(D=d), M=m\big)\, P\big(M=m \mid do(D=d)\big) \\[2pt]
@@ -1170,7 +1175,7 @@ the same theory; in practice each makes a different mistake easy to catch.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Standard Workflow Skips a Step}
+\begin{frame}{The Standard Workflow Skips a Step\core}
 \srct{Lundberg, Johnson, and Stewart (2021)} argue that most quantitative papers
 jump straight from theory to a regression, leaving the target quantity implicit.
 Their proposed sequence:

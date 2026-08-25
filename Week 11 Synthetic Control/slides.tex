@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -133,9 +136,11 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
-\begin{frame}{When There Is Only One Treated Unit}
+\begin{frame}{When There Is Only One Treated Unit\core}
 Difference-in-differences needs a control \emph{group}. What if the treated unit
 is California, or East Germany, or a single firm?
 \vskip4pt
@@ -159,7 +164,7 @@ algorithm, reported in a table, and checked against placebo units.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Setup}
+\begin{frame}{Setup\core}
 Unit 1 is treated from period $T_0+1$ onward. Units $2,\dots,J+1$, the
 \alert{donor pool}, are never treated. The estimand is
 \begin{align*}
@@ -180,7 +185,7 @@ then estimate $\hat\tau_{1t} = Y_{1t} - \sum_{j\geq2} w_j Y_{jt}$ for $t > T_0$.
 \end{frame}
 
 
-\begin{frame}{The Optimization Problem, Explicitly}
+\begin{frame}{The Optimization Problem, Explicitly\adv}
 Let $\bm X_1$ be a $k\times1$ vector of pre-treatment predictors for the treated
 unit and $\bm X_0$ the $k\times J$ matrix for the donors. Choose weights
 \begin{align*}
@@ -203,7 +208,7 @@ unit and $\bm X_0$ the $k\times J$ matrix for the donors. Choose weights
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{The Factor-Model Justification}
+\begin{frame}[allowframebreaks,t]{The Factor-Model Justification\adv}
 Matching California's \emph{past} is only useful if it tells us something about
 California's missing \emph{future}. Why should it? The factor model is the answer:
 it states the conditions under which a good pre-treatment fit licenses that
@@ -234,7 +239,7 @@ loadings.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Why the Constraints Matter}
+\begin{frame}{Why the Constraints Matter\core}
 The restrictions $w_j\geq 0$ and $\sum_j w_j = 1$ look like technicalities. They
 are the heart of the method.
 \vskip4pt
@@ -255,7 +260,7 @@ are the heart of the method.
 \end{frame}
 
 
-\begin{frame}{Relation to Difference-in-Differences}
+\begin{frame}{Relation to Difference-in-Differences\core}
 DID is synthetic control with the weights fixed at $1/J$ (or population shares),
 and with an added intercept shift.
 \vskip4pt
@@ -264,19 +269,15 @@ and with an added intercept shift.
         \emph{pre-specified} average of controls.
   \item Synthetic control \emph{searches} for a weighting under which
         pre-treatment trajectories coincide, and then assumes that coincidence
-        continues.
-  \item The formal justification is a linear factor model
-        $Y_{jt}(0) = \delta_t + \bm\theta_t'Z_j + \bm\lambda_t'\bm\mu_j + \epsilon_{jt}$:
-        if the synthetic control matches the treated unit on a long pre-period;
-        it must also match on the unobserved factor loadings $\bm\mu_j$
-        \srcp{Abadie, Diamond, and Hainmueller 2010}.
-  \item \alert{Length of the pre-period is doing the identification work.} A
-        two-period pre-window proves nothing; a twenty-period match is
-        informative.
+        continues. The factor model on the previous frame states when that
+        assumption is warranted.
+  \item So the two methods sit on a spectrum: DID trusts a pre-specified
+        comparison and an intercept shift; synthetic control trusts a fitted
+        comparison and no intercept. Synthetic DID (later today) combines them.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Inference With One Treated Unit}
+\begin{frame}[allowframebreaks,t]{Inference With One Treated Unit\core}
 Conventional standard errors are meaningless here: $n_{\text{treated}} = 1$, and
 the usual asymptotics run in the number of treated units. Instead,
 \alert{permutation inference}.
@@ -336,7 +337,7 @@ eye}: the weight table, the pre-treatment overlap, and the placebo plot.
 \end{frame}
 
 
-\begin{frame}{Diagnostics and Failure Modes}
+\begin{frame}{Diagnostics and Failure Modes\core}
 \begin{itemize}\itemsep3pt
   \item \textbf{Poor pre-treatment fit} invalidates the design. Report the
         pre-treatment RMSPE and plot the two trajectories. If they do not overlap
@@ -404,7 +405,7 @@ Many units, staggered, covariates & Callaway--Sant'Anna (Wk 10) & \texttt{did} \
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Reporting a Synthetic Control Study}
+\begin{frame}{Reporting a Synthetic Control Study\core}
 \begin{enumerate}\itemsep2pt
   \item The donor pool, and why each unit is in it or excluded.
   \item The predictors used for matching and the pre-treatment window.

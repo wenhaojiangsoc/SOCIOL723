@@ -11,3 +11,6 @@ logs/
 *_files/
 .Rhistory
 syllabus/main.pdf
+*.fls
+*.fdb_latexmk
+syllabus/main.pdf

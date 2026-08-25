@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -134,6 +137,8 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
 \begin{frame}{Where We Are}
@@ -164,7 +169,7 @@ and how they fail.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Cell-by-Cell Comparison}
+\begin{frame}{Cell-by-Cell Comparison\core}
 Suppose $X_i$ takes finitely many values and write the cell-level effect
 \begin{align*}
   \delta(X_i = x) \equiv \E[Y_i(1)-Y_i(0) \mid X_i = x]
@@ -204,7 +209,7 @@ propensity score $e(x)$. Cells where treatment is common count for more, which
 is exactly what ``the effect on the treated'' should mean.
 \end{frame}
 
-\begin{frame}{Anatomy of Regression Adjustment: Setup}
+\begin{frame}{Anatomy of Regression Adjustment: Setup\adv}
 Now do the same accounting for regression. To avoid conflating the weighting
 question with a functional-form question, specify a model
 \emph{saturated in $X_i$}:
@@ -225,7 +230,7 @@ the residualized treatment,
 So the question becomes: what does the numerator simplify to?
 \end{frame}
 
-\begin{frame}{Anatomy of Regression Adjustment: the Numerator}
+\begin{frame}{Anatomy of Regression Adjustment: the Numerator\adv}
 Because $D_i$ is binary, the conditional expectation decomposes exactly:
 \begin{align*}
   \E[Y_i\mid D_i,X_i]
@@ -353,7 +358,7 @@ $175{,}262$ non-whites.}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Idea, in Its Simplest Form}
+\begin{frame}{The Idea, in Its Simplest Form\core}
 Suppose $X_i$ takes finitely many values. For each cell $x$, compute the
 difference in means, then average the cell-level differences with weights of your
 choosing:
@@ -377,7 +382,7 @@ choosing:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{The Curse of Dimensionality}
+\begin{frame}[allowframebreaks,t]{The Curse of Dimensionality\core}
 With $p$ binary covariates there are $2^p$ cells: $p=10$ gives 1{,}024, $p=20$
 gives over a million. Exact matching becomes impossible long before the
 covariates run out.
@@ -423,7 +428,7 @@ tells your reader exactly where the data cannot speak.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Matching Is Preprocessing, Not Estimation}
+\begin{frame}{Matching Is Preprocessing, Not Estimation\core}
 \srct{Ho, Imai, King, and Stuart (2007)} make the point that should organize your
 workflow: matching is a \emph{nonparametric preprocessing step} that reduces how
 much your final model has to do.
@@ -452,7 +457,7 @@ imbalance is unchanged: passing the test can mean you simply have less data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{A Remarkable Theorem}
+\begin{frame}{A Remarkable Theorem\core}
 Define the \alert{propensity score}
 \begin{align*}
   e(x) \equiv \Pr(D_i = 1 \mid X_i = x) .
@@ -499,7 +504,7 @@ $\blacksquare$
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Estimating and Checking It}
+\begin{frame}{Estimating and Checking It\core}
 \begin{itemize}\itemsep3pt
   \item Usually a logit of $D$ on $X$ (Week 4). \alert{The model is not judged by
         fit.} A propensity model with a high AUC is often a bad sign, it means
@@ -518,7 +523,7 @@ pull in opposite directions.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Overlap: What to Do When It Fails}
+\begin{frame}{Overlap: What to Do When It Fails\core}
 \begin{center}
 \begin{tikzpicture}[scale=0.9]
   \draw[->] (0,0) -- (9.4,0) node[right]{\scriptsize $\hat e(X)$};
@@ -552,7 +557,7 @@ pull in opposite directions.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Inverse Probability Weighting}
+\begin{frame}{Inverse Probability Weighting\core}
 Rare treated units in a covariate cell should count for more, because they stand
 in for everyone like them who was not treated. Weight each unit by the inverse of
 the probability of the treatment it actually received:
@@ -576,7 +581,7 @@ This is the Horvitz--Thompson estimator from survey sampling, applied to a
 ``sample'' created by the treatment assignment mechanism.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{One Class of Estimands, Three Members}
+\begin{frame}[allowframebreaks,t]{One Class of Estimands, Three Members\adv}
 \srct{Hirano, Imbens, and Ridder (2003)}: IPW for the ATE, IPW for the ATT, and
 the regression estimand are all members of one weighted-average family,
 \begin{align*}
@@ -678,7 +683,7 @@ Horvitz--Thompson average, which divides by $n$ instead.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Weighting to Different Estimands}
+\begin{frame}[allowframebreaks,t]{Weighting to Different Estimands\core}
 Every adjustment method is a choice of weights on covariate cells. Writing them
 side by side makes the choice explicit:
 \begin{center}\small
@@ -706,7 +711,7 @@ Overlap (ATO) & $1-e(X)$ & $e(X)$ \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{G-Computation: the Other Half}
+\begin{frame}[allowframebreaks,t]{G-Computation: the Other Half\core}
 Instead of modelling treatment, model the outcome. Under ignorability and common
 support, fit
 \begin{align*}
@@ -735,7 +740,7 @@ then \emph{impute both potential outcomes for everyone} and average:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Why Not Both?}
+\begin{frame}{Why Not Both?\core}
 IPW is consistent only if $e(X_i)$ is right. G-computation is consistent only if
 $m_d(X_i)$ is right. Combine them so that \emph{either} suffices.
 \vskip3pt
@@ -757,7 +762,7 @@ semiparametric efficiency bound.
 \end{block}
 \end{frame}
 
-\begin{frame}{Case 1: the Outcome Model Is Correct}
+\begin{frame}{Case 1: the Outcome Model Is Correct\adv}
 Suppose $m_1$ is right but $e$ is arbitrary. Look at the augmentation term for
 the treated arm, conditioning on $X_i$:
 \begin{align*}
@@ -778,7 +783,7 @@ $\E\big[\tfrac{1-D_i}{1-e(X_i)}(Y_i - m_0(X_i)) \mid X_i\big] = 0$. Hence
 did not use a correct propensity score anywhere.
 \end{frame}
 
-\begin{frame}{Case 2: the Propensity Score Is Correct}
+\begin{frame}{Case 2: the Propensity Score Is Correct\adv}
 Now suppose $e$ is right but $m_1$ is some wrong function. Then
 \begin{align*}
   \E\!\left[\frac{D_i}{e(X_i)}\big(Y_i - m_1(X_i)\big)\ \middle|\ X_i\right]
@@ -822,7 +827,7 @@ error.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{An Honest Warning}
+\begin{frame}{An Honest Warning\core}
 Double robustness is often oversold.
 \vskip3pt
 \begin{itemize}\itemsep2pt
@@ -840,7 +845,7 @@ Double robustness is often oversold.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Sensitivity Analysis: Taking the Assumption Seriously}
+\begin{frame}{Sensitivity Analysis: Taking the Assumption Seriously\core}
 Since ignorability is untestable, ask instead: \emph{how strong would an
 unobserved confounder have to be to overturn my conclusion?}
 \vskip3pt
@@ -888,7 +893,7 @@ AIPW & both & unstable weights; still needs ignorability \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{A Workflow}
+\begin{frame}{A Workflow\core}
 \begin{enumerate}\itemsep2pt
   \item State the estimand (ATE? ATT? ATO? on which population?) before touching
         data.
@@ -925,7 +930,8 @@ AIPW & both & unstable weights; still needs ignorability \\
 \end{itemize}
 \vskip3pt
 \begin{block}{Problem Set 3}
-Assigned today, due Monday October 12. Covers Weeks 5--6.
+Assigned today, due Monday October 19, the Monday \emph{after} the midterm
+week, so it does not compete with exam preparation. Covers Weeks 5--6.
 \end{block}
 \end{frame}
 

@@ -20,10 +20,11 @@ Tuesday sessions are lectures; Thursday sessions are hands-on `R` labs.
   full-time workers aged 25–64 (*n* = 3,509), built by
   [`Data/build_gss_extract.R`](./Data/build_gss_extract.R).
 
-> **A note on the slides.** Frames marked ★ contain material included for
-> understanding rather than for evaluation — matrix derivations, projection
-> geometry, and asymptotic arguments. Everything examined is developed first in
-> scalar form.
+> **A note on the slides.** Frames marked with a blue ★ are the essential
+> core that problem sets and exams draw on. Frames marked with an orange ★
+> are included for understanding rather than for evaluation — matrix
+> derivations, projection geometry, and asymptotic arguments. Everything
+> examined is developed first in scalar form.
 
 ---
 
@@ -62,7 +63,8 @@ later week speaks.
   are heterogeneous, and the distinction between good and bad controls.
 
 ### Materials
-- [Slides: Week 1 — The Linear Model and OLS](./Week%201%20The%20Linear%20Model%20and%20OLS/slides.pdf)
+- [Slides: Week 1 Tuesday — The Linear Model and OLS](./Week%201%20The%20Linear%20Model%20and%20OLS/slides_tuesday.pdf)
+- [Slides: Week 1 Thursday — OLS in Matrix Form](./Week%201%20The%20Linear%20Model%20and%20OLS/slides_thursday.pdf)
 - [Lab 1: Matrix Algebra and OLS by Hand](./Week%201%20The%20Linear%20Model%20and%20OLS/lab1.pdf)
 
 ### Reading

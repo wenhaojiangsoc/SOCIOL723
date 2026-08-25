@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -133,9 +136,11 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
-\begin{frame}{The Idea in One Picture}
+\begin{frame}{The Idea in One Picture\core}
 Many treatments are assigned by a rule: a test score threshold, an income
 cut-off, a vote share above 50\%, an age of eligibility.
 \vskip2pt
@@ -192,7 +197,7 @@ effect.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Setup and Identification}
+\begin{frame}[allowframebreaks,t]{Setup and Identification\core}
 A \alert{running variable} (or forcing variable) $X_i$ determines treatment
 deterministically:
 \begin{align*}
@@ -223,7 +228,7 @@ Then
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Estimand Is Local, and That Matters}
+\begin{frame}{The Estimand Is Local, and That Matters\core}
 $\tau_{RD}$ is the average effect \alert{for units at the cutoff}. Nothing more.
 \vskip4pt
 \begin{itemize}\itemsep3pt
@@ -242,7 +247,7 @@ $X_i$, then treatment near the cutoff is \emph{as good as randomly assigned}, an
 the design is a local experiment.
 \end{frame}
 
-\begin{frame}{Estimation: Local Linear Regression}
+\begin{frame}{Estimation: Local Linear Regression\core}
 Fit separate linear regressions on each side of the cutoff, using only
 observations within a bandwidth $h$, weighted by a kernel:
 \begin{align*}
@@ -287,7 +292,7 @@ with $D_i = \mathbf 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Bandwidth Is the Whole Game}
+\begin{frame}{The Bandwidth Is the Whole Game\core}
 \begin{center}
 \begin{tikzpicture}[scale=0.85]
   \draw[->] (0,0) -- (8.8,0) node[right]{\scriptsize bandwidth $h$};
@@ -317,7 +322,7 @@ with $D_i = \mathbf 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
         interval, which \texttt{rdrobust} reports by default.
 \end{itemize}
 \end{frame}
-\begin{frame}[allowframebreaks,t]{Why the Optimal Bandwidth Breaks the Confidence Interval}
+\begin{frame}[allowframebreaks,t]{Why the Optimal Bandwidth Breaks the Confidence Interval\adv}
 The local linear estimator has an asymptotic expansion
 \begin{align*}
   \hat\tau_h - \tau \;\approx\; \underbrace{B\,h^2}_{\text{bias}}
@@ -370,7 +375,7 @@ so squared bias grows like $h^4$ while variance falls like $1/(nh)$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{When the Rule Is Not Followed}
+\begin{frame}{When the Rule Is Not Followed\core}
 Often crossing the cutoff changes the \emph{probability} of treatment rather than
 determining it: eligibility is not take-up.
 \begin{align*}
@@ -393,7 +398,7 @@ The fuzzy RD estimator is a ratio of two sharp RD estimates:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Fuzzy RD Inherits Everything From IV}
+\begin{frame}[allowframebreaks,t]{Fuzzy RD Inherits Everything From IV\core}
 \begin{itemize}\itemsep3pt
   \item \textbf{Exclusion}: crossing the cutoff must affect $Y$ only through $D$.
         If the threshold also triggers something else, a different school, a
@@ -421,7 +426,7 @@ different units face different thresholds, which can be normalized and pooled.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Threat: Manipulation}
+\begin{frame}{The Threat: Manipulation\core}
 Continuity fails if units can \emph{precisely} control which side of the cutoff
 they land on, retaking a test until you pass, reporting income just under a
 threshold, a firm holding hiring just below a regulatory headcount.
@@ -460,7 +465,7 @@ threshold, a firm holding hiring just below a regulatory headcount.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Reading and Reporting an RD}
+\begin{frame}{Reading and Reporting an RD\core}
 \begin{enumerate}\itemsep2pt
   \item \textbf{The picture first.} Binned means of $Y$ against $X$, with the
         fitted local polynomials and the cutoff. If the jump is not visible, be
@@ -488,8 +493,9 @@ threshold, a firm holding hiring just below a regulatory headcount.
         Saying so plainly is part of reporting an RD honestly.
 \end{itemize}
 \vskip4pt
-\begin{block}{Problem Set 4}
-Assigned today, due Monday November 2. Covers Weeks 7 and 9.
+\begin{block}{Problem sets}
+Problem Set 3 is due Monday October 19. Problem Set 4 will be assigned next
+Tuesday (October 27) and is due Monday November 9; it covers Weeks 7 and 9.
 \end{block}
 \end{frame}
 

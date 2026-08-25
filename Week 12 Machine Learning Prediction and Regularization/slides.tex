@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -133,9 +136,11 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
-\begin{frame}{A Different Goal}
+\begin{frame}{A Different Goal\core}
 Weeks 5--11 asked: \emph{what is the causal effect, and what must be true to
 recover it?} Today we set that aside entirely.
 \vskip3pt
@@ -161,7 +166,7 @@ parameters are means, not ends, and may not even be identified.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Decomposing Prediction Error}
+\begin{frame}[allowframebreaks,t]{Decomposing Prediction Error\core}
 Let $Y = f(X) + \epsilon$ with $\E[\epsilon\mid X]=0$ and
 $\Var(\epsilon\mid X)=\sigma^2$, and let $\hat f$ be estimated from a training
 sample drawn independently of the new observation. At a new point $x_0$, taking
@@ -185,7 +190,7 @@ expectations over \emph{both} the training sample and the new outcome:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Why Unbiasedness Stops Being the Goal}
+\begin{frame}{Why Unbiasedness Stops Being the Goal\core}
 Weeks 1--2 prized unbiasedness: Gauss--Markov ranked estimators \emph{within} the
 unbiased class.
 \vskip3pt
@@ -206,7 +211,7 @@ lowers MSE. Every method today is deliberately biased.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Estimating Test Error: Cross-Validation}
+\begin{frame}[allowframebreaks,t]{Estimating Test Error: Cross-Validation\core}
 Split the data, fit on part, evaluate on the rest.
 \vskip3pt
 \begin{block}{$K$-fold cross-validation}
@@ -235,7 +240,7 @@ $k$, predict fold $k$, record the error. Average:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Ridge Regression}
+\begin{frame}[allowframebreaks,t]{Ridge Regression\core}
 Add a penalty on the squared size of the coefficients:
 \begin{align*}
   \hat{\bm\beta}^{\text{ridge}}
@@ -261,7 +266,7 @@ intercept is left out of both the penalty and the displayed matrix.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Lasso}
+\begin{frame}{Lasso\core}
 Penalize the \emph{absolute} size instead:
 \begin{align*}
   \hat{\bm\beta}^{\text{lasso}}
@@ -284,7 +289,7 @@ Penalize the \emph{absolute} size instead:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Choosing $\lambda$, and a Warning About Interpretation}
+\begin{frame}{Choosing $\lambda$, and a Warning About Interpretation\core}
 \begin{itemize}\itemsep3pt
   \item \textbf{Cross-validation} over a grid of $\lambda$: pick the minimizer, or
         the ``one standard error'' rule, the largest $\lambda$ within one
@@ -310,7 +315,7 @@ them. Valid post-selection inference is exactly what Week 13 is for.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Regression Trees}
+\begin{frame}[allowframebreaks,t]{Regression Trees\core}
 Ridge and lasso control complexity, but both still start from an \emph{additive
 linear} rule: you choose the variables, and an interaction exists only if you
 type it. Trees are the first method we meet that finds nonlinearities and
@@ -343,7 +348,7 @@ prediction in a leaf is the mean of the training outcomes there.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Bagging, Random Forests, Boosting}
+\begin{frame}{Bagging, Random Forests, Boosting\core}
 \begin{itemize}\itemsep4pt
   \item \textbf{Bagging}: fit trees on bootstrap resamples and average. Averaging
         $B$ nearly independent estimates cuts variance by roughly $1/B$ without
@@ -364,7 +369,7 @@ prediction in a leaf is the mean of the training outcomes there.
 is the cleanest way to keep them straight.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{What ML Buys, and What It Does Not}
+\begin{frame}[allowframebreaks,t]{What ML Buys, and What It Does Not\core}
 \begin{columns}[T]
 \begin{column}{0.47\textwidth}
 \textbf{Buys}
@@ -405,6 +410,10 @@ causal estimator}, which is next week.
         be used as an ingredient in a causal estimator, and what it buys us when
         it can.
 \end{itemize}
+\vskip4pt
+\begin{block}{Problem Set 5}
+Assigned today, due Monday November 23. Covers Weeks 10--11.
+\end{block}
 \vskip4pt
 \begin{block}{Reading}
 ISL Chapters 5, 6, and 8; Molina and Garip (2019). Optional: ISL Chapter 10

@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SOCIOL 723 -- Social Statistics II
-%% Week 1: The Linear Model and OLS
+%% Week 1 Tuesday: The Linear Model and OLS (scalar form)
 %% Wenhao Jiang, Duke University, Fall 2026
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -86,7 +86,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -98,6 +98,9 @@
 
 %% marker for material that is for understanding, not for examination
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 %% section / subsection dividers
 \setbeamertemplate{section page}{%
@@ -124,14 +127,20 @@
 \setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
 
 %% ---- title -----------------------------------------------------------------
-\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[2pt]}
-\subtitle{\large Week 1, The Linear Model and OLS\\[-8pt]}
-\author[Jiang]{\large Wenhao Jiang\vspace{-1.5em}}
+%% ---- title page: same face as the body (Latin Modern), larger and bold
+\setbeamerfont{title}{size*={16}{19},series=\bfseries}
+\setbeamerfont{subtitle}{size=\Large,series=\mdseries}
+\setbeamerfont{author}{size=\large}
+\setbeamerfont{date}{size=\large}
+\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[-2pt]}
+\subtitle{Week 1 (Tuesday), The Linear Model and OLS\\[-6pt]}
+\author[Jiang]{Wenhao Jiang\vspace{-2.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
-\date{\large Department of Sociology, Fall 2026}
+\date{Department of Sociology, Fall 2026}
 
 \begin{document}
+
 
 \begin{frame}[plain]
   \titlepage
@@ -139,6 +148,10 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \textbf{Tuesday}: everything in scalar form, through
+  \emph{Regression as Adjustment}. \quad \textbf{Thursday}: the matrix form,
+  from zero, plus lab.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,19 +177,24 @@ first and most transparent implementation of that idea.
 \end{frame}
 
 \begin{frame}{How to Read These Slides}
-\begin{alertblock}{The \adv{} convention}
-A frame title marked with \adv{} contains material that is here \emph{for your
-understanding}, not for evaluation. Derivations in matrix form, projection
-geometry, and asymptotic arguments all fall in this category.
+\begin{alertblock}{The two-star convention, used all semester}
+\begin{itemize}\itemsep2pt
+  \item A frame title marked \core{} is \textbf{essential}: you must be able to
+        explain and use this material. Exam questions concentrate here; study
+        these frames first.
+  \item A frame title marked \adv{} is here \emph{for your understanding}, not
+        for evaluation. Derivations in matrix form, projection geometry, and
+        asymptotic arguments all fall in this category.
+  \item Unmarked frames are ordinary lecture material: fair game on problem
+        sets and exams as \emph{supporting} material, at a lighter level than
+        the \core{} frames.
+\end{itemize}
 \end{alertblock}
-\vskip4pt
-\begin{itemize}\itemsep4pt
-  \item \textbf{What I will examine}: the \alert{scalar} versions of everything, 
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{What I will examine}: the \alert{scalar} versions of everything,
         the algebra you can do by hand with $\sum_i$ signs, plus interpretation,
         assumptions, and knowing which tool fits which problem.
-  \item \textbf{What is here anyway}: the general, abstract versions. You should
-        read them, and you will meet them again in the literature. You will not be
-        asked to reproduce them under time pressure.
   \item My slides are deliberately dense so that they work as a reference after
         class. Stop me whenever something is unclear; that is what lecture is for.
 \end{itemize}
@@ -195,12 +213,17 @@ and asked whether the extra parameters bought enough reduction in error:
   \qquad
   F = \frac{(SSE_C - SSE_A)/(PA - PC)}{SSE_A/(n - PA)}.
 \end{align*}
+{\footnotesize Refresher: $SSE$ = sum of squared errors; $PRE$ =
+\emph{proportional reduction in error}; $PA$, $PC$ = number of parameters in
+models A and C. $F$ is the usual $F$ statistic: under $H_0$ (extra parameters
+useless), $F \sim F_{PA-PC,\,n-PA}$, and ``enough'' means $F$ beats its
+critical value.}
 \pause
 \begin{itemize}
   \item All of this stays. Today we look \emph{inside} the estimator: where do
         $\hat\beta_0,\hat\beta_1$ come from, and what do they mean?
-  \item Then we rewrite it in matrix form, which is the language the rest of the
-        course speaks.
+  \item Thursday rewrites it in matrix form: we mostly work in scalars, but
+        the compact notation is what modern papers and methods use.
 \end{itemize}
 \end{frame}
 
@@ -236,25 +259,30 @@ The whole of statistical inference is the study of the gap between $\E$ and $\En
 \begin{frame}\subsectionpage\end{frame}
 
 \begin{frame}{The Bivariate Linear Model}
-For each unit $i = 1,\dots,n$ we observe an outcome $Y_i$ and one regressor $X_i$:
+For each unit $i = 1,\dots,n$ we observe an outcome $Y_i$ and one regressor
+$X_i$; suppose the population relationship satisfies the linear model
 \begin{align*}
-  Y_i = \beta_0 + \beta_1 X_i + \epsilon_i .
+  Y_i = \beta_0 + \beta_1 X_i + \epsilon_i ,
+  \qquad \E[\epsilon_i \mid X_i] = 0 ,
 \end{align*}
-\begin{itemize}\itemsep4pt
-  \item $\beta_0$, the \textbf{intercept}: the average of $Y$ when $X = 0$.
-  \item $\beta_1$, the \textbf{slope}: how much higher $Y$ is, on average, for
-        units that differ by one unit in $X$.
-  \item $\epsilon_i$, the \textbf{error}: everything else that makes unit $i$'s
-        outcome differ from the line.
+so the average of $Y$ at each value of $X$ is the line itself:
+$\E[Y_i \mid X_i = x] = \beta_0 + \beta_1 x$.
+\begin{itemize}\itemsep3pt
+  \item $\beta_0$, the \textbf{intercept}: the population average of $Y$ when
+        $X = 0$, since $\E[Y\mid X=0] = \beta_0$.
+  \item $\beta_1$, the \textbf{slope}: the difference in average $Y$ between
+        units one unit apart in $X$.
+  \item $\epsilon_i$, the \textbf{error}: everything else that moves unit $i$'s
+        outcome off its group average; mean zero at every $X$ by assumption.
 \end{itemize}
-\vskip6pt
+\vskip2pt
 \begin{block}{Running example, all semester}
 GSS 2010--2022, full-time workers aged 25--64 ($n = 3{,}509$). \\
 $Y_i = $ log personal earnings, $X_i = $ years of schooling completed.
 \end{block}
 \end{frame}
 
-\begin{frame}{The Least Squares Criterion}
+\begin{frame}{The Least Squares Criterion\core}
 We do not observe $\beta_0,\beta_1$. We pick estimates $b_0, b_1$ to make the
 fitted line as close as possible to the data. ``Close'' $=$ small squared
 vertical distances:
@@ -291,7 +319,7 @@ Dividing by $-2$ gives the two \alert{normal equations}:
 \end{align*}
 \end{frame}
 
-\begin{frame}{What the Normal Equations Say}
+\begin{frame}{What the Normal Equations Say\core}
 Write $\hat e_i = Y_i - \hat\beta_0 - \hat\beta_1 X_i$ for the fitted residual. Then
 \begin{align*}
   \text{(N1)}: \quad \sum_i \hat e_i = 0
@@ -310,6 +338,35 @@ These are \emph{mechanical consequences of the algebra}, true in every sample,
 for every dataset. Plotting $\hat e_i$ against $X_i$ and finding no correlation
 is therefore \alert{not evidence that the model is correct}.
 \end{alertblock}
+\end{frame}
+
+\begin{frame}{Uncorrelated, Mean-Independent, Independent\core}
+Three statements about an error and a regressor, strictly ordered:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lll}
+\toprule
+Statement & In words & What it rules out \\
+\midrule
+$\Cov(X,\epsilon) = 0$ & no \emph{linear} pattern & a tilted cloud, nothing more \\
+$\E[\epsilon\mid X] = 0$ & no pattern in the \emph{average} & any curve in the mean \\
+$\epsilon \indep X$ & no pattern in the \emph{distribution} & heteroskedasticity too \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Uncorrelated but not mean-independent}: fit a line to a
+        quadratic relationship. The correlation with $X$ is zero, yet the
+        errors' \emph{average} traces the leftover curve: positive at the
+        extremes, negative in the middle. A residual plot catches this; the
+        correlation cannot.
+  \item \textbf{Mean-independent but not independent}: $\E[\epsilon\mid X]=0$
+        at every $x$, but the \emph{spread} of $\epsilon$ changes with $X$:
+        heteroskedasticity, Week 2's subject.
+  \item Our model assumes the middle rung. The normal equations deliver only
+        the bottom one, and for \emph{sample} residuals, mechanically.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Step 2: Solving for $\hat\beta_0$}
@@ -333,7 +390,7 @@ so
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Step 3: Solving for $\hat\beta_1$}
+\begin{frame}{Step 3: Solving for $\hat\beta_1$\core}
 Substitute $\hat\beta_0 = \bar Y - \hat\beta_1\bar X$ into (N2):
 \begin{align*}
   \sum_i X_i\Big(Y_i - \bar Y + \hat\beta_1\bar X - \hat\beta_1 X_i\Big) &= 0 \\
@@ -349,11 +406,11 @@ which let us replace $X_i$ by $(X_i - \bar X)$ on both sides:
 \end{align*}
 \end{frame}
 
-\begin{frame}{Reading the Slope Formula}
+\begin{frame}{Reading the Slope Formula\core}
 \begin{align*}
   \hat\beta_1
   = \frac{\Cov_n(X,Y)}{\Var_n(X)}
-  = \widehat\Corr(X,Y)\cdot\frac{s_Y}{s_X}
+  = \Corr_n(X,Y)\cdot\frac{s_Y}{s_X}
   = \sum_{i} w_i \,\frac{Y_i - \bar Y}{X_i - \bar X},
   \quad w_i = \frac{(X_i-\bar X)^2}{\sum_j (X_j - \bar X)^2} .
 \end{align*}
@@ -424,15 +481,16 @@ Minimizing $S(b_0,b_1,b_2) = \sum_i (Y_i - b_0 - b_1X_{1i} - b_2X_{2i})^2$ gives
 \end{align*}
 \vskip4pt
 \begin{itemize}
-  \item One equation per parameter. With $k$ parameters you get $k$ equations in
-        $k$ unknowns, which is exactly why the matrix form will be so much
-        more compact.
-  \item Solving three equations by substitution is unpleasant but possible; with
-        ten it is hopeless. That is the whole motivation for matrices.
+  \item One equation per parameter. With $k$ parameters you get $k$ equations
+        in $k$ unknowns.
+  \item Solving three equations by substitution is unpleasant but possible;
+        with ten it is hopeless. That bookkeeping problem, nothing deeper, is
+        what Thursday's matrix notation tidies up. Everything we \emph{use}
+        this semester stays scalar.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{What ``Holding Constant'' Actually Means}
+\begin{frame}{What ``Holding Constant'' Actually Means\core}
 $\hat\beta_1$ is usually described as ``the effect of $X_1$ \emph{holding $X_2$
 constant}.'' Where does that come from?
 \vskip4pt
@@ -453,6 +511,88 @@ This is the \textbf{Frisch--Waugh--Lovell} theorem. In scalar form:
 \end{align*}
 \end{frame}
 
+\begin{frame}{Why the Recipe Works, Slowly: Raw $Y$ First}
+Claim: regressing \emph{raw} $Y_i$ on the residualized $\tilde X_{1i}$ already
+recovers the multiple-regression slope. Substitute the fitted long regression
+$Y_i = \hat\beta_0 + \hat\beta_1 X_{1i} + \hat\beta_2 X_{2i} + \hat e_i$ into
+the numerator:
+\begin{align*}
+  \sum_i \tilde X_{1i} Y_i
+  = \hat\beta_0\underbrace{\sum_i \tilde X_{1i}}_{=\,0}
+  + \hat\beta_1\sum_i \tilde X_{1i}X_{1i}
+  + \hat\beta_2\underbrace{\sum_i \tilde X_{1i}X_{2i}}_{=\,0}
+  + \underbrace{\sum_i \tilde X_{1i}\hat e_i}_{=\,0} .
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item First and third zeros: $\tilde X_1$ is a fitted residual from the
+        regression of $X_1$ on $X_2$, so it sums to zero and is orthogonal to
+        its own regressor $X_2$: the normal equations, again.
+  \item Last zero: $\hat e$ is orthogonal to $1$, $X_1$, and $X_2$, and
+        $\tilde X_1 = X_1 - \hat\gamma_0 - \hat\gamma_1X_2$ is built from
+        exactly those three.
+  \item Middle term: $\sum_i \tilde X_{1i}X_{1i} = \sum_i \tilde X_{1i}
+        \big(\tilde X_{1i} + \hat\gamma_0 + \hat\gamma_1 X_{2i}\big)
+        = \sum_i \tilde X_{1i}^2$.
+\end{itemize}
+\vskip2pt
+Divide through:
+$\ \sum_i \tilde X_{1i}Y_i \big/ \sum_i \tilde X_{1i}^2 = \hat\beta_1$.
+$\blacksquare$
+\end{frame}
+
+\begin{frame}{Residualizing $Y$ Too Changes Nothing}
+Now replace $Y_i$ by $\tilde Y_i = Y_i - \hat\delta_0 - \hat\delta_1 X_{2i}$,
+the residual from regressing $Y$ on $X_2$:
+\begin{align*}
+  \sum_i \tilde X_{1i}\tilde Y_i
+  = \sum_i \tilde X_{1i} Y_i
+  - \hat\delta_0\underbrace{\sum_i \tilde X_{1i}}_{=\,0}
+  - \hat\delta_1\underbrace{\sum_i \tilde X_{1i}X_{2i}}_{=\,0}
+  = \sum_i \tilde X_{1i} Y_i .
+\end{align*}
+The part removed from $Y$ is a function of $X_2$ alone, and $\tilde X_1$ is
+orthogonal to anything built from $X_2$. Same numerator, same denominator, same
+slope:
+\begin{align*}
+  \hat\beta_1
+  = \frac{\sum_i \tilde X_{1i}\,\tilde Y_i}{\sum_i \tilde X_{1i}^2}
+  = \frac{\sum_i \tilde X_{1i}\,Y_i}{\sum_i \tilde X_{1i}^2} .
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Why residualize $Y$ at all, then? For the \emph{picture}: plotting
+        $\tilde Y$ against $\tilde X_1$ shows the relationship with $X_2$
+        removed from both axes. Next frame.
+  \item \alert{What you cannot change is the denominator}: it must be
+        $\sum_i \tilde X_{1i}^2$. Regressing $\tilde Y$ on \emph{raw} $X_1$
+        divides by too large a number and attenuates the slope. (Problem Set 1.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{FWL in Practice: the Added-Variable Plot}
+\begin{columns}[T]
+\begin{column}{0.60\textwidth}
+  \includegraphics[width=\linewidth]{../Misc/FWL_example.png}
+  \vskip1pt
+  {\scriptsize Ethnic conflict onsets against genetic diversity, \emph{both
+  axes residualized} on the paper's full control set
+  \srcp{Arbatli, Ashraf, Galor, and Klemp 2020}.}
+\end{column}
+\begin{column}{0.38\textwidth}
+{\small
+\begin{itemize}\itemsep4pt
+  \item Both axes say ``(Residuals)'': this is $\tilde Y$ against
+        $\tilde X_1$, and by FWL the slope of the fitted line \emph{is} the
+        paper's multivariate coefficient.
+  \item The \emph{added-variable plot}: how applied papers draw a
+        many-control regression in two dimensions, and the only honest way to
+        do it.
+  \item In \texttt{R}: \texttt{car::avPlots()}, or residualize by hand as in
+        lab.
+\end{itemize}}
+\end{column}
+\end{columns}
+\end{frame}
+
 \begin{frame}[allowframebreaks,t]{Why This Matters}
 \begin{itemize}\itemsep5pt
   \item ``Controlling for $X_2$'' means \alert{throwing away every scrap of $X_1$
@@ -463,23 +603,13 @@ This is the \textbf{Frisch--Waugh--Lovell} theorem. In scalar form:
   \item In our data $sd(\texttt{educ}) = 2.82$; after residualizing on experience
         it is $2.73$. Little is lost, so the two coefficients on \texttt{educ}
         are similar ($0.119$ vs.\ $0.138$).
-  \item You may residualize $Y$ or not; the slope is the same either way,
-        because the part removed from $Y$ is a function of $X_2$ and is therefore
-        orthogonal to $\tilde X_1$.
-  \item \alert{What you cannot change is the denominator}: it must be
-        $\sum_i \tilde X_{1i}^2$, not $\sum_i (X_{1i}-\bar X_1)^2$. Regressing
-        $\tilde Y$ on \emph{raw} $X_1$ divides by too large a number and
-        attenuates the estimate. (Problem Set 1.)
 \end{itemize}
-\vskip3pt
-The plot of $\tilde Y$ against $\tilde X_1$, the \emph{added-variable plot}, 
-is the only honest two-dimensional picture of a multivariate slope.
 \end{frame}
 
 \subsection*{Omitted Variables}
 \begin{frame}\subsectionpage\end{frame}
 
-\begin{frame}{Short and Long Regressions}
+\begin{frame}{Short and Long Regressions\core}
 Suppose the ``long'' regression is
 \begin{align*}
   Y_i = \beta_0 + \beta_1 X_i + \beta_2 W_i + \epsilon_i ,
@@ -522,7 +652,7 @@ which is why the last term is exactly zero.
 Constants drop out of covariances, which is why $\beta_0$ never appears.
 \end{frame}
 
-\begin{frame}{Signing the Bias}
+\begin{frame}{Signing the Bias\core}
 \begin{center}
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{lcc}
@@ -579,7 +709,7 @@ is what Weeks 5--11 are about.
 \subsection*{Fit}
 \begin{frame}\subsectionpage\end{frame}
 
-\begin{frame}{Decomposing the Variation}
+\begin{frame}{Decomposing the Variation\core}
 Write $\hat Y_i = \hat\beta_0 + \hat\beta_1 X_i$ so that
 $Y_i = \hat Y_i + \hat e_i$. Subtract $\bar Y$, square, and sum:
 \begin{align*}
@@ -590,7 +720,11 @@ $Y_i = \hat Y_i + \hat e_i$. Subtract $\bar Y$, square, and sum:
 \end{align*}
 The cross term vanishes because $\sum_i \hat e_i = 0$ and
 $\sum_i X_i\hat e_i = 0$, and $\hat Y_i$ is a linear function of $X_i$.
-\vskip4pt
+\vskip1pt
+{\footnotesize $TSS$/$ESS$/$RSS$ = \emph{total}/\emph{explained}/\emph{residual}
+sum of squares. Careful: other books use $SSR$ for ``regression'' \emph{or} for
+``residual''; when in doubt, say the words, not the letters.}
+\vskip2pt
 \begin{align*}
   R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
   \qquad\Longleftrightarrow\qquad
@@ -604,8 +738,6 @@ In our example $TSS = 3062.3$, $RSS = 2667.6$, so $R^2 = 0.129$.
 \begin{itemize}\itemsep4pt
   \item $R^2$ never decreases when you add a regressor. Adjusted $R^2$ penalizes
         $k$, but is still not a principled model-selection rule.
-  \item $R^2$ depends on how much $X$ varies \emph{in your sample}, which is a
-        feature of the sampling design, not of the relationship.
   \item For causal work $R^2$ is nearly irrelevant: a randomized experiment with
         $R^2 = 0.01$ identifies the effect; an observational regression with
         $R^2 = 0.9$ identifies nothing in particular.
@@ -632,8 +764,10 @@ Not for adjudicating causal claims.
   \item Connect $R^2$ to $PRE$.
 \end{enumerate}
 \vskip6pt
-\alert{Next we ask the question all of this has been dodging: what is
-$\hat\beta_1$ an estimate \emph{of}?}
+\alert{So far, ``what is $\hat\beta_1$ estimating?'' has an answer only
+because we assumed the average of $Y$ at every value of $X$ lies on a line in the \textit{population}.
+Next we drop that assumption, and ask what $\hat\beta_1$ estimates when no
+line is true.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -691,13 +825,14 @@ it has no idea that 12 and 16 are special.}
 \end{frame}
 
 \begin{frame}{Estimating \emph{What}, Exactly?}
-Look carefully at how we defined this estimator's target.
-\vskip3pt
 \begin{block}{The circularity}
-We \emph{wrote down} $Y_i = \beta_0 + \beta_1 X_i + \epsilon_i$ and then showed
-$\E[\hat\beta_1] = \beta_1$. But $\beta_1$ exists only because we assumed that
-equation. If the CEF is not a line, and it is not, there is no true
-$\beta_1$ for $\hat\beta_1$ to be unbiased \emph{for}.
+What we have presented for estimation has been \emph{sample} algebra: we picked the
+line that minimizes squared residuals, and every property we derived,
+residuals summing to zero, uncorrelated with the regressors, was mechanical.
+The population entered exactly \emph{once}: the assumption that the average
+of $Y$ at each $X$ lies on a line, which is what defined $\beta_1$. If that
+assumption is false, and the previous frame showed that it is, there is no
+true $\beta_1$ for $\hat\beta_1$ to be an estimate \emph{of}.
 \end{block}
 \vskip3pt
 \begin{itemize}\itemsep3pt
@@ -751,7 +886,7 @@ function} is
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Three Facts About the CEF}
+\begin{frame}{Three Facts About the CEF\core}
 \begin{block}{1. Law of iterated expectations}
 $\E[Y_i] = \E\big[\E[Y_i\mid X_i]\big]$, the overall mean is the average of
 the group means.
@@ -822,9 +957,12 @@ it is exactly what you expect:
 \vskip4pt
 Defining $e_i \equiv Y_i - X_i'\bm\beta$, we get $\E[X_ie_i]=0$
 \alert{by construction}, in every population. Again: algebra, not causality.
+\vskip2pt
+{\footnotesize Reading note for Tuesday: read $X_i'\bm b$ simply as
+$b_0 + b_1 X_i$; Thursday introduces the general $k$-regressor version.}
 \end{frame}
 
-\begin{frame}{Why Should We Care About the Best \emph{Linear} Predictor?}
+\begin{frame}{Why Should We Care About the Best \emph{Linear} Predictor?\core}
 Three standard justifications \srcp{Angrist and Pischke 2009}:
 \begin{enumerate}\itemsep6pt
   \item \textbf{If the CEF is linear}, the population regression \emph{is} the CEF.
@@ -875,7 +1013,7 @@ is a free robustness check on functional form. We do this in lab.
 \end{block}
 \end{frame}
 
-\begin{frame}{What That Detour Bought Us: Two Questions, Kept Apart}
+\begin{frame}{What That Detour Bought Us: Two Questions, Kept Apart\core}
 Every argument about a regression coefficient is one of two questions. Keep them
 apart and most confusion dissolves.
 \vskip2pt
@@ -909,255 +1047,58 @@ nothing can repair it.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Matrix Form]{The Matrix Form and Its Geometry}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{Why Bother}
-\begin{itemize}\itemsep5pt
-  \item With $k$ regressors, scalar algebra needs $k$ normal equations and becomes
-        unreadable. Matrix algebra stays two lines long for any $k$.
-  \item The \alert{geometry}, projection onto a subspace, is invisible in
-        scalar form and obvious in matrix form.
-  \item Every estimator later in the course (fixed effects, IV, 2SLS, ridge,
-        weighting, double ML) is a small variation on
-        $\bhat = (\X'\X)^{-1}\X'\Y$. You will not be able to read the literature
-        without it.
-\end{itemize}
-\vskip6pt
-\begin{alertblock}{But}
-Nothing in this section is new content. It is the \emph{same} normal equations
-you already derived, written more compactly. Thursday's lab reviews every piece
-of linear algebra we use.
-\end{alertblock}
-\end{frame}
-
-\begin{frame}{Stacking the Data}
-For $n$ units and $k$ regressors (including the constant):
-\begin{align*}
-  \Y = \begin{bmatrix} Y_1 \\ \vdots \\ Y_n \end{bmatrix}_{n\times 1},
-  \quad
-  \X = \begin{bmatrix} X_1' \\ \vdots \\ X_n' \end{bmatrix}
-     = \begin{bmatrix}
-        1 & X_{11} & \cdots & X_{1,k-1}\\
-        \vdots & \vdots & & \vdots \\
-        1 & X_{n1} & \cdots & X_{n,k-1}
-       \end{bmatrix}_{n\times k},
-  \quad
-  \bm\epsilon = \begin{bmatrix} \epsilon_1 \\ \vdots \\ \epsilon_n\end{bmatrix}.
-\end{align*}
-The model, stacked over units:
-\begin{align*}
-  \Y = \X\bm\beta + \bm\epsilon
-  \qquad\Longleftrightarrow\qquad
-  Y_i = X_i'\bm\beta + \epsilon_i,\quad i=1,\dots,n .
-\end{align*}
-Two objects do all the work:
-$\ \X'\X = \sum_i X_iX_i'$ (a $k\times k$ matrix) and
-$\ \X'\Y = \sum_i X_i Y_i$ (a $k\times 1$ vector).
-\end{frame}
-
-\begin{frame}{Least Squares in Matrix Form}
-\begin{align*}
-  S(b) = \sum_{i} (Y_i - X_i'b)^2 = (\Y-\X b)'(\Y-\X b)
-       = \Y'\Y - 2\,b'\X'\Y + b'\X'\X b .
-\end{align*}
-\pause
-Differentiate, using $\partial (a'b)/\partial b = a$ and
-$\partial (b'Ab)/\partial b = 2Ab$ for symmetric $A$:
-\begin{align*}
-  \frac{\partial S(b)}{\partial b} = -2\X'\Y + 2\X'\X b \overset{!}{=} 0
-  \quad\Longrightarrow\quad
-  \underbrace{\X'\X\,\bhat = \X'\Y}_{\text{\alert{normal equations}}} .
-\end{align*}
-\pause
-These are the \emph{same} $k$ equations you wrote out one at a time. The
-second-order condition holds because $\X'\X \succeq 0$, so $S$ is convex and any
-stationary point is a global minimum.
-\end{frame}
-
-\begin{frame}{The Estimator, Existence, and Rank}
-\begin{block}{The OLS estimator}
-If $\rank(\X)=k$ (\emph{full column rank}), $\X'\X$ is invertible and
-\begin{align*}
-  \bhat = (\X'\X)^{-1}\X'\Y = \big(\En[X_iX_i']\big)^{-1}\En[X_iY_i] .
-\end{align*}
-\end{block}
-\begin{itemize}\itemsep3pt
-  \item Full column rank requires $n \geq k$ and no exact linear dependence among
-        columns. It is the matrix version of ``$X$ must vary.''
-  \item Failures you will actually meet: the \emph{dummy variable trap}; including
-        a variable and a rescaling of it; a group indicator constant within a
-        fixed effect.
-  \item If rank fails, \texttt{R} silently drops a column and reports \texttt{NA}.
-        That \texttt{NA} is never a mystery.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Sanity Check: Recovering the Scalar Formula\adv}
-Let $k=2$ with $X_i = (1, X_i)'$. Then
-\begin{align*}
-  \X'\X = \begin{bmatrix} n & \sum_i X_i \\ \sum_i X_i & \sum_i X_i^2\end{bmatrix},
-  \qquad
-  \X'\Y = \begin{bmatrix} \sum_i Y_i \\ \sum_i X_i Y_i \end{bmatrix} .
-\end{align*}
-Using $\begin{bmatrix} a & b\\ c& d\end{bmatrix}^{-1}
-= \frac{1}{ad-bc}\begin{bmatrix} d & -b\\ -c & a\end{bmatrix}$,
-\begin{align*}
-  \hat\beta_1 = \frac{n\sum_i X_iY_i - \sum_i X_i \sum_i Y_i}
-                     {n\sum_i X_i^2 - (\sum_i X_i)^2}
-  = \frac{\Cov_n(X,Y)}{\Var_n(X)},
-  \qquad
-  \hat\beta_0 = \bar Y - \hat\beta_1 \bar X .
-\end{align*}
-\vskip4pt
-Exactly what we derived by hand. The matrix form is a change of language, not of
-substance.
-\end{frame}
-
-\begin{frame}{OLS Is a Projection\adv}
-Think of $\Y$ as a single point in $\R^n$, one dimension per
-\emph{observation}. The $k$ columns of $\X$ span a $k$-dimensional subspace
-\begin{align*}
-  \pcol(\X) = \{\X b : b \in \R^k\} \subset \R^n .
-\end{align*}
-OLS finds the point in $\pcol(\X)$ closest to $\Y$:
-$\ \hat\Y = \argmin_{v \in \pcol(\X)} \|\Y - v\|^2$.
-\vskip4pt
-\begin{block}{Projection and annihilator matrices}
-\begin{align*}
-  \Pm = \X(\X'\X)^{-1}\X' \ (\text{``hat matrix''}),
-  \qquad
-  \Mm = \Ix_n - \Pm \ (\text{``residual maker''})
-\end{align*}
-so that $\hat\Y = \Pm\Y$ and $\ehat = \Mm\Y$.
-\end{block}
-\end{frame}
-
-\begin{frame}{The Picture\adv}
-\begin{center}
-\begin{tikzpicture}[scale=1.2,>=Stealth]
-  \fill[dukeblue!8] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
-  \draw[dukeblue!40] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
-  \node[dukeblue] at (3.15,0.55) {\small $\pcol(\X)$};
-  \coordinate (O) at (0,0);
-  \coordinate (Yhat) at (1.9,0.35);
-  \coordinate (Y) at (1.9,2.35);
-  \draw[->,thick,dukeblue] (O) -- (Yhat) node[below right] {\small $\hat{\bm{y}} = \bm{P}\bm{y}$};
-  \draw[->,very thick] (O) -- (Y) node[above right] {\small $\bm{y}$};
-  \draw[->,thick,accent] (Yhat) -- (Y) node[midway,right] {\small $\hat{\bm{e}} = \bm{M}\bm{y}$};
-  \draw[accent] ($(Yhat)+(0,0.22)$) -- ($(Yhat)+(-0.22,0.22)$) -- ($(Yhat)+(-0.22,0)$);
-  \draw[->,dukeblue!70] (O) -- (-0.9,-0.35) node[below] {\small $\bm{x}_1$};
-  \draw[->,dukeblue!70] (O) -- (1.1,-0.55) node[below] {\small $\bm{x}_2$};
-\end{tikzpicture}
-\end{center}
-\vskip-8pt
-\begin{itemize}
-  \item $\ehat \perp \pcol(\X)$, the geometric content of $\X'\ehat=\zero$, which
-        is the geometric content of ``residuals are uncorrelated with the
-        regressors.''
-  \item Fitting is dropping a perpendicular. Everything else is bookkeeping.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Properties of $\Pm$ and $\Mm$\adv}
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
-\textbf{Symmetric}
-\begin{align*}
-  \Pm' = \Pm, \qquad \Mm' = \Mm
-\end{align*}
-\textbf{Idempotent}
-\begin{align*}
-  \Pm\Pm &= \X(\X'\X)^{-1}\underbrace{\X'\X(\X'\X)^{-1}}_{\Ix}\X' = \Pm\\
-  \Mm\Mm &= (\Ix-\Pm)(\Ix-\Pm) = \Mm
-\end{align*}
-\textbf{Mutually orthogonal}
-\begin{align*}
-  \Pm\Mm = \Pm - \Pm\Pm = \zero
-\end{align*}
-\end{column}
-\begin{column}{0.48\textwidth}
-\textbf{Act correctly on $\X$}
-\begin{align*}
-  \Pm\X = \X, \qquad \Mm\X = \zero
-\end{align*}
-\textbf{Traces $=$ dimensions}
-\begin{align*}
-  \trace(\Pm) &= \trace\big((\X'\X)^{-1}\X'\X\big) = k\\
-  \trace(\Mm) &= n - k
-\end{align*}
-\textbf{Eigenvalues} are all $0$ or $1$; $\Pm$ has $k$ ones, $\Mm$ has $n-k$.
-\end{column}
-\end{columns}
-\vskip2pt
-{\footnotesize Used repeatedly: $\trace(ABC)=\trace(BCA)$ (cyclic property).}
-\end{frame}
-
-\begin{frame}{Leverage\adv}
-The $i$th diagonal element of $\Pm$,
-\begin{align*}
-  h_{ii} = X_i'(\X'\X)^{-1}X_i = \frac{\partial \hat Y_i}{\partial Y_i},
-\end{align*}
-is the \alert{leverage} of observation $i$: how much unit $i$'s own outcome pulls
-its own fitted value.
-\begin{itemize}\itemsep3pt
-  \item $0 \leq h_{ii} \leq 1$ and $\sum_i h_{ii} = k$, so average leverage is
-        $k/n$.
-  \item High leverage means unusual \emph{covariate} values, not an unusual
-        outcome.
-  \item $\Var(\hat e_i) = \sigma^2(1-h_{ii})$: high-leverage points have
-        artificially small residuals, they drag the line toward themselves.
-  \item Leverage returns next week in the finite-sample corrections HC2 and HC3.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Sums of Squares, Again\adv}
-Because $\Y = \Pm\Y + \Mm\Y$ and $\Pm\Mm=\zero$, Pythagoras gives
-\begin{align*}
-  \Y'\Y = \Y'\Pm\Y + \Y'\Mm\Y = \hat\Y'\hat\Y + \ehat'\ehat .
-\end{align*}
-Subtracting $n\bar Y^2$ (valid when a constant is included) returns the scalar
-decomposition $TSS = ESS + RSS$.
-\vskip6pt
-\begin{itemize}
-  \item $R^2$ is also $\cos^2$ of the angle between $\Y - \bar Y\one$ and
-        $\hat\Y - \bar Y\one$: fit is literally about angles.
-  \item Adding a regressor enlarges $\pcol(\X)$, which can only move $\hat\Y$
-        closer to $\Y$, the geometric reason $R^2$ never falls.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Properties]{Statistical Properties of OLS}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Classical Assumptions}
-\begin{enumerate}\itemsep3pt
-  \item[\textbf{A1}] \textbf{Linearity in parameters}: $Y_i = X_i'\bm\beta + \epsilon_i$.
+\begin{frame}{Before the List: What Are We After?}
+The last section settled \emph{what} $\hat\beta_1$ estimates. The new question
+is \emph{how well}. $\hat\beta_1$ is computed from one sample; a different
+sample would have produced a different number. So we ask how it behaves
+\emph{across} samples:
+\begin{itemize}\itemsep3pt
+  \item \textbf{Accuracy}: is $\hat\beta_1$ centred on the target, or
+        systematically off? (Unbiasedness.)
+  \item \textbf{Precision}: how much does it move from sample to sample?
+        (Variance, and what drives it.)
+  \item \textbf{Inference}: can we quantify how far off we are likely to be?
+        (The sampling distribution, the heart of Week 2.)
+\end{itemize}
+\vskip3pt
+\begin{block}{The role of the assumptions}
+None of these guarantees is free. The assumptions on the next frame are the
+\alert{price list}: each buys a specific property. Knowing which buys what
+tells you exactly what breaks when an assumption fails, and the rest of the
+course largely lives in those failures.
+\end{block}
+\end{frame}
+
+\begin{frame}{The Classical Assumptions\core}
+\begin{enumerate}\itemsep0pt
+  \item[\textbf{A1}] \textbf{Linearity in parameters}: $Y_i = \beta_0 + \beta_1X_{1i} + \cdots + \beta_{k-1}X_{k-1,i} + \epsilon_i$.
         (Not restrictive: $X$ may contain logs, powers, splines, interactions.)
   \item[\textbf{A2}] \textbf{Random sampling}: $(Y_i,X_i)$ i.i.d.\ from the population.
-  \item[\textbf{A3}] \textbf{No perfect collinearity}: $X$ genuinely varies;
-        $\rank(\X)=k$.
+  \item[\textbf{A3}] \textbf{No perfect collinearity}: $X$ varies, and no
+        regressor is an exact linear combination of the others (Thursday:
+        $\rank(\X)=k$).
   \item[\textbf{A4}] \textbf{Strict exogeneity}: $\E[\epsilon_i \mid X_i] = 0$.
-  \item[\textbf{A5}] \textbf{Spherical errors}: $\Var(\epsilon_i\mid \X)=\sigma^2$
-        for all $i$ (homoskedasticity), and $\Cov(\epsilon_i,\epsilon_j\mid\X)=0$
-        for $i\neq j$ (no correlation across units).
+  \item[\textbf{A5}] \textbf{Spherical errors}: $\Var(\epsilon_i\mid X)=\sigma^2$
+        (homoskedasticity) and $\Cov(\epsilon_i,\epsilon_j\mid X)=0$ for
+        $i\neq j$ (no correlation across units).
   \item[\textbf{A6}] \textbf{Normality} (optional):
         $\epsilon_i\mid X_i \sim \mathcal{N}(0,\sigma^2)$.
 \end{enumerate}
-\vskip2pt
+{\footnotesize A1, A4--A6: \emph{population}. A2: sampling. A3: your
+\emph{sample}, the only one checkable in data.}
 \begin{block}{What each buys you}
-A1--A4 $\Rightarrow$ unbiasedness. $+$A5 $\Rightarrow$ the simple variance formula
-and Gauss--Markov efficiency. $+$A6 $\Rightarrow$ exact $t$ and $F$ in finite
-samples. \\
-\alert{Week 2 drops A5. Weeks 5+ interrogate A4, the only one that matters for
+A1--A4 $\Rightarrow$ unbiasedness; $+$A5 $\Rightarrow$ the variance formula
+and Gauss--Markov; $+$A6 $\Rightarrow$ exact $t$ and $F$.
+\alert{Week 2 drops A5; Weeks 5+ interrogate A4, the one that matters for
 causality.}
 \end{block}
 \end{frame}
 
-\begin{frame}{Unbiasedness, in Scalar Form}
+\begin{frame}{Unbiasedness, in Scalar Form\core}
 Take the bivariate case. Start from the slope formula and substitute
 $Y_i = \beta_0+\beta_1X_i+\epsilon_i$:
 \begin{align*}
@@ -1172,30 +1113,14 @@ $Y_i = \beta_0+\beta_1X_i+\epsilon_i$:
 $\hat\beta_1 = \beta_1 + (\text{a weighted average of the errors})$. Every result
 about bias and variance in this course comes from staring at it.
 \end{alertblock}
+\vskip-4pt
+{\footnotesize No assumption on $\bar\epsilon$: it multiplies
+$\sum_i (X_i - \bar X) = 0$, so it vanishes by algebra.}
 Taking expectations conditional on $X$ and using A4 ($\E[\epsilon_i\mid X]=0$)
 gives $\E[\hat\beta_1\mid X]=\beta_1$, and hence $\E[\hat\beta_1]=\beta_1$.
 \end{frame}
 
-\begin{frame}{Unbiasedness, in Matrix Form\adv}
-The same two lines, for any $k$:
-\begin{align*}
-  \bhat &= (\X'\X)^{-1}\X'(\X\bm\beta + \bm\epsilon)
-         = \bm\beta + (\X'\X)^{-1}\X'\bm\epsilon , \\[4pt]
-  \E[\bhat\mid\X] &= \bm\beta + (\X'\X)^{-1}\X'\underbrace{\E[\bm\epsilon\mid\X]}_{=\,\zero}
-  = \bm\beta . \qquad\blacksquare
-\end{align*}
-\vskip6pt
-\begin{itemize}
-  \item Note where the work is done: \emph{only} by A4.
-  \item Heteroskedasticity, clustering, and non-normality do \alert{not} bias
-        $\bhat$. They affect its \emph{variance}, next week.
-  \item A4 fails whenever an omitted variable, reverse causation, measurement
-        error in $X$, or selection puts something correlated with $X$ into
-        $\epsilon$. That is the entire causal-inference problem in one sentence.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Variance of $\hat\beta_1$, in Scalar Form}
+\begin{frame}{The Variance of $\hat\beta_1$, in Scalar Form\core}
 From $\hat\beta_1 - \beta_1 = \dfrac{\sum_i (X_i - \bar X)\epsilon_i}{\sum_i (X_i-\bar X)^2}$,
 and treating $X$ as fixed:
 \begin{align*}
@@ -1215,7 +1140,7 @@ $\Var(\epsilon_i\mid X)$ is constant, and that is all a ``robust standard
 error'' is.
 \end{frame}
 
-\begin{frame}{What Drives Precision}
+\begin{frame}{What Drives Precision\core}
 \begin{align*}
   \Var(\hat\beta_1\mid X) = \frac{\sigma^2}{\sum_i (X_i - \bar X)^2}
   = \frac{\sigma^2}{n\,\Var_n(X)} ,
@@ -1247,40 +1172,24 @@ natural estimator is
 \begin{itemize}\itemsep3pt
   \item Why $n-k$ and not $n$? The residuals satisfy $k$ linear constraints
         (the normal equations), so they are systematically ``too short.''
-  \item In matrix form\adv: $\ehat = \Mm\bm\epsilon$, so
-        $\E[\ehat'\ehat] = \sigma^2\trace(\Mm) = \sigma^2(n-k)$.
+  \item Thursday's matrix language proves this in one line\adv; for now, take
+        $\E[\sum_i \hat e_i^2] = \sigma^2(n-k)$ on trust and note that it is
+        exact, not approximate.
   \item Then $\hat{V}(\hat\beta_1) = s^2/\sum_i (X_i-\bar X)^2$, whose
         square root is the standard error your software prints.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Gauss--Markov Theorem\adv}
-\begin{block}{Theorem}
-Under A1--A5, $\bhat$ is the \alert{Best Linear Unbiased Estimator}: among all
-$\tilde{\bm\beta} = \bm{C}\Y$ with $\bm C$ a function of $\X$ and
-$\E[\tilde{\bm\beta}\mid\X]=\bm\beta$,
-$\Var(\tilde{\bm\beta}\mid\X) - \Var(\bhat\mid\X) \succeq 0$.
-\end{block}
-\pause
-\textbf{Proof.} Write $\bm{C} = (\X'\X)^{-1}\X' + \bm{D}$. Unbiasedness for all
-$\bm\beta$ forces $\bm{D}\X = \zero$. Then
-\begin{align*}
-  \Var(\bm C\Y\mid\X)
-  &= \sigma^2\big[(\X'\X)^{-1}\X' + \bm D\big]\big[\X(\X'\X)^{-1} + \bm D'\big] \\
-  &= \sigma^2(\X'\X)^{-1}
-   + \sigma^2\underbrace{(\X'\X)^{-1}\X'\bm D'}_{=\,\zero}
-   + \sigma^2\underbrace{\bm D\X(\X'\X)^{-1}}_{=\,\zero}
-   + \sigma^2\bm{D}\bm{D}' \\
-  &= \Var(\bhat\mid\X) + \sigma^2\bm{D}\bm{D}' \succeq \Var(\bhat\mid\X) .
-  \qquad\blacksquare
-\end{align*}
-\end{frame}
-
 \begin{frame}{Reading Gauss--Markov Correctly}
-\begin{itemize}\itemsep5pt
-  \item ``Best'' only \alert{within the class of linear unbiased} estimators.
-        Biased estimators (ridge, lasso, shrinkage) can have far lower mean
-        squared error, Week 12.
+\begin{block}{The theorem, in words}
+Under A1--A5 (hence their name: the \emph{Gauss--Markov assumptions}; A6 is
+not needed), among all \emph{linear unbiased} estimators OLS has the smallest
+variance: it is the \textbf{B}est \textbf{L}inear \textbf{U}nbiased
+\textbf{E}stimator (BLUE). Thursday states and proves this in matrix form.
+\end{block}
+\begin{itemize}\itemsep3pt
+  \item ``Best'' only \alert{within that class}. Biased estimators (ridge,
+        lasso, shrinkage) can have far lower mean squared error, Week 12.
   \item Efficiency requires A5. Under heteroskedasticity OLS stays unbiased but is
         no longer BLUE; weighted least squares with the correct weights is.
   \item In practice we rarely know the weights, so we keep OLS and fix the
@@ -1312,87 +1221,6 @@ $t = \dfrac{\hat\beta_1 - \beta_1}{\mathrm{se}(\hat\beta_1)} \sim t_{n-k}$.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Partialling Out]{Partialling Out in General}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{The Frisch--Waugh--Lovell Theorem\adv}
-Partition $\X = [\,\X_1\ \ \X_2\,]$: a treatment of interest and controls.
-Let $\Mm_2 = \Ix - \X_2(\X_2'\X_2)^{-1}\X_2'$ and define
-\begin{align*}
-  \tilde{\X}_1 = \Mm_2\X_1 ,
-  \qquad
-  \tilde{\Y} = \Mm_2\Y .
-\end{align*}
-\begin{block}{Theorem}
-The OLS estimate $\hat{\bm\beta}_1$ from the full regression equals
-\begin{align*}
-  \hat{\bm\beta}_1 = (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\tilde\Y
-                   = (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\Y ,
-\end{align*}
-and the residuals from the short regression are numerically identical to $\ehat$
-from the full one.
-\end{block}
-\vskip2pt
-This is the three-step recipe from earlier, now for any number of controls.
-\end{frame}
-
-\begin{frame}{Proof of FWL\adv}
-Premultiply the model by $\Mm_2$ and use $\Mm_2\X_2 = \zero$:
-\begin{align*}
-  \Mm_2\Y = \Mm_2\X_1\bm\beta_1 + \underbrace{\Mm_2\X_2}_{=\zero}\bm\beta_2
-          + \Mm_2\bm\epsilon
-  \quad\Longrightarrow\quad
-  \tilde\Y = \tilde\X_1\bm\beta_1 + \Mm_2\bm\epsilon .
-\end{align*}
-\pause
-For the estimator, decompose the fitted model
-$\Y = \X_1\hat{\bm\beta}_1 + \X_2\hat{\bm\beta}_2 + \ehat$ and premultiply by
-$\tilde\X_1' = \X_1'\Mm_2$:
-\begin{align*}
-  \tilde\X_1'\Y
-  = \tilde\X_1'\tilde\X_1\hat{\bm\beta}_1
-  + \X_1'\underbrace{\Mm_2\X_2}_{=\zero}\hat{\bm\beta}_2
-  + \underbrace{\X_1'\Mm_2\ehat}_{=\,0} ,
-\end{align*}
-using $\Mm_2\ehat = \ehat$ (since $\X_2'\ehat = \zero$) and $\X_1'\ehat = \zero$.
-Solving gives the result. Using $\tilde\Y$ instead of $\Y$ changes nothing
-because $\tilde\X_1'\Mm_2 = \tilde\X_1'$. $\blacksquare$
-\end{frame}
-
-\begin{frame}{Why FWL Matters More Than It Looks}
-\begin{enumerate}\itemsep6pt
-  \item \textbf{Interpretation.} ``Controlling for $W$'' $=$ discarding all
-        covariance between $X_1$ and $W$. Your estimate lives on what remains.
-  \item \textbf{Computation.} Fixed-effects estimators \emph{are} FWL: regressing
-        on unit dummies is the same as demeaning within unit (Week 10).
-  \item \textbf{Diagnostics.} The added-variable plot is the only two-dimensional
-        picture that faithfully represents a multivariate slope.
-  \item \textbf{Generality.} Nothing in the argument requires $\X_2$ to enter
-        linearly, it only requires that we can compute the part of $X_1$ that
-        $\X_2$ predicts. That observation is the seed of a large literature, and
-        we return to it briefly in Week 13.
-\end{enumerate}
-\end{frame}
-
-\begin{frame}{Omitted Variables, in Matrix Form\adv}
-With $\X_1$ included and $\X_2$ omitted,
-\begin{align*}
-  \E[\tilde{\bm\beta}_1 \mid \X]
-  = \bm\beta_1 + \underbrace{(\X_1'\X_1)^{-1}\X_1'\X_2}_{\hat{\bm\delta}}\,\bm\beta_2 .
-\end{align*}
-\begin{itemize}\itemsep4pt
-  \item Each column of $\hat{\bm\delta}$ is the coefficient vector from regressing
-        one omitted variable on all the included ones, exactly $\delta_1$ from
-        the scalar case, stacked.
-  \item With several omitted variables the bias is a \emph{sum} of terms which may
-        offset, so ``the bias must be positive'' arguments require care.
-  \item Sensitivity analysis (Week 6) formalizes the question: how strong would an
-        omitted confounder have to be to overturn the result?
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Adjustment]{Regression as Adjustment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
@@ -1402,6 +1230,8 @@ Let $D_i\in\{0,1\}$ be a treatment and $W_i$ controls:
 \begin{align*}
   Y_i = \alpha + \rho D_i + W_i'\gamma + e_i .
 \end{align*}
+{\footnotesize (Read $W_i'\gamma$ as: each control enters with its own
+coefficient.)}
 Suppose that \emph{within cells of $W_i$} treatment is as good as randomly
 assigned. Then the cell-specific difference in means
 \begin{align*}
@@ -1432,7 +1262,7 @@ where $p(w) = \Pr(D_i=1\mid W_i=w)$ is the \emph{propensity score}.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Good Controls, Bad Controls}
+\begin{frame}{Good Controls, Bad Controls\core}
 Adding a control is not automatically an improvement.
 \vskip2pt
 \begin{columns}[T]
@@ -1461,22 +1291,20 @@ statistical. We need a language for causal assumptions, which is Week 5.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Where This Leaves Us}
+\begin{frame}{Where Tuesday Leaves Us}
 \begin{itemize}\itemsep5pt
-  \item OLS minimizes squared errors. Everything else, the slope formula, the
-        normal equations, FWL, OVB, follows from that one criterion by algebra.
-  \item In the population, OLS estimates the best linear approximation to the CEF.
-        Under A1--A4 the sample version is unbiased for it.
-  \item Whether that coefficient is a \emph{causal effect} is a separate question
-        that regression cannot answer.
-  \item \textbf{Next week}: we have $\hat\beta$; now we need to know how uncertain
-        it is, and the standard error your software prints is usually the wrong
-        one.
+  \item Everything so far used only scalar algebra: the least-squares recipe,
+        what it estimates (the CEF and its best linear approximation),
+        omitted-variable bias, and what regression can and cannot say about
+        causality.
+  \item \textbf{Thursday} we say the same things again in \alert{matrix form}:
+        no new statistics, only a new notation. We will mostly keep working in
+        scalars, but the compact notation is what you will meet in modern
+        papers and methods. We start from zero; no linear algebra is assumed.
 \end{itemize}
 \vskip6pt
 \begin{block}{Before Thursday}
 Install \texttt{R} and \texttt{RStudio}; skim MHE Chapter 3 and CCI Chapter 6.
-Lab covers the matrix algebra used today and OLS by hand.
 \end{block}
 \end{frame}
 
@@ -1490,6 +1318,9 @@ Lab covers the matrix algebra used today and OLS by hand.
 [Ch.\ 6]
 \item James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2021.
 \textit{An Introduction to Statistical Learning}, 2nd ed. Springer. [Ch.\ 2--3]
+\item Arbatl{\i}, Cemal Eren, Quamrul H. Ashraf, Oded Galor, and Marc Klemp.
+2020. ``Diversity and Conflict.'' \textit{Econometrica} 88(2): 727--797.
+[the added-variable plot example]
 \item Correll, Josh, Abigail M. Folberg, Charles M. Judd, Gary H. McClelland, and
 Carey S. Ryan. 2024. \textit{Data Analysis: A Model Comparison Approach to
 Regression, ANOVA, and Beyond}, 4th ed. Routledge. [for review]

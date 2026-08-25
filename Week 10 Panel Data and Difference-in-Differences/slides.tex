@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -133,6 +136,8 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
 \begin{frame}{A Third Source of Variation}
@@ -160,7 +165,7 @@ and could not name.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Error Components Model}
+\begin{frame}{The Error Components Model\core}
 With unit $i$ observed at times $t = 1,\dots,T$:
 \begin{align*}
   Y_{it} = \beta D_{it} + \underbrace{\alpha_i}_{\text{unit effect}}
@@ -179,7 +184,7 @@ With unit $i$ observed at times $t = 1,\dots,T$:
 \end{frame}
 
 
-\begin{frame}[allowframebreaks,t]{The Within Transformation, Explicitly}
+\begin{frame}[allowframebreaks,t]{The Within Transformation, Explicitly\core}
 Average the model within unit and subtract:
 \begin{align*}
   Y_{it} &= \beta D_{it} + \alpha_i + \lambda_t + \epsilon_{it} \\
@@ -275,29 +280,22 @@ Unit dummies & include $n-1$ indicators & numerically identical to within \\
 \end{center}
 \vskip5pt
 \begin{itemize}\itemsep2pt
-  \item The equivalence of demeaning and dummies is \alert{exactly FWL from
-        Week 1}: regressing on unit dummies partials out the unit means.
-  \item Anything time-invariant is annihilated. You cannot estimate the effect of
-        race, sex, or birth cohort in a unit-fixed-effects model, not because
-        they do not matter but because there is no within-unit variation.
+  \item All three remove $\alpha_i$; the first two are transformations, the
+        third does it with parameters. The costs (previous frames) are shared.
   \item Within and first differences differ when $T > 2$ and disagree under
         serial correlation; report which you used and why.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{What Fixed Effects Costs}
+\begin{frame}{What Fixed Effects Costs\core}
 \begin{itemize}\itemsep3pt
   \item \textbf{Precision}. You are using only within-unit variation. If $D_{it}$
         barely moves within units, the standard error explodes, FWL again.
   \item \textbf{Measurement error is amplified}. Differencing removes signal and
         keeps noise, so attenuation bias gets worse.
-  \item \textbf{Nickell bias}. With a lagged dependent variable and fixed effects,
-        demeaning correlates the regressor with the transformed error; the bias is
-        $O(1/T)$ and serious in short panels.
-  \item \textbf{Lagged dependent variable versus fixed effects} is a real choice,
-        not a nuisance: FE assumes selection on time-invariant traits, LDV assumes
-        selection on prior outcomes. \srct{Angrist and Pischke (2009)} suggest
-        running both, they typically bracket the truth.
+  \item \textbf{Nickell bias and the FE-versus-LDV choice}, as on the previous
+        frames: adding a lagged outcome to a fixed-effects model creates its own
+        bias, and FE and LDV embody different selection stories.
   \item \alert{Always cluster on the unit} (Week 2). Serial correlation within
         units is the norm.
 \end{itemize}
@@ -308,7 +306,7 @@ Unit dummies & include $n-1$ indicators & numerically identical to within \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Canonical $2\times 2$}
+\begin{frame}{The Canonical $2\times 2$\core}
 Two groups, two periods. One group is treated in period 2.
 \begin{center}\small
 \renewcommand{\arraystretch}{1.35}
@@ -364,7 +362,7 @@ Control ($g=0$) & $\alpha$ & $\alpha+\delta$ & $\delta$ \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Parallel Trends}
+\begin{frame}[allowframebreaks,t]{Parallel Trends\core}
 \begin{block}{The identifying assumption}
 \begin{align*}
   \E[Y_{i2}(0) - Y_{i1}(0) \mid g_i = 1] = \E[Y_{i2}(0) - Y_{i1}(0)\mid g_i = 0] .
@@ -385,7 +383,34 @@ parallel.
         treatment in expectation of it.
 \end{itemize}
 \end{frame}
-\begin{frame}[allowframebreaks,t]{Parallel Trends Is Not Scale-Free}
+\begin{frame}[allowframebreaks,t]{What the Double Difference Identifies, Exactly\core}
+Decompose the treated group's observed change. Its period-2 outcome is
+$Y_{i2}(1)$; add and subtract the counterfactual $Y_{i2}(0)$:
+\begin{align*}
+  \Delta_1 = \E[Y_{i2}(1) - Y_{i1}(0)\mid g_i{=}1]
+  = \underbrace{\E[Y_{i2}(1) - Y_{i2}(0)\mid g_i{=}1]}_{\text{ATT}}
+  + \underbrace{\E[Y_{i2}(0) - Y_{i1}(0)\mid g_i{=}1]}_{\text{treated group's \emph{untreated} trend}} .
+\end{align*}
+The control group supplies an estimate of that second, unobservable term:
+$\Delta_0 = \E[Y_{i2}(0) - Y_{i1}(0)\mid g_i{=}0]$. Subtracting,
+\begin{align*}
+  \boxed{\;\Delta_1 - \Delta_0 \;=\; \text{ATT}
+  \;+\; \underbrace{\E[\Delta Y(0)\mid g{=}1] - \E[\Delta Y(0)\mid g{=}0]}_{\text{differential trend; } =\,0 \text{ under parallel trends}}\;}
+\end{align*}
+\vskip2pt
+\begin{itemize}\itemsep3pt
+  \item The estimand is the \alert{ATT}, not the ATE: we borrowed a
+        counterfactual trend \emph{for the treated group}. Nothing in the design
+        identifies what treatment would have done to the controls.
+  \item The bias term \emph{is} the parallel-trends violation, exactly. Every
+        diagnostic in this lecture (pre-trends, placebos, Rambachan--Roth
+        bounds) is aimed at that one object.
+  \item Note also what was \emph{not} assumed: no restriction on the level
+        difference $\gamma$, and no randomization anywhere.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[allowframebreaks,t]{Parallel Trends Is Not Scale-Free\core}
 Suppose untreated outcomes would have grown by $10\%$ in both groups, from a base
 of $20$ in the treated group and $40$ in the control group.
 \vskip3pt
@@ -414,7 +439,7 @@ Control & 40 & 44 & $+4$ \\
         careful. If they are similar, the choice matters less.
 \end{itemize}
 \end{frame}
-\begin{frame}{Event Studies}
+\begin{frame}{Event Studies\core}
 Generalize to many periods by estimating an effect for each period relative to
 treatment:
 \begin{align*}
@@ -455,7 +480,7 @@ and each must be reported.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Setting Everyone Uses}
+\begin{frame}{The Setting Everyone Uses\core}
 Units adopt the policy at \emph{different times}: states pass a law in 1995,
 2001, 2008. The standard specification is
 \begin{align*}
@@ -475,7 +500,7 @@ comparisons in the data, including comparisons that use
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{The Forbidden Comparison}
+\begin{frame}{The Forbidden Comparison\core}
 \begin{center}
 \begin{tikzpicture}[scale=0.85]
   \draw[->] (0,0) -- (9.6,0) node[right]{\scriptsize time};
@@ -509,7 +534,42 @@ comparisons in the data, including comparisons that use
 \end{frame}
 
 
-\begin{frame}{The Goodman-Bacon Decomposition}
+\begin{frame}[allowframebreaks,t]{The Forbidden Comparison, in Algebra\core}
+Take the late-versus-early $2\times2$ from the shaded window: late switches from
+untreated to treated, early is \emph{treated throughout}. Suppose parallel
+trends holds exactly and untreated outcomes are flat, so every change in $Y$ is
+a treatment effect. Then
+\begin{align*}
+  \hat\beta^{2\times2}_{\text{late vs.\ early}}
+  = \underbrace{\text{ATT}_{\text{late}}(\text{post})}_{\text{what we want}}
+  \;-\; \underbrace{\Big[\text{ATT}_{\text{early}}(\text{post}) - \text{ATT}_{\text{early}}(\text{pre})\Big]}_{\alert{\text{the \emph{growth} in early's effect over the window}}} .
+\end{align*}
+\vskip2pt
+With numbers; no noise, no trends, every true effect positive:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lccc}
+\toprule
+ & $t=3$ & $t=4$ & Change \\
+\midrule
+Late (treated at $t{=}4$; effect $1$) & $0$ & $1$ & $+1$ \\
+Early (treated at $t{=}2$; effects $1,2,3$) & $2$ & $3$ & $+1$ \\
+\midrule
+ & & & $\hat\beta^{2\times2} = 0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item Late's true effect is $+1$; this comparison returns $0$. If early's
+        effect grew by $2$ per period instead, it would return $\alert{-1}$.
+  \item If effects were constant ($1,1,1$), the bracketed term would vanish and
+        the comparison would be harmless, which is exactly why the problem
+        stayed invisible for thirty years of constant-effect thinking.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Goodman-Bacon Decomposition\adv}
 With staggered timing, the TWFE estimate is a weighted average of every possible
 $2\times2$ comparison in the data:
 \begin{align*}
@@ -518,7 +578,7 @@ $2\times2$ comparison in the data:
 \end{align*}
 where the weights $s_{ab}$ depend on group sizes and on the \emph{variance of
 treatment} within each pair, largest for pairs whose treatment switches
-mid-window.
+mid-window. (The next frame writes them out.)
 \vskip3pt
 Three kinds of comparison arise:
 \begin{enumerate}\itemsep1pt
@@ -533,30 +593,101 @@ Type 3 uses already-treated units as controls. If their effects are still
 evolving, that evolution is subtracted from the late group's effect.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Negative Weights}
-\srct{de Chaisemartin and D'Haultf\oe uille (2020)} write TWFE as a weighted sum
-of \emph{unit-time-level} effects,
+\begin{frame}[allowframebreaks,t]{The Goodman-Bacon Weights, Explicitly\adv}
+Let $n_k, n_l, n_U$ be the groups' sample shares and $\bar D_j$ the fraction of
+the panel that group $j$ spends treated ($k$ treated earlier than $l$). Up to a
+common normalization, the weight on each $2\times2$ is the product of the pair's
+group sizes and the \emph{variance of the treatment dummy within that pair's
+window}:
 \begin{align*}
-  \plim\ \hat\beta^{\text{TWFE}} = \E\Big[\sum_{(i,t):\,D_{it}=1} w_{it}\,\tau_{it}\Big],
-  \qquad \sum w_{it} = 1 ,
+  s_{kU} &\propto n_k\, n_U\;\bar D_k\big(1-\bar D_k\big)
+  && \text{treated vs.\ never-treated} \\[2pt]
+  s^{\,k}_{kl} &\propto n_k\, n_l\;\big(\bar D_k - \bar D_l\big)\big(1-\bar D_k\big)
+  && \text{early vs.\ late, before late switches} \\[2pt]
+  s^{\,l}_{kl} &\propto n_k\, n_l\;\bar D_l\big(\bar D_k-\bar D_l\big)
+  && \alert{\text{late vs.\ early, after early switches}}
 \end{align*}
-and show that some $w_{it}$ are \alert{negative}.
+\vskip2pt
+\begin{itemize}\itemsep3pt
+  \item Every weight has the $\bar D(1-\bar D)$ shape of a Bernoulli variance,
+        so \alert{groups treated near the middle of the panel dominate}: the
+        weights come from OLS mechanics, not from group sizes alone and not from
+        any estimand you chose. Compare Week 1's variance-weighting result: same
+        phenomenon, new costume.
+  \item The forbidden weight $s^{\,l}_{kl}$ is not negligible in general: it
+        grows with $\bar D_k$, i.e.\ with how long the early group has already
+        been treated when the late group switches.
+  \item All of this is computable from the data alone:
+        \texttt{bacondecomp::bacon()} lists every $2\times2$, its estimate, and
+        its weight. We decompose a real TWFE estimate in lab.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[allowframebreaks,t]{Where the Negative Weights Come From\adv}
+FWL (Week 1) reduces TWFE to a bivariate regression on the
+\emph{double-demeaned} treatment. With $\bar D_i$, $\bar D_t$, $\bar D$ the
+unit, period, and grand means of $D_{it}$:
+\begin{align*}
+  \hat\beta^{\text{TWFE}}
+  = \frac{\sum_{it} \tilde D_{it}\, Y_{it}}{\sum_{it} \tilde D_{it}^2},
+  \qquad
+  \tilde D_{it} = D_{it} - \bar D_i - \bar D_t + \bar D .
+\end{align*}
+Substitute $Y_{it} = \alpha_i + \lambda_t + \tau_{it} D_{it} + \epsilon_{it}$:
+the fixed effects are annihilated because $\tilde D$ has zero unit and period
+sums, and $\sum_{it}\tilde D_{it}^2 = \sum_{(i,t):D_{it}=1}\tilde D_{it}$, so
+\begin{align*}
+  \plim\,\hat\beta^{\text{TWFE}}
+  = \sum_{(i,t):\,D_{it}=1} w_{it}\,\tau_{it},
+  \qquad
+  w_{it} = \frac{\tilde D_{it}}{\sum_{(i,t):\,D_{it}=1}\tilde D_{it}},
+  \qquad \sum w_{it} = 1 .
+\end{align*}
+\vskip2pt
+\begin{itemize}\itemsep3pt
+  \item For a \emph{treated} cell, $\tilde D_{it} = 1 - \bar D_i - \bar D_t + \bar D$,
+        which is \alert{negative exactly when $\bar D_i + \bar D_t > 1 + \bar D$}:
+        a unit treated for most of the panel, observed in a period when most of
+        the sample is treated. That is the early adopter, late in the panel.
+  \item Intuition: OLS rewards cells whose treatment status is
+        \emph{surprising} given their unit and period averages. An early
+        adopter's late-period treatment is completely unsurprising, so its
+        effect is priced at zero, or below zero.
+  \item The weights are a mechanical fact about OLS and are there even under
+        constant effects, harmlessly. Heterogeneous $\tau_{it}$ is what turns
+        strange weights into a wrong answer.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[allowframebreaks,t]{Negative Weights: Consequences and Diagnostics\adv}
+\srct{de Chaisemartin and D'Haultf\oe uille (2020)} generalize the previous
+frame's calculation, allowing covariates and non-binary treatments, and show
+that negative weights are the rule in staggered designs, not a corner case.
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item Consequence: TWFE can have the \alert{wrong sign} even when every
         $\tau_{it} > 0$. This is not a small-sample problem; it survives
-        $n\to\infty$.
-  \item The negative weights fall on units treated \emph{early} and observed for a
-        \emph{long} post-period, exactly the units with the most information.
-  \item \textbf{Diagnostic}: compute the weights and report how many are negative
-        and what share of the total mass they carry. Small negative mass is
-        reassuring about \emph{this particular} problem, it says nothing about
-        parallel trends or about dynamic-effect contamination, so it is one
-        diagnostic, not a validity test.
+        $n\to\infty$, because the weights, not the noise, are at fault.
+  \item By the formula, the negative weights fall on units treated \emph{early}
+        and observed over a \emph{long} post-period, exactly the units carrying
+        the most information about long-run effects. TWFE quietly discounts, and
+        then inverts, the long run.
+  \item \textbf{Diagnostic}: compute the weights
+        (\texttt{TwoWayFEWeights::twowayfeweights}) and report how many are
+        negative and what share of the total mass they carry. Small negative
+        mass is reassuring about \emph{this particular} problem; it says nothing
+        about parallel trends or about dynamic-effect contamination, so it is
+        one diagnostic, not a validity test.
   \item \srct{Sun and Abraham (2021)} show the same contamination in event-study
-        coefficients: $\hat\tau_k$ is polluted by effects at \emph{other} lags, so
-        apparent pre-trends can be artefacts of post-treatment dynamics.
+        coefficients: with staggered timing, the TWFE $\hat\tau_k$ at lag $k$ is
+        a weighted combination of \emph{every} cohort's effects at \emph{every}
+        lag, with weights that need not be positive or sum to one lag by lag. So
+        apparent pre-trends can be artefacts of post-treatment dynamics, and a
+        clean pre-trend plot from raw TWFE proves nothing.
 \end{itemize}
+\vskip3pt
+\alert{TWFE is fine when treatment timing is common, or when effects are
+genuinely constant.} It is unreliable exactly where sociologists use it most.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Callaway--Sant'Anna: Build Clean Blocks, Then Aggregate}
@@ -565,10 +696,17 @@ Define the \alert{group-time average treatment effect} for cohort $g$ at time $t
   ATT(g,t) = \E\big[Y_t(g) - Y_t(\infty) \mid G_i = g\big] ,
 \end{align*}
 identified by comparing cohort $g$ to units \emph{not yet treated} at $t$ (or to
-never-treated units), using only periods before $g$ as the baseline.
+never-treated units), using only periods before $g$ as the baseline. Under
+cohort-level parallel trends and no anticipation,
+\begin{align*}
+  ATT(g,t) = \E\big[Y_{t} - Y_{g-1} \mid G_i = g\big]
+           - \E\big[Y_{t} - Y_{g-1} \mid \text{not yet treated at } t\big] :
+\end{align*}
+a clean $2\times2$. The baseline $g-1$ predates cohort $g$'s treatment, the
+comparison group has not started treatment by $t$, and no already-treated unit
+is ever used as a control.
 \vskip3pt
 \begin{itemize}\itemsep2pt
-  \item Each $ATT(g,t)$ is a clean $2\times2$: no already-treated controls.
   \item Under \emph{conditional} parallel trends, each block can be estimated by
         IPW, outcome regression, or a doubly robust estimator, \alert{Week 6,
         reappearing inside a DID}.
@@ -585,25 +723,8 @@ never-treated units), using only periods before $g$ as the baseline.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{What Goes Wrong, Precisely}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Negative weights.} \srct{de Chaisemartin and D'Haultf\oe uille
-        (2020)} show TWFE is a weighted sum of unit-time effects where some
-        weights are negative. They provide a diagnostic: compute the weights and
-        report how many are negative and how much mass they carry.
-  \item \textbf{Contaminated event studies.} In a staggered design, the estimated
-        $\tau_k$ at one lag is contaminated by effects at other lags
-        \srcp{Sun and Abraham 2021}. Apparent pre-trends can be artefacts of
-        post-treatment dynamics.
-  \item \textbf{It is not a small problem.} Simulations routinely produce TWFE
-        estimates of the wrong sign under plausible, monotone dynamic effects.
-\end{itemize}
-\vskip3pt
-\alert{TWFE is fine when treatment timing is common, or when effects are
-genuinely constant.} It is unreliable exactly where sociologists use it most.
-\end{frame}
 
-\begin{frame}{The Modern Estimators}
+\begin{frame}{The Modern Estimators\core}
 All of them share one principle: \alert{never use an already-treated unit as a
 control}. Build clean $2\times 2$ comparisons, then aggregate with weights you
 choose.
@@ -656,7 +777,7 @@ treatment varies. With few clusters, use CR2 or a wild cluster bootstrap
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{A DID Checklist}
+\begin{frame}{A DID Checklist\core}
 \begin{enumerate}\itemsep2pt
   \item State the estimand: ATT for whom, over which post-treatment window?
   \item Plot the raw group means over time. Before any regression.
@@ -686,8 +807,8 @@ treatment varies. With few clusters, use CR2 or a wild cluster bootstrap
         or outcome model again, and all of Week 6's cautions return with it.
 \end{itemize}
 \vskip4pt
-\begin{block}{Problem Set 5}
-Assigned next Tuesday, due Monday November 23. Covers Weeks 10--11.
+\begin{block}{Problem Set 4}
+Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \end{block}
 \end{frame}
 

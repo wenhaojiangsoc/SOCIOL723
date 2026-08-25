@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -149,7 +152,7 @@ No lab Thursday November 26 (Thanksgiving recess). \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Three Questions, in Order}
+\begin{frame}{Three Questions, in Order\core}
 \begin{enumerate}\itemsep5pt
   \item \textbf{What am I trying to estimate?} A unit-specific quantity and a
         target population. ATE, ATT, LATE, the effect at a cutoff, $\tau(x)$.
@@ -192,7 +195,7 @@ they were about 3.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Every Design, in One Table}
+\begin{frame}[allowframebreaks,t]{Every Design, in One Table\core}
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.25}
 \begin{tabular}{llll}
@@ -219,7 +222,7 @@ Synthetic control & factor model, long pre-period & ATT for one unit & poor pre-
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Inference, in One Table}
+\begin{frame}[allowframebreaks,t]{Inference, in One Table\core}
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.25}
 \begin{tabular}{lll}
@@ -247,7 +250,7 @@ nearest-neighbour matching (Week 6), and unreliable more generally for
 non-smooth, boundary, post-selection, and weakly identified procedures.
 \end{frame}
 
-\begin{frame}{A Decision Guide}
+\begin{frame}{A Decision Guide\core}
 \begin{enumerate}\itemsep3pt
   \item Write the theoretical estimand in one sentence: unit-specific quantity,
         target population.
@@ -269,7 +272,7 @@ non-smooth, boundary, post-selection, and weakly identified procedures.
 \end{enumerate}
 \end{frame}
 
-\begin{frame}{Things That Are Never a Solution}
+\begin{frame}{Things That Are Never a Solution\core}
 \begin{itemize}\itemsep3pt
   \item \alert{Adding more controls} without a DAG. Bad controls exist, and
         ``kitchen sink'' amplifies bias as often as it reduces it (Week 5).
@@ -299,9 +302,10 @@ examined Weeks 1--7, and this is the only assessment that reaches the second
 half of the course.
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item \textbf{Everything developed in scalar form is examinable.} Frames marked
-        \adv{} are not: matrix derivations, projection geometry, asymptotic
-        arguments.
+  \item \textbf{Everything developed in scalar form is examinable.} Frames
+        marked \core{} are the essential spine, study those first. Frames
+        marked \adv{} are not examinable: matrix derivations, projection
+        geometry, asymptotic arguments.
   \item For every design, you should be able to state \emph{what it assumes},
         \emph{what it estimates}, and \emph{how it fails}. That is the table from
         earlier today, and it is the spine of the exam.
@@ -329,8 +333,9 @@ under time pressure than a printout you have never read.
 
 \begin{frame}{How to Prepare}
 \begin{enumerate}\itemsep4pt
-  \item \textbf{Work the checkpoints.} Each deck has a ``what you should be able
-        to do'' frame. If you can do those without notes, you are ready.
+  \item \textbf{Work the blue stars.} Go deck by deck through the frames marked
+        \core{} and check you can explain and use each one without notes. If you
+        can, you are ready.
   \item \textbf{Rebuild the four tables} from today: design, assumption, estimand,
         threat; and the inference table. Write them from memory, then check.
   \item \textbf{Re-derive the short results by hand}: the normal equations, the

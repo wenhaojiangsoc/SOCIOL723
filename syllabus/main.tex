@@ -99,7 +99,7 @@ There will be an in-class midterm on \textbf{Thursday, October 15}, covering the
 \vspace{0.5em}
 
 \noindent \textbf{\textcolor{titlecolor}{Final Exam (35\%)}}: \\
-There will be a cumulative final exam during the University examination period in December; the Registrar sets the exact date and time. It covers the whole course, but weighted towards \textbf{Weeks 9--13}, since the midterm already examined Weeks 1--7. Like the midterm, it is open book and open note but timed, and you will not be required to write any code. What is examined is the material developed in scalar form, together with what each design assumes and what it estimates; frames marked with a star in the slides are for understanding and will not be examined.
+There will be a cumulative final exam during the University examination period in December; the Registrar sets the exact date and time. It covers the whole course, but weighted towards \textbf{Weeks 9--13}, since the midterm already examined Weeks 1--7. Like the midterm, it is open book and open note but timed, and you will not be required to write any code. What is examined is the material developed in scalar form, together with what each design assumes and what it estimates; frames marked with a \textcolor[RGB]{0,83,155}{blue star} in the slides flag the essential material the exams draw on, while frames marked with an \textcolor[RGB]{200,78,0}{orange star} are for understanding and will not be examined.
 
 \subsection*{Software}
 This class uses \texttt{R} throughout, and prior experience at the level of \textit{Social Statistics I} is assumed. Please install a recent version of \texttt{R} and \texttt{RStudio} before the first lab, and use \texttt{RMarkdown} or \texttt{Quarto} for your assignments to support reproducibility.
@@ -123,7 +123,7 @@ We will draw regularly on three texts, two of which are free online.
 \noindent \textit{The Effect} and the Chernozhukov et al.\ text are living online
 books whose chapter numbers shift between editions; chapter titles are given
 where the number alone might mislead. Within each week, the readings are listed
-\textit{in the order you should read them}: the first builds the intuition, and those that follow supply the rigour. \textit{Further reading} is there for depth and for your own research; it is not examined.
+\textit{in the order you should read them}: the first builds the intuition, and those that follow supply the rigour. \textit{Further reading} is there for depth and for your own research projects.
 
 \vspace{0.5em}
 
@@ -145,13 +145,14 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \vspace{0.5em}
 
-\input{syllabus/schedule}
+%% works from the repo root (local + Overleaf) AND from inside syllabus/
+\InputIfFileExists{syllabus/schedule}{}{\input{schedule}}
 
 \noindent \textbf{\textcolor{titlecolor}{Week 1 (Aug 25/27): The Linear Model and OLS}}
 
 \noindent \textit{Lecture}: The general linear model in scalar and matrix form, connecting the model-comparison framework of \textit{Social Statistics I} to matrix notation; the OLS estimator and its geometry; the Frisch--Waugh--Lovell theorem, omitted-variable bias, and regression as a tool for adjustment. \textit{Lab}: \texttt{R} and \texttt{RStudio} refresher; a review of the matrix algebra used in the linear model; fitting and interpreting OLS.
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, Chapter 13; MHE, \S 3.1--3.2.
+    \item \textit{Reading}: Effect, \S 13.1--13.2; MHE, \S 3.1--3.2.
     \item \textit{Further reading}: CCI, Chapter 6; ISL, Chapter 3.
 \end{itemize}
 
@@ -159,7 +160,7 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \noindent \textit{Lecture}: Sampling distribution of OLS and hypothesis testing; heteroskedasticity; robust and cluster-robust standard errors; the bootstrap; what robust standard errors can and cannot fix. \textit{Lab}: a review of the calculus used in estimation and optimization; robust and clustered inference and the bootstrap in \texttt{R}.
 \begin{itemize}[noitemsep, topsep=2pt]
-    \item \textit{Reading}: Effect, Chapter 15; MHE, Chapter 8.
+    \item \textit{Reading}: Effect, \S 13.3 (``Your Standard Errors Are Probably Wrong''); MHE, Chapter 8.
     \item \textit{Further reading}: Freedman, David A. 2006. ``On the So-Called `Huber Sandwich Estimator' and `Robust Standard Errors'.'' \textit{The American Statistician} 60(4), 299--302; Bertrand, Marianne, Esther Duflo, and Sendhil Mullainathan. 2004. ``How Much Should We Trust Differences-in-Differences Estimates?'' \textit{Quarterly Journal of Economics} 119(1), 249--275.
 \end{itemize}
 

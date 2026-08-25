@@ -87,6 +87,8 @@
 \setbeamercolor{block body alerted}{fg=black,bg=softgray}
 
 \setbeamertemplate{footline}[page number]
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
@@ -99,6 +101,9 @@
 
 %% marker for material that is for understanding, not for examination
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -138,6 +143,8 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
 \begin{frame}{Where We Left Off}
@@ -166,11 +173,12 @@ $\Var(\epsilon_i\mid X)$ is the same for every $i$.
 \end{block}
 \end{frame}
 
-\begin{frame}{Reminder: the \adv{} Convention}
+\begin{frame}{Reminder: the Two-Star Convention}
 \begin{alertblock}{}
-Frames marked \adv{} are here for \emph{understanding}, not for evaluation:
-matrix derivations, asymptotic arguments, and the general formulas you will meet
-in the literature.
+Frames marked \core{} are \textbf{essential}: problem sets and exams draw on
+them directly. Frames marked \adv{} are here for \emph{understanding}, not for
+evaluation: matrix derivations, asymptotic arguments, and the general formulas
+you will meet in the literature.
 \end{alertblock}
 \vskip6pt
 \begin{itemize}\itemsep4pt
@@ -189,7 +197,30 @@ in the literature.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{What a Sampling Distribution Is}
+\begin{frame}{The Question, in Plain Words\core}
+Last week we computed $\hat\beta_1 = 0.119$: one more year of schooling goes
+with about $12\%$ higher earnings in our sample of $3{,}509$ people.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item The GSS could just as easily have interviewed a \emph{different}
+        3{,}509 people. That sample would have produced a different number,
+        perhaps $0.112$, perhaps $0.127$.
+  \item So $0.119$ is one draw from a lottery. Before treating it as evidence
+        about the population, we need to know how much it moves from draw to
+        draw.
+  \item The \alert{standard error} is exactly that: the give-or-take attached
+        to the estimate. Formally, it is (an estimate of) the standard
+        deviation of $\hat\beta_1$ across hypothetical repeated samples.
+\end{itemize}
+\vskip3pt
+\begin{block}{This week in one sentence}
+Everything called ``statistical inference'', standard errors, $t$-statistics,
+$p$-values, confidence intervals, is machinery for learning that give-or-take
+number from the single sample we actually have.
+\end{block}
+\end{frame}
+
+\begin{frame}{What a Sampling Distribution Is\core}
 $\hat\beta_1$ is a number computed from \emph{your} sample. Had you drawn a
 different sample from the same population, you would have got a different number.
 \vskip4pt
@@ -208,6 +239,29 @@ distribution}. Where it is centred tells you about bias; how wide it is
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Two Theorems We Lean On All Semester\core}
+Both are statements about what happens to a \emph{sample average} as $n$ grows.
+\vskip2pt
+\begin{block}{Law of large numbers (LLN)}
+The average of $n$ independent draws settles down on the population mean:
+$\frac1n\sum_i Z_i \pto \E[Z]$. Flip a fair coin 10 times and the share of
+heads could be anything; flip it 10{,}000 times and it sits within a whisker
+of $0.5$.
+\end{block}
+\vskip2pt
+\begin{block}{Central limit theorem (CLT)}
+Not only does the average settle down; the \emph{shape} of its wobble around
+the truth becomes a bell curve, $\sqrt n\,(\bar Z - \E[Z]) \dto \mathcal
+N\big(0, \Var(Z)\big)$, \alert{whatever the distribution of $Z$ itself},
+skewed, lumpy, or binary, so long as its variance is finite.
+\end{block}
+\vskip2pt
+Why we care: $\hat\beta_1$ is built out of sample averages, so the LLN will
+give consistency and the CLT approximate normality. We verify both by
+simulation in Thursday's lab; watching the bell curve emerge once is worth a
+dozen proofs.
+\end{frame}
+
 \begin{frame}{Route 1: Exact, Under Normality}
 Assume A1--A6, including $\epsilon_i\mid X \sim \mathcal N(0,\sigma^2)$. Since
 $\hat\beta_1 - \beta_1$ is a \emph{weighted sum of the errors}, it is normal:
@@ -224,7 +278,7 @@ $\hat\beta_1 - \beta_1$ is a \emph{weighted sum of the errors}, it is normal:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Route 2: Approximate, Without Normality}
+\begin{frame}{Route 2: Approximate, Without Normality\core}
 Drop A6 and look again at
 \begin{align*}
   \hat\beta_1 - \beta_1 = \frac{\frac1n\sum_i (X_i-\bar X)\epsilon_i}
@@ -292,7 +346,7 @@ Keep the estimator $\hat\beta$; change how you estimate the meat.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Single Restrictions}
+\begin{frame}{Single Restrictions\core}
 To test $H_0: \beta_j = \beta_j^0$,
 \begin{align*}
   t = \frac{\hat\beta_j - \beta_j^0}{\SE(\hat\beta_j)}
@@ -311,7 +365,7 @@ A $95\%$ confidence interval is $\hat\beta_j \pm 1.96\,\SE(\hat\beta_j)$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Joint Restrictions: the $F$-Test \emph{Is} Model Comparison}
+\begin{frame}{Joint Restrictions: the $F$-Test \emph{Is} Model Comparison\core}
 To test $q$ restrictions at once (``neither \texttt{wordsum} nor
 \texttt{pareduc} matters''), fit the restricted (compact) and unrestricted
 (augmented) models and compare their errors:
@@ -407,7 +461,7 @@ solution than any correction.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{What Heteroskedasticity Is}
+\begin{frame}{What Heteroskedasticity Is\core}
 \textbf{Homoskedasticity} (A5) says $\Var(\epsilon_i\mid X_i) = \sigma^2$: the
 spread of the outcome around the line is the same everywhere.
 \vskip2pt
@@ -459,7 +513,7 @@ efficiency (OLS is no longer BLUE).
 \end{block}
 \end{frame}
 
-\begin{frame}{The Scalar Sandwich}
+\begin{frame}{The Scalar Sandwich\core}
 Go back to the exact variance, \emph{without} assuming constant variance. Write
 $\sigma_i^2 \equiv \Var(\epsilon_i \mid X)$ and $d_i \equiv X_i - \bar X$:
 \begin{align*}
@@ -479,7 +533,7 @@ $\sigma_i^2 \equiv \Var(\epsilon_i \mid X)$ and $d_i \equiv X_i - \bar X$:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{White's Estimator, in Scalar Form}
+\begin{frame}{White's Estimator, in Scalar Form\core}
 We cannot observe $\sigma_i^2$. But we have $\hat e_i^2$, and
 $\E[\hat e_i^2] \approx \sigma_i^2$. Plug it in:
 \begin{align*}
@@ -522,7 +576,7 @@ so $\hat{V}_{\text{HC0}}(\bhat) =
 (\X'\X)^{-1}\big(\sum_i \hat e_i^2 X_iX_i'\big)(\X'\X)^{-1}$.
 \end{frame}
 
-\begin{frame}{Finite-Sample Corrections: HC0--HC3}
+\begin{frame}{Finite-Sample Corrections: HC0--HC3\core}
 $\hat e_i^2$ is biased downward: \emph{under homoskedasticity}
 $\E[\hat e_i^2] = \sigma^2(1-h_{ii})$, where $h_{ii}$ is the leverage from last
 week. So HC0 \emph{understates} standard errors in small samples. The fixes
@@ -607,7 +661,7 @@ restore efficiency: minimize $\sum_i w_i(Y_i - X_i'b)^2$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Why Independence Fails}
+\begin{frame}{Why Independence Fails\core}
 Sociological data are almost never i.i.d.\ draws:
 \begin{itemize}\itemsep1pt
   \item Students within schools; workers within firms; siblings within families.
@@ -629,7 +683,7 @@ $\rho_e$ is the \alert{intra-class correlation}.
 \end{block}
 \end{frame}
 
-\begin{frame}{Where the Scalar Formula Breaks}
+\begin{frame}{Where the Scalar Formula Breaks\core}
 The variance of $\hat\beta_1$ involves \emph{all} the covariances of the errors:
 \begin{align*}
   \Var\!\left(\sum_i d_i\epsilon_i\right)
@@ -649,7 +703,7 @@ The variance of $\hat\beta_1$ involves \emph{all} the covariances of the errors:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Moulton Factor: How Bad Is It?}
+\begin{frame}{The Moulton Factor: How Bad Is It?\core}
 With equal cluster sizes $\bar n$ and an error-components structure,
 \srct{Moulton (1986)} showed
 \begin{align*}
@@ -694,7 +748,7 @@ with the usual small-sample scaling $c = \frac{G}{G-1}\cdot\frac{n-1}{n-k}$
 \end{itemize}
 \end{frame}
 
-\begin{frame}{At What Level Should You Cluster?}
+\begin{frame}{At What Level Should You Cluster?\core}
 \srct{Abadie et al.\ (2023)}: clustering is a statement about the \emph{design},
 not a knob to tune.
 \begin{itemize}\itemsep4pt
@@ -790,7 +844,7 @@ of $F$. So draw new samples from the sample.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Nonparametric (Pairs) Bootstrap}
+\begin{frame}{The Nonparametric (Pairs) Bootstrap\core}
 \begin{enumerate}\itemsep3pt
   \item For $b=1,\dots,B$: draw $n$ observations $(Y_i, X_i)$ \emph{with
         replacement} from the sample.
@@ -897,7 +951,7 @@ care about is small comfort.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{A Scoreboard}
+\begin{frame}{A Scoreboard\core}
 \vskip-4pt
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.1}
@@ -905,7 +959,7 @@ care about is small comfort.
 \toprule
 Problem & Robust SEs? & What actually helps \\
 \midrule
-Heteroskedasticity & \textbf{yes} &, \\
+Heteroskedasticity & \textbf{yes} & nothing more needed \\
 Within-cluster correlation & \textbf{yes} (cluster-robust) & design-based clustering \\
 Serial correlation in panels & \textbf{yes} & cluster on unit \\
 Non-normal errors & \textbf{yes} (asymptotically) & larger $n$ \\
@@ -923,7 +977,7 @@ $p$-hacking, specification search & \alert{no} & pre-registration \\
 \end{center}
 \end{frame}
 
-\begin{frame}{A Practical Protocol}
+\begin{frame}{A Practical Protocol\core}
 \begin{enumerate}\itemsep4pt
   \item State the estimand and the design \emph{before} choosing a standard error.
   \item \textbf{Cluster where treatment is assigned or where sampling occurred.}

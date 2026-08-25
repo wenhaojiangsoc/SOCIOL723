@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -134,6 +137,8 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
 \begin{frame}{A Change of Strategy}
@@ -160,7 +165,7 @@ variation.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{What Goes Wrong, in Scalar Form}
+\begin{frame}{What Goes Wrong, in Scalar Form\core}
 We want $\beta$ in $Y_i = \alpha + \beta D_i + \epsilon_i$, but $D_i$ is
 \alert{endogenous}: $\Cov(D_i,\epsilon_i)\neq 0$. From Week 1,
 \begin{align*}
@@ -202,7 +207,7 @@ $\epsilon_i = \gamma A_i + u_i$ with $A_i$ an unmeasured confounder,
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{An Instrument}
+\begin{frame}[allowframebreaks,t]{An Instrument\core}
 An instrument $Z_i$ moves $D_i$ but is otherwise unrelated to $Y_i$.
 \vskip-2pt
 \begin{center}
@@ -231,7 +236,7 @@ Conditions 2 and 3 are distinct and are often conflated. A randomized lottery
 satisfies 2 by construction and can still violate 3.
 \end{frame}
 
-\begin{frame}{The Wald Estimator}
+\begin{frame}{The Wald Estimator\core}
 Take covariances of $Y_i = \alpha + \beta D_i + \epsilon_i$ with $Z_i$:
 \begin{align*}
   \Cov(Z_i, Y_i) = \beta\,\Cov(Z_i,D_i) + \underbrace{\Cov(Z_i,\epsilon_i)}_{=\,0}
@@ -251,7 +256,7 @@ Read it as: \emph{the effect of the instrument on the outcome, scaled up by how
 much the instrument moved the treatment.}
 \end{frame}
 
-\begin{frame}{Intuition for the Ratio}
+\begin{frame}{Intuition for the Ratio\core}
 Divide numerator and denominator by $\Var(Z_i)$:
 \begin{align*}
   \beta_{IV}
@@ -377,7 +382,7 @@ draft lottery for military service.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Two Stages}
+\begin{frame}{The Two Stages\core}
 With covariates and possibly several instruments:
 \begin{align*}
   \text{Stage 1:}\quad D_i &= \pi_0 + \pi_1 Z_i + \pi_2' W_i + v_i
@@ -459,7 +464,7 @@ by hand.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Four Types of People}
+\begin{frame}[allowframebreaks,t]{Four Types of People\core}
 With a binary instrument and binary treatment, write $D_i(z)$ for the treatment
 unit $i$ would take if assigned $Z_i = z$. Every unit is one of four types:
 \begin{center}\small
@@ -504,7 +509,7 @@ zero. \alert{Monotonicity} kills the last line by assuming $\Pr(\text{D})=0$,
 note that defiers would enter with the \emph{wrong sign}.
 \end{frame}
 
-\begin{frame}{Deriving the LATE: the Denominator}
+\begin{frame}{Deriving the LATE: the Denominator\core}
 The first stage recovers the complier share:
 \begin{align*}
   \E[D_i\mid Z_i=1] - \E[D_i\mid Z_i=0]
@@ -525,7 +530,7 @@ subpopulation whose treatment status the instrument actually changed, a group
 you cannot identify by name, defined by the instrument you happened to choose.
 \end{frame}
 
-\begin{frame}{Living With the LATE}
+\begin{frame}{Living With the LATE\core}
 \begin{itemize}\itemsep3pt
   \item If effects are homogeneous, LATE $=$ ATE and none of this matters. That is
         rarely a defensible assumption in sociology.
@@ -550,7 +555,7 @@ interpretable LATE and a number.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Weak Instruments Are Worse Than No Instrument}
+\begin{frame}{Weak Instruments Are Worse Than No Instrument\core}
 Recall $\hat\beta_{IV} = \Cov_n(Z,Y)/\Cov_n(Z,D)$. If the denominator
 is near zero, small violations of exclusion get \emph{divided by} a small number:
 \begin{align*}
@@ -571,7 +576,7 @@ is near zero, small violations of exclusion get \emph{divided by} a small number
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Diagnosing Instrument Strength}
+\begin{frame}{Diagnosing Instrument Strength\core}
 \begin{itemize}\itemsep3pt
   \item \textbf{First-stage $F$} on the excluded instruments. The traditional rule
         of thumb is $F > 10$ \srcp{Staiger and Stock 1997; Stock and Yogo 2005},
@@ -659,7 +664,7 @@ asks whether the instruments agree with one another.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{A Reader's Checklist}
+\begin{frame}[allowframebreaks,t]{A Reader's Checklist\core}
 Adapted from \srct{Sovey and Green (2011)}. Any IV paper should report:
 \begin{enumerate}\itemsep2pt
   \item The instrument, and an explicit argument for exclusion, not just a
@@ -680,7 +685,7 @@ Adapted from \srct{Sovey and Green (2011)}. Any IV paper should report:
 \alert{If a paper reports only the 2SLS coefficient, that is a red flag.}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{When IV Is the Wrong Tool}
+\begin{frame}[allowframebreaks,t]{When IV Is the Wrong Tool\core}
 \begin{itemize}\itemsep3pt
   \item \textbf{No credible instrument exists.} This is the normal state of
         affairs. An implausible instrument is worse than an honest

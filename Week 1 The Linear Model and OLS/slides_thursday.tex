@@ -1,0 +1,588 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SOCIOL 723 -- Social Statistics II
+%% Week 1 Thursday: OLS in Matrix Form
+%% Wenhao Jiang, Duke University, Fall 2026
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[aspectratio=169,11pt,xcolor=dvipsnames]{beamer}
+\mode<presentation>
+
+%% ---- fonts: Latin Modern Roman (the LaTeX default), serif throughout -------
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usefonttheme{serif}
+\renewcommand{\familydefault}{\rmdefault}
+
+%% ---- packages --------------------------------------------------------------
+\usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[english]{babel}
+
+%% lightweight citation macros (beamer + natbib do not play well together)
+\newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}   %% parenthetical
+\newcommand{\srct}[1]{#1}                               %% inline / narrative
+
+\DeclareMathOperator*{\argminop}{arg\,min}
+\DeclareMathOperator*{\argmaxop}{arg\,max}
+%% \limits forces the subscript underneath even in inline math
+\newcommand{\argmin}{\argminop\limits}
+\newcommand{\argmax}{\argmaxop\limits}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Corr}{Corr}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\pcol}{col}
+\newcommand{\indep}{\perp\!\!\!\perp}
+
+%% ---- notation conventions (course-wide) ------------------------------------
+%%  \E   population expectation (plain italic E)
+%%  \En  sample / empirical expectation (blackboard-bold E)
+%%  matrices and vectors are BOLD ITALIC via \bm, so they sit naturally
+%%  alongside the italic scalar notation
+\newcommand{\E}{E}
+\newcommand{\En}{\mathbb{E}_n}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\bm{X}}
+\newcommand{\Y}{\bm{y}}
+\newcommand{\Ix}{\bm{I}}
+\newcommand{\zero}{\bm{0}}
+\newcommand{\one}{\bm{1}}
+\newcommand{\Pm}{\bm{P}}
+\newcommand{\Mm}{\bm{M}}
+\newcommand{\bhat}{\hat{\bm{\beta}}}
+\newcommand{\ehat}{\hat{\bm{e}}}
+
+%% ---- theme -----------------------------------------------------------------
+\usetheme{default}
+%% thin single-line header: clickable section names, current one highlighted.
+%% (miniframes is deliberately not used: one dot per slide wraps to 4 rows here)
+\setbeamerfont{section in head/foot}{size=\tiny}
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.1ex,%
+                         leftskip=.3cm,rightskip=.3cm]{section in head/foot}%
+    \usebeamerfont{section in head/foot}%
+    \insertsectionnavigationhorizontal{.94\paperwidth}{}{}%
+  \end{beamercolorbox}%
+}
+
+\definecolor{dukeblue}{RGB}{1,33,105}
+\definecolor{accent}{RGB}{200,78,0}
+\definecolor{softgray}{RGB}{242,242,245}
+
+\setbeamercolor{structure}{fg=dukeblue}
+\setbeamercolor{frametitle}{fg=dukeblue,bg=white}
+\setbeamercolor{section in head/foot}{fg=white,bg=dukeblue}
+\setbeamercolor{section in head/foot shaded}{fg=white!50!dukeblue,bg=dukeblue}
+\setbeamercolor{alerted text}{fg=accent}
+\setbeamercolor{block title}{fg=white,bg=dukeblue}
+\setbeamercolor{block body}{fg=black,bg=softgray}
+\setbeamercolor{block title alerted}{fg=white,bg=accent}
+\setbeamercolor{block body alerted}{fg=black,bg=softgray}
+
+\setbeamertemplate{footline}[page number]
+\setbeamertemplate{navigation symbols}{}
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamerfont{footnote}{size=\scriptsize}
+\setbeamerfont{caption}{size=\footnotesize}
+\setbeamertemplate{subsection in head/foot}{}
+\setbeamertemplate{subsection in head/foot shaded}{}
+\setbeamertemplate{caption}[numbered]
+
+%% marker for material that is for understanding, not for examination
+\newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
+
+%% section / subsection dividers
+\setbeamertemplate{section page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
+  \vskip4pt{\color{dukeblue}\rule{0.35\linewidth}{1pt}\par}
+  \vfill\end{centering}}
+\setbeamertemplate{subsection page}{%
+  \begin{centering}\vfill
+  {\usebeamercolor[fg]{structure}\large\bfseries\insertsubsectionhead\par}
+  \vfill\end{centering}}
+
+
+%% tighter vertical rhythm: math-heavy beamer frames otherwise overflow
+\AtBeginDocument{%
+  \setlength{\abovedisplayskip}{5pt}%
+  \setlength{\belowdisplayskip}{5pt}%
+  \setlength{\abovedisplayshortskip}{2pt}%
+  \setlength{\belowdisplayshortskip}{3pt}%
+}
+\setbeamertemplate{frametitle}{%
+  \vskip4pt\usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}%
+  \insertframetitle\par\vskip2pt}
+\setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
+
+%% ---- title -----------------------------------------------------------------
+%% ---- title page: same face as the body (Latin Modern), larger and bold
+\setbeamerfont{title}{size*={16}{19},series=\bfseries}
+\setbeamerfont{subtitle}{size=\Large,series=\mdseries}
+\setbeamerfont{author}{size=\large}
+\setbeamerfont{date}{size=\large}
+\title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[4pt]}
+\subtitle{Week 1 (Thursday), OLS in Matrix Form\\[-6pt]}
+\author[Jiang]{Wenhao Jiang\vspace{-1.5em}}
+\institute[Duke]{}
+\titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
+\date{Department of Sociology, Fall 2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Today}
+  \tableofcontents
+  \vskip6pt
+  {\footnotesize Tuesday built everything in scalar form. Today: the same
+  objects again in matrix form, for general understanding, followed by lab.\\
+  \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for
+  understanding, not examined}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Matrix Form]{The Matrix Form and Its Geometry}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Why Bother}
+\begin{itemize}\itemsep5pt
+  \item With $k$ regressors, scalar algebra needs $k$ normal equations and becomes
+        unreadable. Matrix algebra stays two lines long for any $k$.
+  \item The \alert{geometry}, projection onto a subspace, is invisible in
+        scalar form and obvious in matrix form.
+  \item In the literature, most estimators you will meet (fixed effects, IV,
+        2SLS, ridge) are \emph{written} as small variations on
+        $\bhat = (\X'\X)^{-1}\X'\Y$. We will keep working in scalars, but
+        recognizing this form is what lets you read modern papers.
+\end{itemize}
+\vskip6pt
+\begin{alertblock}{But}
+Nothing in this section is new content. It is the \emph{same} normal equations
+you derived on Tuesday, written more compactly. The lab that follows practices
+every piece of linear algebra we use.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Vectors and Matrices, From Zero\core}
+No linear algebra is assumed in this course. Here is the part we need, from
+nothing.
+\begin{itemize}\itemsep3pt
+  \item A \textbf{vector} is a list of numbers written in a column. $X_i$ is the
+        list describing unit $i$: one entry per variable, with a $1$ on top for
+        the intercept.
+  \item A \textbf{matrix} is a rectangular table of numbers: an $n\times k$
+        matrix has $n$ rows and $k$ columns.
+  \item The \textbf{transpose} $'$ tips a column onto its side: if $X_i$ is a
+        $k\times 1$ column, then $X_i'$ is the same list lying down, $1\times k$.
+\end{itemize}
+\vskip2pt
+\begin{block}{The one formula to internalize}
+\begin{align*}
+  X_i'\bm\beta = \beta_0\cdot 1 + \beta_1 X_{i1} + \cdots + \beta_{k-1}X_{i,k-1} :
+\end{align*}
+a row times a column is a \emph{single number}: multiply matching entries, then
+add. So $X_i'\bm\beta$ is nothing but unit $i$'s fitted value, written
+compactly. Whenever you see $X_i'\bm\beta$, read it as ``the regression line
+evaluated at unit $i$.''
+\end{block}
+\end{frame}
+
+\begin{frame}{Multiplying and Inverting}
+The only two operations we use. \textbf{Multiplication} extends the
+row-times-column rule: entry $(r,c)$ of $\bm{AB}$ is (row $r$ of $\bm A$)
+times (column $c$ of $\bm B$):
+\begin{align*}
+  \begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix}
+  \begin{bmatrix} 5 \\ 6 \end{bmatrix}
+  =
+  \begin{bmatrix} 1\cdot 5 + 2\cdot 6 \\ 3\cdot 5 + 4\cdot 6\end{bmatrix}
+  = \begin{bmatrix} 17 \\ 39 \end{bmatrix}.
+\end{align*}
+Dimensions must match, $(n\times k)(k\times 1) = (n\times 1)$, and order
+matters: $\bm{AB}\neq\bm{BA}$ in general.
+\vskip2pt
+\textbf{Inversion} is the matrix version of dividing. For a number,
+$a^{-1}a = 1$; for a square matrix, $\bm A^{-1}\bm A = \Ix$, the
+\emph{identity} matrix (ones on the diagonal, zeros elsewhere), which leaves
+whatever it multiplies unchanged.
+\begin{itemize}\itemsep2pt
+  \item Just as $1/a$ fails to exist when $a = 0$, $\bm A^{-1}$ fails to exist
+        when the matrix collapses information; that is the ``rank'' condition
+        two frames ahead.
+  \item You will never invert a matrix by hand here; \texttt{R}'s
+        \texttt{solve()} does it. What matters is knowing what the symbol says.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Stacking the Data}
+For $n$ units and $k$ regressors (including the constant):
+\begin{align*}
+  \Y = \begin{bmatrix} Y_1 \\ \vdots \\ Y_n \end{bmatrix}_{n\times 1},
+  \quad
+  \X = \begin{bmatrix} X_1' \\ \vdots \\ X_n' \end{bmatrix}
+     = \begin{bmatrix}
+        1 & X_{11} & \cdots & X_{1,k-1}\\
+        \vdots & \vdots & & \vdots \\
+        1 & X_{n1} & \cdots & X_{n,k-1}
+       \end{bmatrix}_{n\times k},
+  \quad
+  \bm\epsilon = \begin{bmatrix} \epsilon_1 \\ \vdots \\ \epsilon_n\end{bmatrix}.
+\end{align*}
+The model, stacked over units:
+\begin{align*}
+  \Y = \X\bm\beta + \bm\epsilon
+  \qquad\Longleftrightarrow\qquad
+  Y_i = X_i'\bm\beta + \epsilon_i,\quad i=1,\dots,n .
+\end{align*}
+Two objects do all the work:
+$\ \X'\X = \sum_i X_iX_i'$ (a $k\times k$ matrix) and
+$\ \X'\Y = \sum_i X_i Y_i$ (a $k\times 1$ vector).
+\end{frame}
+
+\begin{frame}{Least Squares in Matrix Form}
+\begin{align*}
+  S(b) = \sum_{i} (Y_i - X_i'b)^2 = (\Y-\X b)'(\Y-\X b)
+       = \Y'\Y - 2\,b'\X'\Y + b'\X'\X b .
+\end{align*}
+\pause
+Differentiate, using $\partial (a'b)/\partial b = a$ and
+$\partial (b'Ab)/\partial b = 2Ab$ for symmetric $A$:
+\begin{align*}
+  \frac{\partial S(b)}{\partial b} = -2\X'\Y + 2\X'\X b \overset{!}{=} 0
+  \quad\Longrightarrow\quad
+  \underbrace{\X'\X\,\bhat = \X'\Y}_{\text{\alert{normal equations}}} .
+\end{align*}
+\pause
+These are the \emph{same} $k$ equations you wrote out one at a time. The
+second-order condition holds because $\X'\X \succeq 0$, so $S$ is convex and any
+stationary point is a global minimum.
+\end{frame}
+
+\begin{frame}{The Estimator, Existence, and Rank}
+\begin{block}{The OLS estimator}
+If $\rank(\X)=k$ (\emph{full column rank}), $\X'\X$ is invertible and
+\begin{align*}
+  \bhat = (\X'\X)^{-1}\X'\Y = \big(\En[X_iX_i']\big)^{-1}\En[X_iY_i] .
+\end{align*}
+\end{block}
+\begin{itemize}\itemsep3pt
+  \item Full column rank requires $n \geq k$ and no exact linear dependence among
+        columns. It is the matrix version of ``$X$ must vary.''
+  \item Failures you will actually meet: the \emph{dummy variable trap}; including
+        a variable and a rescaling of it; a group indicator constant within a
+        fixed effect.
+  \item If rank fails, \texttt{R} silently drops a column and reports \texttt{NA}.
+        That \texttt{NA} is never a mystery.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Sanity Check: Recovering the Scalar Formula\adv}
+Let $k=2$ with $X_i = (1, X_i)'$. Then
+\begin{align*}
+  \X'\X = \begin{bmatrix} n & \sum_i X_i \\ \sum_i X_i & \sum_i X_i^2\end{bmatrix},
+  \qquad
+  \X'\Y = \begin{bmatrix} \sum_i Y_i \\ \sum_i X_i Y_i \end{bmatrix} .
+\end{align*}
+Using $\begin{bmatrix} a & b\\ c& d\end{bmatrix}^{-1}
+= \frac{1}{ad-bc}\begin{bmatrix} d & -b\\ -c & a\end{bmatrix}$,
+\begin{align*}
+  \hat\beta_1 = \frac{n\sum_i X_iY_i - \sum_i X_i \sum_i Y_i}
+                     {n\sum_i X_i^2 - (\sum_i X_i)^2}
+  = \frac{\Cov_n(X,Y)}{\Var_n(X)},
+  \qquad
+  \hat\beta_0 = \bar Y - \hat\beta_1 \bar X .
+\end{align*}
+\vskip4pt
+Exactly what we derived by hand. The matrix form is a change of language, not of
+substance.
+\end{frame}
+
+\begin{frame}{OLS Is a Projection\adv}
+Think of $\Y$ as a single point in $\R^n$, one dimension per
+\emph{observation}. The $k$ columns of $\X$ span a $k$-dimensional subspace
+\begin{align*}
+  \pcol(\X) = \{\X b : b \in \R^k\} \subset \R^n .
+\end{align*}
+OLS finds the point in $\pcol(\X)$ closest to $\Y$:
+$\ \hat\Y = \argmin_{v \in \pcol(\X)} \|\Y - v\|^2$.
+\vskip4pt
+\begin{block}{Projection and annihilator matrices}
+\begin{align*}
+  \Pm = \X(\X'\X)^{-1}\X' \ (\text{``hat matrix''}),
+  \qquad
+  \Mm = \Ix_n - \Pm \ (\text{``residual maker''})
+\end{align*}
+so that $\hat\Y = \Pm\Y$ and $\ehat = \Mm\Y$.
+\end{block}
+\end{frame}
+
+\begin{frame}{The Picture\adv}
+\begin{center}
+\begin{tikzpicture}[scale=1.2,>=Stealth]
+  \fill[dukeblue!8] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
+  \draw[dukeblue!40] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
+  \node[dukeblue] at (3.15,0.55) {\small $\pcol(\X)$};
+  \coordinate (O) at (0,0);
+  \coordinate (Yhat) at (1.9,0.35);
+  \coordinate (Y) at (1.9,2.35);
+  \draw[->,thick,dukeblue] (O) -- (Yhat) node[below right] {\small $\hat{\bm{y}} = \bm{P}\bm{y}$};
+  \draw[->,very thick] (O) -- (Y) node[above right] {\small $\bm{y}$};
+  \draw[->,thick,accent] (Yhat) -- (Y) node[midway,right] {\small $\hat{\bm{e}} = \bm{M}\bm{y}$};
+  \draw[accent] ($(Yhat)+(0,0.22)$) -- ($(Yhat)+(-0.22,0.22)$) -- ($(Yhat)+(-0.22,0)$);
+  \draw[->,dukeblue!70] (O) -- (-0.9,-0.35) node[below] {\small $\bm{x}_1$};
+  \draw[->,dukeblue!70] (O) -- (1.1,-0.55) node[below] {\small $\bm{x}_2$};
+\end{tikzpicture}
+\end{center}
+\vskip-8pt
+\begin{itemize}
+  \item $\ehat \perp \pcol(\X)$, the geometric content of $\X'\ehat=\zero$, which
+        is the geometric content of ``residuals are uncorrelated with the
+        regressors.''
+  \item Fitting is dropping a perpendicular. Everything else is bookkeeping.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Properties of $\Pm$ and $\Mm$\adv}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Symmetric}
+\begin{align*}
+  \Pm' = \Pm, \qquad \Mm' = \Mm
+\end{align*}
+\textbf{Idempotent}
+\begin{align*}
+  \Pm\Pm &= \X(\X'\X)^{-1}\underbrace{\X'\X(\X'\X)^{-1}}_{\Ix}\X' = \Pm\\
+  \Mm\Mm &= (\Ix-\Pm)(\Ix-\Pm) = \Mm
+\end{align*}
+\textbf{Mutually orthogonal}
+\begin{align*}
+  \Pm\Mm = \Pm - \Pm\Pm = \zero
+\end{align*}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Act correctly on $\X$}
+\begin{align*}
+  \Pm\X = \X, \qquad \Mm\X = \zero
+\end{align*}
+\textbf{Traces $=$ dimensions}
+\begin{align*}
+  \trace(\Pm) &= \trace\big((\X'\X)^{-1}\X'\X\big) = k\\
+  \trace(\Mm) &= n - k
+\end{align*}
+\textbf{Eigenvalues} are all $0$ or $1$; $\Pm$ has $k$ ones, $\Mm$ has $n-k$.
+\end{column}
+\end{columns}
+\vskip2pt
+{\footnotesize Used repeatedly: $\trace(ABC)=\trace(BCA)$ (cyclic property).}
+\end{frame}
+
+\begin{frame}{Leverage\adv}
+The $i$th diagonal element of $\Pm$,
+\begin{align*}
+  h_{ii} = X_i'(\X'\X)^{-1}X_i = \frac{\partial \hat Y_i}{\partial Y_i},
+\end{align*}
+is the \alert{leverage} of observation $i$: how much unit $i$'s own outcome pulls
+its own fitted value.
+\begin{itemize}\itemsep3pt
+  \item $0 \leq h_{ii} \leq 1$ and $\sum_i h_{ii} = k$, so average leverage is
+        $k/n$.
+  \item High leverage means unusual \emph{covariate} values, not an unusual
+        outcome.
+  \item $\Var(\hat e_i) = \sigma^2(1-h_{ii})$: high-leverage points have
+        artificially small residuals, they drag the line toward themselves.
+  \item Leverage returns next week in the finite-sample corrections HC2 and HC3.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Sums of Squares, Again\adv}
+Because $\Y = \Pm\Y + \Mm\Y$ and $\Pm\Mm=\zero$, Pythagoras gives
+\begin{align*}
+  \Y'\Y = \Y'\Pm\Y + \Y'\Mm\Y = \hat\Y'\hat\Y + \ehat'\ehat .
+\end{align*}
+Subtracting $n\bar Y^2$ (valid when a constant is included) returns the scalar
+decomposition $TSS = ESS + RSS$.
+\vskip6pt
+\begin{itemize}
+  \item $R^2$ is also $\cos^2$ of the angle between $\Y - \bar Y\one$ and
+        $\hat\Y - \bar Y\one$: fit is literally about angles.
+  \item Adding a regressor enlarges $\pcol(\X)$, which can only move $\hat\Y$
+        closer to $\Y$, the geometric reason $R^2$ never falls.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Unbiasedness, in Matrix Form\adv}
+Tuesday's two-line scalar proof, now for any $k$:
+\begin{align*}
+  \bhat &= (\X'\X)^{-1}\X'(\X\bm\beta + \bm\epsilon)
+         = \bm\beta + (\X'\X)^{-1}\X'\bm\epsilon , \\[4pt]
+  \E[\bhat\mid\X] &= \bm\beta + (\X'\X)^{-1}\X'\underbrace{\E[\bm\epsilon\mid\X]}_{=\,\zero}
+  = \bm\beta . \qquad\blacksquare
+\end{align*}
+\vskip6pt
+\begin{itemize}
+  \item Note where the work is done: \emph{only} by A4.
+  \item Heteroskedasticity, clustering, and non-normality do \alert{not} bias
+        $\bhat$. They affect its \emph{variance}, next week.
+  \item A4 fails whenever an omitted variable, reverse causation, measurement
+        error in $X$, or selection puts something correlated with $X$ into
+        $\epsilon$. That is the entire causal-inference problem in one sentence.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Gauss--Markov Theorem\adv}
+\begin{block}{Theorem}
+Under A1--A5, $\bhat$ is the \alert{Best Linear Unbiased Estimator}: among all
+$\tilde{\bm\beta} = \bm{C}\Y$ with $\bm C$ a function of $\X$ and
+$\E[\tilde{\bm\beta}\mid\X]=\bm\beta$,
+$\Var(\tilde{\bm\beta}\mid\X) - \Var(\bhat\mid\X) \succeq 0$.
+\end{block}
+\pause
+\textbf{Proof.} Write $\bm{C} = (\X'\X)^{-1}\X' + \bm{D}$. Unbiasedness for all
+$\bm\beta$ forces $\bm{D}\X = \zero$. Then
+\begin{align*}
+  \Var(\bm C\Y\mid\X)
+  &= \sigma^2\big[(\X'\X)^{-1}\X' + \bm D\big]\big[\X(\X'\X)^{-1} + \bm D'\big] \\
+  &= \sigma^2(\X'\X)^{-1}
+   + \sigma^2\underbrace{(\X'\X)^{-1}\X'\bm D'}_{=\,\zero}
+   + \sigma^2\underbrace{\bm D\X(\X'\X)^{-1}}_{=\,\zero}
+   + \sigma^2\bm{D}\bm{D}' \\
+  &= \Var(\bhat\mid\X) + \sigma^2\bm{D}\bm{D}' \succeq \Var(\bhat\mid\X) .
+  \qquad\blacksquare
+\end{align*}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Partialling Out]{Partialling Out in General}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Frisch--Waugh--Lovell Theorem\adv}
+Partition $\X = [\,\X_1\ \ \X_2\,]$: a treatment of interest and controls.
+Let $\Mm_2 = \Ix - \X_2(\X_2'\X_2)^{-1}\X_2'$ and define
+\begin{align*}
+  \tilde{\X}_1 = \Mm_2\X_1 ,
+  \qquad
+  \tilde{\Y} = \Mm_2\Y .
+\end{align*}
+\begin{block}{Theorem}
+The OLS estimate $\hat{\bm\beta}_1$ from the full regression equals
+\begin{align*}
+  \hat{\bm\beta}_1 = (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\tilde\Y
+                   = (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\Y ,
+\end{align*}
+and the residuals from the short regression are numerically identical to $\ehat$
+from the full one.
+\end{block}
+\vskip2pt
+This is the three-step recipe from earlier, now for any number of controls.
+\end{frame}
+
+\begin{frame}{Proof of FWL\adv}
+Premultiply the model by $\Mm_2$ and use $\Mm_2\X_2 = \zero$:
+\begin{align*}
+  \Mm_2\Y = \Mm_2\X_1\bm\beta_1 + \underbrace{\Mm_2\X_2}_{=\zero}\bm\beta_2
+          + \Mm_2\bm\epsilon
+  \quad\Longrightarrow\quad
+  \tilde\Y = \tilde\X_1\bm\beta_1 + \Mm_2\bm\epsilon .
+\end{align*}
+\pause
+For the estimator, decompose the fitted model
+$\Y = \X_1\hat{\bm\beta}_1 + \X_2\hat{\bm\beta}_2 + \ehat$ and premultiply by
+$\tilde\X_1' = \X_1'\Mm_2$:
+\begin{align*}
+  \tilde\X_1'\Y
+  = \tilde\X_1'\tilde\X_1\hat{\bm\beta}_1
+  + \X_1'\underbrace{\Mm_2\X_2}_{=\zero}\hat{\bm\beta}_2
+  + \underbrace{\X_1'\Mm_2\ehat}_{=\,0} ,
+\end{align*}
+using $\Mm_2\ehat = \ehat$ (since $\X_2'\ehat = \zero$) and $\X_1'\ehat = \zero$.
+Solving gives the result. Using $\tilde\Y$ instead of $\Y$ changes nothing
+because $\tilde\X_1'\Mm_2 = \tilde\X_1'$. $\blacksquare$
+\end{frame}
+
+\begin{frame}{Why FWL Matters More Than It Looks}
+\begin{enumerate}\itemsep6pt
+  \item \textbf{Interpretation.} ``Controlling for $W$'' $=$ discarding all
+        covariance between $X_1$ and $W$. Your estimate lives on what remains.
+  \item \textbf{Computation.} Fixed-effects estimators \emph{are} FWL: regressing
+        on unit dummies is the same as demeaning within unit (Week 10).
+  \item \textbf{Diagnostics.} The added-variable plot is the only two-dimensional
+        picture that faithfully represents a multivariate slope.
+  \item \textbf{Generality.} Nothing in the argument requires $\X_2$ to enter
+        linearly, it only requires that we can compute the part of $X_1$ that
+        $\X_2$ predicts. That observation is the seed of a large literature, and
+        we return to it briefly in Week 13.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Omitted Variables, in Matrix Form\adv}
+With $\X_1$ included and $\X_2$ omitted,
+\begin{align*}
+  \E[\tilde{\bm\beta}_1 \mid \X]
+  = \bm\beta_1 + \underbrace{(\X_1'\X_1)^{-1}\X_1'\X_2}_{\hat{\bm\delta}}\,\bm\beta_2 .
+\end{align*}
+\begin{itemize}\itemsep4pt
+  \item Each column of $\hat{\bm\delta}$ is the coefficient vector from regressing
+        one omitted variable on all the included ones, exactly $\delta_1$ from
+        the scalar case, stacked.
+  \item With several omitted variables the bias is a \emph{sum} of terms which may
+        offset, so ``the bias must be positive'' arguments require care.
+  \item Sensitivity analysis (Week 6) formalizes the question: how strong would an
+        omitted confounder have to be to overturn the result?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where This Leaves Us}
+\begin{itemize}\itemsep5pt
+  \item OLS minimizes squared errors. Everything else, the slope formula, the
+        normal equations, FWL, OVB, follows from that one criterion by algebra.
+  \item In the population, OLS estimates the best linear approximation to the CEF.
+        Under A1--A4 the sample version is unbiased for it.
+  \item Whether that coefficient is a \emph{causal effect} is a separate question
+        that regression cannot answer.
+  \item \textbf{Next week}: we have $\hat\beta$; now we need to know how uncertain
+        it is, and the standard error your software prints is usually the wrong
+        one.
+\end{itemize}
+\vskip6pt
+\begin{block}{This week's reading}
+MHE Chapter 3; CCI Chapter 6. The lab practices the matrix algebra hands-on and
+computes OLS by hand in \texttt{R}.
+\end{block}
+\end{frame}
+
+\begin{frame}{References}
+\footnotesize
+\begin{itemize}\itemsep3pt
+\item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.
+\textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 3]
+\item Morgan, Stephen L. and Christopher Winship. 2015.
+\textit{Counterfactuals and Causal Inference}, 2nd ed. Cambridge University Press.
+[Ch.\ 6]
+\item James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2021.
+\textit{An Introduction to Statistical Learning}, 2nd ed. Springer. [Ch.\ 2--3]
+\item Arbatl{\i}, Cemal Eren, Quamrul H. Ashraf, Oded Galor, and Marc Klemp.
+2020. ``Diversity and Conflict.'' \textit{Econometrica} 88(2): 727--797.
+[the added-variable plot example]
+\item Correll, Josh, Abigail M. Folberg, Charles M. Judd, Gary H. McClelland, and
+Carey S. Ryan. 2024. \textit{Data Analysis: A Model Comparison Approach to
+Regression, ANOVA, and Beyond}, 4th ed. Routledge. [for review]
+\end{itemize}
+\end{frame}
+
+\end{document}

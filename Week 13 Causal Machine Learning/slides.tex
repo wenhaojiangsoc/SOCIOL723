@@ -83,7 +83,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -94,6 +94,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -133,9 +136,11 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
-\begin{frame}{Putting the Two Halves Together}
+\begin{frame}{Putting the Two Halves Together\core}
 \begin{itemize}\itemsep3pt
   \item \textbf{Weeks 5--11} gave us identification: what must be true for a
         parameter to be causal. Almost every design ended with a nuisance
@@ -160,7 +165,7 @@ giving up $\sqrt n$ inference.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Partially Linear Model}
+\begin{frame}{The Partially Linear Model\core}
 To see the problem without letting notation hide it, start with the simplest
 causal case there is: \emph{one} treatment effect to estimate, but completely
 flexible relationships between the controls, the treatment, and the outcome.
@@ -183,7 +188,7 @@ course:
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Attempt 1: Regularization Bias}
+\begin{frame}[allowframebreaks,t]{Attempt 1: Regularization Bias\adv}
 The naive approach: fit the partially linear model by ML to get $\hat g$, taking
 it from a joint fit of $Y$ on $(D_i, W_i)$ with $D_i$ left \emph{unpenalized} so
 that $\hat g$ targets the structural $g$. Then regress $Y_i - \hat g(W_i)$ on
@@ -217,7 +222,7 @@ Substituting the true model and rescaling,
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Attempt 2: Partial Out Both Sides}
+\begin{frame}{Attempt 2: Partial Out Both Sides\core}
 Frisch--Waugh--Lovell says: residualize $Y$ \emph{and} $D$ on $W$, then regress.
 With ML estimates $\hat g$ and $\hat m$,
 \begin{align*}
@@ -240,7 +245,7 @@ can do that under sparsity or smoothness assumptions.
 \textbf{First-order bias has become second-order.}
 \end{frame}
 
-\begin{frame}{This Is Neyman Orthogonality Again}
+\begin{frame}{This Is Neyman Orthogonality Again\adv}
 The residualized moment condition is
 \begin{align*}
   \E\Big[\psi(W_i;\theta,\eta)\Big] = 0, \qquad
@@ -252,8 +257,9 @@ and it satisfies
 \end{align*}
 \vskip3pt
 \begin{itemize}\itemsep3pt
-  \item \alert{You derived this in Week 6}, for the AIPW score, using a Gateaux
-        derivative. The partially linear case is the same statement for a
+  \item \alert{You met this property in Week 6}: the AIPW estimator's bias was
+        the \emph{product} of the two nuisance errors, so first-order mistakes in
+        either one cancel. The partially linear case is the same statement for a
         different moment.
   \item And you derived it in \textbf{Week 1}: FWL is the linear special case, in
         which $\hat m$ is an OLS projection and the ``adaptivity'' of $\hat\beta_1$
@@ -268,7 +274,7 @@ and it satisfies
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Second Ingredient: Cross-Fitting}
+\begin{frame}{The Second Ingredient: Cross-Fitting\core}
 Orthogonality is not quite enough. If $\hat m$ is fitted on the \emph{same}
 observations where it is evaluated, its errors correlate with those units'
 outcomes, \alert{overfitting bias}, which orthogonality does not remove.
@@ -290,7 +296,7 @@ This is the same device as cross-validation in Week 12, but used to protect
 \emph{inference}, not to select a tuning parameter.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{The DML Recipe}
+\begin{frame}[allowframebreaks,t]{The DML Recipe\core}
 \begin{enumerate}\itemsep3pt
   \item Split the sample into $K$ folds (typically $K = 5$; split on the
         \emph{independent unit} if data are clustered).
@@ -312,7 +318,7 @@ This is the same device as cross-validation in Week 12, but used to protect
 \texttt{mlr3} learners.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{What the Theory Requires, and What It Does Not}
+\begin{frame}[allowframebreaks,t]{What the Theory Requires, and What It Does Not\core}
 \begin{columns}[T]
 \begin{column}{0.47\textwidth}
 \textbf{Requires}
@@ -377,7 +383,7 @@ Conditional DID & outcome trend and propensity, by cohort & 10 \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{From ATE to CATE}
+\begin{frame}{From ATE to CATE\core}
 Drop the constant-effect assumption. The target becomes the
 \alert{conditional average treatment effect}
 \begin{align*}
@@ -399,7 +405,7 @@ Drop the constant-effect assumption. The target becomes the
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Doubly Robust Score as a Pseudo-Outcome}
+\begin{frame}{The Doubly Robust Score as a Pseudo-Outcome\core}
 Take the AIPW summand from Week 6, unit by unit:
 \begin{align*}
   \Gamma_i = \hat m_1(X_i) - \hat m_0(X_i)
@@ -425,7 +431,7 @@ Take the AIPW summand from Week 6, unit by unit:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Causal Forests}
+\begin{frame}{Causal Forests\core}
 \srct{Wager and Athey (2018)}, \srct{Athey, Tibshirani, and Wager (2019)}: a
 random forest whose splits are chosen to maximize \emph{heterogeneity in the
 treatment effect} rather than in the outcome.
@@ -444,7 +450,7 @@ treatment effect} rather than in the outcome.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Reporting Heterogeneity Honestly}
+\begin{frame}{Reporting Heterogeneity Honestly\core}
 An estimated $\hat\tau(x)$ that varies is not by itself evidence of
 heterogeneity, noise varies too.
 \vskip3pt

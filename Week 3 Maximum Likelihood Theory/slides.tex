@@ -80,6 +80,8 @@
 \setbeamercolor{block body alerted}{fg=black,bg=softgray}
 
 \setbeamertemplate{footline}[page number]
+%% continued frames keep the SAME font size and spill onto a new slide
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
@@ -91,6 +93,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -129,6 +134,8 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,7 +173,7 @@ Be pragmatic, and be explicit about which you are using.
 \end{block}
 \end{frame}
 
-\begin{frame}{OLS Is Already a Maximum Likelihood Estimator}
+\begin{frame}{OLS Is Already a Maximum Likelihood Estimator\core}
 Suppose we assume the full model
 \begin{align*}
   Y_i = X_i'\bm\beta + \epsilon_i , \qquad
@@ -223,7 +230,8 @@ model in the sociological literature.
 \end{enumerate}
 \vskip6pt
 As in Weeks 1--2, everything examinable is done in the \alert{one-parameter
-scalar case}. Frames marked \adv{} generalize.
+scalar case}. Frames marked \core{} are the essential core; frames marked
+\adv{} generalize.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,7 +239,7 @@ scalar case}. Frames marked \adv{} generalize.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Probability Versus Likelihood}
+\begin{frame}{Probability Versus Likelihood\core}
 Both start from the same object, the density (or mass function) $f(y\mid\theta)$.
 What differs is \emph{what you hold fixed}.
 \vskip2pt
@@ -305,7 +313,7 @@ is the value that does best among \emph{all} $\theta\in[0,1]$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{From One Observation to Many}
+\begin{frame}{From One Observation to Many\core}
 With $n$ observations we need the \emph{joint} density
 $f(y_1,\dots,y_n\mid\theta)$. If the observations are independent given $\theta$,
 it factors:
@@ -326,7 +334,7 @@ take logs:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Worked Example 1: Bernoulli}
+\begin{frame}{Worked Example 1: Bernoulli\core}
 Let $Y_i \in \{0,1\}$ with $\Pr(Y_i=1)=\theta$. The mass function written as a
 single formula:
 \begin{align*}
@@ -390,7 +398,7 @@ so
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Score Function}
+\begin{frame}{The Score Function\core}
 \begin{block}{Definition}
 The \alert{score} is the derivative of the log-likelihood with respect to the
 parameter:
@@ -412,7 +420,7 @@ parameter:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Bernoulli: Deriving $\hat\theta$}
+\begin{frame}{Bernoulli: Deriving $\hat\theta$\core}
 \begin{align*}
   \loglik(\theta) &= \Big(\textstyle\sum_i y_i\Big)\log\theta
    + \Big(n - \textstyle\sum_i y_i\Big)\log(1-\theta) \\[4pt]
@@ -531,7 +539,7 @@ data cannot distinguish among a set of parameter values.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Curvature Is Information}
+\begin{frame}{Curvature Is Information\core}
 \begin{center}
 \begin{tikzpicture}[scale=0.95]
   \begin{scope}
@@ -560,7 +568,7 @@ away from $\hat\theta$ costs a lot of fit; we are confident.
 \alert{The second derivative measures exactly this.}
 \end{frame}
 
-\begin{frame}{Fisher Information}
+\begin{frame}{Fisher Information\core}
 \begin{block}{Definition (one parameter)}
 \begin{align*}
   \Info(\theta) \;\equiv\; -\E\!\left[\frac{\partial^2 \loglik(\theta)}{\partial\theta^2}\right]
@@ -586,7 +594,7 @@ model is correctly specified, and it will matter a great deal in a moment.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Variance of the MLE}
+\begin{frame}{The Variance of the MLE\core}
 \begin{align*}
   \boxed{\;\hat{V}(\hat\theta) = \Info(\hat\theta)^{-1}
   \qquad\text{or}\qquad
@@ -658,7 +666,7 @@ it is a free check on your information calculation.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Four Properties}
+\begin{frame}{The Four Properties\core}
 Under regularity conditions, as $n\to\infty$:
 \begin{enumerate}\itemsep5pt
   \item \textbf{Consistency}: $\hat\theta \pto \theta_0$.
@@ -722,7 +730,7 @@ integral.
 \end{block}
 \end{frame}
 
-\begin{frame}{Maximum Likelihood Is Not Unbiased}
+\begin{frame}{Maximum Likelihood Is Not Unbiased\core}
 \begin{itemize}\itemsep4pt
   \item We already saw it: $\hat\sigma^2_{\text{MLE}} = \frac1n\sum_i(y_i-\bar y)^2$
         has $\E[\hat\sigma^2] = \frac{n-1}{n}\sigma^2$.
@@ -799,7 +807,7 @@ All three ask: \emph{is $\theta_0$ far from $\hat\theta$?} They are
 asymptotically equivalent but can differ in finite samples.
 \end{frame}
 
-\begin{frame}{The Likelihood Ratio Test}
+\begin{frame}{The Likelihood Ratio Test\core}
 Compare the maximized log-likelihood with and without the restriction:
 \begin{align*}
   LR = -2\big[\loglik(\hat\theta_{\text{restricted}})
@@ -820,7 +828,7 @@ where $q$ is the number of restrictions.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Wald Test}
+\begin{frame}{The Wald Test\core}
 Measure the horizontal distance, scaled by the estimated standard error:
 \begin{align*}
   W = \frac{(\hat\theta - \theta_0)^2}{\hat{V}(\hat\theta)} \ \dto\ \chi^2_1 ,
@@ -858,7 +866,7 @@ Measure the slope of the log-likelihood \emph{at the null}:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Model Comparison Beyond Nested Tests}
+\begin{frame}{Model Comparison Beyond Nested Tests\core}
 LR, Wald and score all require \emph{nested} models. For non-nested comparison:
 \begin{align*}
   AIC = -2\loglik(\hat\theta) + 2k ,

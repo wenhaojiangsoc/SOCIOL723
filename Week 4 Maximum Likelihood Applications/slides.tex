@@ -77,7 +77,7 @@
 \setbeamertemplate{footline}[page number]
 \setbeamertemplate{navigation symbols}{}
 %% continued frames keep the SAME font size and spill onto a new slide
-\setbeamertemplate{frametitle continuation}{\normalfont\footnotesize\ (cont.)}
+\setbeamertemplate{frametitle continuation}{\ifnum\insertcontinuationcount>1\normalfont\footnotesize\ (cont.)\fi}
 \setbeamertemplate{itemize items}[circle]
 \setbeamertemplate{blocks}[rounded][shadow=false]
 \setbeamerfont{frametitle}{series=\bfseries}
@@ -88,6 +88,9 @@
 \setbeamertemplate{caption}[numbered]
 
 \newcommand{\adv}{\,\raisebox{0.6pt}{\textcolor{accent}{$\bigstar$}}}
+%% marker for essential material every student must understand (examinable core)
+\definecolor{corestar}{RGB}{0,83,155}
+\newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
@@ -125,6 +128,8 @@
 
 \begin{frame}{Today}
   \tableofcontents
+  \vskip6pt
+  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,7 +137,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Putting Covariates Inside the Likelihood}
+\begin{frame}{Putting Covariates Inside the Likelihood\core}
 Last week the parameter $\theta$ was a single number. Now we let it depend on
 covariates. Three ingredients:
 \vskip4pt
@@ -167,7 +172,7 @@ Binary & Bernoulli & probit: $\Phi^{-1}(\mu)$ & \texttt{binomial(link="probit")}
 Count & Poisson & log: $\log\mu$ & \texttt{poisson(link="log")} \\
 Count, overdispersed & Neg.\ binomial & log & \texttt{MASS::glm.nb} \\
 Nominal, $J$ categories & Multinomial & multi-logit & \texttt{nnet::multinom} \\
-Ordered, $J$ categories &, & cumulative logit & \texttt{MASS::polr} \\
+Ordered, $J$ categories & latent logistic & cumulative logit & \texttt{MASS::polr} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -201,7 +206,7 @@ where $V(\mu)$ is the variance function implied by the distribution.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Start With the Linear Probability Model}
+\begin{frame}{Start With the Linear Probability Model\core}
 Just run OLS with a $0/1$ outcome: $\Pr(Y_i = 1\mid X_i) = X_i'\bm\beta$.
 \vskip4pt
 \begin{columns}[T]
@@ -232,7 +237,7 @@ the boundary, you want logit or probit.
 \end{block}
 \end{frame}
 
-\begin{frame}{A Latent-Variable Motivation}
+\begin{frame}{A Latent-Variable Motivation\core}
 Imagine an unobserved continuous propensity $Y_i^{*}$, a taste for voting, a
 level of labour-market attachment:
 \begin{align*}
@@ -257,7 +262,7 @@ The choice between them is a choice about the tails of an unobservable. It almos
 never matters empirically.
 \end{frame}
 
-\begin{frame}{The Logit Likelihood}
+\begin{frame}{The Logit Likelihood\core}
 With $p_i \equiv \Lambda(X_i'\bm\beta) = \dfrac{\exp(X_i'\bm\beta)}{1+\exp(X_i'\bm\beta)}$,
 the Bernoulli log-likelihood from last week becomes
 \begin{align*}
@@ -328,7 +333,7 @@ everywhere, which is itself the point of the slide.)}
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Scale Is Not Identified, and Why It Matters}
+\begin{frame}{The Scale Is Not Identified, and Why It Matters\core}
 In the latent-variable setup, only $\bm\beta/\sigma_\epsilon$ is identified: we
 normalize $\sigma_\epsilon$ (to $\pi/\sqrt3$ for logit, to 1 for probit) because
 the data cannot tell us anything about it.
@@ -355,7 +360,7 @@ probabilities}, which are on the probability scale and do not suffer from this.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Three Scales, Three Meanings}
+\begin{frame}{Three Scales, Three Meanings\core}
 \begin{center}\small
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{lll}
@@ -383,7 +388,7 @@ Probability & $p = \Lambda(X'\bm\beta)$ & \alert{what we care about}, but the
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Marginal Effects}
+\begin{frame}{Marginal Effects\core}
 For a \emph{continuous} $X_j$, the marginal effect on the probability is
 \begin{align*}
   \frac{\partial \Pr(Y_i=1\mid X_i)}{\partial X_{ij}}
@@ -413,7 +418,7 @@ standard summaries:
 approach over the MEM (``average-case'') approach.
 \end{frame}
 
-\begin{frame}{Predicted Probabilities Done Right}
+\begin{frame}{Predicted Probabilities Done Right\core}
 Most readers want: \emph{what is the predicted probability at $X_j = a$ versus
 $X_j = b$, holding everything else at realistic values?}
 \vskip2pt
@@ -505,7 +510,7 @@ For an unordered outcome with $J$ categories, pick a base category $J$ and model
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Ordered Logit}
+\begin{frame}{Ordered Logit\core}
 For an ordered outcome, one latent variable and $J-1$ cutpoints:
 \begin{align*}
   Y_i^{*} = X_i'\bm\beta + \epsilon_i ,
@@ -526,7 +531,7 @@ $\Pr(Y_i \leq j \mid X_i) = \Lambda(\tau_j - X_i'\bm\beta)$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Poisson Regression for Counts}
+\begin{frame}{Poisson Regression for Counts\core}
 \begin{align*}
   Y_i \mid X_i \sim \text{Poisson}(\mu_i), \qquad \log\mu_i = X_i'\bm\beta .
 \end{align*}
@@ -547,7 +552,7 @@ is correctly specified. Pair it with robust standard errors and it is a
 workhorse for non-negative outcomes.
 \end{frame}
 
-\begin{frame}{Overdispersion}
+\begin{frame}{Overdispersion\core}
 In practice $\Var(Y_i\mid X_i) > \E[Y_i\mid X_i]$ almost always, unobserved
 heterogeneity makes some units systematically more event-prone.
 \vskip4pt
@@ -634,7 +639,7 @@ interior maximum. The coefficient marches off to $\pm\infty$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{A Practical Protocol}
+\begin{frame}{A Practical Protocol\core}
 \begin{enumerate}\itemsep4pt
   \item Choose the distribution from the \emph{outcome}, and the link from
         convention. Do not agonize over logit versus probit.
