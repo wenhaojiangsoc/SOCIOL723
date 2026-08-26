@@ -375,27 +375,48 @@ Exactly what we derived by hand. The matrix form is a change of language, not of
 substance.
 \end{frame}
 
-\begin{frame}{Where Projection Comes From: a Change of Picture\adv}
-Every scatterplot you have drawn puts \emph{variables} on the axes and
-observations as points: $n$ points in $2$ dimensions. Now flip it:
+\begin{frame}{Where Projection Comes From: Two People First\adv}
+\begin{columns}[T]
+\begin{column}{0.42\textwidth}
+\begin{center}
+\begin{tikzpicture}[scale=0.70,>=Stealth]
+  \draw[->] (0,0) -- (5.4,0);
+  \node[below] at (2.7,-0.45) {\scriptsize person 1's value};
+  \draw[->] (0,0) -- (0,5.4);
+  \node[rotate=90,above] at (-0.62,2.7) {\scriptsize person 2's value};
+  \foreach \t in {1,2,3,4,5} {
+    \draw (\t,0) -- (\t,-0.07) node[below] {\tiny \t};
+    \draw (0,\t) -- (-0.07,\t) node[left] {\tiny \t};}
+  \draw[dukeblue,thick,dashed] (0,0) -- (5.15,5.15);
+  \node[dukeblue,rotate=45] at (4.55,4.05) {\scriptsize all fits $(b,b)$};
+  \fill (2,4) circle (2.2pt);
+  \node[above left] at (2.05,4.0) {\scriptsize $\Y=(2,4)$};
+  \fill[dukeblue] (3,3) circle (2.2pt);
+  \node[dukeblue,below right] at (3.05,3.0) {\scriptsize $(3,3)=\bar Y\one$};
+  \draw[->,accent,thick] (3,3) -- (2,4);
+  \node[accent,left] at (2.5,3.42) {\scriptsize $\ehat$};
+  \draw[accent] (3.18,3.18) -- (3.0,3.36) -- (2.82,3.18);
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.56\textwidth}
+{\small
 \begin{itemize}\itemsep3pt
-  \item Let every \emph{observation} be an axis: $\R^n$, one dimension per
-        person. The whole variable $\Y$ becomes a \emph{single arrow} in that
-        space; so does each column of $\X$.
-  \item As $b$ ranges over all values, the fitted vectors $\X b$ sweep out a
-        $k$-dimensional plane through the origin: every fit the model could
-        ever produce.
-  \item Least squares asks for the point of that plane \emph{closest} to
-        $\Y$. Geometry answers: drop a perpendicular. Its foot is $\hat\Y$;
-        the perpendicular segment itself is $\ehat$.
-  \item Perpendicular to the plane $=$ at right angles to every column of
-        $\X$, that is, $\X'\ehat = \zero$. \alert{These are the normal
-        equations}, and ``normal'' is the Latin word for perpendicular. The
-        name was the geometry all along.
-\end{itemize}
-\vskip2pt
-``Projection'' is simply the operation \emph{drop the perpendicular}. The next
-frames give it a matrix.
+  \item Two people, one variable: $Y_1 = 2$, $Y_2 = 4$. Plot the
+        \emph{dataset} as one point, one axis per person.
+  \item The intercept-only model $Y_i = b + e_i$ fits both people the same
+        number: the point $(b,b)$. All candidates form the $45^\circ$ line.
+  \item Closest point on that line to $(2,4)$: the perpendicular's foot,
+        $(3,3)$. So $\hat b = 3 = \bar Y$: \alert{the mean is a projection}.
+  \item Right angle, checked: residual $(-1,1)$, line direction $(1,1)$,
+        dot product $0$. Perpendicular $=$ residuals sum to zero $=$ (N1).
+\end{itemize}}
+\end{column}
+\end{columns}
+{\footnotesize With $n$ people the picture lives in $\R^n$; with regressors
+the line becomes the plane spanned by $\X$'s columns. OLS is always the same
+move: \alert{drop the perpendicular}. (``Normal'' equations: normal $=$
+perpendicular.)}
 \end{frame}
 
 \begin{frame}{OLS Is a Projection\adv}
