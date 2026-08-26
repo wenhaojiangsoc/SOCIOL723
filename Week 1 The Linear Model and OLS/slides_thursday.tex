@@ -222,8 +222,8 @@ $a^{-1}a = 1$; for a square matrix, $\bm A^{-1}\bm A = \Ix$, the
 whatever it multiplies unchanged.
 \begin{itemize}\itemsep2pt
   \item Just as $1/a$ fails to exist when $a = 0$, $\bm A^{-1}$ fails to exist
-        when the matrix collapses information; that is the ``rank'' condition
-        two frames ahead.
+        when the matrix collapses information; that is the ``rank'' condition,
+        explained shortly.
   \item You will never invert a matrix by hand here; \texttt{R}'s
         \texttt{solve()} does it. What matters is knowing what the symbol says.
 \end{itemize}
@@ -254,35 +254,89 @@ $\ \X'\X = \sum_i X_iX_i'$ (a $k\times k$ matrix) and
 $\ \X'\Y = \sum_i X_i Y_i$ (a $k\times 1$ vector).
 \end{frame}
 
-\begin{frame}{Least Squares in Matrix Form}
+\begin{frame}{Least Squares in Matrix Form: the Expansion}
+The sum of squared errors is the error vector times itself:
 \begin{align*}
-  S(b) = \sum_{i} (Y_i - X_i'b)^2 = (\Y-\X b)'(\Y-\X b)
+  S(b) = \sum_{i} (Y_i - X_i'b)^2 = (\Y-\X b)'(\Y-\X b) .
+\end{align*}
+\begin{block}{Two transpose rules, used constantly}
+$(\bm A + \bm B)' = \bm A' + \bm B'$, and $(\bm A\bm B)' = \bm B'\bm A'$:
+transposing a product \emph{reverses the order}. Hence $(\X b)' = b'\X'$.
+\end{block}
+Multiply out, term by term:
+\begin{align*}
+  S(b) = \Y'\Y - \Y'\X b - b'\X'\Y + b'\X'\X b
        = \Y'\Y - 2\,b'\X'\Y + b'\X'\X b .
 \end{align*}
-\pause
-Differentiate, using $\partial (a'b)/\partial b = a$ and
-$\partial (b'Ab)/\partial b = 2Ab$ for symmetric $A$:
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item Why do the middle terms merge? Each is $1\times1$, a single number,
+        and a number equals its own transpose: $(b'\X'\Y)' = \Y'\X b$. The two
+        terms are the \emph{same} number written twice.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Minimizing: Two Matrix Derivatives, From Zero}
+$\partial S/\partial b$ is nothing exotic: it stacks the $k$ partial
+derivatives $\big(\partial S/\partial b_1,\dots,\partial S/\partial b_k\big)'$
+into a column. Two stock results cover everything we need:
+\begin{block}{The rules, with their scalar shadows}
+\begin{align*}
+  \frac{\partial (a'b)}{\partial b} &= a
+  &&\text{since } a'b = \textstyle\sum_j a_jb_j
+    \text{ gives } \partial/\partial b_j = a_j
+  &&\text{(cf.\ } \tfrac{d}{db}\,ab = a\text{)} \\[2pt]
+  \frac{\partial (b'\bm Ab)}{\partial b} &= 2\bm Ab
+  &&\text{for symmetric } \bm A
+  &&\text{(cf.\ } \tfrac{d}{db}\,ab^2 = 2ab\text{)}
+\end{align*}
+\end{block}
+Apply them with $a = \X'\Y$ and $\bm A = \X'\X$ (symmetric):
 \begin{align*}
   \frac{\partial S(b)}{\partial b} = -2\X'\Y + 2\X'\X b \overset{!}{=} 0
   \quad\Longrightarrow\quad
   \underbrace{\X'\X\,\bhat = \X'\Y}_{\text{\alert{normal equations}}} .
 \end{align*}
-\pause
-These are the \emph{same} $k$ equations you wrote out one at a time. The
-second-order condition holds because $\X'\X \succeq 0$, so $S$ is convex and any
-stationary point is a global minimum.
+\vskip-2pt
+The \emph{same} $k$ equations you wrote out one at a time on Tuesday.
+\end{frame}
+
+\begin{frame}{Why a Minimum, Not a Maximum?}
+In one dimension a stationary point is a minimum when the second derivative is
+$\geq 0$: the function curves upward. In $k$ dimensions the second derivative
+is a \emph{matrix} (here $2\X'\X$), and ``curves upward in every direction''
+has a matrix name:
+\begin{block}{Positive semidefinite: the matrix version of $\geq 0$}
+Write $\bm M \succeq 0$ when $v'\bm M v \geq 0$ for \emph{every} vector $v$.
+For $\X'\X$ this is automatic:
+\begin{align*}
+  v'\X'\X v = (\X v)'(\X v) = \|\X v\|^2 \geq 0 ,
+\end{align*}
+a sum of squares, never negative.
+\end{block}
+\begin{itemize}\itemsep2pt
+  \item So $S(b)$ is a bowl (convex): the stationary point on the last frame is
+        not just flat, it is the \emph{bottom}, a global minimum.
+  \item The symbol $\succeq$ is just $\geq$ dressed for matrices. It returns in
+        Gauss--Markov, where ``no smaller variance'' means the difference of
+        variance matrices is $\succeq 0$.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{The Estimator, Existence, and Rank}
+{\small The \alert{rank} of $\X$ is the number of genuinely distinct columns
+it contains: columns that cannot be rebuilt as combinations of the others.
+\emph{Full column rank}, $\rank(\X)=k$, says no column is redundant, so the
+data carry $k$ separate pieces of information, one per coefficient.}
 \begin{block}{The OLS estimator}
-If $\rank(\X)=k$ (\emph{full column rank}), $\X'\X$ is invertible and
+If $\rank(\X)=k$, $\X'\X$ is invertible and
 \begin{align*}
   \bhat = (\X'\X)^{-1}\X'\Y = \big(\En[X_iX_i']\big)^{-1}\En[X_iY_i] .
 \end{align*}
 \end{block}
-\begin{itemize}\itemsep3pt
-  \item Full column rank requires $n \geq k$ and no exact linear dependence among
-        columns. It is the matrix version of ``$X$ must vary.''
+\begin{itemize}\itemsep2pt
+  \item Full column rank requires $n \geq k$ and no exact linear dependence
+        among columns. It is the matrix version of ``$X$ must vary.''
   \item Failures you will actually meet: the \emph{dummy variable trap}; including
         a variable and a rescaling of it; a group indicator constant within a
         fixed effect.
@@ -310,6 +364,29 @@ Using $\begin{bmatrix} a & b\\ c& d\end{bmatrix}^{-1}
 \vskip4pt
 Exactly what we derived by hand. The matrix form is a change of language, not of
 substance.
+\end{frame}
+
+\begin{frame}{Where Projection Comes From: a Change of Picture\adv}
+Every scatterplot you have drawn puts \emph{variables} on the axes and
+observations as points: $n$ points in $2$ dimensions. Now flip it:
+\begin{itemize}\itemsep3pt
+  \item Let every \emph{observation} be an axis: $\R^n$, one dimension per
+        person. The whole variable $\Y$ becomes a \emph{single arrow} in that
+        space; so does each column of $\X$.
+  \item As $b$ ranges over all values, the fitted vectors $\X b$ sweep out a
+        $k$-dimensional plane through the origin: every fit the model could
+        ever produce.
+  \item Least squares asks for the point of that plane \emph{closest} to
+        $\Y$. Geometry answers: drop a perpendicular. Its foot is $\hat\Y$;
+        the perpendicular segment itself is $\ehat$.
+  \item Perpendicular to the plane $=$ at right angles to every column of
+        $\X$, that is, $\X'\ehat = \zero$. \alert{These are the normal
+        equations}, and ``normal'' is the Latin word for perpendicular. The
+        name was the geometry all along.
+\end{itemize}
+\vskip2pt
+``Projection'' is simply the operation \emph{drop the perpendicular}. The next
+frames give it a matrix.
 \end{frame}
 
 \begin{frame}{OLS Is a Projection\adv}
