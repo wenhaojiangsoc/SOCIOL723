@@ -764,10 +764,186 @@ Not for adjudicating causal claims.
   \item Connect $R^2$ to $PRE$.
 \end{enumerate}
 \vskip6pt
-\alert{So far, ``what is $\hat\beta_1$ estimating?'' has an answer only
-because we assumed the average of $Y$ at every value of $X$ lies on a line in the \textit{population}.
-Next we drop that assumption, and ask what $\hat\beta_1$ estimates when no
-line is true.}
+\alert{We can now compute $\hat\beta_1$ from any dataset. Next question:
+before we trust it, how does it behave across samples, and what do the
+assumptions buy us?}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Properties]{Statistical Properties of OLS}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Before the List: What Are We After?}
+We can compute $\hat\beta_1$; the question is \emph{how good} it is.
+$\hat\beta_1$ came from one sample, and a different sample would have produced
+a different number. So we ask how it behaves \emph{across} samples:
+\begin{itemize}\itemsep3pt
+  \item \textbf{Accuracy}: is $\hat\beta_1$ centred on the target, or
+        systematically off? (Unbiasedness.)
+  \item \textbf{Precision}: how much does it move from sample to sample?
+        (Variance, and what drives it.)
+  \item \textbf{Inference}: can we quantify how far off we are likely to be?
+        (The sampling distribution, the heart of Week 2.)
+\end{itemize}
+\vskip3pt
+\begin{block}{The role of the assumptions}
+None of these guarantees is free. The assumptions on the next frame are the
+\alert{price list}: each buys a specific property. Knowing which buys what
+tells you exactly what breaks when an assumption fails, and the rest of the
+course largely lives in those failures.
+\end{block}
+\end{frame}
+
+\begin{frame}{The Classical Assumptions\core}
+\begin{enumerate}\itemsep0pt
+  \item[\textbf{A1}] \textbf{Linearity in parameters}: $Y_i = \beta_0 + \beta_1X_{1i} + \cdots + \beta_{k-1}X_{k-1,i} + \epsilon_i$.
+        (Not restrictive: $X$ may contain logs, powers, splines, interactions.)
+  \item[\textbf{A2}] \textbf{Random sampling}: $(Y_i,X_i)$ i.i.d.\ from the population.
+  \item[\textbf{A3}] \textbf{No perfect collinearity}: $X$ varies, and no
+        regressor is an exact linear combination of the others (Thursday:
+        $\rank(\X)=k$).
+  \item[\textbf{A4}] \textbf{Strict exogeneity}: $\E[\epsilon_i \mid X_i] = 0$.
+  \item[\textbf{A5}] \textbf{Spherical errors}: $\Var(\epsilon_i\mid X)=\sigma^2$
+        (homoskedasticity) and $\Cov(\epsilon_i,\epsilon_j\mid X)=0$ for
+        $i\neq j$ (no correlation across units).
+  \item[\textbf{A6}] \textbf{Normality} (optional):
+        $\epsilon_i\mid X_i \sim \mathcal{N}(0,\sigma^2)$.
+\end{enumerate}
+{\footnotesize A1, A4--A6: \emph{population}. A2: sampling. A3: your
+\emph{sample}, the only one checkable in data.}
+\begin{block}{What each buys you}
+A1--A4 $\Rightarrow$ unbiasedness; $+$A5 $\Rightarrow$ the variance formula
+and Gauss--Markov; $+$A6 $\Rightarrow$ exact $t$ and $F$.
+\alert{Week 2 drops A5; Weeks 5+ interrogate A4, the one that matters for
+causality.}
+\end{block}
+\end{frame}
+
+\begin{frame}{Unbiasedness, in Scalar Form\core}
+Take the bivariate case. Start from the slope formula and substitute
+$Y_i = \beta_0+\beta_1X_i+\epsilon_i$:
+\begin{align*}
+  \hat\beta_1
+  &= \frac{\sum_i (X_i-\bar X)(Y_i - \bar Y)}{\sum_i (X_i - \bar X)^2}
+   = \frac{\sum_i (X_i-\bar X)\big(\beta_1(X_i - \bar X) + (\epsilon_i - \bar\epsilon)\big)}
+          {\sum_i (X_i - \bar X)^2} \\[4pt]
+  &= \beta_1 + \frac{\sum_i (X_i - \bar X)\epsilon_i}{\sum_i (X_i-\bar X)^2} .
+\end{align*}
+\pause
+\begin{alertblock}{Remember this line}
+$\hat\beta_1 = \beta_1 + (\text{a weighted average of the errors})$. Every result
+about bias and variance in this course comes from staring at it.
+\end{alertblock}
+\vskip-4pt
+{\footnotesize No assumption on $\bar\epsilon$: it multiplies
+$\sum_i (X_i - \bar X) = 0$, so it vanishes by algebra.}
+Taking expectations conditional on $X$ and using A4 ($\E[\epsilon_i\mid X]=0$)
+gives $\E[\hat\beta_1\mid X]=\beta_1$, and hence $\E[\hat\beta_1]=\beta_1$.
+\end{frame}
+
+\begin{frame}{The Variance of $\hat\beta_1$, in Scalar Form\core}
+From $\hat\beta_1 - \beta_1 = \dfrac{\sum_i (X_i - \bar X)\epsilon_i}{\sum_i (X_i-\bar X)^2}$,
+and treating $X$ as fixed:
+\begin{align*}
+  \Var(\hat\beta_1\mid X)
+  = \frac{\sum_i (X_i-\bar X)^2\,\Var(\epsilon_i\mid X)}
+         {\big[\sum_i (X_i - \bar X)^2\big]^2}
+\end{align*}
+using only that the $\epsilon_i$ are uncorrelated across units.
+\pause
+\vskip4pt
+Under homoskedasticity (A5), $\Var(\epsilon_i\mid X)=\sigma^2$ factors out:
+\begin{align*}
+  \boxed{\;\Var(\hat\beta_1\mid X) = \frac{\sigma^2}{\sum_i (X_i - \bar X)^2}\;}
+\end{align*}
+\alert{Keep the first expression in view.} Next week we simply refuse to assume
+$\Var(\epsilon_i\mid X)$ is constant, and that is all a ``robust standard
+error'' is.
+\end{frame}
+
+\begin{frame}{What Drives Precision\core}
+\begin{align*}
+  \Var(\hat\beta_1\mid X) = \frac{\sigma^2}{\sum_i (X_i - \bar X)^2}
+  = \frac{\sigma^2}{n\,\Var_n(X)} ,
+\end{align*}
+and with more regressors,
+$\Var(\hat\beta_j) = \dfrac{\sigma^2}{n\,\Var_n(X_j)\,(1-R_j^2)}$
+where $R_j^2$ is from regressing $X_j$ on the other regressors.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Noise} $\sigma^2$ up $\Rightarrow$ variance up.
+  \item \textbf{Sample size} $n$ up $\Rightarrow$ variance down like $1/n$;
+        standard error down like $1/\sqrt n$.
+  \item \textbf{Spread of $X$} up $\Rightarrow$ variance down.
+  \item \textbf{Collinearity} $R_j^2 \to 1$ $\Rightarrow$ variance explodes; the
+        \emph{variance inflation factor} is $1/(1-R_j^2)$.
+\end{itemize}
+\vskip3pt
+Collinearity violates no assumption. It says the data contain little independent
+information about $\beta_j$.
+\end{frame}
+
+\begin{frame}{Estimating $\sigma^2$}
+$\sigma^2 = \E[\epsilon_i^2]$ is unknown; we have residuals, not errors. The
+natural estimator is
+\begin{align*}
+  s^2 = \frac{1}{n-k}\sum_i \hat e_i^2 ,
+  \qquad \E[s^2] = \sigma^2 .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Why $n-k$ and not $n$? The residuals satisfy $k$ linear constraints
+        (the normal equations), so they are systematically ``too short.''
+  \item Thursday's matrix language proves this in one line\adv; for now, take
+        $\E[\sum_i \hat e_i^2] = \sigma^2(n-k)$ on trust and note that it is
+        exact, not approximate.
+  \item Then $\hat{V}(\hat\beta_1) = s^2/\sum_i (X_i-\bar X)^2$, whose
+        square root is the standard error your software prints.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reading Gauss--Markov Correctly}
+\begin{block}{The theorem, in words}
+Under A1--A5 (hence their name: the \emph{Gauss--Markov assumptions}; A6 is
+not needed), among all \emph{linear unbiased} estimators OLS has the smallest
+variance: it is the \textbf{B}est \textbf{L}inear \textbf{U}nbiased
+\textbf{E}stimator (BLUE). Thursday states and proves this in matrix form.
+\end{block}
+\begin{itemize}\itemsep3pt
+  \item ``Best'' only \alert{within that class}. Biased estimators (ridge,
+        lasso, shrinkage) can have far lower mean squared error, Week 12.
+  \item Efficiency requires A5. Under heteroskedasticity OLS stays unbiased but is
+        no longer BLUE; weighted least squares with the correct weights is.
+  \item In practice we rarely know the weights, so we keep OLS and fix the
+        \emph{standard errors} instead, the entire subject of next week.
+  \item Gauss--Markov says nothing about causality. It is a statement about the
+        variance of an estimator for the population regression coefficient,
+        whatever that coefficient happens to mean.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Finite-Sample Distribution Under Normality}
+If A6 also holds, then conditional on $X$,
+\begin{align*}
+  \hat\beta_1 \sim \mathcal{N}\Big(\beta_1,\ \tfrac{\sigma^2}{\sum_i (X_i-\bar X)^2}\Big),
+  \qquad
+  \frac{(n-k)s^2}{\sigma^2} \sim \chi^2_{n-k},
+  \qquad
+  \hat\beta_1 \indep s^2 ,
+\end{align*}
+so that
+$t = \dfrac{\hat\beta_1 - \beta_1}{\mathrm{se}(\hat\beta_1)} \sim t_{n-k}$.
+\vskip6pt
+\begin{itemize}
+  \item $\hat\beta_1$ is a \emph{linear} function of the errors, hence normal when
+        they are.
+  \item Without A6, all of this holds only \emph{approximately}, and only for
+        large $n$. That is next week.
+\end{itemize}
+\vskip4pt
+\alert{Every guarantee in this section leaned on the assumption that the
+average of $Y$ at each $X$ lies on a line in the population. Next we drop it,
+and ask what $\hat\beta_1$ estimates when no line is true.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -826,13 +1002,13 @@ it has no idea that 12 and 16 are special.}
 
 \begin{frame}{Estimating \emph{What}, Exactly?}
 \begin{block}{The circularity}
-What we have presented for estimation has been \emph{sample} algebra: we picked the
-line that minimizes squared residuals, and every property we derived,
-residuals summing to zero, uncorrelated with the regressors, was mechanical.
-The population entered exactly \emph{once}: the assumption that the average
-of $Y$ at each $X$ lies on a line, which is what defined $\beta_1$. If that
-assumption is false, and the previous frame showed that it is, there is no
-true $\beta_1$ for $\hat\beta_1$ to be an estimate \emph{of}.
+The least-squares mechanics were pure sample algebra, true for any data. But
+everything in the last section, unbiasedness, the variance formula,
+Gauss--Markov, leaned on one population assumption: that the average of $Y$
+at each $X$ lies on a line. That assumption is what defined $\beta_1$, and it
+is what delivered $\E[\hat\beta_1] = \beta_1$. If it is false, and the
+previous frame showed that it is, there is no true $\beta_1$ for
+$\hat\beta_1$ to be unbiased \emph{for}.
 \end{block}
 \vskip3pt
 \begin{itemize}\itemsep3pt
@@ -1047,180 +1223,6 @@ nothing can repair it.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Properties]{Statistical Properties of OLS}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{Before the List: What Are We After?}
-The last section settled \emph{what} $\hat\beta_1$ estimates. The new question
-is \emph{how well}. $\hat\beta_1$ is computed from one sample; a different
-sample would have produced a different number. So we ask how it behaves
-\emph{across} samples:
-\begin{itemize}\itemsep3pt
-  \item \textbf{Accuracy}: is $\hat\beta_1$ centred on the target, or
-        systematically off? (Unbiasedness.)
-  \item \textbf{Precision}: how much does it move from sample to sample?
-        (Variance, and what drives it.)
-  \item \textbf{Inference}: can we quantify how far off we are likely to be?
-        (The sampling distribution, the heart of Week 2.)
-\end{itemize}
-\vskip3pt
-\begin{block}{The role of the assumptions}
-None of these guarantees is free. The assumptions on the next frame are the
-\alert{price list}: each buys a specific property. Knowing which buys what
-tells you exactly what breaks when an assumption fails, and the rest of the
-course largely lives in those failures.
-\end{block}
-\end{frame}
-
-\begin{frame}{The Classical Assumptions\core}
-\begin{enumerate}\itemsep0pt
-  \item[\textbf{A1}] \textbf{Linearity in parameters}: $Y_i = \beta_0 + \beta_1X_{1i} + \cdots + \beta_{k-1}X_{k-1,i} + \epsilon_i$.
-        (Not restrictive: $X$ may contain logs, powers, splines, interactions.)
-  \item[\textbf{A2}] \textbf{Random sampling}: $(Y_i,X_i)$ i.i.d.\ from the population.
-  \item[\textbf{A3}] \textbf{No perfect collinearity}: $X$ varies, and no
-        regressor is an exact linear combination of the others (Thursday:
-        $\rank(\X)=k$).
-  \item[\textbf{A4}] \textbf{Strict exogeneity}: $\E[\epsilon_i \mid X_i] = 0$.
-  \item[\textbf{A5}] \textbf{Spherical errors}: $\Var(\epsilon_i\mid X)=\sigma^2$
-        (homoskedasticity) and $\Cov(\epsilon_i,\epsilon_j\mid X)=0$ for
-        $i\neq j$ (no correlation across units).
-  \item[\textbf{A6}] \textbf{Normality} (optional):
-        $\epsilon_i\mid X_i \sim \mathcal{N}(0,\sigma^2)$.
-\end{enumerate}
-{\footnotesize A1, A4--A6: \emph{population}. A2: sampling. A3: your
-\emph{sample}, the only one checkable in data.}
-\begin{block}{What each buys you}
-A1--A4 $\Rightarrow$ unbiasedness; $+$A5 $\Rightarrow$ the variance formula
-and Gauss--Markov; $+$A6 $\Rightarrow$ exact $t$ and $F$.
-\alert{Week 2 drops A5; Weeks 5+ interrogate A4, the one that matters for
-causality.}
-\end{block}
-\end{frame}
-
-\begin{frame}{Unbiasedness, in Scalar Form\core}
-Take the bivariate case. Start from the slope formula and substitute
-$Y_i = \beta_0+\beta_1X_i+\epsilon_i$:
-\begin{align*}
-  \hat\beta_1
-  &= \frac{\sum_i (X_i-\bar X)(Y_i - \bar Y)}{\sum_i (X_i - \bar X)^2}
-   = \frac{\sum_i (X_i-\bar X)\big(\beta_1(X_i - \bar X) + (\epsilon_i - \bar\epsilon)\big)}
-          {\sum_i (X_i - \bar X)^2} \\[4pt]
-  &= \beta_1 + \frac{\sum_i (X_i - \bar X)\epsilon_i}{\sum_i (X_i-\bar X)^2} .
-\end{align*}
-\pause
-\begin{alertblock}{Remember this line}
-$\hat\beta_1 = \beta_1 + (\text{a weighted average of the errors})$. Every result
-about bias and variance in this course comes from staring at it.
-\end{alertblock}
-\vskip-4pt
-{\footnotesize No assumption on $\bar\epsilon$: it multiplies
-$\sum_i (X_i - \bar X) = 0$, so it vanishes by algebra.}
-Taking expectations conditional on $X$ and using A4 ($\E[\epsilon_i\mid X]=0$)
-gives $\E[\hat\beta_1\mid X]=\beta_1$, and hence $\E[\hat\beta_1]=\beta_1$.
-\end{frame}
-
-\begin{frame}{The Variance of $\hat\beta_1$, in Scalar Form\core}
-From $\hat\beta_1 - \beta_1 = \dfrac{\sum_i (X_i - \bar X)\epsilon_i}{\sum_i (X_i-\bar X)^2}$,
-and treating $X$ as fixed:
-\begin{align*}
-  \Var(\hat\beta_1\mid X)
-  = \frac{\sum_i (X_i-\bar X)^2\,\Var(\epsilon_i\mid X)}
-         {\big[\sum_i (X_i - \bar X)^2\big]^2}
-\end{align*}
-using only that the $\epsilon_i$ are uncorrelated across units.
-\pause
-\vskip4pt
-Under homoskedasticity (A5), $\Var(\epsilon_i\mid X)=\sigma^2$ factors out:
-\begin{align*}
-  \boxed{\;\Var(\hat\beta_1\mid X) = \frac{\sigma^2}{\sum_i (X_i - \bar X)^2}\;}
-\end{align*}
-\alert{Keep the first expression in view.} Next week we simply refuse to assume
-$\Var(\epsilon_i\mid X)$ is constant, and that is all a ``robust standard
-error'' is.
-\end{frame}
-
-\begin{frame}{What Drives Precision\core}
-\begin{align*}
-  \Var(\hat\beta_1\mid X) = \frac{\sigma^2}{\sum_i (X_i - \bar X)^2}
-  = \frac{\sigma^2}{n\,\Var_n(X)} ,
-\end{align*}
-and with more regressors,
-$\Var(\hat\beta_j) = \dfrac{\sigma^2}{n\,\Var_n(X_j)\,(1-R_j^2)}$
-where $R_j^2$ is from regressing $X_j$ on the other regressors.
-\vskip4pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Noise} $\sigma^2$ up $\Rightarrow$ variance up.
-  \item \textbf{Sample size} $n$ up $\Rightarrow$ variance down like $1/n$;
-        standard error down like $1/\sqrt n$.
-  \item \textbf{Spread of $X$} up $\Rightarrow$ variance down.
-  \item \textbf{Collinearity} $R_j^2 \to 1$ $\Rightarrow$ variance explodes; the
-        \emph{variance inflation factor} is $1/(1-R_j^2)$.
-\end{itemize}
-\vskip3pt
-Collinearity violates no assumption. It says the data contain little independent
-information about $\beta_j$.
-\end{frame}
-
-\begin{frame}{Estimating $\sigma^2$}
-$\sigma^2 = \E[\epsilon_i^2]$ is unknown; we have residuals, not errors. The
-natural estimator is
-\begin{align*}
-  s^2 = \frac{1}{n-k}\sum_i \hat e_i^2 ,
-  \qquad \E[s^2] = \sigma^2 .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item Why $n-k$ and not $n$? The residuals satisfy $k$ linear constraints
-        (the normal equations), so they are systematically ``too short.''
-  \item Thursday's matrix language proves this in one line\adv; for now, take
-        $\E[\sum_i \hat e_i^2] = \sigma^2(n-k)$ on trust and note that it is
-        exact, not approximate.
-  \item Then $\hat{V}(\hat\beta_1) = s^2/\sum_i (X_i-\bar X)^2$, whose
-        square root is the standard error your software prints.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Reading Gauss--Markov Correctly}
-\begin{block}{The theorem, in words}
-Under A1--A5 (hence their name: the \emph{Gauss--Markov assumptions}; A6 is
-not needed), among all \emph{linear unbiased} estimators OLS has the smallest
-variance: it is the \textbf{B}est \textbf{L}inear \textbf{U}nbiased
-\textbf{E}stimator (BLUE). Thursday states and proves this in matrix form.
-\end{block}
-\begin{itemize}\itemsep3pt
-  \item ``Best'' only \alert{within that class}. Biased estimators (ridge,
-        lasso, shrinkage) can have far lower mean squared error, Week 12.
-  \item Efficiency requires A5. Under heteroskedasticity OLS stays unbiased but is
-        no longer BLUE; weighted least squares with the correct weights is.
-  \item In practice we rarely know the weights, so we keep OLS and fix the
-        \emph{standard errors} instead, the entire subject of next week.
-  \item Gauss--Markov says nothing about causality. It is a statement about the
-        variance of an estimator for the population regression coefficient,
-        whatever that coefficient happens to mean.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Finite-Sample Distribution Under Normality}
-If A6 also holds, then conditional on $X$,
-\begin{align*}
-  \hat\beta_1 \sim \mathcal{N}\Big(\beta_1,\ \tfrac{\sigma^2}{\sum_i (X_i-\bar X)^2}\Big),
-  \qquad
-  \frac{(n-k)s^2}{\sigma^2} \sim \chi^2_{n-k},
-  \qquad
-  \hat\beta_1 \indep s^2 ,
-\end{align*}
-so that
-$t = \dfrac{\hat\beta_1 - \beta_1}{\mathrm{se}(\hat\beta_1)} \sim t_{n-k}$.
-\vskip6pt
-\begin{itemize}
-  \item $\hat\beta_1$ is a \emph{linear} function of the errors, hence normal when
-        they are.
-  \item Without A6, all of this holds only \emph{approximately}, and only for
-        large $n$. That is next week.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Adjustment]{Regression as Adjustment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
@@ -1293,10 +1295,10 @@ statistical. We need a language for causal assumptions, which is Week 5.
 
 \begin{frame}{Where Tuesday Leaves Us}
 \begin{itemize}\itemsep5pt
-  \item Everything so far used only scalar algebra: the least-squares recipe,
-        what it estimates (the CEF and its best linear approximation),
-        omitted-variable bias, and what regression can and cannot say about
-        causality.
+  \item Everything today used only scalar algebra: the least-squares recipe,
+        its statistical properties under the classical assumptions, what it
+        estimates when no line is true (the CEF and its best linear
+        approximation), and what regression can and cannot say about causality.
   \item \textbf{Thursday} we say the same things again in \alert{matrix form}:
         no new statistics, only a new notation. We will mostly keep working in
         scalars, but the compact notation is what you will meet in modern
