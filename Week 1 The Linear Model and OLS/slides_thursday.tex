@@ -301,6 +301,33 @@ Apply them with $a = \X'\Y$ and $\bm A = \X'\X$ (symmetric):
 The \emph{same} $k$ equations you wrote out one at a time on Tuesday.
 \end{frame}
 
+\begin{frame}{The Normal Equations, Slowly: the Bivariate Case}
+Take $k=2$ with $X_i = (1, X_i)'$, so $b = (b_0, b_1)'$. The two building
+blocks are
+\begin{align*}
+  \X'\X = \begin{bmatrix} n & \sum_i X_i \\ \sum_i X_i & \sum_i X_i^2 \end{bmatrix},
+  \qquad
+  \X'\Y = \begin{bmatrix} \sum_i Y_i \\ \sum_i X_iY_i \end{bmatrix} .
+\end{align*}
+Write out $\X'\X\bhat = \X'\Y$ one row at a time:
+\begin{align*}
+  n\hat\beta_0 + \hat\beta_1\textstyle\sum_i X_i = \textstyle\sum_i Y_i
+  \;&\Longleftrightarrow\;
+  \textstyle\sum_i\big(Y_i - \hat\beta_0 - \hat\beta_1X_i\big) = 0 \\[2pt]
+  \hat\beta_0\textstyle\sum_i X_i + \hat\beta_1\textstyle\sum_i X_i^2
+  = \textstyle\sum_i X_iY_i
+  \;&\Longleftrightarrow\;
+  \textstyle\sum_i X_i\big(Y_i - \hat\beta_0 - \hat\beta_1X_i\big) = 0
+\end{align*}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item Row by row, the matrix equation \emph{is} Tuesday's (N1) and (N2):
+        residuals sum to zero, and residuals are orthogonal to the regressor.
+  \item One matrix line, $k$ scalar equations. That is the entire content of
+        the compact notation: nothing new, everything stacked.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Why a Minimum, Not a Maximum?}
 In one dimension a stationary point is a minimum when the second derivative is
 $\geq 0$: the function curves upward. In $k$ dimensions the second derivative
@@ -458,14 +485,16 @@ so that $\hat\Y = \Pm\Y$ and $\ehat = \Mm\Y$.
 \end{align*}
 \textbf{Traces $=$ dimensions}
 \begin{align*}
-  \trace(\Pm) &= \trace\big((\X'\X)^{-1}\X'\X\big) = k\\
+  \trace(\Pm) &= k \\
   \trace(\Mm) &= n - k
 \end{align*}
 \textbf{Eigenvalues} are all $0$ or $1$; $\Pm$ has $k$ ones, $\Mm$ has $n-k$.
 \end{column}
 \end{columns}
 \vskip2pt
-{\footnotesize Used repeatedly: $\trace(ABC)=\trace(BCA)$ (cyclic property).}
+{\footnotesize For the traces: $\trace(\Pm) = \trace\big((\X'\X)^{-1}\X'\X\big)
+= \trace(\Ix_k) = k$, using the cyclic property $\trace(ABC)=\trace(BCA)$,
+which we use repeatedly.}
 \end{frame}
 
 \begin{frame}{Leverage\adv}
