@@ -375,6 +375,29 @@ Exactly what we derived by hand. The matrix form is a change of language, not of
 substance.
 \end{frame}
 
+\begin{frame}{Why Projection? It Is Tuesday's Argmin, Re-Read\adv}
+Tuesday defined OLS by a minimization:
+$\ \bhat = \argmin_b \sum_{i=1}^n (Y_i - X_i'b)^2$.
+\begin{block}{The one observation everything hangs on}
+A sum of squared entries is a squared \emph{length}:
+$\ \sum_{i} (Y_i - X_i'b)^2 = \|\Y - \X b\|^2$, the squared \emph{distance}
+between two points of $\R^n$, the data $\Y$ and the candidate fit $\X b$. So
+the argmin says, word for word: \alert{among all fits the model can produce,
+pick the one closest to the data.}
+\end{block}
+\begin{itemize}\itemsep2pt
+  \item The candidate fits $\X b$ form a plane, and ``closest point on a
+        plane'' is a problem geometry solved long before calculus:
+        \alert{the foot of the perpendicular}.
+  \item The right angle \emph{is} the first-order condition: perpendicular to
+        every column of $\X$ means $\X'\ehat = \zero$, the normal equations,
+        with no differentiation anywhere.
+  \item Nothing new is computed: projection is the same argmin,
+        \emph{answered by geometry instead of calculus}. Next: the smallest
+        possible case.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Where Projection Comes From: Two People First\adv}
 \begin{columns}[T]
 \begin{column}{0.42\textwidth}
