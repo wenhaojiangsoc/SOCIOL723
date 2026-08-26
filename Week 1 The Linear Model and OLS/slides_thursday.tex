@@ -277,9 +277,8 @@ Multiply out, term by term:
 \end{frame}
 
 \begin{frame}{Minimizing: Two Matrix Derivatives, From Zero}
-$\partial S/\partial b$ is nothing exotic: it stacks the $k$ partial
-derivatives $\big(\partial S/\partial b_1,\dots,\partial S/\partial b_k\big)'$
-into a column. Two stock results cover everything we need:
+$\partial S/\partial b$ just stacks the $k$ partials into a column; two
+stock rules cover everything:
 \begin{block}{The rules, with their scalar shadows}
 \begin{align*}
   \frac{\partial (a'b)}{\partial b} &= a
@@ -299,6 +298,8 @@ Apply them with $a = \X'\Y$ and $\bm A = \X'\X$ (symmetric):
 \end{align*}
 \vskip-2pt
 The \emph{same} $k$ equations you wrote out one at a time on Tuesday.
+{\footnotesize Why a minimum? $v'\X'\X v = \|\X v\|^2 \geq 0$ for all $v$:
+$S$ is a bowl. (Shorthand: $\X'\X \succeq 0$, the matrix $\geq$.)}
 \end{frame}
 
 \begin{frame}{The Normal Equations, Slowly: the Bivariate Case}
@@ -328,33 +329,14 @@ Write out $\X'\X\bhat = \X'\Y$ one row at a time:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Why a Minimum, Not a Maximum?}
-In one dimension a stationary point is a minimum when the second derivative is
-$\geq 0$: the function curves upward. In $k$ dimensions the second derivative
-is a \emph{matrix} (here $2\X'\X$), and ``curves upward in every direction''
-has a matrix name:
-\begin{block}{Positive semidefinite: the matrix version of $\geq 0$}
-Write $\bm M \succeq 0$ when $v'\bm M v \geq 0$ for \emph{every} vector $v$.
-For $\X'\X$ this is automatic:
-\begin{align*}
-  v'\X'\X v = (\X v)'(\X v) = \|\X v\|^2 \geq 0 ,
-\end{align*}
-a sum of squares, never negative.
-\end{block}
-\begin{itemize}\itemsep2pt
-  \item So $S(b)$ is a bowl (convex): the stationary point on the last frame is
-        not just flat, it is the \emph{bottom}, a global minimum.
-  \item The symbol $\succeq$ is just $\geq$ dressed for matrices. It returns in
-        Gauss--Markov, where ``no smaller variance'' means the difference of
-        variance matrices is $\succeq 0$.
-\end{itemize}
-\end{frame}
 
 \begin{frame}{The Estimator, Existence, and Rank}
-{\small The \alert{rank} of $\X$ is the number of genuinely distinct columns
-it contains: columns that cannot be rebuilt as combinations of the others.
-\emph{Full column rank}, $\rank(\X)=k$, says no column is redundant, so the
-data carry $k$ separate pieces of information, one per coefficient.}
+\begin{block}{What ``rank'' means, in words}
+The \alert{rank} of $\X$ is the number of genuinely distinct columns it
+contains: columns that cannot be rebuilt as combinations of the others.
+\emph{Full column rank}, $\rank(\X)=k$, says no column is redundant: the data
+carry $k$ separate pieces of information, one per coefficient.
+\end{block}
 \begin{block}{The OLS estimator}
 If $\rank(\X)=k$, $\X'\X$ is invertible and
 \begin{align*}
@@ -362,8 +344,8 @@ If $\rank(\X)=k$, $\X'\X$ is invertible and
 \end{align*}
 \end{block}
 \begin{itemize}\itemsep2pt
-  \item Full column rank requires $n \geq k$ and no exact linear dependence
-        among columns. It is the matrix version of ``$X$ must vary.''
+  \item Full rank needs $n \geq k$; it is the matrix version of ``$X$ must
+        vary.''
   \item Failures you will actually meet: the \emph{dummy variable trap}; including
         a variable and a rescaling of it; a group indicator constant within a
         fixed effect.
