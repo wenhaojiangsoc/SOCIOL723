@@ -513,6 +513,50 @@ decomposition $TSS = ESS + RSS$.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{The Same Idea, Aimed at the Data: the SVD\adv}
+OLS projected $\Y$ onto the closest point in $\X$'s column space. The
+\alert{singular value decomposition} turns the same ``closest fit'' logic on
+the data matrix itself: any $n\times k$ matrix factors as
+\begin{align*}
+  \X = \bm U\bm\Sigma\bm V' ,
+\end{align*}
+where $\bm U$ and $\bm V$ hold perpendicular \emph{directions} (through the
+observations and through the variables) and $\bm\Sigma$ is diagonal with
+entries $\sigma_1 \geq \sigma_2 \geq \cdots \geq 0$, the
+\alert{singular values}.
+\begin{itemize}\itemsep2pt
+  \item Read it as: every data matrix is a set of independent
+        \emph{directions of information}, ordered by how much of the data
+        each carries.
+  \item The rank from earlier $=$ the number of nonzero singular values.
+  \item \textbf{Keep only the top $r$ directions}, and you have the rank-$r$
+        matrix \emph{closest to $\X$ in the least-squares sense}: the same
+        ``drop the perpendicular'' logic as OLS, applied to the whole matrix
+        rather than to $\Y$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Latent Semantic Analysis: Projection Applied to Text\adv}
+Let $\X$ be a \alert{document--term matrix}: one row per document, one column
+per word, entries counting occurrences. Thousands of columns; far fewer
+\emph{themes}.
+\begin{itemize}\itemsep3pt
+  \item Truncate the SVD at $r\approx100$ directions: each document becomes a
+        mixture of $r$ \alert{latent semantic dimensions}, and words that
+        co-occur across documents get pulled onto the same dimension. That is
+        \emph{latent semantic analysis} \srcp{Deerwester et al.\ 1990}.
+  \item Sociology runs on this geometry: \srct{Kozlowski, Taddy, and Evans
+        (2019)} \emph{project} word vectors onto cultural axes such as
+        rich--poor to track the meaning of class across a century, and the
+        operation is literally the projection formula from a few frames back.
+  \item Course connections: ridge regression shrinks along exactly these
+        singular directions (Week 12), and synthetic control's factor model is
+        a low-rank story about a panel (Week 11).
+\end{itemize}
+{\footnotesize None of this is examinable: it is where the geometry goes
+when you point it at data sociologists care about.}
+\end{frame}
+
 \begin{frame}{Unbiasedness, in Matrix Form\adv}
 Tuesday's two-line scalar proof, now for any $k$:
 \begin{align*}
@@ -654,7 +698,7 @@ computes OLS by hand in \texttt{R}.
 \end{block}
 \end{frame}
 
-\begin{frame}{References}
+\begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
 \item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.
@@ -667,6 +711,13 @@ computes OLS by hand in \texttt{R}.
 \item Arbatl{\i}, Cemal Eren, Quamrul H. Ashraf, Oded Galor, and Marc Klemp.
 2020. ``Diversity and Conflict.'' \textit{Econometrica} 88(2): 727--797.
 [the added-variable plot example]
+\item Deerwester, Scott, Susan T. Dumais, George W. Furnas, Thomas K. Landauer,
+and Richard Harshman. 1990. ``Indexing by Latent Semantic Analysis.''
+\textit{Journal of the American Society for Information Science} 41(6):
+391--407.
+\item Kozlowski, Austin C., Matt Taddy, and James A. Evans. 2019. ``The Geometry
+of Culture: Analyzing the Meanings of Class through Word Embeddings.''
+\textit{American Sociological Review} 84(5): 905--949.
 \item Correll, Josh, Abigail M. Folberg, Charles M. Judd, Gary H. McClelland, and
 Carey S. Ryan. 2024. \textit{Data Analysis: A Model Comparison Approach to
 Regression, ANOVA, and Beyond}, 4th ed. Routledge. [for review]

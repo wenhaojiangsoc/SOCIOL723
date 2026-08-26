@@ -58,7 +58,7 @@
 \subsection*{Time and Location}
 
 Fall 2026\\
-Tuesdays (Lecture) and Thursdays (Lab), 10:05AM--12:35PM\\
+Tuesdays (Lecture) 10:05AM--12:35PM; Thursdays (Lab) 9:05--11:35AM\\
 Erwin Square Plaza Room 753
 
 \vspace{0.5em}
@@ -98,8 +98,15 @@ There will be an in-class midterm on \textbf{Thursday, October 15}, covering the
 
 \vspace{0.5em}
 
-\noindent \textbf{\textcolor{titlecolor}{Final Exam (35\%)}}: \\
-There will be a cumulative final exam during the University examination period in December; the Registrar sets the exact date and time. It covers the whole course, but weighted towards \textbf{Weeks 9--13}, since the midterm already examined Weeks 1--7. Like the midterm, it is open book and open note but timed, and you will not be required to write any code. What is examined is the material developed in scalar form, together with what each design assumes and what it estimates; frames marked with a \textcolor[RGB]{0,83,155}{blue star} in the slides flag the essential material the exams draw on, while frames marked with an \textcolor[RGB]{200,78,0}{orange star} are for understanding and will not be examined.
+\noindent \textbf{\textcolor{titlecolor}{Final Assessment (35\%)}}: \\
+There will be a cumulative final exam; the exact date and time are \textbf{to be determined}, set by a class poll and announced well in advance. It covers the whole course, but weighted towards \textbf{Weeks 9--13}, since the midterm already examined Weeks 1--7. Like the midterm, it is open book and open note but timed, and you will not be required to write any code. What is examined is the material developed in scalar form, together with what each design assumes and what it estimates; frames marked with a \textcolor[RGB]{0,83,155}{blue star} in the slides flag the essential material the exams draw on, while frames marked with an \textcolor[RGB]{200,78,0}{orange star} are for understanding and will not be examined.
+
+\vspace{0.4em}
+\noindent You may complete the final assessment in either of two ways:
+\begin{itemize}[noitemsep, topsep=2pt]
+    \item \textbf{Option A, exam only}: the final exam counts for the full 35\%.
+    \item \textbf{Option B, exam plus project}: the final exam counts for 25\%, and a \textbf{final project memo} counts for the remaining 10\%. The memo is 6--10 pages applying one of the methods developed in this course to your own research data (publicly available or not, either is fine). Submit the memo together with full replication code by \textbf{Friday, December 11, 11:59PM}.
+\end{itemize}
 
 \subsection*{Software}
 This class uses \texttt{R} throughout, and prior experience at the level of \textit{Social Statistics I} is assumed. Please install a recent version of \texttt{R} and \texttt{RStudio} before the first lab, and use \texttt{RMarkdown} or \texttt{Quarto} for your assignments to support reproducibility.
@@ -174,10 +181,10 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 4 (Sep 15/17): Maximum Likelihood: Applications}}
 
-\noindent \textit{Lecture}: The generalized linear model framework (linear predictor, link, and likelihood); binary outcomes with logit and probit, now grounded in likelihood theory; interpretation via marginal effects, predicted probabilities, and interaction terms; multinomial and ordered models; count models (Poisson and negative binomial). \textit{Lab}: estimating and interpreting limited-dependent-variable models in \texttt{R}.
+\noindent \textit{Lecture}: The generalized linear model framework (linear predictor, link, and likelihood); binary outcomes with logit and probit, now grounded in likelihood theory; interpretation via marginal effects, predicted probabilities, and interaction terms; multinomial and ordered models; count models (Poisson and negative binomial). \textit{Lab}: estimating and interpreting limited-dependent-variable models in \texttt{R}. The Thursday session also includes a short standalone introduction to \textbf{event-history (survival) analysis}, the natural MLE application to durations: censoring, hazard rates, the Kaplan--Meier estimator, and the Cox proportional-hazards model.
 \begin{itemize}[noitemsep, topsep=2pt]
     \item \textit{Reading}: ISL, \S 4.1--4.3; Hanmer, Michael J. and Kerem Ozan Kalkan. 2013. ``Behind the Curve: Clarifying the Best Approach to Calculating Predicted Probabilities and Marginal Effects from Limited Dependent Variable Models.'' \textit{American Journal of Political Science} 57(1), 263--277.
-    \item \textit{Further reading}: Ward and Ahlquist, Chapter 3; Mize, Trenton D. 2019. ``Best Practices for Estimating, Interpreting, and Presenting Nonlinear Interaction Effects.'' \textit{Sociological Science} 6, 81--117; Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response Models.'' \textit{Political Analysis} 13(2), 157--170.
+    \item \textit{Further reading}: Allison, Paul D. 2014. \textit{Event History and Survival Analysis}, 2nd ed. Sage; Ward and Ahlquist, Chapter 3; Mize, Trenton D. 2019. ``Best Practices for Estimating, Interpreting, and Presenting Nonlinear Interaction Effects.'' \textit{Sociological Science} 6, 81--117; Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response Models.'' \textit{Political Analysis} 13(2), 157--170.
 \end{itemize}
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 5 (Sep 22/24): Causal Inference: Potential Outcomes and DAGs}}
@@ -250,6 +257,6 @@ The schedule is tentative as of \today. A detailed list of topics and readings, 
 
 \vspace{0.8em} \noindent \textbf{\textcolor{titlecolor}{Week 14 (Nov 24): Synthesis and Exam Review}}
 
-\noindent \textit{Tuesday, Nov 24}: a synthesis of how estimation, causal identification, and machine learning fit together, followed by a review for the final exam: what each design assumes, what it estimates, and how to choose between them. \textit{Thursday, Nov 26}: no class (Thanksgiving recess). The \textbf{final exam} is held in the December examination period.
+\noindent \textit{Tuesday, Nov 24}: a synthesis of how estimation, causal identification, and machine learning fit together, followed by a review for the final exam: what each design assumes, what it estimates, and how to choose between them. \textit{Thursday, Nov 26}: no class (Thanksgiving recess). The \textbf{final exam} date and time are to be determined by class poll; project-option memos and replication code are due Friday, December 11.
 
 \end{document}
