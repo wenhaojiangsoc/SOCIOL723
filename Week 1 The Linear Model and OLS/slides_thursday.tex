@@ -507,14 +507,18 @@ Let $\Mm_2 = \Ix - \X_2(\X_2'\X_2)^{-1}\X_2'$ and define
 \begin{block}{Theorem}
 The OLS estimate $\hat{\bm\beta}_1$ from the full regression equals
 \begin{align*}
-  \hat{\bm\beta}_1 = (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\tilde\Y
-                   = (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\Y ,
+  \hat{\bm\beta}_1
+  = (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\,\tilde\Y
+  \;=\; (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\,\Y
+  \qquad (\text{note: } \tilde\Y \text{ vs.\ raw } \Y) ,
 \end{align*}
 and the residuals from the short regression are numerically identical to $\ehat$
 from the full one.
 \end{block}
-\vskip2pt
-This is the three-step recipe from earlier, now for any number of controls.
+\vskip1pt
+The two right-hand sides differ only in the tilde on $\Y$; they are equal for
+Tuesday's reason (the part removed from $\Y$ is built from $\X_2$, to which
+$\tilde\X_1$ is orthogonal). Tuesday's three-step recipe, any number of controls.
 \end{frame}
 
 \begin{frame}{Proof of FWL\adv}
