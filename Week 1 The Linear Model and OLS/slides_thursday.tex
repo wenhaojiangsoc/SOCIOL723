@@ -487,67 +487,7 @@ the \emph{residual maker} ($\ehat = \Mm\Y$). We will not need their algebra.}
 
 
 
-\begin{frame}{The Same Idea, Run in Reverse: the SVD\adv}
-In OLS the subspace was \emph{handed to us}: $\X$'s columns. Flip the
-question: \alert{which subspace would the data choose for themselves?}
-\begin{columns}[T]
-\begin{column}{0.46\textwidth}
-\begin{center}
-\begin{tikzpicture}[scale=0.8,>=Stealth]
-  \foreach \t/\u in {-2.1/0.30, -1.7/-0.22, -1.3/0.14, -0.9/-0.38,
-                     -0.5/0.28, -0.1/-0.14, 0.3/0.34, 0.7/-0.28,
-                     1.1/0.16, 1.5/-0.20, 1.9/0.32, 2.2/-0.10}
-    \fill[dukeblue!60] ({\t*0.87-\u*0.5}, {\t*0.5+\u*0.87}) circle (1.7pt);
-  \draw[->,dukeblue,very thick] (-2.1,-1.2) -- (2.3,1.32);
-  \node[dukeblue,below right] at (2.05,1.05) {\scriptsize direction 1 ($\sigma_1$)};
-  \draw[->,dukeblue!60,thick] (0.55,-0.95) -- (-0.55,0.95);
-  \node[dukeblue!80,above] at (-0.75,1.0) {\scriptsize direction 2 ($\sigma_2$)};
-  \foreach \t/\u in {-0.9/-0.38, 0.3/0.34, 1.5/-0.20} {
-    \draw[accent,dashed] ({\t*0.87-\u*0.5}, {\t*0.5+\u*0.87}) -- ({\t*0.87},{\t*0.5});
-    \fill[accent] ({\t*0.87},{\t*0.5}) circle (1.2pt);}
-\end{tikzpicture}
-\end{center}
-{\scriptsize The dashed drops are perpendiculars again: the best one-dimensional
-summary of the cloud is the line whose perpendicular losses are smallest.}
-\end{column}
-\begin{column}{0.52\textwidth}
-{\small
-\begin{itemize}\itemsep3pt
-  \item A data cloud has a \emph{long} direction and a \emph{short} one. The
-        \alert{singular value decomposition}, $\X = \bm U\bm\Sigma\bm V'$,
-        finds every direction and measures each one's share of the data:
-        $\sigma_1 \geq \sigma_2 \geq \cdots \geq 0$. The rank from earlier is
-        how many are positive.
-  \item \textbf{Keep the top $r$ directions} $=$ project every observation
-        onto the best $r$-dimensional subspace: the closest rank-$r$ version
-        of the data, by the same least-squares logic as OLS.
-  \item In OLS you project onto a \emph{given} plane; the SVD \emph{finds}
-        the plane worth projecting onto.
-\end{itemize}}
-\end{column}
-\end{columns}
-\end{frame}
 
-\begin{frame}{Latent Semantic Analysis: Projection Applied to Text\adv}
-Let $\X$ be a \alert{document--term matrix}: one row per document, one column
-per word, entries counting occurrences. Thousands of columns; far fewer
-\emph{themes}.
-\begin{itemize}\itemsep3pt
-  \item Truncate the SVD at $r\approx100$ directions: each document becomes a
-        mixture of $r$ \alert{latent semantic dimensions}, and words that
-        co-occur across documents get pulled onto the same dimension. That is
-        \emph{latent semantic analysis} \srcp{Deerwester et al.\ 1990}.
-  \item Sociology runs on this geometry: \srct{Kozlowski, Taddy, and Evans
-        (2019)} \emph{project} word vectors onto cultural axes such as
-        rich--poor to track the meaning of class across a century, and the
-        operation is literally the projection formula from a few frames back.
-  \item Course connections: ridge regression shrinks along exactly these
-        singular directions (Week 12), and synthetic control's factor model is
-        a low-rank story about a panel (Week 11).
-\end{itemize}
-{\footnotesize None of this is examinable: it is where the geometry goes
-when you point it at data sociologists care about.}
-\end{frame}
 
 \begin{frame}{Unbiasedness, in Matrix Form\adv}
 Tuesday's two-line scalar proof, now for any $k$:
@@ -703,13 +643,6 @@ computes OLS by hand in \texttt{R}.
 \item Arbatl{\i}, Cemal Eren, Quamrul H. Ashraf, Oded Galor, and Marc Klemp.
 2020. ``Diversity and Conflict.'' \textit{Econometrica} 88(2): 727--797.
 [the added-variable plot example]
-\item Deerwester, Scott, Susan T. Dumais, George W. Furnas, Thomas K. Landauer,
-and Richard Harshman. 1990. ``Indexing by Latent Semantic Analysis.''
-\textit{Journal of the American Society for Information Science} 41(6):
-391--407.
-\item Kozlowski, Austin C., Matt Taddy, and James A. Evans. 2019. ``The Geometry
-of Culture: Analyzing the Meanings of Class through Word Embeddings.''
-\textit{American Sociological Review} 84(5): 905--949.
 \item Correll, Josh, Abigail M. Folberg, Charles M. Judd, Gary H. McClelland, and
 Carey S. Ryan. 2024. \textit{Data Analysis: A Model Comparison Approach to
 Regression, ANOVA, and Beyond}, 4th ed. Routledge. [for review]
