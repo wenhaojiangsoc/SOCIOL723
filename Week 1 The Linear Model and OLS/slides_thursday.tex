@@ -522,26 +522,29 @@ $\tilde\X_1$ is orthogonal). Tuesday's three-step recipe, any number of controls
 \end{frame}
 
 \begin{frame}{Proof of FWL\adv}
-Premultiply the model by $\Mm_2$ and use $\Mm_2\X_2 = \zero$:
+Start from the \emph{fitted} full regression, an exact identity in the sample:
 \begin{align*}
-  \Mm_2\Y = \Mm_2\X_1\bm\beta_1 + \underbrace{\Mm_2\X_2}_{=\zero}\bm\beta_2
-          + \Mm_2\bm\epsilon
-  \quad\Longrightarrow\quad
-  \tilde\Y = \tilde\X_1\bm\beta_1 + \Mm_2\bm\epsilon .
+  \Y = \X_1\hat{\bm\beta}_1 + \X_2\hat{\bm\beta}_2 + \ehat .
 \end{align*}
-\pause
-For the estimator, decompose the fitted model
-$\Y = \X_1\hat{\bm\beta}_1 + \X_2\hat{\bm\beta}_2 + \ehat$ and premultiply by
-$\tilde\X_1' = \X_1'\Mm_2$:
+Premultiply once by $\Mm_2$, using $\Mm_2\X_2 = \zero$ and
+$\Mm_2\ehat = \ehat$ ($\ehat$ already has $\X_2$ removed, since
+$\X_2'\ehat = \zero$):
 \begin{align*}
-  \tilde\X_1'\Y
-  = \tilde\X_1'\tilde\X_1\hat{\bm\beta}_1
-  + \X_1'\underbrace{\Mm_2\X_2}_{=\zero}\hat{\bm\beta}_2
-  + \underbrace{\X_1'\Mm_2\ehat}_{=\,0} ,
+  \tilde\Y = \tilde\X_1\hat{\bm\beta}_1 + \ehat .
 \end{align*}
-using $\Mm_2\ehat = \ehat$ (since $\X_2'\ehat = \zero$) and $\X_1'\ehat = \zero$.
-Solving gives the result. Using $\tilde\Y$ instead of $\Y$ changes nothing
-because $\tilde\X_1'\Mm_2 = \tilde\X_1'$. $\blacksquare$
+Now regress $\tilde\Y$ on $\tilde\X_1$:
+\begin{align*}
+  (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\tilde\Y
+  = \hat{\bm\beta}_1
+  + (\tilde\X_1'\tilde\X_1)^{-1}\underbrace{\tilde\X_1'\ehat}_{=\,\zero}
+  = \hat{\bm\beta}_1 ,
+\end{align*}
+because $\tilde\X_1'\ehat = \X_1'\Mm_2\ehat = \X_1'\ehat = \zero$ (using
+$\Mm_2' = \Mm_2$, visible by transposing its definition). $\blacksquare$
+\vskip1pt
+{\footnotesize Note the hats: we premultiplied the \emph{fitted} equation,
+true in every sample, not the model. The middle display also shows that the
+short regression's residual is $\ehat$ itself, the theorem's second claim.}
 \end{frame}
 
 \begin{frame}{Why FWL Matters More Than It Looks}
