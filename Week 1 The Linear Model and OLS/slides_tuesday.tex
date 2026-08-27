@@ -894,9 +894,9 @@ natural estimator is
 \begin{itemize}\itemsep3pt
   \item Why $n-k$ and not $n$? The residuals satisfy $k$ linear constraints
         (the normal equations), so they are systematically ``too short.''
-  \item Thursday's matrix language proves this in one line\adv; for now, take
-        $\E[\sum_i \hat e_i^2] = \sigma^2(n-k)$ on trust and note that it is
-        exact, not approximate.
+  \item A short matrix argument (which we do not cover) proves
+        $\E[\sum_i \hat e_i^2] = \sigma^2(n-k)$ exactly; take it on trust,
+        and note that it is exact, not approximate.
   \item Then $\hat{V}(\hat\beta_1) = s^2/\sum_i (X_i-\bar X)^2$, whose
         square root is the standard error your software prints.
 \end{itemize}

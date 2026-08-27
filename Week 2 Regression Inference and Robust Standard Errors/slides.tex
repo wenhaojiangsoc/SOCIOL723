@@ -578,10 +578,11 @@ so $\hat{V}_{\text{HC0}}(\bhat) =
 
 \begin{frame}{Finite-Sample Corrections: HC0--HC3\core}
 $\hat e_i^2$ is biased downward: \emph{under homoskedasticity}
-$\E[\hat e_i^2] = \sigma^2(1-h_{ii})$, where $h_{ii}$ is the leverage from last
-week. So HC0 \emph{understates} standard errors in small samples. The fixes
-rescale the squared residuals (the corrections are motivated by that
-homoskedastic benchmark but are used regardless):
+$\E[\hat e_i^2] = \sigma^2(1-h_{ii})$, where $h_{ii} = X_i'(\X'\X)^{-1}X_i$
+is observation $i$'s \alert{leverage} (large when its covariates are unusual).
+So HC0 \emph{understates} standard errors in small samples. The fixes
+rescale the squared residuals (motivated by the homoskedastic benchmark, used
+regardless):
 \begin{center}\small
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{lll}

@@ -457,46 +457,33 @@ The mixtures $b_0\one + b_1\bm x$ fill the shaded plane; the data $\Y$ floats
 \end{frame}
 
 
-\begin{frame}{OLS Is a Projection\adv}
-Where does the famous ``hat matrix'' come from? \alert{Pure substitution.} We
-already have $\bhat = (\X'\X)^{-1}\X'\Y$, and the fitted vector is
-$\hat\Y = \X\bhat$:
+\begin{frame}{Deriving $\bhat$ from the Picture, No Calculus\adv}
+The picture makes its own demand: the residual must be \alert{perpendicular
+to the plane}, that is, perpendicular to \emph{every column} of $\X$. Written
+in one matrix line, and then rearranged:
 \begin{align*}
-  \hat\Y = \X\bhat = \underbrace{\X(\X'\X)^{-1}\X'}_{\displaystyle \Pm}\;\Y ,
-  \qquad
-  \ehat = \Y - \hat\Y = \underbrace{(\Ix_n - \Pm)}_{\displaystyle \Mm}\;\Y .
+  \X'\big(\Y - \X\bhat\big) = \zero
+  \quad\Longrightarrow\quad
+  \X'\X\,\bhat = \X'\Y
+  \quad\Longrightarrow\quad
+  \bhat = (\X'\X)^{-1}\X'\Y .
 \end{align*}
 \begin{itemize}\itemsep3pt
-  \item $\Pm$, the \alert{hat matrix} (it puts the hat on $\Y$), is simply
-        whatever multiplies the data to produce the fit: one matrix that drops
-        the perpendicular onto the plane $\pcol(\X) = \{\X b\}$.
-  \item $\Mm$, the \alert{residual maker}, is whatever is left: it carries the
-        data straight to the residual.
-  \item Nothing new was derived. $\Pm$ and $\Mm$ are Tuesday's estimator,
-        repackaged as machines acting on $\Y$.
+  \item The first equality \emph{is} the perpendicularity requirement; the
+        rest is rearranging. \alert{Same normal equations, same estimator,
+        and not a derivative in sight.} Geometry and calculus are two proofs
+        of one formula.
+  \item Substituting back, the fitted vector is
+        $\hat\Y = \X\bhat = \X(\X'\X)^{-1}\X'\,\Y$: one matrix carries the
+        data straight to the fit.
 \end{itemize}
-\end{frame}
-
-
-\begin{frame}{$\Pm$, $\Mm$, and Leverage: the Facts We Actually Use\adv}
-\begin{enumerate}\itemsep4pt
-  \item \textbf{Projecting twice changes nothing}: $\Pm\Pm = \Pm$ and
-        $\Mm\Mm = \Mm$, and both are symmetric. Once you are on the plane,
-        projecting again leaves you where you stand.
-  \item \textbf{Traces count dimensions}: $\trace(\Pm) = k$,
-        $\trace(\Mm) = n-k$. This redeems Tuesday's IOU:
-        $\E[\sum_i \hat e_i^2] = \sigma^2(n-k)$, the $n-k$ inside $s^2$.
-  \item \textbf{Leverage}: the $i$th diagonal entry of $\Pm$,
-        $h_{ii} = X_i'(\X'\X)^{-1}X_i = \partial\hat Y_i/\partial Y_i$, is how
-        hard observation $i$'s own outcome pulls its own fitted value.
-        $\sum_i h_{ii} = k$; high leverage means unusual \emph{covariates};
-        and $\Var(\hat e_i) = \sigma^2(1-h_{ii})$: high-leverage points drag
-        the line toward themselves. \alert{Returns next week in HC2/HC3.}
-\end{enumerate}
 \vskip2pt
-{\footnotesize For the traces: $\trace(\Pm) = \trace\big((\X'\X)^{-1}\X'\X\big)
-= \trace(\Ix_k) = k$, using the cyclic property $\trace(ABC)=\trace(BCA)$.}
+{\footnotesize Names you will meet in the literature: $\Pm = \X(\X'\X)^{-1}\X'$
+is the \emph{hat matrix} (it puts the hat on $\Y$), and $\Mm = \Ix_n - \Pm$
+the \emph{residual maker} ($\ehat = \Mm\Y$). We will not need their algebra.}
 \end{frame}
+
+
 
 
 
