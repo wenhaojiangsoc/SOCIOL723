@@ -437,11 +437,14 @@ exactly, to machine precision. Note the direction: ability and family background
 are positively associated with schooling and positively associated with
 earnings, so omitting them **overstates** the return to schooling.
 
+Column (1) is the bivariate regression; (2) adds the demographic controls;
+(3) adds vocabulary score and parental education.
+
 ```{r}
 #| label: ovb-table
-modelsummary(list("(1) Bivariate" = lm(lnearn ~ educ, data = gss),
-                  "(2) + demographics" = short,
-                  "(3) + ability, background" = long),
+modelsummary(list("(1)" = lm(lnearn ~ educ, data = gss),
+                  "(2)" = short,
+                  "(3)" = long),
              coef_map = c("educ" = "Years of schooling",
                           "wordsum" = "Vocabulary score",
                           "pareduc" = "Parental education"),
@@ -456,65 +459,6 @@ recovers the causal return to schooling, for that you would need to argue
 that nothing else is omitted, which is a substantive claim, not a statistical
 one. That argument is what Weeks 5--11 are about.
 :::
-
-# Interpretation: functional form
-
-## Logs
-
-With $\ln Y$ on the left, a coefficient $\beta$ is approximately the
-proportional change in $Y$ per unit of $X$. The exact percentage change is
-$100(e^{\beta}-1)$.
-
-```{r}
-#| label: logs
-b <- coef(long)["educ"]
-c(approx_pct = 100 * b, exact_pct = 100 * (exp(b) - 1))
-```
-
-For small $\beta$ the two agree; by $\beta = 0.5$ they do not
-($50\%$ vs $64.9\%$).
-
-## Quadratics
-
-`exper` enters quadratically, so the marginal effect depends on where you
-evaluate it:
-
-```{r}
-#| label: quadratic
-b1 <- coef(long)["exper"]; b2 <- coef(long)["I(exper^2)"]
-sapply(c(0, 10, 20, 30, 40), function(x) b1 + 2 * b2 * x) |>
-  setNames(paste0("exper=", c(0, 10, 20, 30, 40))) |> round(4)
-
--b1 / (2 * b2)      # turning point, in years of experience
-```
-
-## Interactions
-
-```{r}
-#| label: interaction
-fit_int <- lm(lnearn ~ educ * female + exper + I(exper^2) + black +
-                wordsum + pareduc, data = gss)
-round(coef(fit_int)[c("educ", "female", "educ:female")], 4)
-```
-
-The return to schooling is `educ` for men and `educ + educ:female` for women.
-Never read the `female` main effect as "the gender gap": with an interaction it
-is the gap at `educ == 0`, which is outside the data.
-
-## Saturating the key covariate
-
-```{r}
-#| label: saturate
-fit_sat <- lm(lnearn ~ factor(educ) + exper + I(exper^2) + female + black +
-                wordsum + pareduc, data = gss)
-c(linear_R2 = summary(long)$r.squared,
-  saturated_R2 = summary(fit_sat)$r.squared)
-anova(long, fit_sat)
-```
-
-The $F$-test here is exactly the model comparison from *Social Statistics I*:
-is the reduction in $SSE$ from letting every year of schooling have its own
-coefficient large enough to justify the extra parameters?
 
 # Exercises
 
@@ -553,6 +497,13 @@ on them.
     $s^2 / \sum_i \tilde d_i^{\,2}$ using `d_tilde` from the FWL section
     (with $s^2$ from the full regression), take the square root, and confirm
     it matches the `educ` standard error printed by `summary(fit)`.
+
+7.  **Saturate the key covariate.** Fit
+    `lm(lnearn ~ factor(educ) + exper + I(exper^2) + female + black, data = gss)`,
+    which gives every year of schooling its own coefficient, and compare it to
+    the linear-in-`educ` version with `anova()`. The $F$-test you get is
+    exactly the model comparison from *Social Statistics I*: is the reduction
+    in $SSE$ worth the extra parameters?
 
 # Session information
 
