@@ -489,46 +489,7 @@ the \emph{residual maker} ($\ehat = \Mm\Y$). We will not need their algebra.}
 
 
 
-\begin{frame}{Unbiasedness, in Matrix Form\adv}
-Tuesday's two-line scalar proof, now for any $k$:
-\begin{align*}
-  \bhat &= (\X'\X)^{-1}\X'(\X\bm\beta + \bm\epsilon)
-         = \bm\beta + (\X'\X)^{-1}\X'\bm\epsilon , \\[4pt]
-  \E[\bhat\mid\X] &= \bm\beta + (\X'\X)^{-1}\X'\underbrace{\E[\bm\epsilon\mid\X]}_{=\,\zero}
-  = \bm\beta . \qquad\blacksquare
-\end{align*}
-\vskip6pt
-\begin{itemize}
-  \item Note where the work is done: \emph{only} by A4.
-  \item Heteroskedasticity, clustering, and non-normality do \alert{not} bias
-        $\bhat$. They affect its \emph{variance}, next week.
-  \item A4 fails whenever an omitted variable, reverse causation, measurement
-        error in $X$, or selection puts something correlated with $X$ into
-        $\epsilon$. That is the entire causal-inference problem in one sentence.
-\end{itemize}
-\end{frame}
 
-\begin{frame}{The Gauss--Markov Theorem\adv}
-\begin{block}{Theorem}
-Under A1--A5, $\bhat$ is the \alert{Best Linear Unbiased Estimator}: among all
-$\tilde{\bm\beta} = \bm{C}\Y$ with $\bm C$ a function of $\X$ and
-$\E[\tilde{\bm\beta}\mid\X]=\bm\beta$,
-$\Var(\tilde{\bm\beta}\mid\X) - \Var(\bhat\mid\X) \succeq 0$.
-\end{block}
-\pause
-\textbf{Proof.} Write $\bm{C} = (\X'\X)^{-1}\X' + \bm{D}$. Unbiasedness for all
-$\bm\beta$ forces $\bm{D}\X = \zero$. Then
-\begin{align*}
-  \Var(\bm C\Y\mid\X)
-  &= \sigma^2\big[(\X'\X)^{-1}\X' + \bm D\big]\big[\X(\X'\X)^{-1} + \bm D'\big] \\
-  &= \sigma^2(\X'\X)^{-1}
-   + \sigma^2\underbrace{(\X'\X)^{-1}\X'\bm D'}_{=\,\zero}
-   + \sigma^2\underbrace{\bm D\X(\X'\X)^{-1}}_{=\,\zero}
-   + \sigma^2\bm{D}\bm{D}' \\
-  &= \Var(\bhat\mid\X) + \sigma^2\bm{D}\bm{D}' \succeq \Var(\bhat\mid\X) .
-  \qquad\blacksquare
-\end{align*}
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Partialling Out]{Partialling Out in General}
