@@ -1,5 +1,5 @@
 ---
-title: "\\textbf{Lab 1: Matrix Algebra and OLS by Hand}"
+title: "\\textbf{Lab 1: OLS by Hand, in Scalar Form}"
 subtitle: "SOCIOL 723, Social Statistics II, Thursday, August 27"
 author: "Wenhao Jiang"
 format:
@@ -47,17 +47,17 @@ options(digits = 4, scipen = 999)
 By the end of this lab you should be able to:
 
 1.  Organize an analysis in RStudio and Quarto so that it is reproducible.
-2.  Do the linear algebra of the linear model in `R`: transposes, products,
-    inverses, rank, and traces.
-3.  Compute $\hat{\bm{\beta}} = (\bm{X}'\bm{X})^{-1}\bm{X}'\bm{y}$
-    by hand and verify that it matches `lm()`.
-4.  Construct the projection matrix $\bm{P}$ and the residual maker
-    $\bm{M}$, and verify their properties numerically.
+2.  Compute $\hat\beta_0$ and $\hat\beta_1$ from the scalar formulas with
+    nothing but `sum()`, and verify that they match `lm()`.
+3.  Verify the mechanical residual properties, and compute $s^2$ and the
+    classical standard error by hand.
+4.  Use **simulation** to see what the assumption
+    $\E[\epsilon_i \mid X_i] = 0$ does and does not deliver.
 5.  Verify the Frisch--Waugh--Lovell theorem and the omitted-variable-bias
-    formula in real data.
+    formula in real GSS data.
 
-Everything below runs on base `R` plus a handful of packages. Nothing here
-requires more linear algebra than we covered in lecture.
+Everything below is scalar arithmetic: sums, means, and `lm()`. No matrix
+computations appear anywhere in this lab.
 
 # Getting set up
 
@@ -150,205 +150,157 @@ The points are the **conditional expectation function** estimated cell by cell
 approximation** to it. Notice that the CEF is not exactly linear; it is
 convex above roughly 12 years, but the line summarizes it reasonably well.
 
-# Matrix algebra in `R`
+# OLS by hand, in scalar form
 
-## Building blocks
+## The slope and intercept from sums
 
-```{r}
-#| label: matrix-basics
-A <- matrix(c(2, 1, 1, 3), nrow = 2)        # filled by column
-b <- c(1, 2)
-
-A
-t(A)              # transpose
-A %*% b           # matrix product (NOT A * b, which is elementwise)
-solve(A)          # inverse
-solve(A) %*% A    # should be the identity
-diag(2)           # 2x2 identity
-```
-
-Two facts worth internalizing now, because they recur constantly:
+The whole estimator is two lines of arithmetic:
+$\hat\beta_1 = \Cov_n(X,Y)/\Var_n(X)$ and
+$\hat\beta_0 = \bar Y - \hat\beta_1\bar X$.
 
 ```{r}
-#| label: matrix-facts
-crossprod(A)          # equals t(A) %*% A, but faster and more accurate
-all.equal(crossprod(A), t(A) %*% A)
-
-sum(diag(A))          # the trace
-```
-
-## Rank, invertibility, and collinearity
-
-$(\bm{X}'\bm{X})^{-1}$ exists if and only if $\bm{X}$ has full
-column rank. Here is what a rank failure looks like:
-
-```{r}
-#| label: rank
-X_bad <- cbind(1, gss$educ, gss$educ * 2)   # third column is redundant
-qr(X_bad)$rank                              # 2, not 3
-try(solve(crossprod(X_bad)), silent = TRUE) |> class()
-```
-
-`lm()` does not error, it drops the offending column and reports `NA`:
-
-```{r}
-#| label: rank-lm
-coef(lm(lnearn ~ educ + I(educ * 2), data = gss))
-```
-
-::: callout-warning
-An `NA` coefficient is *never* a mystery: it means the column is an exact
-linear combination of the others. The most common cause is the dummy variable
-trap (including all $J$ category indicators plus an intercept).
-:::
-
-## Positive definiteness
-
-$\bm{X}'\bm{X}$ is positive semi-definite by construction, and positive
-definite when $\bm{X}$ has full column rank. We can check via eigenvalues:
-
-```{r}
-#| label: posdef
-X <- model.matrix(~ educ + exper + I(exper^2) + female + black, data = gss)
-ev <- eigen(crossprod(X), only.values = TRUE)$values
-range(ev)
-all(ev > 0)
-```
-
-The ratio of the largest to smallest eigenvalue is the **condition number**; a
-very large value warns of near-collinearity (numerically fragile, and
-substantively a warning that the data carry little independent information about
-some coefficient).
-
-```{r}
-#| label: condnum
-kappa(crossprod(X), exact = TRUE)
-```
-
-# OLS by hand
-
-## The estimator
-
-```{r}
-#| label: ols-by-hand
+#| label: ols-scalar
+x <- gss$educ
 y <- gss$lnearn
-X <- model.matrix(~ educ + exper + I(exper^2) + female + black, data = gss)
+n <- length(y)
 
-n <- nrow(X); k <- ncol(X)
-c(n = n, k = k)
-
-XtX     <- crossprod(X)          # X'X   (k x k)
-Xty     <- crossprod(X, y)       # X'y   (k x 1)
-beta_hat <- solve(XtX, Xty)      # solve(A, b) is better than solve(A) %*% b
-round(beta_hat, 4)
+b1 <- sum((x - mean(x)) * (y - mean(y))) / sum((x - mean(x))^2)
+b0 <- mean(y) - b1 * mean(x)
+round(c(b0 = b0, b1 = b1), 4)
 ```
 
 Compare with `lm()`:
 
 ```{r}
-#| label: ols-check
-fit <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
-all.equal(as.vector(beta_hat), unname(coef(fit)))
+#| label: ols-scalar-check
+fit_biv <- lm(lnearn ~ educ, data = gss)
+round(coef(fit_biv), 4)
 ```
 
-::: callout-tip
-`solve(A, b)` solves the linear system directly instead of forming the inverse.
-It is faster and numerically more stable. In production code you would go
-further and use the QR decomposition, which is what `lm()` actually does:
-`qr.solve(X, y)`.
-:::
+Identical, and identical to the numbers on the lecture slides. `lm()` is doing
+exactly this arithmetic (in a numerically fancier way), nothing more.
+
+## The slope is a weighted average of unit slopes
+
+Lecture claimed
+$\hat\beta_1 = \sum_i w_i\,(Y_i - \bar Y)/(X_i - \bar X)$ with
+$w_i = (X_i - \bar X)^2 / \sum_j (X_j - \bar X)^2$. Verify it, and look at
+who carries the weight:
 
 ```{r}
-#| label: qr
-all.equal(as.vector(qr.solve(X, y)), as.vector(beta_hat))
+#| label: weighted-slopes
+w  <- (x - mean(x))^2 / sum((x - mean(x))^2)
+bi <- ifelse(x == mean(x), 0, (y - mean(y)) / (x - mean(x)))
+c(weighted_average = sum(w * bi), b1 = b1)
+
+## total weight carried by each value of educ
+tapply(w, x, sum) |> round(3)
 ```
 
-## Residuals, $s^2$, and standard errors
+Respondents far from the mean of schooling (about
+`r round(mean(gss$educ), 1)` years) carry almost all of the weight;
+respondents at the mean carry essentially none. Know which observations are
+shouting.
 
-```{r}
-#| label: ols-se
-e   <- y - X %*% beta_hat            # residuals
-s2  <- sum(e^2) / (n - k)            # unbiased estimator of sigma^2
-V   <- s2 * solve(XtX)               # classical variance matrix
-se  <- sqrt(diag(V))
-
-round(cbind(estimate = beta_hat, se = se,
-            t = beta_hat / se), 4)
-```
-
-```{r}
-#| label: ols-se-check
-round(summary(fit)$coefficients, 4)
-```
-
-Identical. The default standard errors that `R` prints are exactly
-$\sqrt{\operatorname{diag}\!\big(s^2(\bm{X}'\bm{X})^{-1}\big)}$, 
-i.e. they *assume homoskedasticity*. Next week we replace them.
-
-## The mechanical orthogonality conditions
+## Residual mechanics
 
 ```{r}
 #| label: orthogonality
-round(crossprod(X, e), 8)     # X'e = 0, up to floating point
-round(sum(e), 8)              # residuals sum to zero (constant included)
-round(cor(X %*% beta_hat, e), 8)  # fitted values orthogonal to residuals
+e <- y - b0 - b1 * x
+round(c(sum_e = sum(e), sum_xe = sum(x * e), cor_xe = cor(x, e)), 8)
 ```
 
-These are identities, true in *every* sample no matter how badly specified the
-model is. They are not evidence of anything.
+These hold to machine precision in *every* sample, no matter how wrong the
+model is. They are consequences of the normal equations, not evidence of
+anything.
 
-# The geometry: $\bm{P}$ and $\bm{M}$
-
-With $n = `r nrow(X)`$, the matrix $\bm{P}$ is
-$`r nrow(X)` \times `r nrow(X)`$, about
-`r round(nrow(X)^2 * 8 / 1e9, 1)` GB if we formed it. So we work with a random
-subsample to demonstrate the properties, and use the implicit form for the full
-data.
+## $s^2$ and the classical standard error
 
 ```{r}
-#| label: projection
+#| label: ols-se
+s2    <- sum(e^2) / (n - 2)
+se_b1 <- sqrt(s2 / sum((x - mean(x))^2))
+round(c(s2 = s2, se_b1 = se_b1), 5)
+round(summary(fit_biv)$coefficients["educ", ], 5)
+```
+
+The standard error `R` prints is exactly
+$\sqrt{s^2 / \sum_i (X_i - \bar X)^2}$, i.e.\ it *assumes
+homoskedasticity*. Next week we replace it.
+
+# Simulation: what the error assumption does
+
+With real data we never know the truth. In a simulation we do, which makes it
+the honest way to see what an assumption buys.
+
+## When the average of $Y$ really is a line
+
+```{r}
+#| label: sim-linear
 set.seed(1)
-idx <- sample(n, 300)
-Xs  <- X[idx, ]; ys <- y[idx]
-
-P <- Xs %*% solve(crossprod(Xs)) %*% t(Xs)
-M <- diag(nrow(Xs)) - P
-
-## symmetric
-all.equal(P, t(P))
-## idempotent
-all.equal(P %*% P, P)
-all.equal(M %*% M, M)
-## orthogonal to each other
-max(abs(P %*% M))
-## P X = X and M X = 0
-all.equal(P %*% Xs, Xs, check.attributes = FALSE)
-max(abs(M %*% Xs))
-## traces are the dimensions of the two subspaces
-c(trace_P = sum(diag(P)), k = ncol(Xs),
-  trace_M = sum(diag(M)), n_minus_k = nrow(Xs) - ncol(Xs))
+n_sim <- 2000
+xs <- sample(8:20, n_sim, replace = TRUE)          # schooling-like regressor
+ys <- 8.2 + 0.12 * xs + rnorm(n_sim, 0, 0.7)       # E[eps | x] = 0 by design
+coef(lm(ys ~ xs)) |> round(4)
 ```
 
-## Leverage
+We wrote the truth ($\beta_0 = 8.2$, $\beta_1 = 0.12$) and OLS finds it, up
+to sampling noise. Rerun with a different seed: the estimate moves a little.
+How much it moves from sample to sample is precisely next week's topic.
 
-The diagonal of $\bm{P}$ is the leverage $h_{ii}$. On the full sample we get
-it without ever forming $\bm{P}$:
+## When the CEF is not a line: uncorrelated is not mean-independent
+
+Now make the population relationship curved, and fit a line anyway:
 
 ```{r}
-#| label: leverage
-h <- hatvalues(fit)
-c(mean = mean(h), theoretical = k / n, max = max(h))
+#| label: sim-quadratic
+#| fig-cap: "Residuals from fitting a line to a curved CEF. Their correlation with x is exactly zero, yet their average tracks the leftover curve: uncorrelated, but not mean-independent."
+set.seed(2)
+xq <- runif(n_sim, 8, 20)
+yq <- 8 + 0.05 * xq + 0.015 * (xq - 14)^2 + rnorm(n_sim, 0, 0.4)
+fq <- lm(yq ~ xq)
+
+round(cor(xq, resid(fq)), 8)     # exactly zero, mechanically
+
+plot(xq, resid(fq), pch = 16, cex = .35, col = "navy",
+     xlab = "x", ylab = "residual")
+lines(lowess(xq, resid(fq)), col = "firebrick", lwd = 2)
+abline(h = 0, lty = 2)
 ```
 
+This is the ladder from lecture, live: the residuals are *uncorrelated* with
+$x$ (bottom rung, guaranteed by the algebra) but their *average* clearly moves
+with $x$, so mean independence fails. The correlation could never have told
+you; the plot does. This is why you look at residual plots.
+
+## Heteroskedasticity does not bias the slope
+
 ```{r}
-#| label: fig-leverage
-#| fig-cap: "Leverage against years of schooling. The high-leverage observations are those with unusual *covariate* values, not unusual outcomes."
-tibble::tibble(h = h, educ = gss$educ, exper = gss$exper) |>
-  ggplot(aes(educ, h)) +
-  geom_jitter(width = .18, alpha = .18, size = .5, colour = "navy") +
-  geom_hline(yintercept = k / n, linetype = 2, colour = "firebrick") +
-  labs(x = "Years of schooling", y = expression(h[ii])) +
-  theme_minimal(base_size = 10)
+#| label: sim-hetero
+set.seed(3)
+slopes <- replicate(500, {
+  xh <- runif(500, 8, 20)
+  yh <- 8.2 + 0.12 * xh + rnorm(500, 0, 0.1 * xh)   # spread grows with x
+  coef(lm(yh ~ xh))[2]
+})
+round(c(mean_slope = mean(slopes), truth = 0.12), 4)
+```
+
+The error spread rises steeply with $x$, yet the slope estimates still centre
+on the truth: heteroskedasticity is a problem for *standard errors* (Week 2),
+not for the estimate itself. $\E[\epsilon\mid X] = 0$ still holds here, and
+that is the assumption doing the work.
+
+# The multiple regression, and fit
+
+With several regressors the same logic goes through; we let `lm()` carry the
+bookkeeping. (Thursday's session shows the notation that makes this compact.)
+
+```{r}
+#| label: fit-multiple
+fit <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
+y   <- gss$lnearn
+round(coef(fit), 4)
 ```
 
 ## The sum-of-squares decomposition
@@ -377,9 +329,8 @@ c(PRE = (SSE_C - SSE_A) / SSE_C, R2 = summary(fit)$r.squared)
 
 # Frisch--Waugh--Lovell
 
-We now verify FWL on the return to schooling. Partition
-$\bm{X} = [\,\bm{X}_1 \ \ \bm{X}_2\,]$ with $\bm{X}_1 =$ `educ`
-and $\bm{X}_2 =$ everything else.
+We now verify FWL on the return to schooling: the treatment of interest is
+`educ`, and the controls are everything else in the regression.
 
 ```{r}
 #| label: fwl
@@ -570,16 +521,18 @@ coefficient large enough to justify the extra parameters?
 Work these during lab; they are not collected, but Problem Set 1 builds directly
 on them.
 
-1.  **Rank.** Construct a design matrix that includes a full set of nine `region`
-    dummies *and* an intercept. Confirm with `qr()$rank` that it is rank
-    deficient, and confirm what `lm()` does about it.
+1.  **The dummy variable trap.** Run
+    `lm(lnearn ~ factor(region), data = gss)` and look at how many coefficients
+    you get. Now try to include *all nine* region indicators and an intercept.
+    What does `lm()` report, and why? Explain in words: the nine dummies add
+    up to the intercept column, so one of them carries no new information.
 
-2.  **The trace identity.** On the 300-observation subsample, verify numerically
-    that $\E[\hat{\bm e}'\hat{\bm e}] = \sigma^2(n-k)$ by simulation: fix
-    `Xs`, draw $\bm\epsilon \sim N(0, 4\bm{I})$, generate
-    $\bm y = \bm{X}_s\bm{\beta} + \bm\epsilon$ for some $\bm{\beta}$ you
-    choose, and average $\hat{\bm e}'\hat{\bm e}$ over 2,000 replications.
-    Compare to $4 \times (300 - k)$.
+2.  **The $n-2$, by simulation.** In the bivariate model, verify that
+    $\E[\sum_i \hat e_i^2] = \sigma^2(n-2)$: fix `xs` from the first
+    simulation, generate $y = 8.2 + 0.12x + \epsilon$ with
+    $\epsilon \sim N(0, 4)$, and average $\sum_i \hat e_i^2$ over 2,000
+    replications. Compare to $4 \times (n-2)$, and to the wrong guess
+    $4 \times n$.
 
 3.  **FWL as fixed effects.** Regress `lnearn` on `educ` and a full set of
     `region` dummies. Then (a) demean `lnearn` and `educ` within `region` and
@@ -590,14 +543,16 @@ on them.
     the sign of the bias in the `educ` coefficient *before* running anything,
     using the OVB formula and the two auxiliary regressions. Then check.
 
-5.  **Leverage.** Find the ten highest-leverage observations. What makes them
-    unusual? Refit dropping them, how much does the `educ` coefficient move?
-    (Compare to its standard error before concluding anything.)
+5.  **Who carries the weight?** Using the weighted-slopes section, find the
+    twenty observations with the largest weights $w_i$ in the bivariate
+    regression. What values of `educ` do they have? Refit without them, how
+    much does the slope move? (Compare the move to the standard error before
+    concluding anything.)
 
-6.  **Variance inflation.** Compute $\Var(\hat\beta_{\texttt{educ}})$ from the
-    formula $s^2 / \sum_i \tilde d_i^2$ using the residualized `d_tilde` from
-    the FWL section, and confirm it matches the `educ` entry of
-    $s^2(\bm{X}'\bm{X})^{-1}$.
+6.  **The FWL standard error.** Compute
+    $s^2 / \sum_i \tilde d_i^{\,2}$ using `d_tilde` from the FWL section
+    (with $s^2$ from the full regression), take the square root, and confirm
+    it matches the `educ` standard error printed by `summary(fit)`.
 
 # Session information
 

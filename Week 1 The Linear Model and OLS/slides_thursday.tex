@@ -173,8 +173,8 @@
 \vskip6pt
 \begin{alertblock}{But}
 Nothing in this section is new content. It is the \emph{same} normal equations
-you derived on Tuesday, written more compactly. The lab that follows practices
-every piece of linear algebra we use.
+you derived on Tuesday, written more compactly. And the lab stays entirely in
+scalar form: sums, means, and \texttt{lm()}, on simulations and the GSS.
 \end{alertblock}
 \end{frame}
 
@@ -512,8 +512,6 @@ The OLS estimate $\hat{\bm\beta}_1$ from the full regression equals
   \;=\; (\tilde\X_1'\tilde\X_1)^{-1}\tilde\X_1'\,\Y
   \qquad (\text{note: } \tilde\Y \text{ vs.\ raw } \Y) ,
 \end{align*}
-and the residuals from the short regression are numerically identical to $\ehat$
-from the full one.
 \end{block}
 \vskip1pt
 The two right-hand sides differ only in the tilde on $\Y$; they are equal for
@@ -541,18 +539,12 @@ Now regress $\tilde\Y$ on $\tilde\X_1$:
 \end{align*}
 because $\tilde\X_1'\ehat = \X_1'\Mm_2\ehat = \X_1'\ehat = \zero$ (using
 $\Mm_2' = \Mm_2$, visible by transposing its definition). $\blacksquare$
-\vskip1pt
-{\footnotesize Note the hats: we premultiplied the \emph{fitted} equation,
-true in every sample, not the model. The middle display also shows that the
-short regression's residual is $\ehat$ itself, the theorem's second claim.}
 \end{frame}
 
 \begin{frame}{Why FWL Matters More Than It Looks}
 \begin{enumerate}\itemsep6pt
   \item \textbf{Interpretation.} ``Controlling for $W$'' $=$ discarding all
         covariance between $X_1$ and $W$. Your estimate lives on what remains.
-  \item \textbf{Computation.} Fixed-effects estimators \emph{are} FWL: regressing
-        on unit dummies is the same as demeaning within unit (Week 10).
   \item \textbf{Diagnostics.} The added-variable plot is the only two-dimensional
         picture that faithfully represents a multivariate slope.
   \item \textbf{Generality.} Nothing in the argument requires $\X_2$ to enter
@@ -560,23 +552,6 @@ short regression's residual is $\ehat$ itself, the theorem's second claim.}
         $\X_2$ predicts. That observation is the seed of a large literature, and
         we return to it briefly in Week 13.
 \end{enumerate}
-\end{frame}
-
-\begin{frame}{Omitted Variables, in Matrix Form\adv}
-With $\X_1$ included and $\X_2$ omitted,
-\begin{align*}
-  \E[\tilde{\bm\beta}_1 \mid \X]
-  = \bm\beta_1 + \underbrace{(\X_1'\X_1)^{-1}\X_1'\X_2}_{\hat{\bm\delta}}\,\bm\beta_2 .
-\end{align*}
-\begin{itemize}\itemsep4pt
-  \item Each column of $\hat{\bm\delta}$ is the coefficient vector from regressing
-        one omitted variable on all the included ones, exactly $\delta_1$ from
-        the scalar case, stacked.
-  \item With several omitted variables the bias is a \emph{sum} of terms which may
-        offset, so ``the bias must be positive'' arguments require care.
-  \item Sensitivity analysis (Week 6) formalizes the question: how strong would an
-        omitted confounder have to be to overturn the result?
-\end{itemize}
 \end{frame}
 
 \begin{frame}{Where This Leaves Us}
@@ -593,8 +568,8 @@ With $\X_1$ included and $\X_2$ omitted,
 \end{itemize}
 \vskip6pt
 \begin{block}{This week's reading}
-MHE Chapter 3; CCI Chapter 6. The lab practices the matrix algebra hands-on and
-computes OLS by hand in \texttt{R}.
+MHE Chapter 3; CCI Chapter 6. The lab computes OLS by hand in scalar form,
+on simulated data and the GSS; no matrix computations anywhere.
 \end{block}
 \end{frame}
 
