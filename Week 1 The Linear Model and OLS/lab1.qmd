@@ -478,27 +478,16 @@ on them.
     replications. Compare to $4 \times (n-2)$, and to the wrong guess
     $4 \times n$.
 
-3.  **FWL as fixed effects.** Regress `lnearn` on `educ` and a full set of
-    `region` dummies. Then (a) demean `lnearn` and `educ` within `region` and
-    regress the demeaned outcome on the demeaned regressor. Confirm the slopes
-    match. This is the within estimator we will meet in Week 10.
-
-4.  **Sign the bias.** Suppose you omit `hours` from the long regression. Predict
+3.  **Sign the bias.** Suppose you omit `hours` from the long regression. Predict
     the sign of the bias in the `educ` coefficient *before* running anything,
     using the OVB formula and the two auxiliary regressions. Then check.
 
-5.  **Who carries the weight?** Using the weighted-slopes section, find the
-    twenty observations with the largest weights $w_i$ in the bivariate
-    regression. What values of `educ` do they have? Refit without them, how
-    much does the slope move? (Compare the move to the standard error before
-    concluding anything.)
-
-6.  **The FWL standard error.** Compute
+4.  **The FWL standard error.** Compute
     $s^2 / \sum_i \tilde d_i^{\,2}$ using `d_tilde` from the FWL section
     (with $s^2$ from the full regression), take the square root, and confirm
     it matches the `educ` standard error printed by `summary(fit)`.
 
-7.  **Saturate the key covariate.** Fit
+5.  **Saturate the key covariate.** Fit
     `lm(lnearn ~ factor(educ) + exper + I(exper^2) + female + black, data = gss)`,
     which gives every year of schooling its own coefficient, and compare it to
     the linear-in-`educ` version with `anova()`. The $F$-test you get is
