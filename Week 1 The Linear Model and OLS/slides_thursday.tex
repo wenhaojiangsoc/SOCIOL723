@@ -407,30 +407,62 @@ Read matrix-times-vector as a \alert{recipe for mixing columns}:
 each coefficient pours in that much of its column. The set of candidate fits
 is therefore \emph{every possible mixture of the $k$ columns}.
 \begin{itemize}\itemsep1pt
-  \item \textbf{One column} (intercept only): all multiples of the single
-        arrow $\one$, a \alert{line} through the origin. One knob to turn,
-        one dimension of freedom.
-  \item \textbf{Two columns}: all mixtures of two arrows, a flat
-        \alert{plane} through the origin. Two knobs, two dimensions.
-  \item \textbf{$k$ columns}: $k$ knobs, a $k$-dimensional flat sheet inside
-        $\R^n$. That is \emph{all} ``$k$-dimensional subspace'' means:
-        \alert{the set of points reachable by turning $k$ independent knobs}.
-  \item The data $\Y$ generally sits \emph{off} the sheet; the gap is the
-        residual. And if one column is itself a mixture of the others, one
-        knob is redundant and the sheet is thinner than $k$: \alert{rank},
+  \item \textbf{One column} (intercept only): the mixtures are all multiples
+        of $\one$, a \alert{line} through the origin.
+  \item \textbf{Two columns}: the mixtures of two arrows fill a flat
+        \alert{plane} through the origin.
+  \item \textbf{$k$ columns}: the mixtures fill a $k$-dimensional flat
+        subspace of $\R^n$. ``$k$-dimensional'' simply counts the free
+        coefficients $b_1,\dots,b_k$.
+  \item $\Y$ generally sits \emph{off} this subspace; the gap is the
+        residual. A column that is itself a mixture of the others adds no new
+        direction, so the subspace has dimension below $k$: \alert{rank},
         again.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Where Projection Comes From: Two People First\adv}
+\begin{frame}{The Picture: $n = 3$, Two Columns\adv}
+Three observations ($n=3$), two columns: $\X = [\,\one \ \ \bm x\,]$ is
+$3\times2$.
+The mixtures $b_0\one + b_1\bm x$ fill the shaded plane; the data $\Y$ floats
+\emph{off} it, in the third dimension.
+\begin{center}
+\begin{tikzpicture}[scale=0.95,>=Stealth]
+  \fill[dukeblue!8] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
+  \draw[dukeblue!40] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
+  \node[dukeblue] at (-1.9,1.15) {\scriptsize the plane: all mixtures $b_0\one + b_1\bm{x}$};
+  \coordinate (O) at (0,0);
+  \coordinate (Yhat) at (1.9,0.35);
+  \coordinate (Y) at (1.9,2.35);
+  \draw[->,dukeblue!70,thick] (O) -- (-0.9,-0.35) node[below] {\small $\one$};
+  \draw[->,dukeblue!70,thick] (O) -- (1.1,-0.55) node[below] {\small $\bm x$};
+  \draw[->,very thick] (O) -- (Y) node[above right] {\small $\Y$};
+  \draw[->,thick,dukeblue] (O) -- (Yhat);
+  \node[dukeblue] at (2.75,0.12) {\small $\hat\Y = \X\bhat$};
+  \draw[->,thick,accent] (Yhat) -- (Y);
+  \node[accent] at (2.2,1.5) {\small $\ehat$};
+  \draw[accent] ($(Yhat)+(0,0.22)$) -- ($(Yhat)+(-0.22,0.22)$) -- ($(Yhat)+(-0.22,0)$);
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item OLS drops the perpendicular from $\Y$ to the plane: the foot is the
+        fit $\hat\Y$, the gap is the residual $\ehat$. Perpendicular to the
+        plane $=$ perpendicular to \emph{both} columns: $\X'\ehat = \zero$,
+        the normal equations.
+  \item Fitting is dropping a perpendicular. Everything else is bookkeeping.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where Projection Comes From: $n = 2$ First\adv}
 \begin{columns}[T]
 \begin{column}{0.42\textwidth}
 \begin{center}
 \begin{tikzpicture}[scale=0.70,>=Stealth]
   \draw[->] (0,0) -- (5.4,0);
-  \node[below] at (2.7,-0.45) {\scriptsize person 1's value};
+  \node[below] at (2.7,-0.45) {\scriptsize $Y_1$ (observation 1's value)};
   \draw[->] (0,0) -- (0,5.4);
-  \node[rotate=90,above] at (-0.62,2.7) {\scriptsize person 2's value};
+  \node[rotate=90,above] at (-0.62,2.7) {\scriptsize $Y_2$ (observation 2's value)};
   \foreach \t in {1,2,3,4,5} {
     \draw (\t,0) -- (\t,-0.07) node[below] {\tiny \t};
     \draw (0,\t) -- (-0.07,\t) node[left] {\tiny \t};}
@@ -449,10 +481,11 @@ is therefore \emph{every possible mixture of the $k$ columns}.
 \begin{column}{0.56\textwidth}
 {\small
 \begin{itemize}\itemsep3pt
-  \item Two people, one variable: $Y_1 = 2$, $Y_2 = 4$. Plot the
-        \emph{dataset} as one point, one axis per person.
-  \item The intercept-only model $Y_i = b + e_i$ fits both people the same
-        number: the point $(b,b)$. All candidates form the $45^\circ$ line.
+  \item Two observations, one variable: $Y_1 = 2$, $Y_2 = 4$. Plot the
+        \emph{dataset} as one point, one axis per observation.
+  \item The intercept-only model $Y_i = b + e_i$ gives every observation the
+        same fitted value: the point $(b,b)$. All candidates form the
+        $45^\circ$ line.
   \item Closest point on that line to $(2,4)$: the perpendicular's foot,
         $(3,3)$. So $\hat b = 3 = \bar Y$: \alert{the mean is a projection}.
   \item Right angle, checked: residual $(-1,1)$, line direction $(1,1)$,
@@ -460,7 +493,7 @@ is therefore \emph{every possible mixture of the $k$ columns}.
 \end{itemize}}
 \end{column}
 \end{columns}
-{\footnotesize With $n$ people the picture lives in $\R^n$; with regressors
+{\footnotesize With $n$ observations the picture lives in $\R^n$; with regressors
 the line becomes the plane spanned by $\X$'s columns. OLS is always the same
 move: \alert{drop the perpendicular}. (``Normal'' equations: normal $=$
 perpendicular.)}
@@ -485,31 +518,6 @@ so that $\hat\Y = \Pm\Y$ and $\ehat = \Mm\Y$.
 \end{block}
 \end{frame}
 
-\begin{frame}{The Picture\adv}
-\begin{center}
-\begin{tikzpicture}[scale=1.2,>=Stealth]
-  \fill[dukeblue!8] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
-  \draw[dukeblue!40] (-2.2,-0.75) -- (2.6,-0.75) -- (3.5,0.85) -- (-1.3,0.85) -- cycle;
-  \node[dukeblue] at (3.15,0.55) {\small $\pcol(\X)$};
-  \coordinate (O) at (0,0);
-  \coordinate (Yhat) at (1.9,0.35);
-  \coordinate (Y) at (1.9,2.35);
-  \draw[->,thick,dukeblue] (O) -- (Yhat) node[below right] {\small $\hat{\bm{y}} = \bm{P}\bm{y}$};
-  \draw[->,very thick] (O) -- (Y) node[above right] {\small $\bm{y}$};
-  \draw[->,thick,accent] (Yhat) -- (Y) node[midway,right] {\small $\hat{\bm{e}} = \bm{M}\bm{y}$};
-  \draw[accent] ($(Yhat)+(0,0.22)$) -- ($(Yhat)+(-0.22,0.22)$) -- ($(Yhat)+(-0.22,0)$);
-  \draw[->,dukeblue!70] (O) -- (-0.9,-0.35) node[below] {\small $\bm{x}_1$};
-  \draw[->,dukeblue!70] (O) -- (1.1,-0.55) node[below] {\small $\bm{x}_2$};
-\end{tikzpicture}
-\end{center}
-\vskip-8pt
-\begin{itemize}
-  \item $\ehat \perp \pcol(\X)$, the geometric content of $\X'\ehat=\zero$, which
-        is the geometric content of ``residuals are uncorrelated with the
-        regressors.''
-  \item Fitting is dropping a perpendicular. Everything else is bookkeeping.
-\end{itemize}
-\end{frame}
 
 \begin{frame}{Properties of $\Pm$ and $\Mm$\adv}
 \begin{columns}[T]
