@@ -458,116 +458,87 @@ The mixtures $b_0\one + b_1\bm x$ fill the shaded plane; the data $\Y$ floats
 
 
 \begin{frame}{OLS Is a Projection\adv}
-Think of $\Y$ as a single point in $\R^n$, one dimension per
-\emph{observation}. The $k$ columns of $\X$ span a $k$-dimensional subspace
+Where does the famous ``hat matrix'' come from? \alert{Pure substitution.} We
+already have $\bhat = (\X'\X)^{-1}\X'\Y$, and the fitted vector is
+$\hat\Y = \X\bhat$:
 \begin{align*}
-  \pcol(\X) = \{\X b : b \in \R^k\} \subset \R^n .
-\end{align*}
-OLS finds the point in $\pcol(\X)$ closest to $\Y$:
-$\ \hat\Y = \argmin_{v \in \pcol(\X)} \|\Y - v\|^2$.
-\vskip4pt
-\begin{block}{Projection and annihilator matrices}
-\begin{align*}
-  \Pm = \X(\X'\X)^{-1}\X' \ (\text{``hat matrix''}),
+  \hat\Y = \X\bhat = \underbrace{\X(\X'\X)^{-1}\X'}_{\displaystyle \Pm}\;\Y ,
   \qquad
-  \Mm = \Ix_n - \Pm \ (\text{``residual maker''})
+  \ehat = \Y - \hat\Y = \underbrace{(\Ix_n - \Pm)}_{\displaystyle \Mm}\;\Y .
 \end{align*}
-so that $\hat\Y = \Pm\Y$ and $\ehat = \Mm\Y$.
-\end{block}
+\begin{itemize}\itemsep3pt
+  \item $\Pm$, the \alert{hat matrix} (it puts the hat on $\Y$), is simply
+        whatever multiplies the data to produce the fit: one matrix that drops
+        the perpendicular onto the plane $\pcol(\X) = \{\X b\}$.
+  \item $\Mm$, the \alert{residual maker}, is whatever is left: it carries the
+        data straight to the residual.
+  \item Nothing new was derived. $\Pm$ and $\Mm$ are Tuesday's estimator,
+        repackaged as machines acting on $\Y$.
+\end{itemize}
 \end{frame}
 
 
-\begin{frame}{Properties of $\Pm$ and $\Mm$\adv}
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
-\textbf{Symmetric}
-\begin{align*}
-  \Pm' = \Pm, \qquad \Mm' = \Mm
-\end{align*}
-\textbf{Idempotent}
-\begin{align*}
-  \Pm\Pm &= \X(\X'\X)^{-1}\underbrace{\X'\X(\X'\X)^{-1}}_{\Ix}\X' = \Pm\\
-  \Mm\Mm &= (\Ix-\Pm)(\Ix-\Pm) = \Mm
-\end{align*}
-\textbf{Mutually orthogonal}
-\begin{align*}
-  \Pm\Mm = \Pm - \Pm\Pm = \zero
-\end{align*}
-\end{column}
-\begin{column}{0.48\textwidth}
-\textbf{Act correctly on $\X$}
-\begin{align*}
-  \Pm\X = \X, \qquad \Mm\X = \zero
-\end{align*}
-\textbf{Traces $=$ dimensions}
-\begin{align*}
-  \trace(\Pm) &= k \\
-  \trace(\Mm) &= n - k
-\end{align*}
-\textbf{Eigenvalues} are all $0$ or $1$; $\Pm$ has $k$ ones, $\Mm$ has $n-k$.
-\end{column}
-\end{columns}
+\begin{frame}{$\Pm$, $\Mm$, and Leverage: the Facts We Actually Use\adv}
+\begin{enumerate}\itemsep4pt
+  \item \textbf{Projecting twice changes nothing}: $\Pm\Pm = \Pm$ and
+        $\Mm\Mm = \Mm$, and both are symmetric. Once you are on the plane,
+        projecting again leaves you where you stand.
+  \item \textbf{Traces count dimensions}: $\trace(\Pm) = k$,
+        $\trace(\Mm) = n-k$. This redeems Tuesday's IOU:
+        $\E[\sum_i \hat e_i^2] = \sigma^2(n-k)$, the $n-k$ inside $s^2$.
+  \item \textbf{Leverage}: the $i$th diagonal entry of $\Pm$,
+        $h_{ii} = X_i'(\X'\X)^{-1}X_i = \partial\hat Y_i/\partial Y_i$, is how
+        hard observation $i$'s own outcome pulls its own fitted value.
+        $\sum_i h_{ii} = k$; high leverage means unusual \emph{covariates};
+        and $\Var(\hat e_i) = \sigma^2(1-h_{ii})$: high-leverage points drag
+        the line toward themselves. \alert{Returns next week in HC2/HC3.}
+\end{enumerate}
 \vskip2pt
 {\footnotesize For the traces: $\trace(\Pm) = \trace\big((\X'\X)^{-1}\X'\X\big)
-= \trace(\Ix_k) = k$, using the cyclic property $\trace(ABC)=\trace(BCA)$,
-which we use repeatedly.}
+= \trace(\Ix_k) = k$, using the cyclic property $\trace(ABC)=\trace(BCA)$.}
 \end{frame}
 
-\begin{frame}{Leverage\adv}
-The $i$th diagonal element of $\Pm$,
-\begin{align*}
-  h_{ii} = X_i'(\X'\X)^{-1}X_i = \frac{\partial \hat Y_i}{\partial Y_i},
-\end{align*}
-is the \alert{leverage} of observation $i$: how much unit $i$'s own outcome pulls
-its own fitted value.
+
+
+\begin{frame}{The Same Idea, Run in Reverse: the SVD\adv}
+In OLS the subspace was \emph{handed to us}: $\X$'s columns. Flip the
+question: \alert{which subspace would the data choose for themselves?}
+\begin{columns}[T]
+\begin{column}{0.46\textwidth}
+\begin{center}
+\begin{tikzpicture}[scale=0.8,>=Stealth]
+  \foreach \t/\u in {-2.1/0.30, -1.7/-0.22, -1.3/0.14, -0.9/-0.38,
+                     -0.5/0.28, -0.1/-0.14, 0.3/0.34, 0.7/-0.28,
+                     1.1/0.16, 1.5/-0.20, 1.9/0.32, 2.2/-0.10}
+    \fill[dukeblue!60] ({\t*0.87-\u*0.5}, {\t*0.5+\u*0.87}) circle (1.7pt);
+  \draw[->,dukeblue,very thick] (-2.1,-1.2) -- (2.3,1.32);
+  \node[dukeblue,below right] at (2.05,1.05) {\scriptsize direction 1 ($\sigma_1$)};
+  \draw[->,dukeblue!60,thick] (0.55,-0.95) -- (-0.55,0.95);
+  \node[dukeblue!80,above] at (-0.75,1.0) {\scriptsize direction 2 ($\sigma_2$)};
+  \foreach \t/\u in {-0.9/-0.38, 0.3/0.34, 1.5/-0.20} {
+    \draw[accent,dashed] ({\t*0.87-\u*0.5}, {\t*0.5+\u*0.87}) -- ({\t*0.87},{\t*0.5});
+    \fill[accent] ({\t*0.87},{\t*0.5}) circle (1.2pt);}
+\end{tikzpicture}
+\end{center}
+{\scriptsize The dashed drops are perpendiculars again: the best one-dimensional
+summary of the cloud is the line whose perpendicular losses are smallest.}
+\end{column}
+\begin{column}{0.52\textwidth}
+{\small
 \begin{itemize}\itemsep3pt
-  \item $0 \leq h_{ii} \leq 1$ and $\sum_i h_{ii} = k$, so average leverage is
-        $k/n$.
-  \item High leverage means unusual \emph{covariate} values, not an unusual
-        outcome.
-  \item $\Var(\hat e_i) = \sigma^2(1-h_{ii})$: high-leverage points have
-        artificially small residuals, they drag the line toward themselves.
-  \item Leverage returns next week in the finite-sample corrections HC2 and HC3.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Sums of Squares, Again\adv}
-Because $\Y = \Pm\Y + \Mm\Y$ and $\Pm\Mm=\zero$, Pythagoras gives
-\begin{align*}
-  \Y'\Y = \Y'\Pm\Y + \Y'\Mm\Y = \hat\Y'\hat\Y + \ehat'\ehat .
-\end{align*}
-Subtracting $n\bar Y^2$ (valid when a constant is included) returns the scalar
-decomposition $TSS = ESS + RSS$.
-\vskip6pt
-\begin{itemize}
-  \item $R^2$ is also $\cos^2$ of the angle between $\Y - \bar Y\one$ and
-        $\hat\Y - \bar Y\one$: fit is literally about angles.
-  \item Adding a regressor enlarges $\pcol(\X)$, which can only move $\hat\Y$
-        closer to $\Y$, the geometric reason $R^2$ never falls.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Same Idea, Aimed at the Data: the SVD\adv}
-OLS projected $\Y$ onto the closest point in $\X$'s column space. The
-\alert{singular value decomposition} turns the same ``closest fit'' logic on
-the data matrix itself: any $n\times k$ matrix factors as
-\begin{align*}
-  \X = \bm U\bm\Sigma\bm V' ,
-\end{align*}
-where $\bm U$ and $\bm V$ hold perpendicular \emph{directions} (through the
-observations and through the variables) and $\bm\Sigma$ is diagonal with
-entries $\sigma_1 \geq \sigma_2 \geq \cdots \geq 0$, the
-\alert{singular values}.
-\begin{itemize}\itemsep2pt
-  \item Read it as: every data matrix is a set of independent
-        \emph{directions of information}, ordered by how much of the data
-        each carries.
-  \item The rank from earlier $=$ the number of nonzero singular values.
-  \item \textbf{Keep only the top $r$ directions}, and you have the rank-$r$
-        matrix \emph{closest to $\X$ in the least-squares sense}: the same
-        ``drop the perpendicular'' logic as OLS, applied to the whole matrix
-        rather than to $\Y$.
-\end{itemize}
+  \item A data cloud has a \emph{long} direction and a \emph{short} one. The
+        \alert{singular value decomposition}, $\X = \bm U\bm\Sigma\bm V'$,
+        finds every direction and measures each one's share of the data:
+        $\sigma_1 \geq \sigma_2 \geq \cdots \geq 0$. The rank from earlier is
+        how many are positive.
+  \item \textbf{Keep the top $r$ directions} $=$ project every observation
+        onto the best $r$-dimensional subspace: the closest rank-$r$ version
+        of the data, by the same least-squares logic as OLS.
+  \item In OLS you project onto a \emph{given} plane; the SVD \emph{finds}
+        the plane worth projecting onto.
+\end{itemize}}
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}{Latent Semantic Analysis: Projection Applied to Text\adv}
