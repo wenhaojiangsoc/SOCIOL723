@@ -386,15 +386,39 @@ the argmin says, word for word: \alert{among all fits the model can produce,
 pick the one closest to the data.}
 \end{block}
 \begin{itemize}\itemsep2pt
-  \item The candidate fits $\X b$ form a plane, and ``closest point on a
-        plane'' is a problem geometry solved long before calculus:
-        \alert{the foot of the perpendicular}.
+  \item The candidate fits $\X b$ form a flat sheet, a ``plane'' (next
+        frame), and ``closest point on a plane'' is a problem geometry solved
+        long before calculus: \alert{the foot of the perpendicular}.
   \item The right angle \emph{is} the first-order condition: perpendicular to
         every column of $\X$ means $\X'\ehat = \zero$, the normal equations,
         with no differentiation anywhere.
   \item Nothing new is computed: projection is the same argmin,
         \emph{answered by geometry instead of calculus}. Next: the smallest
         possible case.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Does ``All the Fits'' Look Like?\adv}
+Read matrix-times-vector as a \alert{recipe for mixing columns}:
+\begin{align*}
+  \X b = b_1\cdot(\text{column }1) + b_2\cdot(\text{column }2)
+       + \cdots + b_k\cdot(\text{column }k) :
+\end{align*}
+each coefficient pours in that much of its column. The set of candidate fits
+is therefore \emph{every possible mixture of the $k$ columns}.
+\begin{itemize}\itemsep1pt
+  \item \textbf{One column} (intercept only): all multiples of the single
+        arrow $\one$, a \alert{line} through the origin. One knob to turn,
+        one dimension of freedom.
+  \item \textbf{Two columns}: all mixtures of two arrows, a flat
+        \alert{plane} through the origin. Two knobs, two dimensions.
+  \item \textbf{$k$ columns}: $k$ knobs, a $k$-dimensional flat sheet inside
+        $\R^n$. That is \emph{all} ``$k$-dimensional subspace'' means:
+        \alert{the set of points reachable by turning $k$ independent knobs}.
+  \item The data $\Y$ generally sits \emph{off} the sheet; the gap is the
+        residual. And if one column is itself a mixture of the others, one
+        knob is redundant and the sheet is thinner than $k$: \alert{rank},
+        again.
 \end{itemize}
 \end{frame}
 
