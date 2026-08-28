@@ -303,49 +303,6 @@ about the shape of the error distribution. \alert{This is the modern default}, a
 it is the route that generalizes to MLE (Week 3), IV, and everything after.
 \end{frame}
 
-\begin{frame}{The General Statement\adv}
-For the full coefficient vector, writing sample averages as $\En$:
-\begin{align*}
-  \bhat - \bm\beta
-  = \big(\En[X_iX_i']\big)^{-1}\En[X_i\epsilon_i] .
-\end{align*}
-The LLN gives $\En[X_iX_i'] \pto \E[X_iX_i'] \equiv \bm{Q}$ and
-$\En[X_i\epsilon_i]\pto \zero$, so $\bhat \pto \bm\beta$ (\emph{consistency}).
-Multiplying by $\sqrt n$ and applying the CLT to the second factor,
-\begin{align*}
-  \boxed{\;\sqrt n(\bhat-\bm\beta) \dto
-  \mathcal N\Big(\zero,\; \bm{Q}^{-1}\Om^{\!*}\bm{Q}^{-1}\Big)\;},
-  \qquad \Om^{\!*} = \E[\epsilon_i^2 X_iX_i'] .
-\end{align*}
-\vskip2pt
-Note what is \emph{not} assumed: no normality, no homoskedasticity. Note also the
-weaker exogeneity requirement, $\E[X_i\epsilon_i]=0$ suffices for consistency;
-$\E[\epsilon_i\mid X_i]=0$ is not needed.
-\end{frame}
-
-\begin{frame}{Reading the ``Sandwich''\adv}
-\begin{align*}
-  \bm{V} = \underbrace{\bm{Q}^{-1}}_{\text{bread}}\;
-           \underbrace{\Om^{\!*}}_{\text{meat}}\;
-           \underbrace{\bm{Q}^{-1}}_{\text{bread}},
-  \qquad
-  \bm Q = \E[X_iX_i'],\quad \Om^{\!*} = \E[\epsilon_i^2X_iX_i'] .
-\end{align*}
-\begin{itemize}\itemsep4pt
-  \item The \textbf{bread} depends only on the distribution of the regressors.
-  \item The \textbf{meat} is where every assumption about the error structure
-        lives. Classical, robust, clustered, and HAC standard errors differ
-        \alert{only} in how the meat is estimated.
-  \item If $\E[\epsilon_i^2\mid X_i] = \sigma^2$ then
-        $\Om^{\!*} = \sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$, the
-        classical formula.
-\end{itemize}
-\vskip3pt
-\begin{alertblock}{The organizing idea for the whole lecture}
-Keep the estimator $\hat\beta$; change how you estimate the meat.
-\end{alertblock}
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Testing]{Hypothesis Testing}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -579,6 +536,49 @@ The general version\adv:
 $\hat\Om^{\!*} = \En\big[\hat e_i^2\, X_iX_i'\big] \pto \E[\epsilon_i^2 X_iX_i']$,
 so $\hat{V}_{\text{HC0}}(\bhat) =
 (\X'\X)^{-1}\big(\sum_i \hat e_i^2 X_iX_i'\big)(\X'\X)^{-1}$.
+\end{frame}
+
+\begin{frame}{The General Statement\adv}
+For the full coefficient vector, writing sample averages as $\En$:
+\begin{align*}
+  \bhat - \bm\beta
+  = \big(\En[X_iX_i']\big)^{-1}\En[X_i\epsilon_i] .
+\end{align*}
+The LLN gives $\En[X_iX_i'] \pto \E[X_iX_i'] \equiv \bm{Q}$ and
+$\En[X_i\epsilon_i]\pto \zero$, so $\bhat \pto \bm\beta$ (\emph{consistency}).
+Multiplying by $\sqrt n$ and applying the CLT to the second factor,
+\begin{align*}
+  \boxed{\;\sqrt n(\bhat-\bm\beta) \dto
+  \mathcal N\Big(\zero,\; \bm{Q}^{-1}\Om^{\!*}\bm{Q}^{-1}\Big)\;},
+  \qquad \Om^{\!*} = \E[\epsilon_i^2 X_iX_i'] .
+\end{align*}
+\vskip2pt
+Note what is \emph{not} assumed: no normality, no homoskedasticity. Note also the
+weaker exogeneity requirement, $\E[X_i\epsilon_i]=0$ suffices for consistency;
+$\E[\epsilon_i\mid X_i]=0$ is not needed.
+\end{frame}
+
+\begin{frame}{Reading the ``Sandwich''\adv}
+\begin{align*}
+  \bm{V} = \underbrace{\bm{Q}^{-1}}_{\text{bread}}\;
+           \underbrace{\Om^{\!*}}_{\text{meat}}\;
+           \underbrace{\bm{Q}^{-1}}_{\text{bread}},
+  \qquad
+  \bm Q = \E[X_iX_i'],\quad \Om^{\!*} = \E[\epsilon_i^2X_iX_i'] .
+\end{align*}
+\begin{itemize}\itemsep4pt
+  \item The \textbf{bread} depends only on the distribution of the regressors.
+  \item The \textbf{meat} is where every assumption about the error structure
+        lives. Classical, robust, clustered, and HAC standard errors differ
+        \alert{only} in how the meat is estimated.
+  \item If $\E[\epsilon_i^2\mid X_i] = \sigma^2$ then
+        $\Om^{\!*} = \sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$, the
+        classical formula.
+\end{itemize}
+\vskip3pt
+\begin{alertblock}{The organizing idea for the whole lecture}
+Keep the estimator $\hat\beta$; change how you estimate the meat.
+\end{alertblock}
 \end{frame}
 
 \begin{frame}{Finite-Sample Corrections: HC0--HC3\core}

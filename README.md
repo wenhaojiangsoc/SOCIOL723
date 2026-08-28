@@ -50,22 +50,24 @@ later week speaks.
   costs.
 - Derive **omitted variable bias**, $\tilde\beta_1 = \beta_1 + \beta_2\delta_1$,
   sign it, and verify the identity numerically on GSS data.
-- Step back to the population: the **conditional expectation function**, the
-  **best linear predictor**, and the three justifications for OLS when the CEF is
-  not a line. Saturated models as the case where regression *is* the CEF.
-- Rewrite everything in matrix form; the **geometry** of OLS as projection onto
-  $\mathrm{col}(\mathbf{X})$; the hat matrix, the residual maker, leverage, and
-  the sum-of-squares decomposition. ★
 - Statistical properties: the sampling-error decomposition, unbiasedness,
   $\mathrm{Var}(\hat\beta_1) = \sigma^2/\sum_i(X_i-\bar X)^2$, what drives
-  precision, $s^2$, and the Gauss–Markov theorem. ★
-- Close on regression as **adjustment**: what OLS reports when treatment effects
-  are heterogeneous, and the distinction between good and bad controls.
+  precision, $s^2$, and Gauss–Markov in words.
+- Step back to the population: the **conditional expectation function**, the
+  **best linear predictor**, and what $\hat\beta_1$ estimates when no line is
+  true. Saturated models as the case where regression *is* the CEF.
+- Close Tuesday on regression as **adjustment**: what OLS reports when treatment
+  effects are heterogeneous, and the distinction between good and bad controls.
+- **Thursday, from zero**: vectors and matrices as bookkeeping; the normal
+  equations re-derived and unpacked row by row; the **geometry** — the argmin
+  re-read as a distance, the column space as mixtures of the columns, and
+  $\hat\beta$ derived by dropping a perpendicular, with no calculus; the
+  Frisch–Waugh–Lovell theorem in general. ★
 
 ### Materials
 - [Slides: Week 1 Tuesday — The Linear Model and OLS](./Week%201%20The%20Linear%20Model%20and%20OLS/slides_tuesday.pdf)
 - [Slides: Week 1 Thursday — OLS in Matrix Form](./Week%201%20The%20Linear%20Model%20and%20OLS/slides_thursday.pdf)
-- [Lab 1: Matrix Algebra and OLS by Hand](./Week%201%20The%20Linear%20Model%20and%20OLS/lab1.pdf)
+- [Lab 1: OLS by Hand, in Scalar Form](./Week%201%20The%20Linear%20Model%20and%20OLS/lab1.pdf)
 
 ### Reading
 *Required*: MHE Ch. 3; CCI Ch. 6. &nbsp;·&nbsp; *Additional*: ISL Ch. 2–3.
@@ -188,6 +190,9 @@ interpretation becomes the hard part.
   hurdle models.
 - **Diagnostics**: separation and Firth's penalized likelihood (Zorn 2005);
   deviance, pseudo-$R^2$, ROC, and predictive checks.
+- **Event history (Thursday)**: a short standalone introduction to survival
+  analysis, the natural MLE application to durations — censoring, hazard rates,
+  the Kaplan–Meier estimator, and the Cox proportional-hazards model.
 
 ### Materials
 - [Slides: Week 4 — Maximum Likelihood: Applications](./Week%204%20Maximum%20Likelihood%20Applications/slides.pdf)
@@ -195,7 +200,8 @@ interpretation becomes the hard part.
 
 ### Reading
 *Required*: ISL Ch. 4; Hanmer and Kalkan (2013). &nbsp;·&nbsp; *Additional*:
-Berry, DeMeritt, and Esarey (2010); Zorn (2005); Mood (2010).
+Berry, DeMeritt, and Esarey (2010); Zorn (2005); Mood (2010); Allison (2014),
+*Event History and Survival Analysis*.
 
 ---
 </details>
@@ -548,7 +554,7 @@ understanding why is the point of the week.
 ### Materials
 - [Slides: Week 14 — Synthesis](./Week%2014%20Synthesis/slides.pdf)
 
-No Thursday lab (Thanksgiving recess). **Cumulative final exam** in the December examination period.
+No Thursday lab (Thanksgiving recess). **Cumulative final exam**: date and time TBD, set by a class poll. Students may take the exam for the full 35%, or elect the project option: exam 25% plus a 6–10 page project memo (10%) with replication code, due Friday, December 11.
 
 ---
 </details>
