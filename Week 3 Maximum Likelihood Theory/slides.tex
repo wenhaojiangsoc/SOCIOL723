@@ -178,26 +178,75 @@ Be pragmatic, and be explicit about which you are using.
 \end{block}
 \end{frame}
 
-\begin{frame}{OLS Is Already a Maximum Likelihood Estimator\core}
-Suppose we assume the full model
+\begin{frame}{OLS Is Secretly an MLE, Part 1: One Observation}
+Take the bivariate model from Week 1 and add one assumption: the errors are
+\alert{normal}. Then each outcome is a draw from a bell curve centred on the
+line:
 \begin{align*}
-  Y_i = X_i'\bm\beta + \epsilon_i , \qquad
+  Y_i = \beta_0 + \beta_1 X_i + \epsilon_i , \quad
   \epsilon_i \overset{iid}{\sim} \mathcal N(0,\sigma^2)
   \quad\Longrightarrow\quad
-  Y_i \sim \mathcal N(X_i'\bm\beta,\ \sigma^2) .
+  Y_i \sim \mathcal N\big(\beta_0 + \beta_1 X_i,\ \sigma^2\big) .
 \end{align*}
-Then the probability of the observed sample, as a function of the parameters, is
+How probable is observation $i$, if candidate values $(b_0, b_1)$ were the
+truth? The height of that bell at the observed $Y_i$:
 \begin{align*}
-  \prod_{i=1}^n \frac{1}{\sqrt{2\pi\sigma^2}}
-  \exp\!\left(-\frac{(Y_i - X_i'\bm\beta)^2}{2\sigma^2}\right) .
+  f(Y_i \mid b_0, b_1)
+  = \frac{1}{\sqrt{2\pi\sigma^2}}
+    \exp\!\left(-\frac{\big(Y_i - b_0 - b_1 X_i\big)^2}{2\sigma^2}\right) .
 \end{align*}
-\pause
-Taking logs, everything except $-\frac{1}{2\sigma^2}\sum_i(Y_i - X_i'\bm\beta)^2$
-is free of $\bm\beta$. \alert{Maximizing over $\bm\beta$ is exactly minimizing the
-sum of squared residuals.}
-\vskip4pt
-So OLS under normality \emph{is} the MLE. What we do today is take the same idea
-and apply it when the outcome is not normal.
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item Read the exponent: the density is largest when the observation sits
+        \emph{on} the candidate line, and it decays with the \alert{squared
+        vertical miss}. The square is already sitting inside the normal
+        density; we did not put it there.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{OLS Is Secretly an MLE, Part 2: the Whole Sample}
+The observations are independent, so the probability of seeing the
+\emph{entire} sample is the product of the individual heights:
+\begin{align*}
+  f(Y_1,\dots,Y_n \mid b_0, b_1)
+  = \prod_{i=1}^{n} \frac{1}{\sqrt{2\pi\sigma^2}}
+    \exp\!\left(-\frac{\big(Y_i - b_0 - b_1X_i\big)^2}{2\sigma^2}\right) .
+\end{align*}
+Products are painful, so take logs, which turns them into sums and does not
+move the maximum ($\log$ is strictly increasing):
+\begin{align*}
+  \log f
+  = \underbrace{-\frac n2 \log\!\big(2\pi\sigma^2\big)}_{\text{no } b_0, b_1
+    \text{ anywhere}}
+  \;-\; \frac{1}{2\sigma^2}\sum_{i=1}^n \big(Y_i - b_0 - b_1X_i\big)^2 .
+\end{align*}
+\vskip-2pt
+\alert{Maximum likelihood} proposes: choose $(b_0, b_1)$ to make this as
+large as possible, that is, to make the data we actually saw as probable as
+possible.
+\end{frame}
+
+\begin{frame}{OLS Is Secretly an MLE, Part 3: Read It Off\core}
+Look at where the candidates appear:
+\begin{align*}
+  \log f = \big(\text{a constant, no } b_0, b_1\big)
+  \;-\; \frac{1}{2\sigma^2}\,
+  \underbrace{\sum_{i=1}^n \big(Y_i - b_0 - b_1X_i\big)^2}_{\text{Week 1's
+  objective } S(b_0, b_1)} .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item $(b_0, b_1)$ enter \emph{only} through Week 1's sum of squared
+        errors, with a minus sign and a positive factor in front. So
+        \alert{maximizing the log-likelihood is exactly minimizing the sum of
+        squares}: the same argmin, hence the same
+        $(\hat\beta_0, \hat\beta_1)$, digit for digit.
+  \item Least squares was never arbitrary. It is what ``make the data as
+        probable as possible'' prescribes \emph{when the errors are normal
+        bells}.
+  \item Change the distribution (binary outcomes, counts, durations) and the
+        \emph{same principle} produces new estimators. That is this week and
+        next.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Why We Need the Generalization}
