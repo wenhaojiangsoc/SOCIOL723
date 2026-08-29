@@ -191,9 +191,10 @@ you will meet in the literature.
         what heteroskedasticity and clustering \emph{are} and why they matter;
         how to read and choose a standard error; what a bootstrap does; and the
         list of problems robust standard errors do not solve.
-  \item Every ``robust'' standard error in this course is the \emph{same} scalar
-        formula with $\Var(\epsilon_i\mid X)$ estimated differently. If you hold
-        on to that one sentence, none of this is complicated.
+  \item Every standard error in this course starts from the variance of a
+        weighted sum of errors. HC estimators estimate the individual
+        \emph{variance} terms; cluster-robust estimators also estimate the
+        within-cluster \emph{covariance} terms. Hold on to that sentence.
 \end{itemize}
 \end{frame}
 
@@ -232,8 +233,9 @@ different sample from the same population, you would have got a different number
 \begin{block}{The thought experiment}
 Imagine drawing sample after sample from the population and computing
 $\hat\beta_1$ each time. The histogram of those numbers is the \alert{sampling
-distribution}. Where it is centred tells you about bias; how wide it is
-\emph{is} the standard error.
+distribution}. Where it is centred tells you about bias; how wide it is is
+the true sampling standard deviation, and the \emph{standard error} is our
+estimate of that width.
 \end{block}
 \vskip4pt
 \begin{itemize}\itemsep3pt
@@ -249,22 +251,22 @@ Both are statements about what happens to a \emph{sample average} as $n$ grows.
 \vskip2pt
 \begin{block}{Law of large numbers (LLN)}
 The average of $n$ independent draws settles down on the population mean:
-$\frac1n\sum_i Z_i \pto \E[Z]$. Flip a fair coin 10 times and the share of
+$\frac1n\sum_i Z_i \pto \E[Z]$ (read $\pto$ as ``settles down on''). Flip a fair coin 10 times and the share of
 heads could be anything; flip it 10{,}000 times and it sits within a whisker
 of $0.5$.
 \end{block}
 \vskip2pt
 \begin{block}{Central limit theorem (CLT)}
-Not only does the average settle down; the \emph{shape} of its wobble around
-the truth becomes a bell curve, $\sqrt n\,(\bar Z - \E[Z]) \dto \mathcal
-N\big(0, \Var(Z)\big)$, \alert{whatever the distribution of $Z$ itself},
-skewed, lumpy, or binary, so long as its variance is finite.
+For an average of \emph{independent} draws, the \emph{shape} of the wobble
+around the truth becomes a bell curve, $\sqrt n\,(\bar Z - \E[Z]) \dto
+\mathcal N\big(0, \Var(Z)\big)$ (read $\dto$ as ``the distribution
+approaches''), \alert{whatever the distribution of $Z$ itself}, so long as
+its variance is finite.
 \end{block}
 \vskip2pt
-Why we care: $\hat\beta_1$ is built out of sample averages, so the LLN will
-give consistency and the CLT approximate normality. We verify both by
-simulation in Thursday's lab; watching the bell curve emerge once is worth a
-dozen proofs.
+Why we care: $\hat\beta_1$ is built from sample averages, so the LLN gives
+consistency and the CLT approximate normality. Thursday's lab watches the
+bell curve emerge.
 \end{frame}
 
 \begin{frame}{Route 1: Exact, Under Normality}
@@ -273,8 +275,9 @@ $\hat\beta_1 - \beta_1$ is a \emph{weighted sum of the errors}, it is normal:
 \begin{align*}
   \hat\beta_1 \sim \mathcal N\!\left(\beta_1,\ \frac{\sigma^2}{\sum_i (X_i-\bar X)^2}\right),
   \qquad
-  t = \frac{\hat\beta_1 - \beta_1}{\SE(\hat\beta_1)} \sim t_{n-k} .
+  t = \frac{\hat\beta_1 - \beta_1}{\SE(\hat\beta_1)} \sim t_{n-k} ,
 \end{align*}
+with $k$ the number of estimated coefficients (2 in the bivariate case).
 \begin{itemize}\itemsep3pt
   \item The $t$ (rather than the normal) appears because we replaced the unknown
         $\sigma^2$ by the estimate $s^2$.
@@ -298,6 +301,8 @@ Drop A6 and look again at
         large, \emph{whatever} the distribution of $\epsilon_i$.
 \end{itemize}
 \vskip3pt
+{\footnotesize (A technicality: the terms share $\bar X$, so first replace
+$\bar X$ by $\E[X]$; the difference vanishes as $n$ grows.)}
 So $\hat\beta_1$ is approximately normal in large samples with no assumption
 about the shape of the error distribution. \alert{This is the modern default}, and
 it is the route that generalizes to MLE (Week 3), IV, and everything after.
@@ -308,6 +313,24 @@ it is the route that generalizes to MLE (Week 3), IV, and everything after.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
+\begin{frame}{The Vocabulary, Pinned Down\core}
+You met these words in \textit{Social Statistics I}; now they have foundations.
+\begin{itemize}\itemsep3pt
+  \item A \textbf{null hypothesis} $H_0$ is a specific claim about a population
+        quantity, e.g.\ $\beta_1 = 0$: schooling and earnings are unrelated.
+  \item A \textbf{test statistic} measures the distance between estimate and
+        null \emph{in standard-error units}: $t = (\hat\beta_1 - 0)/
+        \mathrm{se}(\hat\beta_1)$. Big distance, implausible null.
+  \item The \textbf{$p$-value}: \emph{if} $H_0$ were true, how often would
+        sampling noise alone produce a $t$ this large? It is a statement about
+        the data under the null, \alert{not} the probability the null is true.
+  \item A \textbf{95\% confidence interval} collects every null value the data
+        cannot reject; across repeated samples, intervals built this way cover
+        the truth 95\% of the time. \emph{This} interval either does or does
+        not; the 95\% describes the procedure.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Single Restrictions\core}
 To test $H_0: \beta_j = \beta_j^0$,
 \begin{align*}
@@ -315,7 +338,9 @@ To test $H_0: \beta_j = \beta_j^0$,
   \ \sim\ t_{n-k} \ \text{ (exactly, under A6)}
   \ \text{ or }\ \mathcal N(0,1) \ \text{ (approximately, for large }n\text{)} .
 \end{align*}
-A $95\%$ confidence interval is $\hat\beta_j \pm 1.96\,\SE(\hat\beta_j)$.
+A $95\%$ confidence interval is $\hat\beta_j \pm t_{0.975,\,n-k}\,
+\SE(\hat\beta_j)$ under the exact route, and $\hat\beta_j \pm
+1.96\,\SE(\hat\beta_j)$ in the large-sample approximation.
 \vskip6pt
 \begin{itemize}\itemsep3pt
   \item The $t_{n-k}$ and $\mathcal N(0,1)$ critical values differ by less than
@@ -386,9 +411,10 @@ $-\beta_1/2\beta_2$, a marginal effect:
         variance of a linear function. So linearize, then use what we know.
   \item Implemented as \texttt{car::deltaMethod()} or the
         \texttt{marginaleffects} package.
-  \item First-order approximation: it can be poor when $g$ is strongly nonlinear
-        near $\bhat$, or when the denominator of a ratio is close to zero. The
-        bootstrap is often better there.
+  \item First-order approximation: it can be poor when $g$ is strongly
+        nonlinear near $\bhat$. With a ratio whose denominator is near zero,
+        the delta method \emph{and} the naive bootstrap can both fail; use a
+        ratio-specific interval (Fieller) there.
   \item We use it constantly in Week 4 for marginal effects and predicted
         probabilities.
 \end{itemize}
@@ -399,23 +425,24 @@ Everything so far controlled the error rate for \emph{one} planned comparison.
 The moment you look at many outcomes, many subgroups, or many specifications, the
 guarantee has to hold across the whole family of claims, and it does not.
 \vskip3pt
-If you run $m$ independent tests at level $\alpha$, the chance of at least one
-false rejection is $1-(1-\alpha)^m$: for $m=20$, about $64\%$.
+If you run $m$ independent tests, all of true nulls, at level $\alpha$, the
+chance of at least one false rejection is $1-(1-\alpha)^m$: for $m=20$, about
+$64\%$.
 \vskip3pt
 \begin{itemize}\itemsep2pt
   \item \textbf{Bonferroni}: test each at $\alpha/m$. Controls the family-wise
         error rate; conservative.
   \item \textbf{Holm}: sequentially rejective; uniformly more powerful than
         Bonferroni with the same guarantee.
-  \item \textbf{Benjamini--Hochberg}: controls the \emph{false discovery rate}, 
-        the right tool with many outcomes or subgroups when you can tolerate some
-        false positives.
+  \item \textbf{Benjamini--Hochberg}: controls the \emph{false discovery
+        rate}, a natural criterion with many outcomes or subgroups when some
+        false positives are tolerable.
   \item \texttt{p.adjust(p, method = "holm" / "BH")}.
 \end{itemize}
 \vskip3pt
 Sociologically relevant cases: many outcomes, many subgroups, many
-specifications. Pre-registering a small set of primary hypotheses is a better
-solution than any correction.
+specifications. Pre-registering a small set of primary hypotheses shrinks
+$m$ before any correction is needed; the two are complements, not substitutes.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -424,7 +451,10 @@ solution than any correction.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{What Heteroskedasticity Is\core}
-\textbf{Homoskedasticity} (A5) says $\Var(\epsilon_i\mid X_i) = \sigma^2$: the
+Week 1's A5 had \emph{two} parts: constant variance, and zero covariance
+across observations. This section drops the first while keeping the second;
+the clustering section then drops the second.
+\textbf{Homoskedasticity} says $\Var(\epsilon_i\mid X_i) = \sigma^2$: the
 spread of the outcome around the line is the same everywhere.
 \vskip2pt
 \begin{center}
@@ -468,7 +498,8 @@ and only the right-hand panel needs a different formula.
 \end{itemize}
 \vskip3pt
 \begin{block}{What it does and does not do}
-\textbf{Does not}: bias $\hat\beta$, or break consistency. \\
+\textbf{Does not}: bias $\hat\beta$ or break consistency (given A4 and
+random sampling). \\
 \textbf{Does}: invalidate the standard errors your software prints by default, so
 $t$-statistics, $p$-values and confidence intervals are wrong; and cost
 efficiency (OLS is no longer BLUE).
@@ -509,7 +540,13 @@ $\E[\hat e_i^2] \approx \sigma_i^2$. Plug it in:
 \vskip4pt
 \begin{itemize}\itemsep3pt
   \item That is the whole of ``heteroskedasticity-robust,'' ``Huber--White,''
-        ``Eicker--Huber--White,'' and the \texttt{robust} option in \texttt{Stata}.
+        and ``Eicker--Huber--White'' (\texttt{Stata}'s \texttt{robust} adds
+        the HC1 scaling on the next frame).
+  \item With controls, replace $d_i$ by Week 1's FWL residual $\tilde d_i$
+        (the part of the focal regressor the controls cannot predict):
+        $\hat V(\hat\beta_j) = \sum_i \tilde d_i^{\,2}\hat e_i^2 \big/
+        \big(\sum_i \tilde d_i^{\,2}\big)^2$. Same formula, residualized
+        weights.
   \item Due to \srct{White (1980)}, building on \srct{Eicker (1967)} and
         \srct{Huber (1967)}.
   \item Notice the difference: the classical formula uses \emph{one} pooled
@@ -531,11 +568,6 @@ from $n$ observations?
   \item Same logic that lets you estimate $\Var(\bar Y)$ from one sample: you
         never learn any individual's deviation, only the average square.
 \end{itemize}
-\vskip3pt
-The general version\adv:
-$\hat\Om^{\!*} = \En\big[\hat e_i^2\, X_iX_i'\big] \pto \E[\epsilon_i^2 X_iX_i']$,
-so $\hat{V}_{\text{HC0}}(\bhat) =
-(\X'\X)^{-1}\big(\sum_i \hat e_i^2 X_iX_i'\big)(\X'\X)^{-1}$.
 \end{frame}
 
 \begin{frame}{The General Statement\adv}
@@ -583,8 +615,9 @@ Keep the estimator $\hat\beta$; change how you estimate the meat.
 
 \begin{frame}{Finite-Sample Corrections: HC0--HC3\core}
 $\hat e_i^2$ is biased downward: \emph{under homoskedasticity}
-$\E[\hat e_i^2] = \sigma^2(1-h_{ii})$, where $h_{ii} = X_i'(\X'\X)^{-1}X_i$
-is observation $i$'s \alert{leverage} (large when its covariates are unusual).
+$\E[\hat e_i^2] = \sigma^2(1-h_{ii})$, where $h_{ii}$ is observation $i$'s
+\alert{leverage}, in the bivariate case $h_{ii} = \tfrac1n + d_i^2/\sum_j
+d_j^2$: large when $X_i$ is unusual.
 So HC0 \emph{understates} standard errors in small samples. The fixes
 rescale the squared residuals (motivated by the homoskedastic benchmark, used
 regardless):
@@ -645,8 +678,8 @@ Do not pre-test and then choose. Just report robust standard errors.
 \end{frame}
 
 \begin{frame}{Weighted Least Squares: the Road Not Taken}
-If we knew $\Var(\epsilon_i\mid X_i)=\sigma^2/w_i$, weighted least squares would
-restore efficiency: minimize $\sum_i w_i(Y_i - X_i'b)^2$.
+If we knew $\Var(\epsilon_i\mid X_i)=\sigma^2/w_i$, weighted least squares
+would restore efficiency: minimize $\sum_i w_i(Y_i - b_0 - b_1X_i)^2$.
 \vskip3pt
 \begin{itemize}\itemsep3pt
   \item BLUE under the \emph{correct} weights, Gauss--Markov applied to the
@@ -656,9 +689,10 @@ restore efficiency: minimize $\sum_i w_i(Y_i - X_i'b)^2$.
   \item Worse: if the CEF is not exactly linear, OLS and WLS estimate
         \emph{different} weighted approximations to it. They answer different
         questions, so a discrepancy between them is not a bug to be fixed.
-  \item \alert{Modern practice}: keep OLS, fix the standard errors. Use weights
-        when they come from the \emph{design} (survey sampling weights, group
-        sizes), not from a guess about the error variance.
+  \item \alert{Modern practice}: keep OLS, fix the standard errors. Use
+        weights with an external justification, sampling weights (to represent
+        the population) or known group sizes (a genuine variance argument),
+        not a guess about the error variance.
 \end{itemize}
 \end{frame}
 
@@ -679,7 +713,7 @@ Sociological data are almost never i.i.d.\ draws:
 \vskip3pt
 \begin{block}{Error components model}
 \begin{align*}
-  Y_{ig} = X_{ig}'\bm\beta + \underbrace{\nu_g}_{\text{cluster shock}}
+  Y_{ig} = \beta_0 + \beta_1 X_{ig} + \underbrace{\nu_g}_{\text{cluster shock}}
   + \underbrace{\eta_{ig}}_{\text{idiosyncratic}} ,
   \qquad
   \rho_e = \frac{\sigma_\nu^2}{\sigma_\nu^2+\sigma_\eta^2}
@@ -787,8 +821,9 @@ not a knob to tune.
   \item \textbf{Design-based}: cluster at the level at which \emph{treatment} is
         assigned. If a policy varies by state, cluster on state, even with
         individual-level data.
-  \item Cluster at the \emph{coarsest} level for which you have a plausible
-        argument; never finer than the treatment assignment.
+  \item Cluster at the level the sampling or assignment design justifies.
+        Never finer than the assignment level; going \emph{coarser} needs its
+        own dependence argument, and is not automatically safer.
   \item ``Cluster on everything'' is not free: with few clusters the estimator is
         biased downward and the test over-rejects.
   \item \alert{Never} choose the level by whichever gives the smallest $p$-value.
@@ -797,8 +832,10 @@ not a knob to tune.
 
 \begin{frame}{The Few-Clusters Problem}
 With small $G$, $\hat{V}_{\text{CR}}$ is biased downward and the reference
-distribution is too thin. Worry below $G \approx 40$--$50$; be alarmed below
-$20$. The symptom is rejection rates of $10$--$15\%$ for a nominal $5\%$ test.
+distribution is too thin. As rules of thumb, worry below $G \approx 40$--$50$
+and be alarmed below $20$, though performance also depends on cluster-size
+imbalance and leverage. A typical symptom: rejection rates of $10$--$15\%$
+for a nominal $5\%$ test.
 \vskip2pt
 \begin{block}{Remedies}
 \begin{enumerate}\itemsep1pt
@@ -809,8 +846,9 @@ $20$. The symptom is rejection rates of $10$--$15\%$ for a nominal $5\%$ test.
   \item \textbf{Wild cluster bootstrap-$t$} \srcp{Cameron et al.\ 2008}: impose
         $H_0$, resample cluster-level $\pm1$ weights, and build the reference
         distribution empirically. \texttt{fwildclusterboot}.
-  \item \textbf{Aggregate}: collapse to $G$ cluster-level observations and analyze
-        those. Crude but honest.
+  \item \textbf{Aggregate}: collapse to $G$ cluster-level observations and
+        analyze those. Honest, but note it reweights and can change the
+        estimand.
   \item \textbf{Randomization inference} when treatment is assigned to few units.
 \end{enumerate}
 \end{block}
@@ -826,7 +864,7 @@ A famous demonstration of what happens when you ignore within-unit correlation.
         $5\%$ in \alert{$45\%$} of the placebo runs.
   \item Cause: state-level outcomes are highly serially correlated over time, and
         the standard errors treated $50 \times 21$ observations as independent.
-  \item Clustering by state fixed it, with 50 clusters, just barely enough.
+  \item Clustering by state brought rejection rates close to nominal here.
 \end{itemize}
 \vskip3pt
 The rule for any policy-adoption design, sociology's most common clustering
@@ -876,7 +914,9 @@ of $F$. So draw new samples from the sample.
 \end{frame}
 
 \begin{frame}{The Nonparametric (Pairs) Bootstrap\core}
-\begin{enumerate}\itemsep3pt
+Notation: $\theta$ is any target, $\hat\theta$ its estimate, $B$ the number
+of resamples.
+\begin{enumerate}\itemsep2pt
   \item For $b=1,\dots,B$: draw $n$ observations $(Y_i, X_i)$ \emph{with
         replacement} from the sample.
   \item Re-estimate on the resample to get $\hat\theta^{(b)}$.
@@ -888,8 +928,8 @@ of $F$. So draw new samples from the sample.
   \item \textbf{Percentile CI}: the $2.5$th and $97.5$th percentiles of
         $\{\hat\theta^{(b)}\}$.
   \item Because it resamples $(Y_i,X_i)$ jointly, the pairs bootstrap is
-        automatically heteroskedasticity-robust, it makes no assumption about
-        $\sigma_i^2$ at all.
+        automatically heteroskedasticity-robust, given \emph{independent}
+        observations; it makes no assumption about $\sigma_i^2$ at all.
   \item $B = 1{,}000$ for standard errors; $B \geq 5{,}000$ for percentile
         intervals or $p$-values.
 \end{itemize}
@@ -903,9 +943,9 @@ of $F$. So draw new samples from the sample.
 Variant & What is resampled & When to use \\
 \midrule
 Pairs & $(Y_i,X_i)$ jointly & default; robust to heteroskedasticity \\
-Residual & $\hat e_i$, then $Y_i^\ast = X_i'\bhat + \hat e_i^\ast$
+Residual & $\hat e_i$, then $Y_i^\ast = \hat Y_i + \hat e_i^\ast$
         & requires homoskedasticity; fixed design \\
-Wild & $Y_i^\ast = X_i'\bhat + \hat e_i v_i$, $v_i \in \{-1,1\}$
+Wild & $Y_i^\ast = \hat Y_i + \hat e_i v_i$, $v_i \in \{-1,1\}$
         & heteroskedastic, small $n$ \\
 Block / cluster & whole clusters & clustered data \\
 Wild cluster & cluster-level $v_g$, $H_0$ imposed & \alert{few clusters} \\
@@ -928,8 +968,9 @@ observation by observation.
         the usual recommendation for a percentile-type interval.
   \item \alert{\textbf{Bootstrap-$t$ (studentized)}}: bootstrap the \emph{$t$
         statistic} $(\hat\theta^{(b)}-\hat\theta)/\SE^{(b)}$ and use its
-        quantiles. \textbf{Asymptotic refinement}: error $O(n^{-1})$ instead of
-        $O(n^{-1/2})$. Requires a standard error at each replication.
+        quantiles. Its approximation error shrinks \emph{faster} with $n$
+        than the other intervals'\adv. Requires a standard error at each
+        replication.
 \end{itemize}
 \vskip3pt
 The wild cluster bootstrap-$t$ is exactly this idea applied to the few-clusters
@@ -937,8 +978,8 @@ problem, which is why it works so much better than a naive cluster bootstrap.
 \end{frame}
 
 \begin{frame}{When the Bootstrap Fails}
-The bootstrap is not magic; it needs the statistic to be a \emph{smooth}
-functional of the data.
+The bootstrap is not magic; the statistic must be \emph{regular} enough (in
+a smoothness-like sense; quantiles qualify, the cases below do not).
 \begin{itemize}\itemsep2pt
   \item \textbf{Non-smooth estimators}: the sample maximum or minimum;
         nearest-neighbour matching estimators \srcp{Abadie and Imbens 2008}.
@@ -973,12 +1014,13 @@ care about is small comfort.
 \end{block}
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item In his words: ``if the model is seriously in error, the sandwich may help
-        on the variance side, but the parameters being estimated\dots\ are likely
-        to be meaningless.''
-  \item If the model is right, you did not need the sandwich (much).
-  \item If the model is wrong, the sandwich fixes the second-order problem
-        (variance) and leaves the first-order problem (bias) untouched.
+  \item Distinguish three failures: a \textbf{nonlinear CEF} (OLS still
+        consistently estimates the BLP from Week 1, so robust inference about
+        \emph{that} is fine); an \textbf{exogeneity failure} ($\hat\beta$ no
+        longer estimates the causal quantity you wanted); a \textbf{wrong
+        estimand} (the BLP may not answer the question).
+  \item Robust standard errors repair neither of the last two: precise
+        inference about the wrong quantity is small comfort.
 \end{itemize}
 \end{frame}
 
@@ -990,13 +1032,13 @@ care about is small comfort.
 \toprule
 Problem & Robust SEs? & What actually helps \\
 \midrule
-Heteroskedasticity & \textbf{yes} & nothing more needed \\
+Heteroskedasticity & \textbf{yes} & (given independent observations) \\
 Within-cluster correlation & \textbf{yes} (cluster-robust) & design-based clustering \\
 Serial correlation in panels & \textbf{yes} & cluster on unit \\
-Non-normal errors & \textbf{yes} (asymptotically) & larger $n$ \\
+Non-normal errors & \textbf{yes} (via large-$n$ approximation) & larger $n$ \\
 \midrule
 Omitted variable bias & \alert{no} & identification strategy (Wks 5--11) \\
-Simultaneity, reverse causation & \alert{no} & IV, RDD, DID \\
+Simultaneity, reverse causation & \alert{no} & a design (Weeks 7--10) \\
 Measurement error in $X$ & \alert{no} & IV, validation data \\
 Wrong functional form & \alert{no} & saturate, splines, flexible ML \\
 Selection into the sample & \alert{no} & modelling the selection \\
@@ -1011,8 +1053,9 @@ $p$-hacking, specification search & \alert{no} & pre-registration \\
 \begin{frame}{A Practical Protocol\core}
 \begin{enumerate}\itemsep4pt
   \item State the estimand and the design \emph{before} choosing a standard error.
-  \item \textbf{Cluster where treatment is assigned or where sampling occurred.}
-        Otherwise use HC2 or HC3.
+  \item \textbf{Identify the independently sampled or independently assigned
+        units, and cluster there.} Use HC2 or HC3 only when observations are
+        plausibly independent.
   \item Report the number of clusters $G$. If $G < 40$, use CR2 with
         Satterthwaite d.f.\ or a wild cluster bootstrap, and say so.
   \item Never pair a robust variance with a non-robust joint test
