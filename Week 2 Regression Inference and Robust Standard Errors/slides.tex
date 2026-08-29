@@ -730,6 +730,29 @@ where $\rho_x$ is the intra-class correlation of the regressor.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{The Cluster-Robust Fix, in Scalar Form\core}
+With clusters the true meat also contains the within-cluster cross terms.
+The fix: \alert{sum within clusters first, then square}:
+\begin{align*}
+  \hat V_{\text{CR}}(\hat\beta_1)
+  = \frac{\sum_{g=1}^{G} \Big(\sum_{i \in g} d_i\, \hat e_i\Big)^{\!2}}
+         {\Big(\sum_i d_i^2\Big)^{2}} .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Expand the square:
+        $\big(\sum_{i\in g} d_i\hat e_i\big)^2
+        = \sum_{i\in g} d_i^2\hat e_i^2
+        + \sum_{i\neq j \in g} d_i d_j \hat e_i\hat e_j$. The cross terms we
+        had been assuming away are now \alert{estimated}, within clusters;
+        across clusters they are still assumed zero.
+  \item Same logic as White: no single cluster's covariances are estimated
+        well, but the \emph{sum} over many clusters is. Consistency therefore
+        runs in $G$, the number of clusters, not in $n$.
+  \item With one observation per cluster this collapses exactly to HC0:
+        clustering strictly generalizes White.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Cluster-Robust Variance (Liang--Zeger)\adv}
 Let $g = 1,\dots,G$ index clusters, with $\X_g$ and $\ehat_g$ the stacked
 regressors and residuals in cluster $g$:
@@ -806,7 +829,9 @@ A famous demonstration of what happens when you ignore within-unit correlation.
   \item Clustering by state fixed it, with 50 clusters, just barely enough.
 \end{itemize}
 \vskip3pt
-We return to this in Week 10. Design and inference are not separable questions.
+The rule for any policy-adoption design, sociology's most common clustering
+decision: \alert{cluster at the level of the adopting unit}. Week 10 returns
+to this; design and inference are not separable.
 \end{frame}
 
 \begin{frame}{Other Dependence Structures\adv}
