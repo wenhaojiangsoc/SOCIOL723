@@ -84,20 +84,26 @@ is the *same* variance formula with the error variance estimated differently.
 
 ### Roadmap
 - What a sampling distribution *is*, built by simulation rather than asserted.
-- Two routes to it: exact inference under normality, and the large-sample route
-  via the law of large numbers and the central limit theorem, which needs no
-  distributional assumption at all.
-- Hypothesis testing: $t$-tests, and the $F$-test as the model comparison you
-  already know — with the warning that the sums-of-squares form is valid *only*
-  under homoskedasticity. The Wald statistic and the delta method. ★
+- The sampling distribution of $\hat\beta_1$ as $n$ grows, in four slow steps:
+  the denominator settles on $\mathrm{Var}(X_i)$ (LLN); the numerator's mean is
+  zero by exogeneity (iterated expectations, written out); its variance, expanded
+  term by term for $n=3$, shrinks like $1/n$ — which is where the $\sqrt{n}$
+  comes from; and the CLT adds the bell shape. No normality assumed anywhere.
+- Hypothesis testing: $t$-tests and confidence intervals, with one reference
+  distribution ($t_{n-k}$) serving exact and large-sample thinking alike.
 - **Heteroskedasticity**: what it is, why it does not bias $\hat\beta$, and the
-  **scalar sandwich**
-  $\mathrm{Var}(\hat\beta_1) = \sum_i d_i^2\sigma_i^2 / (\sum_i d_i^2)^2$.
-  White's estimator is what you get by substituting $\hat e_i^2$ for
-  $\sigma_i^2$ — that is the whole idea.
-- Finite-sample corrections HC0–HC3 and when they matter; why you should not
-  pre-test for heteroskedasticity; why we fix the standard errors rather than
-  reweight the estimator.
+  **scalar sandwich**: the asymptotic variance
+  $V = \mathbb{E}[(X_i-\mu_X)^2\epsilon_i^2]\,/\,[\mathrm{Var}(X_i)]^2$ is
+  meat over bread squared; the classical formula is its A5 special case; and
+  White's estimator is nothing but the sample analogue — average
+  $d_i^2\hat e_i^2$ for the meat. Every piece estimable from data alone.
+- Why plugging in one residual per observation works (we only ever estimate the
+  meat, one number), why the residuals are systematically too small (leverage),
+  and the finite-sample corrections HC0–HC3; why you should not pre-test for
+  heteroskedasticity.
+- From scalar to matrix: the dictionary $X_i = (1, X_i)'$, and the sandwich
+  $Q^{-1}\Omega Q^{-1}$ multiplied out entry by entry until the slope entry
+  reproduces the scalar $V$. ★
 - **Clustering**: where the scalar formula breaks, the Moulton factor, the
   cluster-robust sandwich, choosing the level from the *design*, the few-clusters
   problem, and CR2 / wild cluster bootstrap remedies. Bertrand, Duflo, and

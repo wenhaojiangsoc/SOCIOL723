@@ -167,9 +167,9 @@ $\Var(\epsilon_i\mid X)$ is the same for every $i$.
 \vskip4pt
 \begin{block}{Today's agenda}
 \begin{enumerate}\itemsep1pt
-  \item What is the sampling distribution of $\hat\beta_1$, with and without
-        normality?
-  \item How do we test hypotheses, single, joint, and nonlinear?
+  \item What is the sampling distribution of $\hat\beta_1$ as $n$ grows?
+  \item How do we turn a standard error into a test and a confidence
+        interval?
   \item What if $\Var(\epsilon_i\mid X)$ is \emph{not} constant?
         (Heteroskedasticity, then clustering.)
   \item The bootstrap as a general-purpose alternative.
@@ -233,7 +233,7 @@ different sample from the same population, you would have got a different number
 \begin{block}{The thought experiment}
 Imagine drawing sample after sample from the population and computing
 $\hat\beta_1$ each time. The histogram of those numbers is the \alert{sampling
-distribution}. Where it is centred tells you about bias; how wide it is is
+distribution}. Where it is centered tells you about bias; how wide it is is
 the true sampling standard deviation, and the \emph{standard error} is our
 estimate of that width.
 \end{block}
@@ -269,43 +269,136 @@ consistency and the CLT approximate normality. Thursday's lab watches the
 bell curve emerge.
 \end{frame}
 
-\begin{frame}{Route 1: Exact, Under Normality}
-Assume A1--A6, including $\epsilon_i\mid X \sim \mathcal N(0,\sigma^2)$. Since
-$\hat\beta_1 - \beta_1$ is a \emph{weighted sum of the errors}, it is normal:
-\begin{align*}
-  \hat\beta_1 \sim \mathcal N\!\left(\beta_1,\ \frac{\sigma^2}{\sum_i (X_i-\bar X)^2}\right),
-  \qquad
-  t = \frac{\hat\beta_1 - \beta_1}{\SE(\hat\beta_1)} \sim t_{n-k} ,
-\end{align*}
-with $k$ the number of estimated coefficients (2 in the bivariate case).
-\begin{itemize}\itemsep3pt
-  \item The $t$ (rather than the normal) appears because we replaced the unknown
-        $\sigma^2$ by the estimate $s^2$.
-  \item Exact at any $n$, but it requires normal errors, which is rarely
-        credible for earnings, counts, durations, or attitude scales.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Route 2: Approximate, Without Normality\core}
-Drop A6 and look again at
+\begin{frame}{The Sampling Distribution of $\hat\beta_1$, as $n$ Grows}
+The big picture: \alert{keep drawing samples from the population; as $n$
+grows, we will show that $\hat\beta_1$'s sampling behaviour approximates a
+normal distribution}, without ever assuming the errors are normal (A6):
 \begin{align*}
   \hat\beta_1 - \beta_1 = \frac{\frac1n\sum_i (X_i-\bar X)\epsilon_i}
                                {\frac1n\sum_i (X_i-\bar X)^2} .
 \end{align*}
-\begin{itemize}\itemsep4pt
-  \item The \textbf{denominator} is a sample average. By the \alert{law of large
-        numbers} it settles down to $\Var(X_i)$ as $n$ grows.
-  \item The \textbf{numerator} is also a sample average, of the mean-zero terms
-        $(X_i - \bar X)\epsilon_i$. By the \alert{central limit theorem}, sample
-        averages of i.i.d.\ mean-zero terms are approximately normal once $n$ is
-        large, \emph{whatever} the distribution of $\epsilon_i$.
+A normal is pinned down by its \emph{mean} and \emph{variance}, so the work
+here is to find both, and let the CLT supply the \emph{shape}.
+\vskip2pt
+The plan:
+\begin{enumerate}\itemsep0pt
+  \item The denominator converges to a constant (LLN).
+  \item The numerator, magnified by $\sqrt n$, converges to a normal
+        distribution with mean $0$ (CLT) under strict exogeneity (A4: $\E[\epsilon_i \mid X] = 0 ]$).
+  \item A normal distribution divided by a settled constant is still normal.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Step 1: The Denominator Settles (LLN)}
+The denominator is the sample variance of $X$. By the law of large numbers
+\begin{align*}
+  \bar X \ &\pto\ \E[X] = \mu_X , \\
+  \frac1n\sum_i (X_i - \bar X)^2 \ &\pto\ \E[ (X_i - \mu_X)^2 ] = \Var(X_i)
+\end{align*}
+\begin{itemize}
+      \item It settles on the population variance, a \emph{positive constant}.
+      \item As $n \to \infty$, the observed $X$'s approach, in aggregate, the
+        population distribution of $X$.
+      \item From here on we may treat the denominator as the constant $\Var(X_i)$. Every
+remaining question is about the numerator, whose terms we may likewise write
+with $\mu_X$ in place of $\bar X$: it is the average of the
+$(X_i - \mu_X)\,\epsilon_i$.
+\end{itemize} 
+\end{frame}
+
+\begin{frame}{Step 2: The Numerator's Mean}
+The numerator averages the identically distributed terms
+$(X_i - \mu_X)\,\epsilon_i$, so its mean is the terms' common mean. Compute it:
+\begin{align*}
+  \E\big[(X_i - \mu_X)\,\epsilon_i\big]
+  &= \E\Big[\,\E\big[(X_i - \mu_X)\,\epsilon_i \mid X_i\big]\,\Big]
+    && \text{\footnotesize iterated expectations} \\
+  &= \E\big[(X_i - \mu_X)\,\E[\epsilon_i \mid X_i]\big]
+    && \text{\footnotesize given $X_i$, $(X_i-\mu_X)$ is fixed} \\
+  &= \E\big[(X_i - \mu_X)\cdot 0\big] \;=\; 0
+    && \text{\footnotesize A4: } \E[\epsilon_i \mid X_i] = 0
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item By the LLN the numerator settles on this mean, $0$, so
+        $\hat\beta_1 - \beta_1 \pto 0/\Var(X_i) = 0$: \alert{consistency}.
+        As sample approaches population, $\hat\beta_1$ nails $\beta_1$.
+  \item But a mean says nothing about \emph{spread}, and spread is what a
+        standard error measures. Next: the variance.
 \end{itemize}
-\vskip3pt
-{\footnotesize (A technicality: the terms share $\bar X$, so first replace
-$\bar X$ by $\E[X]$; the difference vanishes as $n$ grows.)}
-So $\hat\beta_1$ is approximately normal in large samples with no assumption
-about the shape of the error distribution. \alert{This is the modern default}, and
-it is the route that generalizes to MLE (Week 3), IV, and everything after.
+\end{frame}
+
+\begin{frame}{Step 3: The Numerator's Variance}
+Take $n = 3$: the numerator averages the three terms
+$(X_i-\mu_X)\,\epsilon_i$. The variance of a sum is every term's variance
+plus a covariance for every pair:
+\begingroup\small
+\setlength{\abovedisplayskip}{3pt}\setlength{\belowdisplayskip}{3pt}
+\begin{align*}
+  \Var(\text{numerator})
+  = \tfrac19\Big[
+  &\underbrace{\Var\big((X_1-\mu_X)\epsilon_1\big)
+    + \Var\big((X_2-\mu_X)\epsilon_2\big)
+    + \Var\big((X_3-\mu_X)\epsilon_3\big)}
+    _{\text{one variance per draw}} \\
+  &+ \underbrace{2\Cov\big((X_1-\mu_X)\epsilon_1,\ (X_2-\mu_X)\epsilon_2\big)
+    + \cdots}
+    _{\text{one covariance per pair; $3$ pairs}}\ \Big]
+\end{align*}
+\endgroup
+\vskip-2pt
+\begin{itemize}\itemsep0pt
+  \item A2 kills every covariance: draws are \emph{independent},
+        so each $\Cov$ is $0$. Clustering breaks exactly this step.
+  \item Merging the remaining variance terms, with $n$ draws,
+        $\Var\big((X_i-\mu_X)\epsilon_i\big)/n$.
+  \item The spread shrinks like $1/\sqrt n$: \alert{magnify by $\sqrt n$} to
+        hold it steady. That is where the $\sqrt n$ comes from.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Step 4: The CLT Adds the Shape}
+The magnified numerator has mean $0$ and variance
+$\Var\big((X_i-\mu_X)\epsilon_i\big)$; the CLT adds the missing \emph{shape}.
+Divide by the settled denominator:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \sqrt n\,\big(\hat\beta_1 - \beta_1\big)
+  = \frac{\overbrace{\sqrt n\cdot\tfrac1n\sum_i (X_i-\bar X)\,\epsilon_i}
+          ^{\ \dto\ \mathcal N\left(0,\ \Var\left((X_i-\mu_X)\epsilon_i\right)\right)}}
+         {\underbrace{\tfrac1n\sum_i (X_i-\bar X)^2}_{\ \pto\ \Var(X_i)}}
+  \;\dto\;
+  \mathcal N\big(0,\ V\big) ,
+  \quad
+  V = \frac{\Var\big((X_i-\mu_X)\epsilon_i\big)}{\big[\Var(X_i)\big]^2} .
+\end{align*}
+\endgroup
+\vskip-2pt
+\begin{itemize}\itemsep0pt
+  \item Under A5, homoskedasticity, $\Var(\epsilon_i \mid X_i) = \sigma^2$:
+        the error variance is the same number at every value of $X$. The
+        numerator of $V$ then collapses and $V = \sigma^2/\Var(X_i)$, the
+        familiar formula: next frame, slowly.
+  \item Without A5, \alert{estimating $V$ is this lecture's entire subject}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Under A4 and A5, the Meat Collapses}
+The meat is a mean square around the unconditional mean, so A4 first
+certifies that mean is zero; then A5 collapses it:
+\begin{align*}
+  \E\big[(X_i-\mu_X)^2\,\epsilon_i^2\big]
+  &= \E\Big[\,\E\big[(X_i-\mu_X)^2\,\epsilon_i^2 \mid X_i\big]\,\Big]
+    && \text{\footnotesize iterated expectations} \\
+  &= \E\big[(X_i-\mu_X)^2\,\E[\epsilon_i^2 \mid X_i]\big]
+    && \text{\footnotesize given $X_i$, $(X_i-\mu_X)^2$ is fixed} \\
+  &= \E\big[(X_i-\mu_X)^2\,\sigma^2\big]
+    && \text{\footnotesize A4 + A5: $\E[\epsilon_i^2 \mid X_i] = \sigma^2$} \\
+  &= \sigma^2\,\E\big[(X_i-\mu_X)^2\big] = \sigma^2\,\Var(X_i)
+    && \text{\footnotesize $\sigma^2$ is one number: pull it out}
+\end{align*}
+So $V = \sigma^2\Var(X_i)\big/[\Var(X_i)]^2 = \sigma^2/\Var(X_i)$: the same
+answer as Week 1.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -331,118 +424,26 @@ You met these words in \textit{Social Statistics I}; now they have foundations.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Single Restrictions\core}
-To test $H_0: \beta_j = \beta_j^0$,
+\begin{frame}{Testing a Single Coefficient\core}
+To test $H_0: \beta_j = \beta_j^0$, compare
 \begin{align*}
   t = \frac{\hat\beta_j - \beta_j^0}{\SE(\hat\beta_j)}
-  \ \sim\ t_{n-k} \ \text{ (exactly, under A6)}
-  \ \text{ or }\ \mathcal N(0,1) \ \text{ (approximately, for large }n\text{)} .
 \end{align*}
-A $95\%$ confidence interval is $\hat\beta_j \pm t_{0.975,\,n-k}\,
-\SE(\hat\beta_j)$ under the exact route, and $\hat\beta_j \pm
-1.96\,\SE(\hat\beta_j)$ in the large-sample approximation.
+against $t_{n-k}$ critical values; a $95\%$ confidence interval is
+$\hat\beta_j \pm t_{0.975,\,n-k}\,\SE(\hat\beta_j)$.
 \vskip6pt
-\begin{itemize}\itemsep3pt
-  \item The $t_{n-k}$ and $\mathcal N(0,1)$ critical values differ by less than
-        $2\%$ once $n-k > 100$. Reporting $t$ is a convention, not a claim to
-        exactness.
+\begin{itemize}\itemsep4pt
+  \item By the last section, $t$ is approximately $\mathcal N(0,1)$ for
+        large $n$, and $t_{n-k}$ merges into that same curve (the critical
+        values differ by under $2\%$ once $n-k > 100$); under the classical
+        assumption of normal errors, $t_{n-k}$ is even exact at any $n$,
+        which is where the convention comes from. This is why regression
+        output reports $t_{n-k}$; clustered data will later change the
+        right degrees of freedom.
   \item \alert{Everything depends on whether $\SE$ is right.} A $t$ of 3.0
         computed from a standard error that is half of what it should be is
         really a $t$ of 1.5.
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Joint Restrictions: the $F$-Test \emph{Is} Model Comparison\core}
-To test $q$ restrictions at once (``neither \texttt{wordsum} nor
-\texttt{pareduc} matters''), fit the restricted (compact) and unrestricted
-(augmented) models and compare their errors:
-\begin{align*}
-  F = \frac{(SSE_C - SSE_A)/q}{SSE_A/(n-k)} \ \sim\ F_{q,\,n-k}
-  \qquad\text{under A1--A6}.
-\end{align*}
-Exactly the model-comparison $F$ from \textit{Social Statistics I}.
-\vskip3pt
-\begin{alertblock}{An important caveat}
-The sums-of-squares form is valid \alert{only under homoskedasticity}. With
-robust or clustered standard errors you must use the Wald form, 
-\texttt{car::linearHypothesis(..., vcov = )} or
-\texttt{lmtest::waldtest(..., vcov = )}. Plain \texttt{anova()} on two
-\texttt{lm} objects gives you the \emph{non-robust} test. This is a very common
-error in published work.
-\end{alertblock}
-\end{frame}
-
-\begin{frame}{The Wald Statistic\adv}
-Write $q$ linear restrictions as $\bm{R}\bm\beta = \bm q$ with $\bm R$ a
-$q\times k$ matrix of rank $q$:
-\begin{center}\small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{ll}
-\toprule
-Hypothesis & $\bm R$, $\bm q$ \\
-\midrule
-$\beta_2 = 0$ & $\bm R = (0,1,0,\dots)$, $\bm q = 0$ \\
-$\beta_2 = \beta_3$ & $\bm R = (0,1,-1,0\dots)$, $\bm q = 0$ \\
-$\beta_2 = \beta_3 = 0$ & two rows, $\bm q = (0,0)'$ \\
-All slopes zero & $\bm R = [\zero \ \ \Ix_{k-1}]$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip3pt
-\begin{align*}
-  W = (\bm R\bhat - \bm q)'
-      \big[\bm R\,\hat{V}(\bhat)\,\bm R'\big]^{-1}
-      (\bm R\bhat - \bm q)\ \dto\ \chi^2_q ,
-  \qquad F = W/q .
-\end{align*}
-Substituting any $\hat{V}(\bhat)$ you like (robust, clustered) gives
-the corresponding robust joint test.
-\end{frame}
-
-\begin{frame}{Nonlinear Restrictions: the Delta Method\adv}
-For a smooth function $g(\bm\beta)$, a ratio of coefficients, a turning point
-$-\beta_1/2\beta_2$, a marginal effect:
-\begin{align*}
-  \hat{V}\big(g(\bhat)\big)
-  = \nabla g(\bhat)'\,\hat{V}(\bhat)\,\nabla g(\bhat) .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item Intuition: a smooth function is locally a straight line, and we know the
-        variance of a linear function. So linearize, then use what we know.
-  \item Implemented as \texttt{car::deltaMethod()} or the
-        \texttt{marginaleffects} package.
-  \item First-order approximation: it can be poor when $g$ is strongly
-        nonlinear near $\bhat$. With a ratio whose denominator is near zero,
-        the delta method \emph{and} the naive bootstrap can both fail; use a
-        ratio-specific interval (Fieller) there.
-  \item We use it constantly in Week 4 for marginal effects and predicted
-        probabilities.
-\end{itemize}
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{A Note on Multiple Testing}
-Everything so far controlled the error rate for \emph{one} planned comparison.
-The moment you look at many outcomes, many subgroups, or many specifications, the
-guarantee has to hold across the whole family of claims, and it does not.
-\vskip3pt
-If you run $m$ independent tests, all of true nulls, at level $\alpha$, the
-chance of at least one false rejection is $1-(1-\alpha)^m$: for $m=20$, about
-$64\%$.
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item \textbf{Bonferroni}: test each at $\alpha/m$. Controls the family-wise
-        error rate; conservative.
-  \item \textbf{Holm}: sequentially rejective; uniformly more powerful than
-        Bonferroni with the same guarantee.
-  \item \textbf{Benjamini--Hochberg}: controls the \emph{false discovery
-        rate}, a natural criterion with many outcomes or subgroups when some
-        false positives are tolerable.
-  \item \texttt{p.adjust(p, method = "holm" / "BH")}.
-\end{itemize}
-\vskip3pt
-Sociologically relevant cases: many outcomes, many subgroups, many
-specifications. Pre-registering a small set of primary hypotheses shrinks
-$m$ before any correction is needed; the two are complements, not substitutes.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -507,28 +508,31 @@ efficiency (OLS is no longer BLUE).
 \end{frame}
 
 \begin{frame}{The Scalar Sandwich\core}
-Go back to the exact variance, \emph{without} assuming constant variance. Write
-$\sigma_i^2 \equiv \Var(\epsilon_i \mid X)$ and $d_i \equiv X_i - \bar X$:
+The last section already handed us the bell's variance, built from population moments:
 \begin{align*}
-  \Var(\hat\beta_1\mid X)
-  = \Var\!\left(\frac{\sum_i d_i\epsilon_i}{\sum_i d_i^2}\ \Bigg|\ X\right)
-  = \frac{\sum_i d_i^2\,\sigma_i^2}{\big(\sum_i d_i^2\big)^2} .
+  V = \frac{\E\big[(X_i-\mu_X)^2\,\epsilon_i^2\big]}{\big[\Var(X_i)\big]^2}
+    = \frac{\text{``meat''}}{\text{``bread''}^2} .
 \end{align*}
-\vskip2pt
 \begin{itemize}\itemsep3pt
-  \item If $\sigma_i^2 = \sigma^2$ for all $i$, it factors out and we recover
-        $\sigma^2/\sum_i d_i^2$.
-  \item If not, the numerator is a \alert{$d_i^2$-weighted average of the
-        individual error variances}. Observations far from $\bar X$, the
-        high-leverage ones, get the most weight.
-  \item \alert{This is the entire idea.} The ``bread'' is $\sum_i d_i^2$, twice;
-        the ``meat'' is $\sum_i d_i^2\sigma_i^2$.
+  \item The meat is a \alert{$(X_i-\mu_X)^2$-weighted average of the squared
+        errors}: errors sitting far from the mean of $X$ count the most.
+  \item Under A5 the squared error averages to $\sigma^2$ at every value of
+        $X$, so the meat factors into $\sigma^2\,\Var(X_i)$ and
+        $V = \sigma^2/\Var(X_i)$: \alert{the classical formula is the A5
+        special case.}
+  \item Without A5 nothing factors, and the classical formula is simply
+        wrong. But every piece of $V$ is a population mean, and
+        \alert{sample averages estimate population means}. Next frame.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{White's Estimator, in Scalar Form\core}
-We cannot observe $\sigma_i^2$. But we have $\hat e_i^2$, and
-$\E[\hat e_i^2] \approx \sigma_i^2$. Plug it in:
+Estimate each population mean by its sample counterpart, with residuals
+standing in for the unobservable errors: writing $d_i \equiv X_i - \bar X$,
+the bread $\Var(X_i)$ becomes $\frac1n\sum_i d_i^2$ and the meat
+$\E[(X_i-\mu_X)^2\epsilon_i^2]$ becomes $\frac1n\sum_i d_i^2\,\hat e_i^2$.
+The squared standard error of $\hat\beta_1$ is this estimate of $V$,
+divided by $n$; the $1/n$'s cancel into
 \begin{align*}
   \boxed{\;
   \hat{V}_{\text{HC0}}(\hat\beta_1)
@@ -537,36 +541,56 @@ $\E[\hat e_i^2] \approx \sigma_i^2$. Plug it in:
   \text{versus}\qquad
   \hat{V}_{\text{classical}}(\hat\beta_1) = \frac{s^2}{\sum_i d_i^2} .
 \end{align*}
-\vskip4pt
-\begin{itemize}\itemsep3pt
-  \item That is the whole of ``heteroskedasticity-robust,'' ``Huber--White,''
-        and ``Eicker--Huber--White'' (\texttt{Stata}'s \texttt{robust} adds
-        the HC1 scaling on the next frame).
-  \item With controls, replace $d_i$ by Week 1's FWL residual $\tilde d_i$
-        (the part of the focal regressor the controls cannot predict):
+\begin{itemize}\itemsep2pt
+  \item That is the whole of ``heteroskedasticity-robust'' and
+        ``(Eicker--)Huber--White'' (\srct{White 1980}); \texttt{Stata}'s
+        \texttt{robust} adds HC1 scaling, next frame.
+  \item With controls, replace $d_i$ by Week 1's FWL residual $\tilde d_i$:
         $\hat V(\hat\beta_j) = \sum_i \tilde d_i^{\,2}\hat e_i^2 \big/
-        \big(\sum_i \tilde d_i^{\,2}\big)^2$. Same formula, residualized
-        weights.
-  \item Due to \srct{White (1980)}, building on \srct{Eicker (1967)} and
-        \srct{Huber (1967)}.
-  \item Notice the difference: the classical formula uses \emph{one} pooled
-        $s^2$; the robust formula lets every observation carry its own
-        $\hat e_i^2$.
+        \big(\sum_i \tilde d_i^{\,2}\big)^2$: same formula, residualized weights.
+  \item The classical formula pools \emph{one} $s^2$; the robust one lets
+        each observation carry its own $\hat e_i^2$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{``But You Only Have One Residual Per Observation''}
-A frequent and reasonable objection: how can we estimate $n$ different variances
-from $n$ observations?
+\begin{frame}{``But $\hat e_i^2$ Is a Terrible Estimate of $\epsilon_i^2$''}
+A frequent and reasonable objection: each $\hat e_i^2$ is a single noisy
+draw. How can plugging in $n$ bad estimates give a good one?
 \vskip4pt
 \begin{itemize}\itemsep4pt
-  \item We never estimate $\sigma^2_i$ consistently for any particular $i$, 
-        and we do not need to.
-  \item The object we need is the \emph{sum} $\sum_i d_i^2\sigma_i^2$: a single
-        number. Each $\hat e_i^2$ is a noisy but roughly unbiased estimate of
-        $\sigma_i^2$, and adding up $n$ of them averages the noise away.
+  \item Because we never try to learn any individual $\epsilon_i^2$. The
+        target is \emph{one number}, the population mean
+        $\E[(X_i-\mu_X)^2\epsilon_i^2]$, and
+        $\tfrac1n\sum_i d_i^2\,\hat e_i^2$ is a sample average aimed at it:
+        the law of large numbers averages the individual noise away.
   \item Same logic that lets you estimate $\Var(\bar Y)$ from one sample: you
         never learn any individual's deviation, only the average square.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{From Scalar to Matrix: the Dictionary\adv}
+One change of meaning: $X_i$ now denotes the \emph{vector} of observation
+$i$'s regressors, in the bivariate case $X_i = (1,\ X_i)'$. Then
+\begin{align*}
+  X_iX_i' = \begin{pmatrix} 1 & X_i \\ X_i & X_i^2 \end{pmatrix},
+  \qquad
+  X_i\epsilon_i = \begin{pmatrix} \epsilon_i \\ X_i\epsilon_i \end{pmatrix},
+\end{align*}
+and their sample averages stack the scalar sums you have used all lecture:
+\begin{align*}
+  \En[X_iX_i'] =
+  \begin{pmatrix} 1 & \bar X \\ \bar X & \tfrac1n\sum_i X_i^2 \end{pmatrix},
+  \qquad
+  \En[X_i\epsilon_i] =
+  \begin{pmatrix} \bar\epsilon \\ \tfrac1n\sum_i X_i\epsilon_i \end{pmatrix}.
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Population versions: $\bm Q = \E[X_iX_i']$ and the meat
+        $\Om = \E[\epsilon_i^2X_iX_i']$, which stacks
+        $\E[\epsilon_i^2]$, $\E[X_i\epsilon_i^2]$, $\E[X_i^2\epsilon_i^2]$.
+  \item The next frames state the matrix result and then cash it: the
+        slope's entry of the matrix sandwich is \emph{exactly} the scalar
+        $V$.
 \end{itemize}
 \end{frame}
 
@@ -581,8 +605,8 @@ $\En[X_i\epsilon_i]\pto \zero$, so $\bhat \pto \bm\beta$ (\emph{consistency}).
 Multiplying by $\sqrt n$ and applying the CLT to the second factor,
 \begin{align*}
   \boxed{\;\sqrt n(\bhat-\bm\beta) \dto
-  \mathcal N\Big(\zero,\; \bm{Q}^{-1}\Om^{\!*}\bm{Q}^{-1}\Big)\;},
-  \qquad \Om^{\!*} = \E[\epsilon_i^2 X_iX_i'] .
+  \mathcal N\Big(\zero,\; \bm{Q}^{-1}\Om\bm{Q}^{-1}\Big)\;},
+  \qquad \Om = \E[\epsilon_i^2 X_iX_i'] .
 \end{align*}
 \vskip2pt
 Note what is \emph{not} assumed: no normality, no homoskedasticity. Note also the
@@ -593,10 +617,10 @@ $\E[\epsilon_i\mid X_i]=0$ is not needed.
 \begin{frame}{Reading the ``Sandwich''\adv}
 \begin{align*}
   \bm{V} = \underbrace{\bm{Q}^{-1}}_{\text{bread}}\;
-           \underbrace{\Om^{\!*}}_{\text{meat}}\;
+           \underbrace{\Om}_{\text{meat}}\;
            \underbrace{\bm{Q}^{-1}}_{\text{bread}},
   \qquad
-  \bm Q = \E[X_iX_i'],\quad \Om^{\!*} = \E[\epsilon_i^2X_iX_i'] .
+  \bm Q = \E[X_iX_i'],\quad \Om = \E[\epsilon_i^2X_iX_i'] .
 \end{align*}
 \begin{itemize}\itemsep4pt
   \item The \textbf{bread} depends only on the distribution of the regressors.
@@ -604,7 +628,7 @@ $\E[\epsilon_i\mid X_i]=0$ is not needed.
         lives. Classical, robust, clustered, and HAC standard errors differ
         \alert{only} in how the meat is estimated.
   \item If $\E[\epsilon_i^2\mid X_i] = \sigma^2$ then
-        $\Om^{\!*} = \sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$, the
+        $\Om = \sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$, the
         classical formula.
 \end{itemize}
 \vskip3pt
@@ -613,16 +637,117 @@ Keep the estimator $\hat\beta$; change how you estimate the meat.
 \end{alertblock}
 \end{frame}
 
+\begin{frame}{The Dictionary, Cashed: Multiply the Sandwich Out\adv}
+Every symbol below is a population \emph{number}. Abbreviate
+$v = \Var(X_i)$, $q = \E[X_i^2]$, and the meat's three entries
+$a = \E[\epsilon_i^2]$, $b = \E[X_i\epsilon_i^2]$,
+$c = \E[X_i^2\epsilon_i^2]$. The ingredients ($\bm Q^{-1}$ by the
+$2\times2$ inverse, $\det\bm Q = q - \mu_X^2 = v$):
+\begin{align*}
+  \bm Q^{-1} = \frac1v
+  \begin{pmatrix} q & -\mu_X \\ -\mu_X & 1 \end{pmatrix},
+  \qquad
+  \Om = \begin{pmatrix} a & b \\ b & c \end{pmatrix} .
+\end{align*}
+First multiplication, plain row-times-column arithmetic:
+\begin{align*}
+  \Om\bm Q^{-1}
+  = \frac1v
+  \begin{pmatrix}
+    aq - b\mu_X & \ b - a\mu_X \\
+    bq - c\mu_X & \ c - b\mu_X
+  \end{pmatrix} .
+\end{align*}
+One more multiplication by $\bm Q^{-1}$ from the left: next frame.
+\end{frame}
+
+\begin{frame}{The Final $2\times2$ Matrix\adv}
+Multiply again, row times column; for instance the bottom-right entry is
+$(-\mu_X)(b - a\mu_X) + 1\cdot(c - b\mu_X) = a\mu_X^2 - 2b\mu_X + c$.
+Collecting all four entries:
+\begin{align*}
+  \bm Q^{-1}\Om\bm Q^{-1}
+  = \frac{1}{v^2}
+  \begin{pmatrix}
+    aq^2 - 2bq\mu_X + c\mu_X^2 & \ b(q+\mu_X^2) - \mu_X(aq+c) \\[2pt]
+    b(q+\mu_X^2) - \mu_X(aq+c) & \ \alert{a\mu_X^2 - 2b\mu_X + c}
+  \end{pmatrix} .
+\end{align*}
+The highlighted slope entry, with $a,b,c$ substituted back:
+\begin{align*}
+  a\mu_X^2 - 2b\mu_X + c
+  = \E\big[\mu_X^2\epsilon_i^2 - 2\mu_X X_i\epsilon_i^2
+    + X_i^2\epsilon_i^2\big]
+  = \E\big[(X_i - \mu_X)^2\epsilon_i^2\big] ,
+\end{align*}
+so the $(2,2)$ entry is $\E[(X_i-\mu_X)^2\epsilon_i^2]/v^2 = V$: the scalar
+sandwich, recovered.
+\vskip2pt
+{\footnotesize Reading the rest: the diagonal holds the intercept's and the
+slope's variances, the off-diagonal their covariance.}
+\end{frame}
+
+\begin{frame}{Why the Squared Residuals Are Systematically Too Small}
+Two frames ago: each $\hat e_i^2$ is a \emph{noisy} stand-in for
+$\epsilon_i^2$, and the meat's average kills the noise. True, but
+\alert{averaging only kills noise; a \emph{systematic} error survives the
+average} -- and there is one.
+\begin{itemize}\itemsep4pt
+  \item OLS chooses the line that makes the residuals as small as possible,
+        so it partly fits the noise itself: residuals run systematically
+        \emph{smaller} than the errors they stand in for.
+  \item The exact bookkeeping (under A5, for clean arithmetic):
+        $\E[\hat e_i^2 \mid X] = \sigma^2(1 - h_{ii})$, where the
+        \alert{leverage} $h_{ii} = \tfrac1n + d_i^2\big/\sum_j d_j^2$
+        measures how unusual $X_i$ is.
+  \item So every $\hat e_i^2$ is deflated, and most at \emph{high-leverage}
+        observations, exactly the ones the meat weights most heavily. The
+        meat estimate, hence HC0, is \alert{biased down in small samples}.
+  \item As $n$ grows, $h_{ii} \to 0$ and the deflation vanishes: a purely
+        finite-sample issue. The target is still only the meat; the fixes
+        just undo a known bias in its ingredients.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where $\sigma^2(1-h_{ii})$ Comes From\adv}
+Write the residual in terms of the errors, step by step:
+\begingroup
+\setlength{\abovedisplayskip}{3pt}\setlength{\belowdisplayskip}{3pt}
+\begin{align*}
+  \hat e_i &= Y_i - \hat\beta_0 - \hat\beta_1 X_i
+    && \text{\footnotesize definition} \\
+  &= \epsilon_i - \bar\epsilon - (\hat\beta_1 - \beta_1)\,d_i
+    && \text{\footnotesize sub $Y_i = \beta_0+\beta_1X_i+\epsilon_i$,
+       $\hat\beta_0 = \bar Y - \hat\beta_1\bar X$} \\
+  &= \epsilon_i - \bar\epsilon
+     - d_i\,\frac{\sum_j d_j\epsilon_j}{\sum_j d_j^2}
+   = \epsilon_i - \sum_j w_{ij}\,\epsilon_j
+    && \text{\footnotesize Week 1: $\hat\beta_1-\beta_1 =
+       \textstyle\sum_j d_j\epsilon_j/\sum_j d_j^2$}
+\end{align*}
+\endgroup
+with $w_{ij} = \tfrac1n + d_i d_j\big/\sum_k d_k^2$: the fitted line absorbs
+a weighted share of \emph{every} error, with weight $w_{ii} = h_{ii}$ on
+observation $i$'s own. Under A5 and uncorrelated errors,
+\begin{align*}
+  \E[\hat e_i^2 \mid X]
+  = \sigma^2\Big(1 - 2h_{ii} + \sum_j w_{ij}^2\Big)
+  = \sigma^2\,(1-h_{ii}),
+\end{align*}
+because $\sum_j w_{ij}^2 = h_{ii}$ (expand the square; $\sum_j d_j = 0$).
+\vskip1pt
+{\footnotesize Reading: observation $i$ pulls the line toward itself with
+strength $h_{ii}$; the residual keeps the $(1-h_{ii})$ share. At $n=2$,
+$h_{ii}=1$: the line passes through both points and both residuals are
+exactly zero.}
+\end{frame}
+
 \begin{frame}{Finite-Sample Corrections: HC0--HC3\core}
-$\hat e_i^2$ is biased downward: \emph{under homoskedasticity}
-$\E[\hat e_i^2] = \sigma^2(1-h_{ii})$, where $h_{ii}$ is observation $i$'s
-\alert{leverage}, in the bivariate case $h_{ii} = \tfrac1n + d_i^2/\sum_j
-d_j^2$: large when $X_i$ is unusual.
-So HC0 \emph{understates} standard errors in small samples. The fixes
-rescale the squared residuals (motivated by the homoskedastic benchmark, used
-regardless):
+Every $\hat e_i^2$ is deflated by its leverage. The corrections rescale each
+squared residual before it enters the meat, undoing the deflation (factors
+motivated by the homoskedastic benchmark, used regardless):
 \begin{center}\small
-\renewcommand{\arraystretch}{1.4}
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lll}
 \toprule
 & Meat uses & Comment \\
@@ -630,15 +755,16 @@ regardless):
 HC0 & $\hat e_i^2$ & White's original; anticonservative when $n$ is small \\
 HC1 & $\frac{n}{n-k}\hat e_i^2$ & simple d.f.\ correction; \texttt{Stata}'s
       \texttt{robust} default \\
-HC2 & $\dfrac{\hat e_i^2}{1-h_{ii}}$ & unbiased under homoskedasticity \\
-HC3 & $\dfrac{\hat e_i^2}{(1-h_{ii})^2}$ & approximates the jackknife;
-      \alert{recommended default} \\
+HC2 & $\dfrac{\hat e_i^2}{1-h_{ii}}$ & exact at the homoskedastic benchmark \\
+HC3 & $\dfrac{\hat e_i^2}{(1-h_{ii})^2}$ & jackknife-like; \alert{recommended default} \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip2pt
-\srct{MacKinnon and White (1985)} and \srct{Long and Ervin (2000)}: with
-$n < 250$ or high leverage, use \textbf{HC3}. All four coincide as $n\to\infty$.
+{\footnotesize All four are consistent under any heteroskedasticity pattern
+and coincide as $n \to \infty$. \srct{MacKinnon and White (1985)},
+\srct{Long and Ervin (2000)}: with $n < 250$ or high leverage, use
+\textbf{HC3}.}
 \end{frame}
 
 \begin{frame}{How Much Does It Matter?}
@@ -677,25 +803,6 @@ Do not pre-test and then choose. Just report robust standard errors.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Weighted Least Squares: the Road Not Taken}
-If we knew $\Var(\epsilon_i\mid X_i)=\sigma^2/w_i$, weighted least squares
-would restore efficiency: minimize $\sum_i w_i(Y_i - b_0 - b_1X_i)^2$.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item BLUE under the \emph{correct} weights, Gauss--Markov applied to the
-        transformed model.
-  \item But we almost never know the weights, and estimating them (``feasible
-        GLS'') introduces problems of its own.
-  \item Worse: if the CEF is not exactly linear, OLS and WLS estimate
-        \emph{different} weighted approximations to it. They answer different
-        questions, so a discrepancy between them is not a bug to be fixed.
-  \item \alert{Modern practice}: keep OLS, fix the standard errors. Use
-        weights with an external justification, sampling weights (to represent
-        the population) or known group sizes (a genuine variance argument),
-        not a guess about the error variance.
-\end{itemize}
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Clustering]{Clustered Data}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -724,13 +831,15 @@ $\rho_e$ is the \alert{intra-class correlation}.
 \end{frame}
 
 \begin{frame}{Where the Scalar Formula Breaks\core}
-The variance of $\hat\beta_1$ involves \emph{all} the covariances of the errors:
+Hold the $X$'s fixed for the bookkeeping. The variance of the error sum then
+involves \emph{all} the covariances:
 \begin{align*}
-  \Var\!\left(\sum_i d_i\epsilon_i\right)
+  \Var\!\left(\sum_i d_i\epsilon_i \,\Big|\, X\right)
   = \underbrace{\sum_i d_i^2\,\sigma_i^2}_{\text{what HC0 estimates}}
-  + \underbrace{\sum_{i}\sum_{j\neq i} d_i d_j\,\Cov(\epsilon_i,\epsilon_j)}
-               _{\text{\alert{assumed zero so far}}} .
+  + \underbrace{\sum_{i}\sum_{j\neq i} d_i d_j\,\Cov(\epsilon_i,\epsilon_j\mid X)}
+               _{\text{\alert{assumed zero so far}}} ,
 \end{align*}
+with $\sigma_i^2 = \Var(\epsilon_i\mid X_i)$, the error spread at $X_i$.
 \vskip2pt
 \begin{itemize}\itemsep3pt
   \item Independent sampling makes the second term vanish. Clustering does not.
@@ -831,12 +940,12 @@ not a knob to tune.
 \end{frame}
 
 \begin{frame}{The Few-Clusters Problem}
-With small $G$, $\hat{V}_{\text{CR}}$ is biased downward and the reference
-distribution is too thin. As rules of thumb, worry below $G \approx 40$--$50$
+With small $G$, $\hat{V}_{\text{CR}}$ is biased downward, and even the usual
+cluster-robust reference distribution ($t$ with $G$-based degrees of freedom,
+commonly $G-1$, not $n-k$) is too thin. As rules of thumb, worry below $G \approx 40$--$50$
 and be alarmed below $20$, though performance also depends on cluster-size
 imbalance and leverage. A typical symptom: rejection rates of $10$--$15\%$
 for a nominal $5\%$ test.
-\vskip2pt
 \begin{block}{Remedies}
 \begin{enumerate}\itemsep1pt
   \item \textbf{CR2 with Satterthwaite degrees of freedom}
@@ -929,7 +1038,8 @@ of resamples.
         $\{\hat\theta^{(b)}\}$.
   \item Because it resamples $(Y_i,X_i)$ jointly, the pairs bootstrap is
         automatically heteroskedasticity-robust, given \emph{independent}
-        observations; it makes no assumption about $\sigma_i^2$ at all.
+        observations; it assumes nothing about how the error variance moves
+        with $X$.
   \item $B = 1{,}000$ for standard errors; $B \geq 5{,}000$ for percentile
         intervals or $p$-values.
 \end{itemize}
@@ -1035,12 +1145,12 @@ Problem & Robust SEs? & What actually helps \\
 Heteroskedasticity & \textbf{yes} & (given independent observations) \\
 Within-cluster correlation & \textbf{yes} (cluster-robust) & design-based clustering \\
 Serial correlation in panels & \textbf{yes} & cluster on unit \\
-Non-normal errors & \textbf{yes} (via large-$n$ approximation) & larger $n$ \\
+Non-normal errors & \textbf{yes} (large-$n$ approx.) & larger $n$ \\
 \midrule
 Omitted variable bias & \alert{no} & identification strategy (Wks 5--11) \\
 Simultaneity, reverse causation & \alert{no} & a design (Weeks 7--10) \\
 Measurement error in $X$ & \alert{no} & IV, validation data \\
-Wrong functional form & \alert{no} & saturate, splines, flexible ML \\
+Nonlinear CEF (CEF the target) & \alert{no} & saturate, splines, flexible ML \\
 Selection into the sample & \alert{no} & modelling the selection \\
 Wrong estimand & \alert{no} & say what you are estimating \\
 Influential outliers & \alert{no} & diagnostics; robust regression \\
@@ -1058,8 +1168,6 @@ $p$-hacking, specification search & \alert{no} & pre-registration \\
         plausibly independent.
   \item Report the number of clusters $G$. If $G < 40$, use CR2 with
         Satterthwaite d.f.\ or a wild cluster bootstrap, and say so.
-  \item Never pair a robust variance with a non-robust joint test
-        (\texttt{anova()} defaults are not robust).
   \item If robust and classical standard errors differ dramatically, treat it as a
         diagnostic: something about the specification or the influence structure
         deserves attention.
