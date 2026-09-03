@@ -566,7 +566,7 @@ understanding why is the point of the week.
 ### Materials
 - [Slides: Week 14 — Synthesis](./Week%2014%20Synthesis/slides.pdf)
 
-No Thursday lab (Thanksgiving recess). **Cumulative final exam**: date and time TBD, set by a class poll. Students may take the exam for the full 35%, or elect the project option: exam 25% plus a 6–10 page project memo (10%) with replication code, due Friday, December 11.
+No Thursday lab (Thanksgiving recess). **Cumulative final exam**: Thursday, December 3, 9:05–11:35 AM. Students may take the exam for the full 35%, or elect the project option: exam 25% plus a 6–10 page project memo (10%) with replication code, due Friday, December 11.
 
 ---
 </details>
