@@ -117,4 +117,11 @@ Simulate one sample of size $n = 200$ from the heteroskedastic population $$Y_i 
 4.  **Clustered, by hand.** For the GSS bivariate model `lnearn ~ educ`, with $d_i$ the deviation of `educ` from its mean: form each sampling cluster's total $S_g = \sum_{i \in g} d_i \hat e_i$, one per `psu`, and square after summing: $$\widehat{SE}_{\text{CR}}(\hat\beta_1)
     = \sqrt{\frac{\sum_g S_g^{\,2}}{\big(\sum_i d_i^2\big)^2}} ,$$ and confirm it against `sandwich::vcovCL(fit, cluster = ~ psu, type = "HC0", cadjust = FALSE)`.
 
-5.  A referee writes: "You should use robust standard errors, since the key regressor is likely endogenous (i.e., you have omitted variables that will bias your main estimate)." Respond in two sentences.
+5.  **Household or tract?** GSS sampling is multi-stage: tracts (`psu`)
+    are drawn first, then households within the drawn tracts. Suppose the
+    data also included a household ID. Could you cluster on household
+    *instead of* `psu`? In two or three sentences: which level does the
+    sampling design justify, and which covariances would household-only
+    clustering wrongly set to zero?
+
+6.  A referee writes: "You should use robust standard errors, since the key regressor is likely endogenous (i.e., you have omitted variables that will bias your main estimate)." Respond in two sentences.
