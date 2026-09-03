@@ -122,7 +122,7 @@ is the *same* variance formula with the error variance estimated differently.
 - [Slides: Week 2 — Regression Inference and Robust Standard Errors](./Week%202%20Regression%20Inference%20and%20Robust%20Standard%20Errors/slides.pdf)
 - [Lab 2: Simulation and Robust Inference](./Week%202%20Regression%20Inference%20and%20Robust%20Standard%20Errors/lab2.pdf)
 - [Lab 2 Exercise Solutions](./Week%202%20Regression%20Inference%20and%20Robust%20Standard%20Errors/lab2_answers.pdf)
-- [Problem Set 1](./Homework/homework1/homework1.pdf) — assigned Sep 1, due Mon Sep 14
+- [Problem Set 1](./Homework/homework1/homework1.pdf) — assigned Sep 1, due Wed Sep 16
 
 ### Reading
 *Required*: MHE Ch. 8. &nbsp;·&nbsp; *Additional*: Freedman (2006); Bertrand,

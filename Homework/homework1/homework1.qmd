@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{SOCIOL 723: Problem Set 1}"
-subtitle: "\\textit{Assigned}: September 1 \\quad\\textbullet\\quad \\textit{Due}: Monday, September 14, 11:59PM"
+subtitle: "\\textit{Assigned}: September 1 \\quad\\textbullet\\quad \\textit{Due}: Wednesday, September 16, 11:59PM"
 author: "Your name:"
 format:
   pdf:
@@ -59,16 +59,13 @@ Use `set.seed(723)` at the top of each simulation so your results are reproducib
 
 # OLS in Your Hands (25 points)
 
-Simulate one sample of size $n = 200$ from
-$$Y_i = 1 + 0.5\,X_i + \epsilon_i,
+Simulate one sample of size $n = 200$ from $$Y_i = 1 + 0.5\,X_i + \epsilon_i,
 \qquad X_i \sim N(0,1),\quad \epsilon_i \sim N(0,1).$$
 
-1.  Compute the slope with sums only, no `lm()`:
-    $$\hat\beta_1
+1.  Compute the slope with sums only, no `lm()`: $$\hat\beta_1
     = \frac{\sum_i (X_i - \bar X)(Y_i - \bar Y)}{\sum_i (X_i - \bar X)^2},
     \qquad
-    \hat\beta_0 = \bar Y - \hat\beta_1 \bar X .$$
-    Then confirm both against `lm(y ~ x)`. Why is $\hat\beta_1$ not exactly $0.5$ even though the code contains the true model? One sentence.
+    \hat\beta_0 = \bar Y - \hat\beta_1 \bar X .$$ Then confirm both against `lm(y ~ x)`. Why is $\hat\beta_1$ not exactly $0.5$ even though the code contains the true model? One sentence.
 
 2.  Compute the residuals $\hat e_i = Y_i - \hat\beta_0 - \hat\beta_1 X_i$ and report `sum(e)` and `sum(e * x)`. Both should be zero to machine precision ($\approx 10^{-12}$). In one or two sentences: are these zeroes evidence that the model is right? What are they instead?
 
@@ -88,9 +85,7 @@ In real life you get one sample. In a simulation you can run the thought experim
 
 # Partialling Out, Seen Once (25 points)
 
-In lecture, the Frisch--Waugh--Lovell theorem: the coefficient on $D_i$ in a multiple regression equals the slope from the bivariate regression of the residualized outcome on the residualized treatment,
-$$\beta_1 = \frac{\Cov(\tilde Y_i, \tilde D_i)}{\Var(\tilde D_i)},$$
-where $\tilde D_i$ and $\tilde Y_i$ are residuals from regressing $D_i$ and $Y_i$ on the controls.
+In lecture, the Frisch--Waugh--Lovell theorem: the coefficient on $D_i$ in a multiple regression equals the slope from the bivariate regression of the residualized outcome on the residualized treatment, $$\beta_1 = \frac{\Cov(\tilde Y_i, \tilde D_i)}{\Var(\tilde D_i)},$$ where $\tilde D_i$ and $\tilde Y_i$ are residuals from regressing $D_i$ and $Y_i$ on the controls.
 
 1.  **GSS.** For the model
 
@@ -108,23 +103,18 @@ where $\tilde D_i$ and $\tilde Y_i$ are residuals from regressing $D_i$ and $Y_i
 
 # Standard Errors, Various (25 points)
 
-Simulate one sample of size $n = 200$ from the heteroskedastic population
-$$Y_i = 1 + 0.5\,X_i + \epsilon_i,
+Simulate one sample of size $n = 200$ from the heteroskedastic population $$Y_i = 1 + 0.5\,X_i + \epsilon_i,
 \qquad X_i \sim N(0,1),
 \quad \epsilon_i \sim N\!\big(0,\ (0.5\,e^{0.8 X_i})^2\big).$$
 
 1.  Plot the residuals against $X_i$ and describe the picture in one sentence. Which assumption is violated, and what does it break: $\hat\beta_1$, or the classical standard error?
 
-2.  Compute the robust standard error *by hand*, directly from the scalar sandwich with $d_i = X_i - \bar X$:
-    $$\widehat{SE}(\hat\beta_1)
-    = \sqrt{\frac{\sum_i d_i^2\,\hat e_i^2}{\big(\sum_i d_i^2\big)^2}} ,$$
-    and confirm it against `sandwich::vcovHC(fit, type = "HC0")`; report it beside the classical standard error.
+2.  Compute the robust standard error *by hand*, directly from the scalar sandwich with $d_i = X_i - \bar X$: $$\widehat{SE}(\hat\beta_1)
+    = \sqrt{\frac{\sum_i d_i^2\,\hat e_i^2}{\big(\sum_i d_i^2\big)^2}} ,$$ and confirm it against `sandwich::vcovHC(fit, type = "HC0")`; report it beside the classical standard error.
 
 3.  **Coverage.** Over 2,000 replications of this population, build the nominal 95% confidence interval for $\beta_1$ three ways (classical, HC0, and HC3) and record how often each interval contains the truth $0.5$. Report the three coverage rates and comment in two sentences.
 
-4.  **Clustered, by hand.** For the GSS bivariate model `lnearn ~ educ`, with $d_i$ the deviation of `educ` from its mean: form each sampling cluster's total $S_g = \sum_{i \in g} d_i \hat e_i$, one per `psu`, and square after summing:
-    $$\widehat{SE}_{\text{CR}}(\hat\beta_1)
-    = \sqrt{\frac{\sum_g S_g^{\,2}}{\big(\sum_i d_i^2\big)^2}} ,$$
-    and confirm it against `sandwich::vcovCL(fit, cluster = ~ psu, type = "HC0", cadjust = FALSE)`.
+4.  **Clustered, by hand.** For the GSS bivariate model `lnearn ~ educ`, with $d_i$ the deviation of `educ` from its mean: form each sampling cluster's total $S_g = \sum_{i \in g} d_i \hat e_i$, one per `psu`, and square after summing: $$\widehat{SE}_{\text{CR}}(\hat\beta_1)
+    = \sqrt{\frac{\sum_g S_g^{\,2}}{\big(\sum_i d_i^2\big)^2}} ,$$ and confirm it against `sandwich::vcovCL(fit, cluster = ~ psu, type = "HC0", cadjust = FALSE)`.
 
 5.  A referee writes: "You should use robust standard errors, since the key regressor is likely endogenous (i.e., you have omitted variables that will bias your main estimate)." Respond in two sentences.
