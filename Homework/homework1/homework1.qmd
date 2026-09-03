@@ -112,7 +112,12 @@ Simulate one sample of size $n = 200$ from the heteroskedastic population $$Y_i 
 2.  Compute the robust standard error *by hand*, directly from the scalar sandwich with $d_i = X_i - \bar X$: $$\widehat{SE}(\hat\beta_1)
     = \sqrt{\frac{\sum_i d_i^2\,\hat e_i^2}{\big(\sum_i d_i^2\big)^2}} ,$$ and confirm it against `sandwich::vcovHC(fit, type = "HC0")`; report it beside the classical standard error.
 
-3.  **Coverage.** Over 2,000 replications of this population, build the nominal 95% confidence interval for $\beta_1$ three ways (classical, HC0, and HC3) and record how often each interval contains the truth $0.5$. Report the three coverage rates and comment in two sentences.
+3.  **Coverage.** Over 2,000 replications of this population, build the nominal 95% confidence interval for $\beta_1$ three ways (classical, HC0, and HC3) and record how often each interval contains the truth $0.5$. Report the three coverage rates, then discuss in several sentences:
+    why do the three differ --- what does each estimator assume about the
+    error variance, and what happens to that assumption in this population?
+    And in actual research, which one(s) should you consider using: is there
+    any setting in which you would still report the classical standard
+    error, and why is HC3 rather than HC0 the usual recommendation?
 
 4.  **Clustered, by hand.** For the GSS bivariate model `lnearn ~ educ`, with $d_i$ the deviation of `educ` from its mean: form each sampling cluster's total $S_g = \sum_{i \in g} d_i \hat e_i$, one per `psu`, and square after summing: $$\widehat{SE}_{\text{CR}}(\hat\beta_1)
     = \sqrt{\frac{\sum_g S_g^{\,2}}{\big(\sum_i d_i^2\big)^2}} ,$$ and confirm it against `sandwich::vcovCL(fit, cluster = ~ psu, type = "HC0", cadjust = FALSE)`.
