@@ -51,90 +51,46 @@ execute:
 editor: visual
 ---
 
-**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source,
-together with the source file. Show your work: for the short conceptual questions,
-a few clear sentences; for computation, the code and its output. You may use AI
-assistance, but you are responsible for understanding and being able to explain
-every line you submit. No question requires a derivation: everything here is
-a computation, an arithmetic plug-in, or a few clear sentences.
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. Show your work: for the short conceptual questions, a few clear sentences; for computation, the code and its output. You may use AI assistance, but you are responsible for understanding and being able to explain every line you submit. No question requires a derivation: everything here is a computation, an arithmetic plug-in, or a few clear sentences.
 
-Use `set.seed(723)` at the top of each simulation so your results are
-reproducible. The data file is `Data/gss_earnings.rds`, the same extract used in
-lab.
+Use `set.seed(723)` at the top of each simulation so your results are reproducible. The data file is `Data/gss_earnings.rds`, the same extract used in lab.
 
 \hrulefill
 
 # OLS in Your Hands (25 points)
 
 Simulate one sample of size $n = 200$ from
-$$
-Y_i = 1 + 0.5\,X_i + \epsilon_i,
-\qquad X_i \sim N(0,1),\quad \epsilon_i \sim N(0,1).
-$$
+$$Y_i = 1 + 0.5\,X_i + \epsilon_i,
+\qquad X_i \sim N(0,1),\quad \epsilon_i \sim N(0,1).$$
 
 1.  Compute the slope with sums only, no `lm()`:
-    $$
-    \hat\beta_1
+    $$\hat\beta_1
     = \frac{\sum_i (X_i - \bar X)(Y_i - \bar Y)}{\sum_i (X_i - \bar X)^2},
     \qquad
-    \hat\beta_0 = \bar Y - \hat\beta_1 \bar X .
-    $$
-    Then confirm both against `lm(y ~ x)`. Why is $\hat\beta_1$ not exactly
-    $0.5$ even though the code contains the true model? One sentence.
+    \hat\beta_0 = \bar Y - \hat\beta_1 \bar X .$$
+    Then confirm both against `lm(y ~ x)`. Why is $\hat\beta_1$ not exactly $0.5$ even though the code contains the true model? One sentence.
 
-2.  Compute the residuals $\hat e_i = Y_i - \hat\beta_0 - \hat\beta_1 X_i$ and
-    report `sum(e)` and `sum(e * x)`. Both should be zero to machine precision
-    ($\approx 10^{-12}$). In one or two sentences: are these zeroes evidence
-    that the model is right? What are they instead?
+2.  Compute the residuals $\hat e_i = Y_i - \hat\beta_0 - \hat\beta_1 X_i$ and report `sum(e)` and `sum(e * x)`. Both should be zero to machine precision ($\approx 10^{-12}$). In one or two sentences: are these zeroes evidence that the model is right? What are they instead?
 
-3.  Rerun the regression with the *centered* regressor `x - mean(x)`. Make a
-    small table comparing $\hat\beta_0$, $\hat\beta_1$, $R^2$, and the first
-    three residuals across the two runs. One sentence: what does centering
-    change, and what does it leave alone?
+3.  Rerun the regression with the *centered* regressor `x - mean(x)`. Make a small table comparing $\hat\beta_0$, $\hat\beta_1$, $R^2$, and the first three residuals across the two runs. One sentence: what does centering change, and what does it leave alone?
 
-4.  **GSS.** Regress `lnearn` on `educ`. Report the slope, interpret it in one
-    sentence (remember the outcome is in logs), and produce a scatterplot with
-    the fitted line drawn through it.
+4.  **GSS.** Regress `lnearn` on `educ`. Report the slope, interpret it in one sentence (remember the outcome is in logs), and produce a scatterplot with the fitted line drawn through it.
 
 # The Sampling Distribution You Never See (25 points)
 
-In real life you get one sample. In a simulation you can run the thought
-experiment from lecture for real: draw sample after sample from the same
-population and watch what $\hat\beta_1$ does.
+In real life you get one sample. In a simulation you can run the thought experiment from lecture for real: draw sample after sample from the same population and watch what $\hat\beta_1$ does.
 
-1.  Using the same population as Question 1 with $n = 50$: draw 5,000 samples,
-    save the 5,000 slopes, and plot their histogram with a normal density
-    overlaid. Report the mean and standard deviation of the 5,000 slopes. Where
-    is the histogram centered, and what course concept is the standard
-    deviation you just computed?
+1.  Using the same population as Question 1 with $n = 50$: draw 5,000 samples, save the 5,000 slopes, and plot their histogram with a normal density overlaid. Report the mean and standard deviation of the 5,000 slopes. Where is the histogram centered, and what course concept is the standard deviation you just computed?
 
-2.  For each of the 5,000 samples, also save the standard error that
-    `summary(lm(...))` reports for the slope. Compare the *average reported
-    standard error* to the *standard deviation of the slopes* from part 1. One
-    or two sentences: what is each of these two numbers estimating, and why
-    should they be close?
+2.  For each of the 5,000 samples, also save the standard error that `summary(lm(...))` reports for the slope. Compare the *average reported standard error* to the *standard deviation of the slopes* from part 1. One or two sentences: what is each of these two numbers estimating, and why should they be close?
 
-3.  Repeat part 1 for $n = 200$ and $n = 1{,}000$ and collect the results in a
-    table with columns $n$, mean of $\hat\beta_1$, SD of $\hat\beta_1$, and
-    $\sqrt{n}\,\times$ SD. Two short observations: what happens to the SD as
-    $n$ grows (which property is this?), and what happens to
-    $\sqrt{n}\,\times$ SD (what does its stability tell you about the *rate*)?
-
-4.  Replace the normal errors with something aggressively non-normal, for
-    example `rexp(n) - 1` (skewed, mean zero). At $n = 50$, is the histogram of
-    the 5,000 slopes still bell-shaped? Which theorem is doing the work, and
-    what assumption about the *errors' distribution* did it need?
+3.  Replace the normal errors with something aggressively non-normal, for example `rexp(n) - 1` (skewed, mean zero). At $n = 50$, is the histogram of the 5,000 slopes still bell-shaped? Which theorem is doing the work, and what assumption about the *errors' distribution* did it need?
 
 # Partialling Out, Seen Once (25 points)
 
-In lecture, the Frisch--Waugh--Lovell theorem: the coefficient on $D_i$ in a
-multiple regression equals the slope from the bivariate regression of the
-residualized outcome on the residualized treatment,
-$$
-\beta_1 = \frac{\Cov(\tilde Y_i, \tilde D_i)}{\Var(\tilde D_i)},
-$$
-where $\tilde D_i$ and $\tilde Y_i$ are residuals from regressing $D_i$ and
-$Y_i$ on the controls.
+In lecture, the Frisch--Waugh--Lovell theorem: the coefficient on $D_i$ in a multiple regression equals the slope from the bivariate regression of the residualized outcome on the residualized treatment,
+$$\beta_1 = \frac{\Cov(\tilde Y_i, \tilde D_i)}{\Var(\tilde D_i)},$$
+where $\tilde D_i$ and $\tilde Y_i$ are residuals from regressing $D_i$ and $Y_i$ on the controls.
 
 1.  **GSS.** For the model
 
@@ -144,67 +100,31 @@ $Y_i$ on the controls.
        data = gss)
     ```
 
-    residualize `educ` and `lnearn` on all the other regressors, run the
-    bivariate regression of the residualized outcome on the residualized
-    treatment, and confirm that the slope matches the multiple-regression
-    coefficient on `educ` to at least six decimal places.
+    residualize `educ` and `lnearn` on all the other regressors, run the bivariate regression of the residualized outcome on the residualized treatment, and confirm that the slope matches the multiple-regression coefficient on `educ` to at least six decimal places.
 
-2.  Produce the added-variable plot (residualized `lnearn` against residualized
-    `educ`, with the fitted line). Report `sd(educ)` and the standard deviation
-    of residualized `educ`. One sentence: in the language of the FWL variance
-    formula, why does the shrinkage you just measured make the standard error
-    on `educ` *larger* in the long model than in the bivariate one?
+2.  Produce the added-variable plot (residualized `lnearn` against residualized `educ`, with the fitted line).
 
-3.  A colleague adds a control that is very highly correlated with `educ`,
-    watches the standard error on `educ` explode, and concludes something has
-    gone wrong. In two or three sentences, using the idea that the standard
-    error runs on the *residualized* variation in the treatment, explain why
-    nothing is wrong, and what tradeoff the colleague is actually facing.
+3.  A colleague adds a control that is very highly correlated with `educ`, watches the standard error on `educ` explode, and concludes something has gone wrong. In two or three sentences, using the idea that the standard error runs on the *residualized* variation in the treatment, explain why nothing is wrong, and what tradeoff the colleague is actually facing.
 
 # Standard Errors, Various (25 points)
 
 Simulate one sample of size $n = 200$ from the heteroskedastic population
-$$
-Y_i = 1 + 0.5\,X_i + \epsilon_i,
+$$Y_i = 1 + 0.5\,X_i + \epsilon_i,
 \qquad X_i \sim N(0,1),
-\quad \epsilon_i \sim N\!\big(0,\ (0.5\,e^{0.8 X_i})^2\big).
-$$
+\quad \epsilon_i \sim N\!\big(0,\ (0.5\,e^{0.8 X_i})^2\big).$$
 
-1.  Plot the residuals against $X_i$ and describe the picture in one
-    sentence. Which assumption is violated, and what does it break:
-    $\hat\beta_1$, or the classical standard error?
+1.  Plot the residuals against $X_i$ and describe the picture in one sentence. Which assumption is violated, and what does it break: $\hat\beta_1$, or the classical standard error?
 
-2.  Compute the robust standard error *by hand*, directly from the scalar
-    sandwich with $d_i = X_i - \bar X$:
-    $$
-    \widehat{SE}(\hat\beta_1)
-    = \sqrt{\frac{\sum_i d_i^2\,\hat e_i^2}{\big(\sum_i d_i^2\big)^2}} ,
-    $$
-    and confirm it against `sandwich::vcovHC(fit, type = "HC0")`; report it
-    beside the classical standard error.
+2.  Compute the robust standard error *by hand*, directly from the scalar sandwich with $d_i = X_i - \bar X$:
+    $$\widehat{SE}(\hat\beta_1)
+    = \sqrt{\frac{\sum_i d_i^2\,\hat e_i^2}{\big(\sum_i d_i^2\big)^2}} ,$$
+    and confirm it against `sandwich::vcovHC(fit, type = "HC0")`; report it beside the classical standard error.
 
-3.  **Coverage.** Over 2,000 replications of this population, build the nominal
-    95% confidence interval for $\beta_1$ three ways (classical, HC0, and
-    HC3) and record how often each interval contains the truth $0.5$. Report the
-    three coverage rates and comment in two sentences.
+3.  **Coverage.** Over 2,000 replications of this population, build the nominal 95% confidence interval for $\beta_1$ three ways (classical, HC0, and HC3) and record how often each interval contains the truth $0.5$. Report the three coverage rates and comment in two sentences.
 
-4.  **Clustered, by hand.** For the GSS bivariate model `lnearn ~ educ`,
-    with $d_i$ the deviation of `educ` from its mean: form each sampling
-    cluster's total $S_g = \sum_{i \in g} d_i \hat e_i$, one per `psu`,
-    and square after summing:
-    $$
-    \widehat{SE}_{\text{CR}}(\hat\beta_1)
-    = \sqrt{\frac{\sum_g S_g^{\,2}}{\big(\sum_i d_i^2\big)^2}} ,
-    $$
-    and confirm it against `sandwich::vcovCL(fit, cluster = ~ psu, type =
-    "HC0", cadjust = FALSE)`. One sentence: which extra terms does summing
-    first keep?
+4.  **Clustered, by hand.** For the GSS bivariate model `lnearn ~ educ`, with $d_i$ the deviation of `educ` from its mean: form each sampling cluster's total $S_g = \sum_{i \in g} d_i \hat e_i$, one per `psu`, and square after summing:
+    $$\widehat{SE}_{\text{CR}}(\hat\beta_1)
+    = \sqrt{\frac{\sum_g S_g^{\,2}}{\big(\sum_i d_i^2\big)^2}} ,$$
+    and confirm it against `sandwich::vcovCL(fit, cluster = ~ psu, type = "HC0", cadjust = FALSE)`.
 
-5.  **GSS, five ways.** For the model `lnearn ~ educ + exper + I(exper^2) +
-    female + black`, compute the standard error on `educ` five ways:
-    classical, HC3, clustered on `psu`, on `year`, and on `region`
-    (`sandwich::vcovCL`). The `region`-clustered standard error is the
-    *smallest* of the five. Explain why that is a red flag rather than a
-    finding, and say which one you would report and why. Finally, a referee
-    writes: "You should use robust standard errors, since the key regressor
-    is likely endogenous." Respond in two sentences.
+5.  A referee writes: "You should use robust standard errors, since the key regressor is likely endogenous (i.e., you have omitted variables that will bias your main estimate)." Respond in two sentences.

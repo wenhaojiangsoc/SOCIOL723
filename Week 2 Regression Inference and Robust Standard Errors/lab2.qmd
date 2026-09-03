@@ -230,15 +230,20 @@ Sg <- tapply(d * eh, gss$psu, sum)          # one number per cluster
 G <- n_distinct(gss$psu); n <- nrow(gss); k <- 2
 c1 <- G / (G - 1) * (n - 1) / (n - k)
 se_cr_manual <- sqrt(c1 * sum(Sg^2) / (sum(d^2))^2)
+## vcovCL defaults: type = "HC1", cadjust = TRUE, i.e. exactly c above
 se_cr_pkg    <- sqrt(vcovCL(m_biv, cluster = ~ psu)["educ", "educ"])
 round(c(scaling = c1, cr_manual = se_cr_manual,
         cr_sandwich = se_cr_pkg, hc0 = se_hc0_manual), 6)
 ```
 
-Sum within clusters first, then square. With `r n_distinct(gss$psu)`
-clusters the scaling $c$ is negligible; it matters when clusters are few.
-Up to that factor, one observation per cluster collapses this to the robust
-formula: the two are one idea.
+Sum within clusters first, then square. And to be explicit about the
+software: a bare `vcovCL()` call is already the small-sample-adjusted
+version --- its defaults `type = "HC1"` and `cadjust = TRUE` multiply the
+base formula by $(n-1)/(n-k)$ and $G/(G-1)$ respectively, which is exactly
+the $c$ above and matches Stata's `vce(cluster)`. With
+`r n_distinct(gss$psu)` clusters the scaling is negligible; it matters when
+clusters are few. Up to that factor, one observation per cluster collapses
+this to the robust formula: the two are one idea.
 
 ## Which level for the GSS?
 
