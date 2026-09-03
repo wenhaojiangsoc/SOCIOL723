@@ -47,17 +47,12 @@ options(digits = 4, scipen = 999)
 By the end of this lab you should be able to:
 
 1.  Organize an analysis in RStudio and Quarto so that it is reproducible.
-2.  Compute $\hat\beta_0$ and $\hat\beta_1$ from the scalar formulas with
-    nothing but `sum()`, and verify that they match `lm()`.
-3.  Verify the mechanical residual properties, and compute $s^2$ and the
-    classical standard error by hand.
-4.  Use **simulation** to see what the assumption
-    $\E[\epsilon_i \mid X_i] = 0$ does and does not deliver.
-5.  Verify the Frisch--Waugh--Lovell theorem and the omitted-variable-bias
-    formula in real GSS data.
+2.  Compute $\hat\beta_0$ and $\hat\beta_1$ from the scalar formulas with nothing but `sum()`, and verify that they match `lm()`.
+3.  Verify the mechanical residual properties, and compute $s^2$ and the classical standard error by hand.
+4.  Use **simulation** to see what the assumption $\E[\epsilon_i \mid X_i] = 0$ does and does not deliver.
+5.  Verify the Frisch--Waugh--Lovell theorem and the omitted-variable-bias formula in real GSS data.
 
-Everything below is scalar arithmetic: sums, means, and `lm()`. No matrix
-computations appear anywhere in this lab.
+Everything below is scalar arithmetic: sums, means, and `lm()`. No matrix computations appear anywhere in this lab.
 
 # Getting set up
 
@@ -71,29 +66,21 @@ library(broom)      # tidy() / augment() for model objects
 library(modelsummary) # regression tables
 ```
 
-If any of these are missing, install them once with
-`install.packages(c("dplyr", "ggplot2", "broom", "modelsummary"))`.
+If any of these are missing, install them once with `install.packages(c("dplyr", "ggplot2", "broom", "modelsummary"))`.
 
 ## Working reproducibly
 
 Three habits, which I will assume for every problem set:
 
--   **Use an RStudio Project.** `File > New Project`. Never use `setwd()`;
-    paths should be relative to the project root.
--   **Write in Quarto (`.qmd`) or RMarkdown (`.Rmd`).** Your submission should be
-    a rendered PDF produced from a source file that I could run myself.
+-   **Use an RStudio Project.** `File > New Project`. Never use `setwd()`; paths should be relative to the project root.
+-   **Write in Quarto (`.qmd`) or RMarkdown (`.Rmd`).** Your submission should be a rendered PDF produced from a source file that I could run myself.
 -   **Set a seed** before anything random: `set.seed(1)`.
 
-A useful discipline: restart `R` (`Session > Restart R`, or
-`Cmd/Ctrl+Shift+F10`) and re-render from a clean session before you submit.
-If it does not run from scratch, it is not reproducible.
+A useful discipline: restart `R` (`Session > Restart R`, or `Cmd/Ctrl+Shift+F10`) and re-render from a clean session before you submit. If it does not run from scratch, it is not reproducible.
 
 # The data
 
-We use an extract from the **General Social Survey** (NORC) cumulative file,
-pooling the 2010, 2012, 2014, 2016, 2018 and 2022 waves. The sample is
-restricted to respondents working full time, aged 25--64, with positive personal
-income and non-missing values on the analysis variables.
+We use an extract from the **General Social Survey** (NORC) cumulative file, pooling the 2010, 2012, 2014, 2016, 2018 and 2022 waves. The sample is restricted to respondents working full time, aged 25--64, with positive personal income and non-missing values on the analysis variables.
 
 ```{r}
 #| label: load-data
@@ -103,7 +90,7 @@ str(gss, give.attr = FALSE)
 ```
 
 | Variable | Meaning |
-|:--------------|:--------------------------------------------------------|
+|:----------------|:------------------------------------------------------|
 | `lnearn` | log of personal income, constant dollars (`realrinc`) |
 | `educ` | years of schooling completed |
 | `exper` | potential experience, $\max(\text{age} - \text{educ} - 6,\, 0)$ |
@@ -117,8 +104,7 @@ str(gss, give.attr = FALSE)
 | `wt` | post-stratification sampling weight |
 
 ::: callout-note
-The script that builds this file from the raw cumulative file is in
-`Data/build_gss_extract.R`. You do not need to run it.
+The script that builds this file from the raw cumulative file is in `Data/build_gss_extract.R`. You do not need to run it.
 :::
 
 A first look:
@@ -145,18 +131,13 @@ gss |>
   theme_minimal(base_size = 10)
 ```
 
-The points are the **conditional expectation function** estimated cell by cell
-(this is what a *saturated* regression would fit). The line is the **best linear
-approximation** to it. Notice that the CEF is not exactly linear; it is
-convex above roughly 12 years, but the line summarizes it reasonably well.
+The points are the **conditional expectation function** estimated cell by cell (this is what a *saturated* regression would fit). The line is the **best linear approximation** to it. Notice that the CEF is not exactly linear; it is convex above roughly 12 years, but the line summarizes it reasonably well.
 
 # OLS by hand, in scalar form
 
 ## The slope and intercept from sums
 
-The whole estimator is two lines of arithmetic:
-$\hat\beta_1 = \Cov_n(X,Y)/\Var_n(X)$ and
-$\hat\beta_0 = \bar Y - \hat\beta_1\bar X$.
+The whole estimator is two lines of arithmetic: $\hat\beta_1 = \Cov_n(X,Y)/\Var_n(X)$ and $\hat\beta_0 = \bar Y - \hat\beta_1\bar X$.
 
 ```{r}
 #| label: ols-scalar
@@ -177,15 +158,11 @@ fit_biv <- lm(lnearn ~ educ, data = gss)
 round(coef(fit_biv), 4)
 ```
 
-Identical, and identical to the numbers on the lecture slides. `lm()` is doing
-exactly this arithmetic (in a numerically fancier way), nothing more.
+Identical, and identical to the numbers on the lecture slides. `lm()` is doing exactly this arithmetic (in a numerically fancier way), nothing more.
 
 ## The slope is a weighted average of unit slopes
 
-Lecture claimed
-$\hat\beta_1 = \sum_i w_i\,(Y_i - \bar Y)/(X_i - \bar X)$ with
-$w_i = (X_i - \bar X)^2 / \sum_j (X_j - \bar X)^2$. Verify it, and look at
-who carries the weight:
+Lecture claimed $\hat\beta_1 = \sum_i w_i\,(Y_i - \bar Y)/(X_i - \bar X)$ with $w_i = (X_i - \bar X)^2 / \sum_j (X_j - \bar X)^2$. Verify it, and look at who carries the weight:
 
 ```{r}
 #| label: weighted-slopes
@@ -197,10 +174,7 @@ c(weighted_average = sum(w * bi), b1 = b1)
 tapply(w, x, sum) |> round(3)
 ```
 
-Respondents far from the mean of schooling (about
-`r round(mean(gss$educ), 1)` years) carry almost all of the weight;
-respondents at the mean carry essentially none. Know which observations are
-shouting.
+Respondents far from the mean of schooling (about `r round(mean(gss$educ), 1)` years) carry almost all of the weight; respondents at the mean carry essentially none. Know which observations are shouting.
 
 ## Residual mechanics
 
@@ -210,9 +184,7 @@ e <- y - b0 - b1 * x
 round(c(sum_e = sum(e), sum_xe = sum(x * e), cor_xe = cor(x, e)), 8)
 ```
 
-These hold to machine precision in *every* sample, no matter how wrong the
-model is. They are consequences of the normal equations, not evidence of
-anything.
+These hold to machine precision in *every* sample, no matter how wrong the model is. They are consequences of the normal equations, not evidence of anything.
 
 ## $s^2$ and the classical standard error
 
@@ -224,14 +196,11 @@ round(c(s2 = s2, se_b1 = se_b1), 5)
 round(summary(fit_biv)$coefficients["educ", ], 5)
 ```
 
-The standard error `R` prints is exactly
-$\sqrt{s^2 / \sum_i (X_i - \bar X)^2}$, i.e.\ it *assumes
-homoskedasticity*. Next week we replace it.
+The standard error `R` prints is exactly $\sqrt{s^2 / \sum_i (X_i - \bar X)^2}$, i.e. it *assumes homoskedasticity*. Next week we replace it.
 
 # Simulation: what the error assumption does
 
-With real data we never know the truth. In a simulation we do, which makes it
-the honest way to see what an assumption buys.
+With real data we never know the truth. In a simulation we do, which makes it the honest way to see what an assumption buys.
 
 ## When the average of $Y$ really is a line
 
@@ -244,9 +213,7 @@ ys <- 8.2 + 0.12 * xs + rnorm(n_sim, 0, 0.7)       # E[eps | x] = 0 by design
 coef(lm(ys ~ xs)) |> round(4)
 ```
 
-We wrote the truth ($\beta_0 = 8.2$, $\beta_1 = 0.12$) and OLS finds it, up
-to sampling noise. Rerun with a different seed: the estimate moves a little.
-How much it moves from sample to sample is precisely next week's topic.
+We wrote the truth ($\beta_0 = 8.2$, $\beta_1 = 0.12$) and OLS finds it, up to sampling noise. Rerun with a different seed: the estimate moves a little. How much it moves from sample to sample is precisely next week's topic.
 
 ## When the CEF is not a line: uncorrelated is not mean-independent
 
@@ -268,10 +235,7 @@ lines(lowess(xq, resid(fq)), col = "firebrick", lwd = 2)
 abline(h = 0, lty = 2)
 ```
 
-This is the ladder from lecture, live: the residuals are *uncorrelated* with
-$x$ (bottom rung, guaranteed by the algebra) but their *average* clearly moves
-with $x$, so mean independence fails. The correlation could never have told
-you; the plot does. This is why you look at residual plots.
+This is the ladder from lecture, live: the residuals are *uncorrelated* with $x$ (bottom rung, guaranteed by the algebra) but their *average* clearly moves with $x$, so mean independence fails. The correlation could never have told you; the plot does. This is why you look at residual plots.
 
 ## Heteroskedasticity does not bias the slope
 
@@ -286,15 +250,11 @@ slopes <- replicate(500, {
 round(c(mean_slope = mean(slopes), truth = 0.12), 4)
 ```
 
-The error spread rises steeply with $x$, yet the slope estimates still centre
-on the truth: heteroskedasticity is a problem for *standard errors* (Week 2),
-not for the estimate itself. $\E[\epsilon\mid X] = 0$ still holds here, and
-that is the assumption doing the work.
+The error spread rises steeply with $x$, yet the slope estimates still centre on the truth: heteroskedasticity is a problem for *standard errors* (Week 2), not for the estimate itself. $\E[\epsilon\mid X] = 0$ still holds here, and that is the assumption doing the work.
 
 # The multiple regression, and fit
 
-With several regressors the same logic goes through; we let `lm()` carry the
-bookkeeping. (Thursday's session shows the notation that makes this compact.)
+With several regressors the same logic goes through; we let `lm()` carry the bookkeeping. (Thursday's session shows the notation that makes this compact.)
 
 ```{r}
 #| label: fit-multiple
@@ -316,8 +276,7 @@ c(TSS = TSS, ESS_plus_RSS = ESS + RSS)
 c(R2_manual = ESS / TSS, R2_lm = summary(fit)$r.squared)
 ```
 
-And the model-comparison reading of $R^2$: it is $PRE$ against the
-intercept-only model.
+And the model-comparison reading of $R^2$: it is $PRE$ against the intercept-only model.
 
 ```{r}
 #| label: pre
@@ -329,8 +288,7 @@ c(PRE = (SSE_C - SSE_A) / SSE_C, R2 = summary(fit)$r.squared)
 
 # Frisch--Waugh--Lovell
 
-We now verify FWL on the return to schooling: the treatment of interest is
-`educ`, and the controls are everything else in the regression.
+We now verify FWL on the return to schooling: the treatment of interest is `educ`, and the controls are everything else in the regression.
 
 ```{r}
 #| label: fwl
@@ -372,12 +330,7 @@ c(correct = coef(lm(y_tilde ~ d_tilde))["d_tilde"],
 ```
 
 ::: callout-note
-**Why does the second one fail?** Regressing $\tilde Y$ on raw `educ` divides by
-$\Var_n(\texttt{educ})$ instead of $\Var_n(\widetilde{\texttt{educ}})$.
-Since residualizing can only shrink the variance, the denominator is too large
-and the estimate is attenuated. The numerators are all equal because the part
-removed from $Y$ lies in the span of the controls and is orthogonal to
-$\tilde D$. Work this out on paper; it is Question 2 of Problem Set 1.
+**Why does the second one fail?** Regressing $\tilde Y$ on raw `educ` divides by $\Var_n(\texttt{educ})$ instead of $\Var_n(\widetilde{\texttt{educ}})$. Since residualizing can only shrink the variance, the denominator is too large and the estimate is attenuated. The numerators are all equal because the part removed from $Y$ lies in the span of the controls and is orthogonal to $\tilde D$. Work this out on paper; it is Question 2 of Problem Set 1.
 :::
 
 The residuals are also identical, as the theorem promises:
@@ -400,16 +353,11 @@ tibble::tibble(d_tilde, y_tilde) |>
   theme_minimal(base_size = 10)
 ```
 
-Note how much of the spread in `educ` survives residualization
-(`sd(d_tilde)` $=$ `r round(sd(d_tilde), 2)` versus
-`sd(educ)` $=$ `r round(sd(gss$educ), 2)`). When that ratio gets small, the
-coefficient is being estimated off a thin slice of the data, and its standard
-error will show it.
+Note how much of the spread in `educ` survives residualization (`sd(d_tilde)` $=$ `r round(sd(d_tilde), 2)` versus `sd(educ)` $=$ `r round(sd(gss$educ), 2)`). When that ratio gets small, the coefficient is being estimated off a thin slice of the data, and its standard error will show it.
 
 # Omitted variable bias, numerically
 
-Short regression omits verbal ability and parental education; long regression
-includes them.
+Short regression omits verbal ability and parental education; long regression includes them.
 
 ```{r}
 #| label: ovb
@@ -432,13 +380,9 @@ round(c(short = beta_short,
         bias = bias_pred), 5)
 ```
 
-The identity $\tilde\beta_1 = \beta_1 + \sum_j \beta_{2j}\delta_{1j}$ holds
-exactly, to machine precision. Note the direction: ability and family background
-are positively associated with schooling and positively associated with
-earnings, so omitting them **overstates** the return to schooling.
+The identity $\tilde\beta_1 = \beta_1 + \sum_j \beta_{2j}\delta_{1j}$ holds exactly, to machine precision. Note the direction: ability and family background are positively associated with schooling and positively associated with earnings, so omitting them **overstates** the return to schooling.
 
-Column (1) is the bivariate regression; (2) adds the demographic controls;
-(3) adds vocabulary score and parental education.
+Column (1) is the bivariate regression; (2) adds the demographic controls; (3) adds vocabulary score and parental education.
 
 ```{r}
 #| label: ovb-table
@@ -453,46 +397,22 @@ modelsummary(list("(1)" = lm(lnearn ~ educ, data = gss),
 ```
 
 ::: callout-important
-Everything in this section is *algebra*. It tells you how the estimate moves
-when you add a control. It does **not** tell you whether the long regression
-recovers the causal return to schooling, for that you would need to argue
-that nothing else is omitted, which is a substantive claim, not a statistical
-one. That argument is what Weeks 5--11 are about.
+Everything in this section is *algebra*. It tells you how the estimate moves when you add a control. It does **not** tell you whether the long regression recovers the causal return to schooling, for that you would need to argue that nothing else is omitted, which is a substantive claim, not a statistical one. That argument is what Weeks 5--11 are about.
 :::
 
 # Exercises
 
-Work these during lab; they are not collected, but Problem Set 1 builds directly
-on them.
+Work these during lab; they are not collected, but Problem Set 1 builds directly on them.
 
-1.  **The dummy variable trap.** Run
-    `lm(lnearn ~ factor(region), data = gss)` and look at how many coefficients
-    you get. Now try to include *all nine* region indicators and an intercept.
-    What does `lm()` report, and why? Explain in words: the nine dummies add
-    up to the intercept column, so one of them carries no new information.
+1.  **The dummy variable trap.** Run `lm(lnearn ~ factor(region), data = gss)` and look at how many coefficients you get. Now try to include *all nine* region indicators and an intercept. What does `lm()` report, and why? Explain in words: the nine dummies add up to the intercept column, so one of them carries no new information.
 
-2.  **The $n-2$, by simulation.** In the bivariate model, verify that
-    $\E[\sum_i \hat e_i^2] = \sigma^2(n-2)$: fix `xs` from the first
-    simulation, generate $y = 8.2 + 0.12x + \epsilon$ with
-    $\epsilon \sim N(0, 4)$, and average $\sum_i \hat e_i^2$ over 2,000
-    replications. Compare to $4 \times (n-2)$, and to the wrong guess
-    $4 \times n$.
+2.  **The** $n-2$, by simulation. In the bivariate model, verify that $\E[\sum_i \hat e_i^2] = \sigma^2(n-2)$: fix `xs` from the first simulation, generate $y = 8.2 + 0.12x + \epsilon$ with $\epsilon \sim N(0, 4)$, and average $\sum_i \hat e_i^2$ over 2,000 replications. Compare to $4 \times (n-2)$, and to the wrong guess $4 \times n$.
 
-3.  **Sign the bias.** Suppose you omit `hours` from the long regression. Predict
-    the sign of the bias in the `educ` coefficient *before* running anything,
-    using the OVB formula and the two auxiliary regressions. Then check.
+3.  **Sign the bias.** Suppose you omit `hours` from the long regression. Predict the sign of the bias in the `educ` coefficient *before* running anything, using the OVB formula and the two auxiliary regressions. Then check.
 
-4.  **The FWL standard error.** Compute
-    $s^2 / \sum_i \tilde d_i^{\,2}$ using `d_tilde` from the FWL section
-    (with $s^2$ from the full regression), take the square root, and confirm
-    it matches the `educ` standard error printed by `summary(fit)`.
+4.  **The FWL standard error.** Compute $s^2 / \sum_i \tilde d_i^{\,2}$ using `d_tilde` from the FWL section (with $s^2$ from the full regression), take the square root, and confirm it matches the `educ` standard error printed by `summary(fit)`.
 
-5.  **Saturate the key covariate.** Fit
-    `lm(lnearn ~ factor(educ) + exper + I(exper^2) + female + black, data = gss)`,
-    which gives every year of schooling its own coefficient, and compare it to
-    the linear-in-`educ` version with `anova()`. The $F$-test you get is
-    exactly the model comparison from *Social Statistics I*: is the reduction
-    in $SSE$ worth the extra parameters?
+5.  **Saturate the key covariate.** Fit `lm(lnearn ~ factor(educ) + exper + I(exper^2) + female + black, data = gss)`, which gives every year of schooling its own coefficient, and compare it to the linear-in-`educ` version with `anova()`. The $F$-test you get is exactly the model comparison from *Social Statistics I*: is the reduction in $SSE$ worth the extra parameters?
 
 # Session information
 

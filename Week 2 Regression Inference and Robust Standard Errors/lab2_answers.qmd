@@ -1,0 +1,153 @@
+---
+title: "\\textbf{Lab 2 Exercise Solutions}"
+subtitle: "SOCIOL 723, Social Statistics II"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.2, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+```{r}
+#| label: packages
+library(dplyr); library(ggplot2); library(sandwich)
+gss <- readRDS("../Data/gss_earnings.rds")
+m <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
+```
+
+# Exercise 1: Coverage of the classical interval
+
+Same design as the lab, with the heteroskedasticity turned up from
+$0.5\exp(0.8x)$ to $0.5\exp(1.5x)$.
+
+```{r}
+#| label: ex1
+set.seed(723)
+sim_once <- function(n = 200, expo = 1.5) {
+  x <- rnorm(n)
+  e <- rnorm(n, sd = 0.5 * exp(expo * x))
+  mm <- lm(I(1 + 0.5 * x + e) ~ x)
+  c(b  = coef(mm)[2],
+    sc = sqrt(diag(vcov(mm)))[2],
+    s3 = sqrt(diag(vcovHC(mm, type = "HC3")))[2])
+}
+reps <- t(replicate(2000, sim_once()))
+covers <- function(b, se) mean(abs(b - 0.5) / se < 1.96)
+c(classical = covers(reps[, 1], reps[, 2]),
+  hc3       = covers(reps[, 1], reps[, 3]))
+```
+
+Classical coverage collapses far below its nominal 95%: the error variance
+now explodes where $x$ is large, exactly where the meat's weights $d_i^2$
+are biggest, so the pooled $s^2$ understates the variance badly. HC3 loses
+some ground too --- with heteroskedasticity this violent, the meat is
+estimated from a handful of extreme observations --- but it stays far closer
+to nominal. The lesson survives: the classical interval's failure is
+structural, the robust interval's is finite-sample.
+
+# Exercise 2: HC3 versus HC0 in small samples
+
+```{r}
+#| label: ex2
+set.seed(723)
+one_n <- function(n) {
+  reps <- t(replicate(2000, {
+    x <- rnorm(n)
+    e <- rnorm(n, sd = 0.5 * exp(0.8 * x))
+    mm <- lm(I(1 + 0.5 * x + e) ~ x)
+    c(b  = coef(mm)[2],
+      s0 = sqrt(diag(vcovHC(mm, type = "HC0")))[2],
+      s3 = sqrt(diag(vcovHC(mm, type = "HC3")))[2])
+  }))
+  c(n = n, hc0 = covers(reps[, 1], reps[, 2]),
+    hc3 = covers(reps[, 1], reps[, 3]))
+}
+round(t(sapply(c(30, 60, 120, 500), one_n)), 3)
+```
+
+At $n = 30$ HC0 under-covers noticeably while HC3's leverage rescaling buys
+several points of coverage; by $n = 120$ the gap has nearly closed, and at
+$n = 500$ the two are indistinguishable. That is the general pattern behind
+the lecture's advice: the HC variants are a small-sample story, and all of
+them coincide as $n$ grows.
+
+# Exercise 3: Choosing the cluster level
+
+A state-level minimum-wage law is one treatment draw shared by everyone in
+the state, so the lottery runs over states: **cluster by state**. This is
+coarser than the GSS's own sampling clusters (PSUs sit inside states), and
+with nested lotteries the coarsest one covers both --- same-PSU pairs are
+also same-state pairs, so state clustering keeps the sampling covariances
+too.
+
+If the law varies by state *and* year, the tempting answer --- cluster on
+state--year cells --- is too fine: a state's errors are strongly correlated
+*across* years (the Bertrand--Duflo--Mullainathan lesson), and state-year
+clustering assumes those covariances away. The safe answer remains
+clustering by state, which allows arbitrary correlation over time within
+each state.
+
+# Exercise 4: A statistic with no easy formula
+
+```{r}
+#| label: ex4
+set.seed(723)
+turning <- function(fit) -coef(fit)["exper"] / (2 * coef(fit)["I(exper^2)"])
+turning(m)
+
+B <- 5000
+tp_b <- replicate(B, {
+  idx <- sample(nrow(gss), replace = TRUE)
+  turning(lm(lnearn ~ educ + exper + I(exper^2) + female + black,
+             data = gss[idx, ]))
+})
+
+c(estimate = turning(m), se_boot = sd(tp_b))
+c(normal_approx = turning(m) + c(-1.96, 1.96) * sd(tp_b))
+quantile(tp_b, c(.025, .975))
+```
+
+```{r}
+#| label: fig-ex4
+#| fig-cap: "Bootstrap distribution of the experience-profile turning point, $B = 5{,}000$."
+tibble::tibble(tp = tp_b) |>
+  ggplot(aes(tp)) +
+  geom_histogram(bins = 60, fill = "navy", alpha = .65) +
+  geom_vline(xintercept = turning(m), colour = "firebrick") +
+  labs(x = "bootstrap replicate of the turning point (years)", y = "count") +
+  theme_minimal(base_size = 10)
+```
+
+The turning point lands around 36 years of experience. The histogram is
+close to bell-shaped --- the denominator $2\hat\beta_{\text{exper}^2}$ is
+many standard errors from zero, so the ratio behaves well --- and
+accordingly the normal-approximation and percentile intervals nearly agree.
+When they agree, either is defensible; the percentile interval is still the
+safer habit, because it would have followed the skew had there been any.

@@ -68,6 +68,7 @@ later week speaks.
 - [Slides: Week 1 Tuesday — The Linear Model and OLS](./Week%201%20The%20Linear%20Model%20and%20OLS/slides_tuesday.pdf)
 - [Slides: Week 1 Thursday — OLS in Matrix Form](./Week%201%20The%20Linear%20Model%20and%20OLS/slides_thursday.pdf)
 - [Lab 1: OLS by Hand, in Scalar Form](./Week%201%20The%20Linear%20Model%20and%20OLS/lab1.pdf)
+- [Lab 1 Exercise Solutions](./Week%201%20The%20Linear%20Model%20and%20OLS/lab1_answers.pdf)
 
 ### Reading
 *Required*: MHE Ch. 3; CCI Ch. 6. &nbsp;·&nbsp; *Additional*: ISL Ch. 2–3.
@@ -104,18 +105,23 @@ is the *same* variance formula with the error variance estimated differently.
 - From scalar to matrix: the dictionary $X_i = (1, X_i)'$, and the sandwich
   $Q^{-1}\Omega Q^{-1}$ multiplied out entry by entry until the slope entry
   reproduces the scalar $V$. ★
-- **Clustering**: where the scalar formula breaks, the Moulton factor, the
-  cluster-robust sandwich, choosing the level from the *design*, the few-clusters
-  problem, and CR2 / wild cluster bootstrap remedies. Bertrand, Duflo, and
-  Mullainathan (2004) as the cautionary tale.
-- **The bootstrap**: the plug-in principle, pairs / residual / wild / cluster
-  variants, percentile vs. BCa vs. bootstrap-*t*, and when the bootstrap fails.
+- **Clustering**: why independence fails in words first (shared shocks, sampled
+  clusters, group-level treatment), the error-components model and the
+  intra-class correlation derived, where the scalar formula breaks, and the fix
+  in scalar form — sum within clusters first, then square. Choosing the level
+  from the *design* (worked examples: state-level treatment, GSS-style
+  sampling, nested lotteries). Bertrand, Duflo, and Mullainathan (2004) as the
+  cautionary tale.
+- **The bootstrap**: the plug-in principle, the pairs bootstrap, reading the
+  bootstrap histogram (normal-approximation vs. percentile intervals), and the
+  cluster bootstrap — resample the units the lottery ran over.
 - Close with Freedman's critique and a scoreboard of what robust standard errors
   do and do not fix.
 
 ### Materials
 - [Slides: Week 2 — Regression Inference and Robust Standard Errors](./Week%202%20Regression%20Inference%20and%20Robust%20Standard%20Errors/slides.pdf)
-- [Lab 2: Calculus, Simulation, and Robust Inference](./Week%202%20Regression%20Inference%20and%20Robust%20Standard%20Errors/lab2.pdf)
+- [Lab 2: Simulation and Robust Inference](./Week%202%20Regression%20Inference%20and%20Robust%20Standard%20Errors/lab2.pdf)
+- [Lab 2 Exercise Solutions](./Week%202%20Regression%20Inference%20and%20Robust%20Standard%20Errors/lab2_answers.pdf)
 - [Problem Set 1](./Homework/homework1/homework1.pdf) — assigned Sep 1, due Mon Sep 14
 
 ### Reading

@@ -1,0 +1,147 @@
+---
+title: "\\textbf{Lab 1 Exercise Solutions}"
+subtitle: "SOCIOL 723, Social Statistics II"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.2, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+```{r}
+#| label: packages
+library(dplyr)
+gss <- readRDS("../Data/gss_earnings.rds")
+fit <- lm(lnearn ~ educ + exper + I(exper^2) + female + black, data = gss)
+```
+
+# Exercise 1: The dummy variable trap
+
+```{r}
+#| label: ex1
+length(coef(lm(lnearn ~ factor(region), data = gss)))   # intercept + 8 dummies
+
+## force all nine indicators in alongside an intercept
+X9 <- model.matrix(~ 0 + factor(region), data = gss)
+colnames(X9) <- paste0("r", 1:9)
+coef(lm(gss$lnearn ~ X9))
+```
+
+`lm()` fits nine coefficients, not ten: with `factor(region)` it drops one
+category automatically, and when we force all nine indicators in, it returns
+`NA` for the last one. The nine dummies sum to one for every respondent ---
+exactly the intercept column --- so once eight dummies and the intercept are
+in, the ninth is a perfect linear combination of them and carries no new
+information. `R` resolves the trap by refusing to estimate the redundant
+coefficient; the dropped category becomes the reference against which the
+others are measured.
+
+# Exercise 2: The $n-2$, by simulation
+
+```{r}
+#| label: ex2
+set.seed(1)
+n_sim <- 2000
+xs <- sample(8:20, n_sim, replace = TRUE)
+
+rss <- replicate(2000, {
+  y <- 8.2 + 0.12 * xs + rnorm(n_sim, 0, 2)     # sigma^2 = 4
+  sum(residuals(lm(y ~ xs))^2)
+})
+c(mean_rss = mean(rss),
+  sigma2_x_nminus2 = 4 * (n_sim - 2),
+  wrong_guess = 4 * n_sim)
+```
+
+The average of $\sum_i \hat e_i^2$ sits on top of $\sigma^2(n-2)$, not
+$\sigma^2 n$. Fitting the two coefficients absorbs exactly two degrees of
+freedom's worth of error variation --- the residuals are systematically a
+little smaller than the errors they estimate --- and dividing by $n-2$
+instead of $n$ is precisely what makes $s^2$ unbiased.
+
+# Exercise 3: Sign the bias
+
+Prediction first. The bias from omitting `hours` is
+$\beta_{\texttt{hours}} \times \delta_{\texttt{educ}}$, where
+$\delta_{\texttt{educ}}$ is the `educ` coefficient from the auxiliary
+regression of `hours` on the included regressors. More hours should mean
+higher earnings ($\beta_{\texttt{hours}} > 0$); whether the more educated
+work more or fewer hours is the genuinely uncertain sign.
+
+```{r}
+#| label: ex3
+fit_h <- update(fit, . ~ . + hours)
+aux   <- lm(hours ~ educ + exper + I(exper^2) + female + black, data = gss)
+
+c(beta_hours = coef(fit_h)["hours"],
+  delta_educ = coef(aux)["educ"])
+c(short_minus_long = coef(fit)["educ"] - coef(fit_h)["educ"],
+  product          = coef(fit_h)["hours"] * coef(aux)["educ"])
+```
+
+Both pieces come out positive --- conditional on the controls, the more
+educated work slightly more hours, and hours pay --- so the short regression
+*overstates* the schooling coefficient. The OVB identity holds to machine
+precision, but note the magnitude: the bias is well under one percent of the
+coefficient. Signing a bias and sizing it are different exercises.
+
+# Exercise 4: The FWL standard error
+
+```{r}
+#| label: ex4
+d_tilde <- residuals(lm(educ ~ exper + I(exper^2) + female + black, data = gss))
+s2 <- sum(residuals(fit)^2) / (nrow(gss) - length(coef(fit)))
+
+c(fwl     = sqrt(s2 / sum(d_tilde^2)),
+  summary = coef(summary(fit))["educ", "Std. Error"])
+```
+
+Identical. The standard error on `educ` in the full regression runs on the
+*residualized* variation $\sum_i \tilde d_i^{\,2}$ --- the part of schooling
+the controls cannot predict --- which is why adding controls correlated with
+`educ` inflates its standard error even as it sharpens its interpretation.
+
+# Exercise 5: Saturate the key covariate
+
+```{r}
+#| label: ex5
+fit_sat <- lm(lnearn ~ factor(educ) + exper + I(exper^2) + female + black,
+              data = gss)
+anova(fit, fit_sat)
+```
+
+The model comparison rejects decisively: freeing every year of schooling to
+have its own coefficient buys more fit than its extra parameters cost, so
+the earnings--schooling relationship is not exactly linear (the jumps at 12
+and 16 years --- credential effects --- are the usual culprits). That is not
+a verdict against the linear model: the single slope remains an excellent
+one-number summary, and Week 1's lesson applies --- a line fit to a curved
+relationship estimates the best linear approximation to it. Saturating is
+how you check what that approximation is smoothing over.

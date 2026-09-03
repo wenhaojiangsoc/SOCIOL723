@@ -553,19 +553,58 @@ divided by $n$; the $1/n$'s cancel into
 \end{itemize}
 \end{frame}
 
-\begin{frame}{``But $\hat e_i^2$ Is a Terrible Estimate of $\epsilon_i^2$''}
-A frequent and reasonable objection: each $\hat e_i^2$ is a single noisy
-draw. How can plugging in $n$ bad estimates give a good one?
-\vskip4pt
-\begin{itemize}\itemsep4pt
-  \item Because we never try to learn any individual $\epsilon_i^2$. The
-        target is \emph{one number}, the population mean
-        $\E[(X_i-\mu_X)^2\epsilon_i^2]$, and
-        $\tfrac1n\sum_i d_i^2\,\hat e_i^2$ is a sample average aimed at it:
-        the law of large numbers averages the individual noise away.
-  \item Same logic that lets you estimate $\Var(\bar Y)$ from one sample: you
-        never learn any individual's deviation, only the average square.
+\begin{frame}{The General Statement\adv}
+For the full coefficient vector, with $X_i$ now the \emph{vector} of
+observation $i$'s regressors and sample averages written as $\En$:
+\begin{align*}
+  \bhat - \bm\beta
+  = \big(\En[X_iX_i']\big)^{-1}\En[X_i\epsilon_i] ,
+  \qquad
+  \En[X_iX_i'] = \tfrac1n\sum_i X_iX_i' = \tfrac1n \X'\X ,
+\end{align*}
+so this is Thursday's $(\X'\X)^{-1}\X'\bm\epsilon$, each factor scaled by
+$\tfrac1n$. The LLN gives $\En[X_iX_i'] \pto \E[X_iX_i'] \equiv \bm{Q}$ and
+$\En[X_i\epsilon_i]\pto \zero$, so $\bhat \pto \bm\beta$ (\emph{consistency}).
+Multiplying by $\sqrt n$ and applying the CLT to the second factor,
+\begin{align*}
+  \boxed{\;\sqrt n(\bhat-\bm\beta) \dto
+  \mathcal N\Big(\zero,\; \bm{Q}^{-1}\Om\bm{Q}^{-1}\Big)\;},
+  \qquad \Om = \E[\epsilon_i^2 X_iX_i'] .
+\end{align*}
+\vskip2pt
+Note what is \emph{not} assumed: no normality, no homoskedasticity.
+\end{frame}
+
+\begin{frame}{Reading the ``Sandwich''\adv}
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \bm{V} = \underbrace{\bm{Q}^{-1}}_{\text{bread}}\;
+           \underbrace{\Om}_{\text{meat}}\;
+           \underbrace{\bm{Q}^{-1}}_{\text{bread}},
+  \qquad
+  \bm Q = \E[X_iX_i'],\quad \Om = \E[\epsilon_i^2X_iX_i'] .
+\end{align*}
+Estimated by sample analogues, the $1/n$'s cancel into Thursday's matrices:
+\begin{align*}
+  \widehat{\Var}_{\text{HC0}}(\bhat)
+  = (\X'\X)^{-1}\Big(\sum_i \hat e_i^2\, X_iX_i'\Big)(\X'\X)^{-1} :
+\end{align*}
+what \texttt{vcovHC} computes; the clustered version later swaps only the
+middle sum.
+\endgroup
+\begin{itemize}\itemsep1pt
+  \item The \textbf{bread} depends only on the regressors; the \textbf{meat}
+        is where every assumption about the errors lives. Classical, robust,
+        clustered, and HAC differ \alert{only} in the meat.
+  \item If $\E[\epsilon_i^2\mid X_i] = \sigma^2$, the meat is
+        $\sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$: the classical
+        formula.
 \end{itemize}
+\vskip3pt
+\begin{alertblock}{The organizing idea for the estimator}
+Keep the estimator $\hat\beta$ and the bread; change only the meat.
+\end{alertblock}
 \end{frame}
 
 \begin{frame}{From Scalar to Matrix: the Dictionary\adv}
@@ -588,53 +627,10 @@ and their sample averages stack the scalar sums you have used all lecture:
   \item Population versions: $\bm Q = \E[X_iX_i']$ and the meat
         $\Om = \E[\epsilon_i^2X_iX_i']$, which stacks
         $\E[\epsilon_i^2]$, $\E[X_i\epsilon_i^2]$, $\E[X_i^2\epsilon_i^2]$.
-  \item The next frames state the matrix result and then cash it: the
-        slope's entry of the matrix sandwich is \emph{exactly} the scalar
-        $V$.
+  \item These are the objects inside the sandwich you just saw. The next
+        frames multiply it out until the slope's entry is \emph{exactly} the
+        scalar $V$.
 \end{itemize}
-\end{frame}
-
-\begin{frame}{The General Statement\adv}
-For the full coefficient vector, writing sample averages as $\En$:
-\begin{align*}
-  \bhat - \bm\beta
-  = \big(\En[X_iX_i']\big)^{-1}\En[X_i\epsilon_i] .
-\end{align*}
-The LLN gives $\En[X_iX_i'] \pto \E[X_iX_i'] \equiv \bm{Q}$ and
-$\En[X_i\epsilon_i]\pto \zero$, so $\bhat \pto \bm\beta$ (\emph{consistency}).
-Multiplying by $\sqrt n$ and applying the CLT to the second factor,
-\begin{align*}
-  \boxed{\;\sqrt n(\bhat-\bm\beta) \dto
-  \mathcal N\Big(\zero,\; \bm{Q}^{-1}\Om\bm{Q}^{-1}\Big)\;},
-  \qquad \Om = \E[\epsilon_i^2 X_iX_i'] .
-\end{align*}
-\vskip2pt
-Note what is \emph{not} assumed: no normality, no homoskedasticity. Note also the
-weaker exogeneity requirement, $\E[X_i\epsilon_i]=0$ suffices for consistency;
-$\E[\epsilon_i\mid X_i]=0$ is not needed.
-\end{frame}
-
-\begin{frame}{Reading the ``Sandwich''\adv}
-\begin{align*}
-  \bm{V} = \underbrace{\bm{Q}^{-1}}_{\text{bread}}\;
-           \underbrace{\Om}_{\text{meat}}\;
-           \underbrace{\bm{Q}^{-1}}_{\text{bread}},
-  \qquad
-  \bm Q = \E[X_iX_i'],\quad \Om = \E[\epsilon_i^2X_iX_i'] .
-\end{align*}
-\begin{itemize}\itemsep4pt
-  \item The \textbf{bread} depends only on the distribution of the regressors.
-  \item The \textbf{meat} is where every assumption about the error structure
-        lives. Classical, robust, clustered, and HAC standard errors differ
-        \alert{only} in how the meat is estimated.
-  \item If $\E[\epsilon_i^2\mid X_i] = \sigma^2$ then
-        $\Om = \sigma^2\bm Q$ and $\bm V = \sigma^2\bm Q^{-1}$, the
-        classical formula.
-\end{itemize}
-\vskip3pt
-\begin{alertblock}{The organizing idea for the whole lecture}
-Keep the estimator $\hat\beta$; change how you estimate the meat.
-\end{alertblock}
 \end{frame}
 
 \begin{frame}{The Dictionary, Cashed: Multiply the Sandwich Out\adv}
@@ -688,10 +684,10 @@ slope's variances, the off-diagonal their covariance.}
 \end{frame}
 
 \begin{frame}{Why the Squared Residuals Are Systematically Too Small}
-Two frames ago: each $\hat e_i^2$ is a \emph{noisy} stand-in for
-$\epsilon_i^2$, and the meat's average kills the noise. True, but
-\alert{averaging only kills noise; a \emph{systematic} error survives the
-average} -- and there is one.
+The meat is estimated by an average, and averages forgive noise: each
+$d_i^2\hat e_i^2$ may be a poor estimate of its own term, yet the mean still
+finds the target. \alert{What an average does not forgive is an error shared
+by every term} -- and the squared residuals carry one.
 \begin{itemize}\itemsep4pt
   \item OLS chooses the line that makes the residuals as small as possible,
         so it partly fits the noise itself: residuals run systematically
@@ -809,90 +805,126 @@ Do not pre-test and then choose. Just report robust standard errors.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Why Independence Fails\core}
-Sociological data are almost never i.i.d.\ draws:
-\begin{itemize}\itemsep1pt
-  \item Students within schools; workers within firms; siblings within families.
-  \item Repeated observations on the same individual (panel data).
-  \item Multi-stage survey designs, the GSS samples tracts, then households.
-  \item Treatment assigned at the group level (a state law), outcomes measured at
-        the individual level.
+Sociological data are almost never i.i.d.\ draws. Three familiar designs,
+and what goes wrong:
+\begin{itemize}\itemsep3pt
+  \item \textbf{Students within schools; workers within firms; siblings
+        within families.} Two students in one school share teachers,
+        curriculum, and neighborhood. If one does surprisingly well, the
+        other probably does too: \emph{knowing one error is informative
+        about the other}. That is dependence.
+  \item \textbf{Multi-stage surveys (the GSS).} The survey first draws
+        \emph{tracts}, then people within them. Which tracts got drawn is
+        luck, and everyone from a drawn tract carries that tract's
+        peculiarities into the sample \emph{together}.
+  \item \textbf{Treatment assigned to groups.} A state law hits everyone in
+        the state at once, and same-state people already share a lot
+        (economy, institutions, history): \emph{the treated arrive in
+        bundles of similar people}, not as independent draws.
 \end{itemize}
-\vskip3pt
-\begin{block}{Error components model}
-\begin{align*}
-  Y_{ig} = \beta_0 + \beta_1 X_{ig} + \underbrace{\nu_g}_{\text{cluster shock}}
-  + \underbrace{\eta_{ig}}_{\text{idiosyncratic}} ,
-  \qquad
-  \rho_e = \frac{\sigma_\nu^2}{\sigma_\nu^2+\sigma_\eta^2}
-\end{align*}
-Everyone in cluster $g$ shares the shock $\nu_g$, so their errors are correlated.
-$\rho_e$ is the \alert{intra-class correlation}.
-\end{block}
-\end{frame}
-
-\begin{frame}{Where the Scalar Formula Breaks\core}
-Hold the $X$'s fixed for the bookkeeping. The variance of the error sum then
-involves \emph{all} the covariances:
-\begin{align*}
-  \Var\!\left(\sum_i d_i\epsilon_i \,\Big|\, X\right)
-  = \underbrace{\sum_i d_i^2\,\sigma_i^2}_{\text{what HC0 estimates}}
-  + \underbrace{\sum_{i}\sum_{j\neq i} d_i d_j\,\Cov(\epsilon_i,\epsilon_j\mid X)}
-               _{\text{\alert{assumed zero so far}}} ,
-\end{align*}
-with $\sigma_i^2 = \Var(\epsilon_i\mid X_i)$, the error spread at $X_i$.
 \vskip2pt
-\begin{itemize}\itemsep3pt
-  \item Independent sampling makes the second term vanish. Clustering does not.
-  \item If errors within a cluster are \emph{positively} correlated and $d_i$ has
-        the same sign within clusters, every one of those cross terms is positive
-, so the true variance is \alert{larger} than the formula we have been
-        using, often by a lot.
-  \item There are on the order of $n(\bar n - 1)$ such cross terms versus $n$
-        terms in the first sum, so even tiny correlations can dominate.
-\end{itemize}
+The common thread: \alert{within a group, observations share something} --
+a shock, a sampling draw, a treatment draw -- \alert{and shared is the
+opposite of independent}.
 \end{frame}
 
-\begin{frame}{The Moulton Factor: How Bad Is It?\core}
-With equal cluster sizes $\bar n$ and an error-components structure,
-\srct{Moulton (1986)} showed
+\begin{frame}{The Error Components Model\core}
+Formalize the shared piece:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
 \begin{align*}
-  \frac{\Var_{\text{clustered}}(\hat\beta_1)}{\Var_{\text{OLS}}(\hat\beta_1)}
-  = 1 + (\bar n - 1)\,\rho_x\,\rho_e ,
+  Y_{ig} = \beta_0 + \beta_1 X_{ig} + \epsilon_{ig},
+  \qquad
+  \epsilon_{ig}
+  = \underbrace{\nu_g}_{\text{one draw per cluster}}
+  + \underbrace{\eta_{ig}}_{\text{one draw per person}}
 \end{align*}
-where $\rho_x$ is the intra-class correlation of the regressor.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item If the regressor is \emph{constant within clusters}, treatment
-        assigned at the cluster level, then $\rho_x = 1$ and the inflation is
-        $1+(\bar n -1)\rho_e$. This is the worst case.
-  \item 50 states, 1{,}000 individuals each, $\rho_e = 0.01$ (small!):
-        $\sqrt{1 + 999(0.01)} \approx 3.3$. \alert{Standard errors are more than
-        three times too small}, so a reported $t$ of 6 is really a $t$ of 1.8.
-  \item Moral: the effective sample size is closer to the number of
-        \emph{clusters} than the number of observations.
+Each person has a true individual-level idiosyncrasy $\eta_{ig}$,
+independent across units and independent of the group shock; everyone in
+cluster $g$ shares the one group-level shock $\nu_g$. A shared component is
+a covariance:
+\begin{align*}
+  \Cov(\epsilon_{ig}, \epsilon_{jg})
+  = \Cov(\nu_g + \eta_{ig},\ \nu_g + \eta_{jg})
+  = \Var(\nu_g) = \sigma_\nu^2
+  \qquad (i \neq j) .
+\end{align*}
+\endgroup
+Different clusters share nothing (different $\nu$'s and $\eta$'s):
+\alert{across clusters, independence still holds}.
+\vskip2pt
+With $\Var(\epsilon_{ig}) = \sigma_\nu^2 + \sigma_\eta^2$, any two
+same-cluster errors have correlation
+$\rho_e = \sigma_\nu^2\big/(\sigma_\nu^2 + \sigma_\eta^2)$: the
+\alert{intra-class correlation}, the share of error variance that is shared.
+\end{frame}
+
+\begin{frame}{Where the Scalar Formula Breaks}
+Run Step 3's expansion once more, unconditionally, on the mean-zero terms
+$(X_i-\mu_X)\,\epsilon_i$. What changed is A2: \alert{clusters are
+independent draws; people within a cluster are not.}
+\begingroup\small
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{1pt}
+\begin{align*}
+  &\Var\Big(\tfrac1n\textstyle\sum_i (X_i-\mu_X)\epsilon_i\Big)
+  = \frac{1}{n^2}\Big[
+  \underbrace{\sum_i \Var\big((X_i-\mu_X)\epsilon_i\big)}
+      _{\text{what White's meat estimates}} \\[-4pt]
+  &\qquad\qquad
+  + \underbrace{\sum_{\substack{i \neq j \\ \text{same cluster}}}
+      \Cov\big((X_i-\mu_X)\epsilon_i,\ (X_j-\mu_X)\epsilon_j\big)}
+      _{\text{\alert{assumed zero so far}}}\Big]
+\end{align*}
+\endgroup
+Cross-cluster pairs drop out; survivors ride the shared shock $\nu_g$
+(last frame).
+\begin{itemize}\itemsep0pt
+  \item \textbf{Sign.} With positively correlated errors and same-sign
+        $(X_i - \mu_X)$ within a cluster (a cluster-level treatment
+        guarantees this), every surviving term is positive: \alert{the truth
+        is larger than our formula}.
+  \item \textbf{Count.} A cluster of size $m$ contributes $m(m-1)$ surviving
+        pairs. \alert{Even a tiny correlation, multiplied by that many terms,
+        can dominate.}
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Cluster-Robust Fix, in Scalar Form\core}
-With clusters the true meat also contains the within-cluster cross terms.
-The fix: \alert{sum within clusters first, then square}:
+\begin{frame}{The Cluster-Robust Fix, in Scalar Form}
+Estimate each cluster's mean square by its sample counterpart, exactly
+White's move: residuals for the unobservable errors, $\bar X$ for $\mu_X$,
 \begin{align*}
+  S_g = \sum_{i \in g} d_i\, \hat e_i
+  \qquad \text{(one number per cluster)},
+\end{align*}
+and place the summed squares over the bread:
+\begin{align*}
+  \boxed{\;
   \hat V_{\text{CR}}(\hat\beta_1)
-  = \frac{\sum_{g=1}^{G} \Big(\sum_{i \in g} d_i\, \hat e_i\Big)^{\!2}}
-         {\Big(\sum_i d_i^2\Big)^{2}} .
+  = \frac{\sum_{g=1}^{G} S_g^{\,2}}
+         {\Big(\sum_i d_i^2\Big)^{2}} \;}
+\end{align*}
+\alert{Sum within clusters first, then square.} The order of those two
+operations is the entire difference from White's estimator, which squares
+first and sums after.
+\end{frame}
+
+\begin{frame}{Why Summing First Works}
+Expand one cluster's squared total:
+\begin{align*}
+  S_g^{\,2}
+  = \Big(\sum_{i\in g} d_i\hat e_i\Big)^{\!2}
+  = \underbrace{\sum_{i\in g} d_i^2\hat e_i^2}_{\text{White's terms}}
+  + \underbrace{\sum_{i\neq j \in g} d_i d_j\, \hat e_i\hat e_j}
+      _{\text{\alert{the cross terms, now estimated}}} .
 \end{align*}
 \begin{itemize}\itemsep3pt
-  \item Expand the square:
-        $\big(\sum_{i\in g} d_i\hat e_i\big)^2
-        = \sum_{i\in g} d_i^2\hat e_i^2
-        + \sum_{i\neq j \in g} d_i d_j \hat e_i\hat e_j$. The cross terms we
-        had been assuming away are now \alert{estimated}, within clusters;
-        across clusters they are still assumed zero.
-  \item Same logic as White: no single cluster's covariances are estimated
-        well, but the \emph{sum} over many clusters is. Consistency therefore
-        runs in $G$, the number of clusters, not in $n$.
-  \item With one observation per cluster this collapses exactly to HC0:
-        clustering strictly generalizes White.
+  \item Squaring \emph{after} summing keeps every within-cluster product
+        $\hat e_i\hat e_j$: exactly the terms the last frames showed we were
+        wrongly assuming away. Across clusters, products never form:
+        still assumed zero, which is the design claim that clusters are
+        independent.
+  \item With one observation per cluster, $S_g^{\,2} = d_i^2\hat e_i^2$ and
+        this collapses exactly to HC0: clustering strictly generalizes White.
 \end{itemize}
 \end{frame}
 
@@ -930,73 +962,53 @@ not a knob to tune.
   \item \textbf{Design-based}: cluster at the level at which \emph{treatment} is
         assigned. If a policy varies by state, cluster on state, even with
         individual-level data.
-  \item Cluster at the level the sampling or assignment design justifies.
-        Never finer than the assignment level; going \emph{coarser} needs its
-        own dependence argument, and is not automatically safer.
-  \item ``Cluster on everything'' is not free: with few clusters the estimator is
-        biased downward and the test over-rejects.
+  \item Cluster at the level the design justifies; the right level, not
+        the biggest.
   \item \alert{Never} choose the level by whichever gives the smallest $p$-value.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Few-Clusters Problem}
-With small $G$, $\hat{V}_{\text{CR}}$ is biased downward, and even the usual
-cluster-robust reference distribution ($t$ with $G$-based degrees of freedom,
-commonly $G-1$, not $n-k$) is too thin. As rules of thumb, worry below $G \approx 40$--$50$
-and be alarmed below $20$, though performance also depends on cluster-size
-imbalance and leverage. A typical symptom: rejection rates of $10$--$15\%$
-for a nominal $5\%$ test.
-\begin{block}{Remedies}
-\begin{enumerate}\itemsep1pt
-  \item \textbf{CR2 with Satterthwaite degrees of freedom}
-        \srcp{Bell and McCaffrey 2002; Imbens and Kolesar 2016}: a leverage
-        correction (the cluster analogue of HC2) plus data-dependent d.f.
-        \texttt{clubSandwich::coef\_test()}.
-  \item \textbf{Wild cluster bootstrap-$t$} \srcp{Cameron et al.\ 2008}: impose
-        $H_0$, resample cluster-level $\pm1$ weights, and build the reference
-        distribution empirically. \texttt{fwildclusterboot}.
-  \item \textbf{Aggregate}: collapse to $G$ cluster-level observations and
-        analyze those. Honest, but note it reweights and can change the
-        estimand.
-  \item \textbf{Randomization inference} when treatment is assigned to few units.
-\end{enumerate}
-\end{block}
+\begin{frame}{Which Level? Three Examples, and Sampling Designs\core}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Treatment at state, clustered by county: wrong.} Everyone in
+        a state shares the state shock, so errors correlate \emph{across
+        counties} within a state; county-level clustering leaves those
+        covariances out, and the SE is still too small. Too fine never works.
+  \item \textbf{Treatment at county, clustered by state: allowed, not free.}
+        Coarser is a \emph{more generous assumption}: it allows errors to
+        correlate across counties within a state instead of assuming they do
+        not. The price is far fewer clusters, hence a noisier variance
+        estimate (unreliable, \emph{not} systematically larger); if the
+        extra correlation is not there, you paid for nothing.
+  \item \textbf{Treatment at state, data sampled in clusters (the GSS).}
+        Now two lotteries create dependence: the \emph{sampling} lottery
+        (which tracts got drawn) and the \emph{assignment} lottery (which
+        states got the policy). Tracts are nested inside states, so
+        same-tract pairs are also same-state pairs, and clustering by state
+        covers both at once. \alert{With nested lotteries, cluster at the
+        coarsest one.}
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Serial Correlation: Bertrand, Duflo, and Mullainathan (2004)}
-A famous demonstration of what happens when you ignore within-unit correlation.
-\begin{itemize}\itemsep4pt
-  \item They ran \emph{placebo} difference-in-differences: take CPS data, invent
-        a state-level ``law'' beginning in a random year, and estimate its effect
-        on women's wages. The true effect is zero by construction.
-  \item With conventional standard errors the fake law came out ``significant'' at
-        $5\%$ in \alert{$45\%$} of the placebo runs.
-  \item Cause: state-level outcomes are highly serially correlated over time, and
-        the standard errors treated $50 \times 21$ observations as independent.
-  \item Clustering by state brought rejection rates close to nominal here.
+\textbf{Question.} Difference-in-differences studies (Week 10) regress an
+outcome on a policy dummy plus state and year fixed effects. Are their
+standard errors trustworthy? \textbf{Data.} CPS earnings of women aged
+25--50, 1979--1999: 50 states $\times$ 21 years.
+\begin{itemize}\itemsep1pt
+  \item \textbf{Placebo test}: invent a ``law'' (a random half of the
+        states, a random onset year) and estimate its effect on wages:
+        \emph{zero by construction}.
+  \item Conventional standard errors called the fake law ``significant''
+        at $5\%$ in \alert{$45\%$} of the placebo runs.
+  \item Cause: a state's wage shocks are strongly correlated \emph{across
+        years}, but the SEs treated the $50\times21$ state-years as
+        independent: the surviving covariances again, now over time.
+  \item Clustering by state (arbitrary correlation across years) brought
+        rejection rates back near $5\%$.
 \end{itemize}
-\vskip3pt
-The rule for any policy-adoption design, sociology's most common clustering
-decision: \alert{cluster at the level of the adopting unit}. Week 10 returns
-to this; design and inference are not separable.
-\end{frame}
-
-\begin{frame}{Other Dependence Structures\adv}
-\begin{itemize}\itemsep5pt
-  \item \textbf{Two-way / multi-way clustering} \srcp{Cameron et al.\ 2011}: firms
-        \emph{and} years, individuals \emph{and} places. Add the two
-        cluster-robust matrices and subtract their intersection.
-  \item \textbf{HAC (Newey--West)}: time-series dependence of unknown form,
-        handled with a bandwidth-weighted sum of autocovariances. For one long
-        series rather than many short ones.
-  \item \textbf{Spatial HAC (Conley)}: correlation decaying in geographic
-        distance.
-  \item \textbf{Network dependence}: correlation along a graph; an active area
-        with fewer settled answers.
-\end{itemize}
-\vskip4pt
-All are the same sandwich with a different meat. Once you can read
-$\hat{V}$, you can read any of these off the formula.
+The rule for policy-adoption designs:
+\alert{cluster at the level of the adopting unit}.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1004,7 +1016,7 @@ $\hat{V}$, you can read any of these off the formula.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Idea}
+\begin{frame}{The Idea\core}
 Everything so far derived a \emph{formula} for the sampling distribution. The
 bootstrap instead \alert{simulates} it.
 \vskip4pt
@@ -1015,10 +1027,13 @@ of $F$. So draw new samples from the sample.
 \end{block}
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item In our notation: replace $\E$ by $\En$, and resample.
   \item Especially valuable for statistics with no convenient closed-form
         variance: quantiles, ratios, decompositions, two-step estimators,
         indirect effects.
+  \item It also \emph{exposes} fragility that a formula hides. With an
+        influential outlier, replications that happen to draw it look very
+        different from those that miss it: the histogram goes lumpy or
+        skewed, and the interval honestly widens.
 \end{itemize}
 \end{frame}
 
@@ -1040,71 +1055,45 @@ of resamples.
         automatically heteroskedasticity-robust, given \emph{independent}
         observations; it assumes nothing about how the error variance moves
         with $X$.
-  \item $B = 1{,}000$ for standard errors; $B \geq 5{,}000$ for percentile
-        intervals or $p$-values.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Variants}
-\begin{center}\small
-\renewcommand{\arraystretch}{1.35}
-\begin{tabular}{lp{5.0cm}p{4.3cm}}
-\toprule
-Variant & What is resampled & When to use \\
-\midrule
-Pairs & $(Y_i,X_i)$ jointly & default; robust to heteroskedasticity \\
-Residual & $\hat e_i$, then $Y_i^\ast = \hat Y_i + \hat e_i^\ast$
-        & requires homoskedasticity; fixed design \\
-Wild & $Y_i^\ast = \hat Y_i + \hat e_i v_i$, $v_i \in \{-1,1\}$
-        & heteroskedastic, small $n$ \\
-Block / cluster & whole clusters & clustered data \\
-Wild cluster & cluster-level $v_g$, $H_0$ imposed & \alert{few clusters} \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip4pt
-Rademacher weights: $v_i = +1$ or $-1$ with probability $1/2$ each, so
-$\E[v_i]=0$ and $\E[v_i^2]=1$, the resampled errors keep the right variance
-observation by observation.
-\end{frame}
-
-\begin{frame}{Confidence Intervals: Not All Equal}
-\begin{itemize}\itemsep4pt
-  \item \textbf{Normal-approximation}: $\hat\theta \pm 1.96\,\SE_{\text{boot}}$.
-        Simple; assumes symmetry.
-  \item \textbf{Percentile}: quantiles of $\{\hat\theta^{(b)}\}$. Handles skew and
-        respects transformations.
-  \item \textbf{BC$_a$}: bias-corrected and accelerated; second-order accurate and
-        the usual recommendation for a percentile-type interval.
-  \item \alert{\textbf{Bootstrap-$t$ (studentized)}}: bootstrap the \emph{$t$
-        statistic} $(\hat\theta^{(b)}-\hat\theta)/\SE^{(b)}$ and use its
-        quantiles. Its approximation error shrinks \emph{faster} with $n$
-        than the other intervals'\adv. Requires a standard error at each
-        replication.
+\begin{frame}{Confidence Intervals from the Bootstrap\core}
+Two ways to turn the $\hat\theta^{(b)}$'s into a 95\% interval:
+\begin{itemize}\itemsep3pt
+  \item \textbf{Normal-approximation}:
+        $\hat\theta \pm 1.96\,\SE_{\text{boot}}$, with $\SE_{\text{boot}}$
+        the standard deviation of the $\hat\theta^{(b)}$. Uses the bootstrap
+        only for the \emph{width}, then assumes the bell shape.
+  \item \textbf{Percentile}: the 2.5th and 97.5th percentiles of the
+        $\hat\theta^{(b)}$ themselves. Uses the whole shape.
 \end{itemize}
 \vskip3pt
-The wild cluster bootstrap-$t$ is exactly this idea applied to the few-clusters
-problem, which is why it works so much better than a naive cluster bootstrap.
+Is the bootstrap distribution normal? \alert{Not necessarily.} The histogram of the $\hat\theta^{(b)}$ estimates the
+\emph{shape} of the sampling distribution: for large $n$ it usually goes
+bell-shaped (the same CLT as always), but at your actual $n$ it can be
+visibly skewed. When it is, the percentile interval follows the skew and
+the normal-approximation interval misses it. \alert{Look at the histogram;
+when the two intervals disagree, that shape is the reason.}
+\vskip2pt
+{\footnotesize $B = 1{,}000$ is enough for the SE. Percentile endpoints live in the tail,
+so intervals and $p$-values want $B \geq 5{,}000$.}
 \end{frame}
 
-\begin{frame}{When the Bootstrap Fails}
-The bootstrap is not magic; the statistic must be \emph{regular} enough (in
-a smoothness-like sense; quantiles qualify, the cases below do not).
-\begin{itemize}\itemsep2pt
-  \item \textbf{Non-smooth estimators}: the sample maximum or minimum;
-        nearest-neighbour matching estimators \srcp{Abadie and Imbens 2008}.
-  \item \textbf{Parameters on a boundary}, a variance component at zero.
-  \item \textbf{Heavy tails} with infinite variance.
-  \item \textbf{Dependence the resampling scheme does not preserve.} If you
-        resample individuals when the data are clustered, the bootstrap reproduces
-        the \emph{wrong}, too-small standard error just as faithfully as the
-        analytic formula does.
+\begin{frame}{Bootstrapping Clustered Data\core}
+\alert{Bootstrap the design: resample the units the lottery ran over.}
+\begin{itemize}\itemsep4pt
+  \item Resampling \emph{individuals} from clustered data reproduces the
+        too-small standard error just as faithfully as the naive formula
+        does: the bootstrap copies whatever sampling scheme you feed it.
+  \item \textbf{Cluster (block) bootstrap}: draw $G$ whole clusters
+        \emph{with replacement}, each drawn cluster bringing all its people.
+        A pseudo-sample repeats some clusters and omits others: the
+        variation across replications is \emph{between-cluster} variation,
+        as it should be. Resample at the level
+        you would cluster the SEs: treatment at state, resample states;
+        GSS tracts within states, still states.
 \end{itemize}
-\vskip2pt
-\begin{alertblock}{Bootstrap the design}
-Resample the units that were independently sampled. That single rule prevents
-most bootstrap mistakes.
-\end{alertblock}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1164,15 +1153,11 @@ $p$-hacking, specification search & \alert{no} & pre-registration \\
 \begin{enumerate}\itemsep4pt
   \item State the estimand and the design \emph{before} choosing a standard error.
   \item \textbf{Identify the independently sampled or independently assigned
-        units, and cluster there.} Use HC2 or HC3 only when observations are
+        units, and cluster there.} Use HC1 or HC3 only when observations are
         plausibly independent.
-  \item Report the number of clusters $G$. If $G < 40$, use CR2 with
-        Satterthwaite d.f.\ or a wild cluster bootstrap, and say so.
   \item If robust and classical standard errors differ dramatically, treat it as a
         diagnostic: something about the specification or the influence structure
         deserves attention.
-  \item Report the specification you pre-committed to, then robustness checks, 
-        not the reverse.
 \end{enumerate}
 \end{frame}
 
@@ -1196,39 +1181,22 @@ extract.
 
 \begin{frame}[allowframebreaks,t]{References}
 \scriptsize
-\begin{itemize}\itemsep2pt
-\item Abadie, Alberto and Guido W. Imbens. 2008. ``On the Failure of the Bootstrap
-for Matching Estimators.'' \textit{Econometrica} 76(6): 1537--1557.
-\item Abadie, Alberto, Susan Athey, Guido W. Imbens, and Jeffrey M. Wooldridge.
+\begin{itemize}\item Abadie, Alberto, Susan Athey, Guido W. Imbens, and Jeffrey M. Wooldridge.
 2023. ``When Should You Adjust Standard Errors for Clustering?''
 \textit{Quarterly Journal of Economics} 138(1): 1--35.
-\item Bell, Robert M. and Daniel F. McCaffrey. 2002. ``Bias Reduction in Standard
-Errors for Linear Regression with Multi-Stage Samples.''
-\textit{Survey Methodology} 28(2): 169--181.
 \item Bertrand, Marianne, Esther Duflo, and Sendhil Mullainathan. 2004. ``How Much
 Should We Trust Differences-in-Differences Estimates?''
 \textit{Quarterly Journal of Economics} 119(1): 249--275.
-\item Cameron, A. Colin, Jonah B. Gelbach, and Douglas L. Miller. 2008.
-``Bootstrap-Based Improvements for Inference with Clustered Errors.''
-\textit{Review of Economics and Statistics} 90(3): 414--427.
-\item Cameron, A. Colin, Jonah B. Gelbach, and Douglas L. Miller. 2011. ``Robust
-Inference with Multiway Clustering.''
-\textit{Journal of Business \& Economic Statistics} 29(2): 238--249.
 \item Efron, Bradley. 1979. ``Bootstrap Methods: Another Look at the Jackknife.''
 \textit{Annals of Statistics} 7(1): 1--26.
 \item Freedman, David A. 2006. ``On the So-Called `Huber Sandwich Estimator' and
 `Robust Standard Errors'.'' \textit{The American Statistician} 60(4): 299--302.
-\item Imbens, Guido W. and Michal Koles\'ar. 2016. ``Robust Standard Errors in
-Small Samples: Some Practical Advice.'' \textit{Review of Economics and
-Statistics} 98(4): 701--712.
 \item Long, J. Scott and Laurie H. Ervin. 2000. ``Using Heteroscedasticity
 Consistent Standard Errors in the Linear Regression Model.''
 \textit{The American Statistician} 54(3): 217--224.
 \item MacKinnon, James G. and Halbert White. 1985. ``Some
 Heteroskedasticity-Consistent Covariance Matrix Estimators with Improved Finite
 Sample Properties.'' \textit{Journal of Econometrics} 29(3): 305--325.
-\item Moulton, Brent R. 1986. ``Random Group Effects and the Precision of
-Regression Estimates.'' \textit{Journal of Econometrics} 32(3): 385--397.
 \item White, Halbert. 1980. ``A Heteroskedasticity-Consistent Covariance Matrix
 Estimator and a Direct Test for Heteroskedasticity.''
 \textit{Econometrica} 48(4): 817--838.
