@@ -148,93 +148,95 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Two Ways to Justify an Estimator}
-\begin{columns}[T]
-\begin{column}{0.47\textwidth}
-\textbf{Design / agnostic}
-\begin{itemize}\small\itemsep3pt
-  \item Start with the CEF. $\beta$ is defined as the best linear approximation
-        to it, whatever the world looks like.
-  \item Assumes almost nothing about how $Y$ was generated.
-  \item This was Weeks 1--2.
+\begin{frame}{What Least Squares Bought Us, and What It Cost\core}
+Two weeks, one idea: pick the line that makes the squared misses as small as
+possible. Look at how much that bought:
+\begin{itemize}\itemsep3pt
+  \item A slope with a clear meaning (the best linear approximation to the
+        CEF), computable with sums alone.
+  \item Honest uncertainty for it, robust to heteroskedasticity and
+        clustering, without ever assuming what the errors look like.
 \end{itemize}
+\vskip2pt
+It asked almost nothing in return: never \emph{how} $Y$ was generated,
+only \emph{which line fits best}.
+\vskip2pt
+\begin{alertblock}{That is also its limit}
+Least squares cannot ask \alert{how were these outcomes produced?} For
+earnings you can afford not to ask. For much of sociology's data, you cannot.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Where the Line Runs Out\core}
+Regress ``employed'' ($0/1$) on years of schooling, by least squares:
+\vskip4pt
+\begin{columns}[c]
+\begin{column}{0.52\textwidth}
+\centering
+\begin{tikzpicture}[xscale=0.62,yscale=0.98]
+  \draw[->] (0,-0.9) -- (8.6,-0.9) node[right]{\scriptsize schooling};
+  \draw[->] (0,-0.9) -- (0,3.4) node[above]{\scriptsize employed};
+  \draw[gray,dashed] (0,0) -- (8.4,0) node[right]{\scriptsize $0$};
+  \draw[gray,dashed] (0,2.6) -- (8.4,2.6) node[right]{\scriptsize $1$};
+  \foreach \x in {0.4,0.9,1.3,1.8,2.2,2.7,3.1,3.6,4.4,5.0,5.9}
+    \node[circle,fill=dukeblue!70,inner sep=1.5pt] at (\x,0) {};
+  \foreach \x in {3.3,4.0,4.7,5.3,5.6,6.1,6.5,6.9,7.3,7.7,8.1}
+    \node[circle,fill=dukeblue!70,inner sep=1.5pt] at (\x,2.6) {};
+  \draw[accent,thick] (0,-0.55) -- (8.4,3.25);
+  \node[accent,anchor=south east] at (8.3,3.3) {\scriptsize least-squares line};
+  \draw[dukeblue,very thick,smooth,samples=80,domain=0:8.4,variable=\x]
+    plot ({\x},{2.6/(1+exp(-1.3*(\x-4.4)))});
+  \node[dukeblue,anchor=west] at (4.9,0.75) {\scriptsize a curve that stays in $[0,1]$};
+\end{tikzpicture}
 \end{column}
-\begin{column}{0.49\textwidth}
-\textbf{Model-based}
-\begin{itemize}\small\itemsep3pt
-  \item Write down a full \emph{probability model} for how $Y$ was generated,
-        with unknown parameters.
-  \item Estimate the parameters that make the observed data most probable.
-  \item This is maximum likelihood, and it is Weeks 3--4.
+\begin{column}{0.46\textwidth}
+\begin{itemize}\itemsep6pt
+  \item The line predicts ``probabilities'' below $0$ and above $1$: the
+        shape of the outcome carries information the line cannot use.
+  \item Counts go negative the same way; durations get censored;
+        categories have no order. The problem is not the slope:
+        \alert{a line is the wrong \emph{kind} of answer}.
 \end{itemize}
 \end{column}
 \end{columns}
-\vskip8pt
-\begin{block}{Neither is ``the right one''}
-The design-based view is safer for causal estimands. The model-based view buys
-you things the agnostic view cannot deliver: predictions on the right support,
-structural parameters, latent variables, and outcomes that are not real numbers.
-Be pragmatic, and be explicit about which you are using.
-\end{block}
 \end{frame}
 
-\begin{frame}{A Hook: OLS Is Secretly a Maximum Likelihood Estimator}
-A claim to hold on to through the next section.
-\vskip2pt
-\begin{block}{The claim}
-Assume Week 1's model with \alert{normal} errors. Then the rule ``choose
-$(b_0, b_1)$ to make the data you observed \emph{as probable as possible}''
-selects \emph{exactly} the least-squares line: the same $\hat\beta_0$ and
-$\hat\beta_1$, digit for digit.
-\end{block}
-\vskip2pt
-\begin{itemize}\itemsep3pt
-  \item So least squares is not a free-standing recipe. It is a \emph{special
-        case} of a more general principle, and the general principle also
-        works where least squares has nothing to offer: binary outcomes,
-        counts, durations.
-  \item We are not equipped to show this yet. We will be by the end of the
-        next section, and the derivation will take three lines.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Why We Need the Generalization}
-The normal linear model assumes $Y_i \in \R$ with constant variance. Sociological
-outcomes are often not like that.
+\begin{frame}{The Question Underneath\core}
+Least squares asks which line comes closest to the points. Maximum
+likelihood asks something different:
+\begin{center}
+\alert{``Which parameter values would have made the data I observed most likely?''}
+\end{center}
+To ask that, you have to say how $Y$ is produced: a coin for employment, a
+bell curve centred on a line for earnings. In return:
 \begin{itemize}\itemsep2pt
-  \item \textbf{Binary}: employed or not, voted or not, married or not. A linear
-        model can predict probabilities below 0 and above 1.
-  \item \textbf{Counts}: number of children, arrests, publications. Non-negative
-        integers, right-skewed, variance tied to the mean.
-  \item \textbf{Categorical}: occupation, party, religious affiliation. There is
-        no meaningful numeric coding of $\{$professional, service, manual$\}$.
-  \item \textbf{Ordered}: strongly agree $\dots$ strongly disagree. The gaps
-        between categories are not known.
-  \item \textbf{Durations, censored, truncated}: time to first birth; income
-        top-coded at \$$200{,}000$.
+  \item One method for any outcome: binary, count, ordered, duration.
+  \item Standard errors from the shape of the likelihood, not a new formula
+        per model.
+  \item One way to compare models, logit or Poisson alike: LR tests, AIC, BIC.
+  \item Nothing lost: with bell-shaped errors it returns the least-squares
+        line exactly.
 \end{itemize}
-\vskip2pt
-Maximum likelihood handles all of these, and is the engine behind almost every
-model in the sociological literature.
+\vskip4pt
+Hence two weeks: this week the method, next week logit, probit, Poisson.
+\par\vskip2pt\noindent{\footnotesize Stars: \core{} examinable; \adv{} never examined.}
 \end{frame}
 
-\begin{frame}{Where We Are Going}
-\begin{enumerate}\itemsep5pt
-  \item \textbf{The likelihood}: what it is, and the crucial distinction between
-        probability and likelihood.
-  \item \textbf{Finding the maximum}: the score function, the first-order
-        condition, and worked examples you can do on paper.
-  \item \textbf{Information}: how the \emph{curvature} of the log-likelihood tells
-        you how precise your estimate is.
-  \item \textbf{Properties}: consistency, asymptotic normality, efficiency,
-        invariance, and what can go wrong.
-  \item \textbf{Testing}: the likelihood ratio, Wald, and score tests, which are
-        three ways of measuring the same distance.
-\end{enumerate}
-\vskip6pt
-As in Weeks 1--2, everything examinable is done in the \alert{one-parameter
-scalar case}. Frames marked \core{} are the essential core; frames marked
-\adv{} generalize.
+\begin{frame}{Two Stances, Both Legitimate}
+Two questions, two stances toward a regression; this course uses both.
+\begin{itemize}\itemsep4pt
+  \item \textbf{Design-based} (Weeks 1--2, 5--11): $\beta$ is the best
+        linear approximation to the CEF; assume little about how $Y$ was
+        generated; let the \emph{research design} carry the causal claim.
+  \item \textbf{Model-based} (Weeks 3--4): write a probability model for
+        $Y$ and estimate the parameter values that make the data most
+        probable. Needed when the outcome is not a real number.
+\end{itemize}
+\vskip4pt
+\begin{block}{Neither is ``the right one''}
+Say which stance a result rests on: a logit coefficient and a
+difference-in-differences estimate answer different kinds of question.
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -267,30 +269,49 @@ outcome most probable?''
 \end{columns}
 \vskip4pt
 \begin{alertblock}{The single most important sentence today}
-The likelihood is \emph{the same formula read backwards}: a function of the
-parameter, with the data nailed down. It is \alert{not} a probability
-distribution over $\theta$; it does not integrate to one, and
-$\lik(\theta)$ is not ``the probability that $\theta$ is true.''
+The likelihood is \emph{the same formula read backwards}: a function of
+$\theta$ with the data fixed. It is \alert{not} a distribution over
+$\theta$: it does not integrate to one.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{A First Example: Marbles in a Bag}
-An opaque bag contains blue and white marbles. You want the proportion $\theta$
-that are blue. You draw 10 marbles with replacement and get 7 blue.
-\vskip4pt
-The number of blue draws is Binomial$(10,\theta)$, so
+\begin{frame}{A First Example: Marbles in a Bag\core}
+An opaque bag holds blue and white marbles; $\theta$ is the proportion blue.
+You draw 10 marbles \emph{with replacement} and get 7 blue. Ten draws are
+ten \emph{observations}, each a Bernoulli outcome (blue or not); the
+summary ``7 of 10'' is a binomial count. Build its probability step by step:
+\begin{itemize}\itemsep2pt
+  \item \textbf{One draw}: blue with probability $\theta$, white with
+        probability $1-\theta$ (replacement makes the draws identical and
+        independent).
+  \item \textbf{One particular sequence}, say B\,B\,B\,B\,B\,B\,B\,W\,W\,W:
+        independence means multiply,
+        $\theta\cdot\theta\cdots\theta\cdot(1-\theta)(1-\theta)(1-\theta)
+        = \theta^{7}(1-\theta)^{3}$. Any other order with 7 blues and 3
+        whites has the \emph{same} product.
+  \item \textbf{All such sequences}: there are
+        $\binom{10}{3} = \binom{10}{7} = \frac{10!}{3!\,7!} = 120$ ways to
+        place the 3 whites (equivalently the 7 blues) among the 10 draws,
+        so $\Pr(7 \text{ blue} \mid \theta) = 120\,\theta^{7}(1-\theta)^{3}$.
+        ($\binom{n}{k}$, read ``$n$ choose $k$,'' is the standard notation.)
+\end{itemize}
+The $120$ does not involve $\theta$: it cannot change which candidate wins.
+\end{frame}
+
+\begin{frame}{Marbles: Reading It as a Likelihood}
+Now hold the data fixed, 7 blue in 10, and let $\theta$ vary:
 \begin{align*}
-  \lik(\theta) = \Pr(X = 7\mid\theta) = \binom{10}{7}\theta^{7}(1-\theta)^{3} .
+  \lik(\theta) = 120\,\theta^{7}(1-\theta)^{3} .
 \end{align*}
-\pause
 \begin{itemize}\itemsep3pt
   \item Try $\theta = 0.3$: $\lik = 120(0.3)^7(0.7)^3 \approx 0.0090$.
   \item Try $\theta = 0.5$: $\lik = 120(0.5)^{10} \approx 0.117$.
   \item Try $\theta = 0.7$: $\lik = 120(0.7)^7(0.3)^3 \approx 0.267$.
 \end{itemize}
 \vskip3pt
-Among these, $\theta = 0.7$ makes the data we actually saw most probable. The MLE
-is the value that does best among \emph{all} $\theta\in[0,1]$.
+Among these three, $\theta = 0.7$ makes the data we actually saw most
+probable. The MLE is the value that does best among \emph{all}
+$\theta\in[0,1]$: the next frame plots the whole curve.
 \end{frame}
 
 \begin{frame}{The Likelihood, Plotted}
@@ -323,6 +344,9 @@ it factors:
 \begin{align*}
   \lik(\theta; y_1,\dots,y_n) = \prod_{i=1}^{n} f(y_i \mid \theta) .
 \end{align*}
+{\footnotesize (Two observations first: independence means
+$f(y_1, y_2 \mid \theta) = f(y_1 \mid \theta)\, f(y_2 \mid \theta)$, the
+probability of both is the product; $n$ observations just repeat the step.)}
 \pause
 Products of many small numbers underflow and are painful to differentiate, so we
 take logs:
@@ -337,106 +361,267 @@ take logs:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Worked Example 1: Bernoulli\core}
-Let $Y_i \in \{0,1\}$ with $\Pr(Y_i=1)=\theta$. The mass function written as a
-single formula:
+\begin{frame}{Worked Example 1: A Binomial Count\core}
+The marble game: $n$ Bernoulli draws, $Y_i \in \{0,1\}$,
+$\Pr(Y_i=1)=\theta$. The data that matter are the \emph{count} of
+successes out of $n$; $\theta$ is the probability to estimate from it.
+One draw's mass function as a single formula:
 \begin{align*}
   f(y_i\mid\theta) = \theta^{y_i}(1-\theta)^{1-y_i} .
 \end{align*}
-(Check: at $y_i = 1$ it gives $\theta$; at $y_i = 0$ it gives $1-\theta$.)
-\vskip4pt
+(At $y_i = 1$ it gives $\theta$; at $y_i = 0$, $1-\theta$.)
 \begin{align*}
   \lik(\theta)
   &= \prod_{i=1}^n \theta^{y_i}(1-\theta)^{1-y_i}
-   = \theta^{\sum_i y_i}(1-\theta)^{n - \sum_i y_i} , \\[3pt]
+   = \theta^{\sum_i y_i}(1-\theta)^{n - \sum_i y_i} , \\[1pt]
   \loglik(\theta)
   &= \Big(\textstyle\sum_i y_i\Big)\log\theta
    + \Big(n - \textstyle\sum_i y_i\Big)\log(1-\theta) .
 \end{align*}
+\textbf{Sequence or count?} This is the probability of the \emph{particular}
+$0/1$ sequence; the binomial multiplies it by $\binom{n}{\sum y_i}$ for the
+probability of the \emph{count}. A constant factor, so the same MLE: for
+$\theta$, \alert{the count is all that matters} (the data enter only through
+$\sum_i y_i$, a \emph{sufficient statistic}). Counts are where we are headed.
+\end{frame}
+
+\begin{frame}{Worked Example 1: Reading the Binomial\core}
+\begin{align*}
+  \Pr(Y = y \mid n, \theta) = \binom{n}{y}\,\theta^{y}(1-\theta)^{n-y},
+  \qquad y = 0, 1, \dots, n
+\end{align*}
+\vskip-4pt
+\begin{center}
+\begin{tikzpicture}[x=0.3cm,y=3.3cm]
+  \begin{scope}[xshift=0.0cm]
+    \draw[->] (-1,0) -- (11.5,0); \draw[->] (-1,0) -- (-1,0.42);
+    \draw[gray,dashed] (10,0) -- (10,0.3); \node[gray,above] at (10,0.3) {\tiny $y=n$};
+    \foreach \y/\p in {0/0.028,1/0.121,2/0.233,3/0.267,4/0.200,5/0.103,6/0.037,7/0.009,8/0.001,9/0.000,10/0.000}
+      {\draw[dukeblue,very thick] (\y,0) -- (\y,\p); \fill[dukeblue] (\y,\p) circle (1.2pt);}
+    \foreach \y in {0,2,4,6,8,10} \node[below] at (\y,0) {\tiny \y};
+    \node at (4.5,0.39) {\small $n = 10,\ \theta = 0.3$};
+  \end{scope}
+  \begin{scope}[xshift=4.0cm]
+    \draw[->] (-1,0) -- (11.5,0); \draw[->] (-1,0) -- (-1,0.42);
+    \draw[gray,dashed] (10,0) -- (10,0.3); \node[gray,above] at (10,0.3) {\tiny $y=n$};
+    \foreach \y/\p in {0/0.001,1/0.010,2/0.044,3/0.117,4/0.205,5/0.246,6/0.205,7/0.117,8/0.044,9/0.010,10/0.001}
+      {\draw[dukeblue,very thick] (\y,0) -- (\y,\p); \fill[dukeblue] (\y,\p) circle (1.2pt);}
+    \foreach \y in {0,2,4,6,8,10} \node[below] at (\y,0) {\tiny \y};
+    \node at (4.5,0.39) {\small $n = 10,\ \theta = 0.5$};
+  \end{scope}
+  \begin{scope}[xshift=8.0cm]
+    \draw[->] (-1,0) -- (11.5,0); \draw[->] (-1,0) -- (-1,0.42);
+    \draw[gray,dashed] (10,0) -- (10,0.3); \node[gray,above] at (10,0.3) {\tiny $y=n$};
+    \foreach \y/\p in {0/0.000,1/0.000,2/0.001,3/0.009,4/0.037,5/0.103,6/0.200,7/0.267,8/0.233,9/0.121,10/0.028}
+      {\draw[dukeblue,very thick] (\y,0) -- (\y,\p); \fill[dukeblue] (\y,\p) circle (1.2pt);}
+    \foreach \y in {0,2,4,6,8,10} \node[below] at (\y,0) {\tiny \y};
+    \node at (4.5,0.39) {\small $n = 10,\ \theta = 0.7$};
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{The pieces}: $\theta^{y}$ for the $y$ successes,
+        $(1-\theta)^{n-y}$ for the failures, $\binom{n}{y}$ for the orders
+        they can come in.
+  \item \textbf{The shape}: centred at $n\theta$, spread $n\theta(1-\theta)$,
+        and a hard ceiling: no count above $n$ is possible.
+  \item \textbf{Read down, not across}: the marble game fixes $y = 7$ and
+        asks which panel puts the most mass on $7$. The $\theta = 0.7$ panel
+        wins: that is the likelihood.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Counting Units or Counting Events?\core}
+Sociology's counts come in two kinds.
+\begin{itemize}\itemsep5pt
+  \item \textbf{Units with an event, out of a known $n$}: 12 of 30 students
+        protested. Each unit is a Bernoulli $0/1$ (Worked Example 1); the
+        total is binomial; it cannot exceed $n$.
+  \item \textbf{Events one unit accumulates over exposure}: arrests of one
+        person in a year; children; publications. There is no $n$ to count
+        out of, and no ceiling.
+\end{itemize}
+\vskip6pt
+\begin{block}{Rule of thumb}
+First kind: binomial (in practice a logit on the $0/1$, Week 4). Second
+kind: we need a distribution with no ceiling. Build it from the binomial,
+next.
+\end{block}
+\end{frame}
+
+\begin{frame}{Worked Example 2: From the Binomial to the Poisson\core}
+Start from the binomial count of Worked Example 1:
+\begingroup\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \Pr(Y = y \mid n, p) = \binom{n}{y}\,p^{y}\,(1-p)^{n-y} .
+\end{align*}
+\endgroup
+Read it as \emph{arrests of one person in a year}: slice the year into $n$
+moments, each a Bernoulli trial with chance $p$ of an arrest. Then $y$ is
+the number of arrests: $p^{y}$ for the $y$ moments with one, $(1-p)^{n-y}$
+for the moments without, $\binom{n}{y}$ for which moments they were.
 \vskip2pt
-Notice that the data enter only through $\sum_i y_i$: it is a
-\emph{sufficient statistic}.
+Now slice finer: 365 days, 8{,}760 hours, 525{,}600 minutes, $\dots$ The
+slices $n \to \infty$ and the chance per slice $p \to 0$, but the expected
+arrests per year, $np = \E[Y] = \theta$, cannot depend on how you slice.
+Fix $y$ and take the limit:
+\begingroup\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \binom{n}{y}p^{y}(1-p)^{n-y} \ \longrightarrow\
+  \frac{\theta^{y}e^{-\theta}}{y!}, \qquad y = 0, 1, 2, \dots
+\end{align*}
+\endgroup
+The \alert{Poisson distribution}: one parameter $\theta$, the expected
+count. Neither $n$ nor $p$ survives, so nothing caps the count.
 \end{frame}
 
-\begin{frame}{Worked Example 2: Poisson}
-Let $Y_i$ be a count with $\Pr(Y_i = y\mid\theta) = \dfrac{\theta^{y}e^{-\theta}}{y!}$.
+\begin{frame}{Worked Example 2: Reading the Poisson\core}
 \begin{align*}
-  \loglik(\theta)
-  &= \sum_{i=1}^n \log\!\left(\frac{\theta^{y_i}e^{-\theta}}{y_i!}\right)
-   = \sum_{i=1}^n \Big( y_i\log\theta - \theta - \log(y_i!)\Big) \\[3pt]
-  &= \log(\theta)\sum_{i} y_i \;-\; n\theta \;-\; \sum_i \log(y_i!) .
+  \Pr(Y = y \mid \theta) = \frac{\theta^{y}\, e^{-\theta}}{y!},
+  \qquad y = 0, 1, 2, \dots
 \end{align*}
-\vskip4pt
+\vskip-4pt
+\begin{center}
+\begin{tikzpicture}[x=0.2cm,y=3.6cm]
+  \begin{scope}
+    \draw[->] (-1,0) -- (9,0); \draw[->] (-1,0) -- (-1,0.42);
+    \foreach \y/\p in {0/0.368,1/0.368,2/0.184,3/0.061,4/0.015,5/0.003}
+      {\draw[dukeblue,very thick] (\y,0) -- (\y,\p); \fill[dukeblue] (\y,\p) circle (1.2pt);}
+    \foreach \y in {0,2,4,6,8} \node[below] at (\y,0) {\tiny \y};
+    \node at (4,0.40) {\small $\theta = 1$};
+  \end{scope}
+  \begin{scope}[xshift=2.6cm]
+    \draw[->] (-1,0) -- (11,0); \draw[->] (-1,0) -- (-1,0.42);
+    \foreach \y/\p in {0/0.050,1/0.149,2/0.224,3/0.224,4/0.168,5/0.101,6/0.050,7/0.022,8/0.008,9/0.003}
+      {\draw[dukeblue,very thick] (\y,0) -- (\y,\p); \fill[dukeblue] (\y,\p) circle (1.2pt);}
+    \foreach \y in {0,2,4,6,8,10} \node[below] at (\y,0) {\tiny \y};
+    \node at (5,0.40) {\small $\theta = 3$};
+  \end{scope}
+  \begin{scope}[xshift=5.6cm]
+    \draw[->] (-1,0) -- (18,0); \draw[->] (-1,0) -- (-1,0.42);
+    \foreach \y/\p in {0/0.000,1/0.003,2/0.011,3/0.029,4/0.057,5/0.092,6/0.122,7/0.140,8/0.140,9/0.124,10/0.099,11/0.072,12/0.048,13/0.030,14/0.017,15/0.009,16/0.005}
+      {\draw[dukeblue,very thick] (\y,0) -- (\y,\p); \fill[dukeblue] (\y,\p) circle (1.2pt);}
+    \foreach \y in {0,4,8,12,16} \node[below] at (\y,0) {\tiny \y};
+    \node at (8,0.40) {\small $\theta = 8$};
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{The pieces}: $\theta^y$ grows with $y$, $y!$ shrinks it back
+        (large counts are rare), $e^{-\theta}$ makes the probabilities sum
+        to one.
+  \item \textbf{The shapes}: piled at zero and right-skewed for small
+        $\theta$; nearly a bell centred at $\theta$ for large $\theta$. No
+        ceiling anywhere: the binomial's $n$ is gone.
+  \item \textbf{The signature}: mean and variance are both $\theta$, so the
+        spread grows with the mean: heteroskedasticity built in.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Worked Example 2: The Poisson Log-Likelihood\core}
+Independent Poisson counts $Y_1,\dots,Y_n$, common $\theta$; step by step:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \lik(\theta) &= \prod_{i=1}^n \frac{\theta^{y_i}e^{-\theta}}{y_i!}
+    && \text{\footnotesize independence: multiply} \\
+  \loglik(\theta) &= \sum_{i=1}^n \log\!\left(\frac{\theta^{y_i}e^{-\theta}}{y_i!}\right)
+    && \text{\footnotesize log turns the product into a sum} \\
+  &= \sum_{i=1}^n \Big( y_i\log\theta - \theta - \log(y_i!)\Big)
+    && \text{\footnotesize $\log\theta^{y} = y\log\theta$, $\log e^{-\theta} = -\theta$} \\
+  &= \log(\theta)\sum_{i} y_i \;-\; n\theta \;-\; \sum_i \log(y_i!)
+    && \text{\footnotesize collect: $n$ copies of $\theta$}
+\end{align*}
+\endgroup
+\begin{itemize}\itemsep1pt
+  \item The last term has no $\theta$: an \emph{additive constant},
+        droppable for maximization but not when comparing log-likelihood
+        \emph{values} across models.
+  \item Again the data enter only through $\sum_i y_i$: the total count is
+        sufficient.
+\end{itemize}
+\vskip-3pt
+\end{frame}
+
+\begin{frame}{Preview: Where the Regressors Go\core}
+So far every observation shares one $\theta$. Next week each observation
+gets its own, driven by covariates:
+\begin{align*}
+  \theta_i = \exp(\beta_0 + \beta_1 X_i),
+  \qquad
+  \loglik(\beta_0,\beta_1) = \sum_i \Big[\, y_i(\beta_0 + \beta_1 X_i)
+  - e^{\beta_0 + \beta_1 X_i} - \log(y_i!)\Big] .
+\end{align*}
 \begin{itemize}\itemsep3pt
-  \item The last term does not involve $\theta$ at all. It is an
-        \emph{additive constant} and can be dropped for maximization, but not
-        if you want to compare log-likelihood \emph{values} across models.
-  \item Again the data enter only through $\sum_i y_i$.
+  \item The exponential keeps every $\theta_i$ positive, whatever the
+        covariates do; this is the \emph{log link} of Poisson regression.
+  \item Same recipe: density, product, log, sum. Only the parameter changed
+        from a number to a function of $X_i$.
+  \item No closed form any more ($\beta$ sits inside and outside the
+        exponential), so the maximum is found numerically: Section 3.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Worked Example 3: Normal}
-Let $Y_i \sim \mathcal N(\mu,\sigma^2)$, two unknown parameters.
+\begin{frame}{Worked Example 3: The Normal Linear Model\core}
+The normal (Gaussian) density, a bell centred at $\mu$ with spread $\sigma$:
 \begin{align*}
-  f(y_i\mid\mu,\sigma^2)
-  = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(y_i-\mu)^2}{2\sigma^2}\right),
+  f(y \mid \mu, \sigma^2)
+  = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(y-\mu)^2}{2\sigma^2}\right) .
 \end{align*}
-so
-\begin{align*}
-  \loglik(\mu,\sigma^2)
-  = -\frac{n}{2}\log(2\pi) - \frac{n}{2}\log\sigma^2
-    - \frac{1}{2\sigma^2}\sum_{i=1}^n (y_i-\mu)^2 .
-\end{align*}
-\vskip3pt
-\begin{itemize}
-  \item Look at the last term: for fixed $\sigma^2$, maximizing over $\mu$ means
-        \alert{minimizing $\sum_i(y_i-\mu)^2$}. Least squares falls out of the
-        normal likelihood, not the other way round.
-  \item Replacing the constant mean $\mu$ with a regression line cashes the
-        hook from the opening. Next frames.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Cashing the Hook: OLS Is an MLE, Step 1}
-Replace the constant mean with Week 1's line: each observation is a draw from
-a bell centred on the line,
-\begin{align*}
-  Y_i \sim \mathcal N\big(\beta_0 + \beta_1 X_i,\ \sigma^2\big) ,
-\end{align*}
-so one observation's density, at candidate values $(b_0, b_1)$, is the height
-of that bell at the observed $Y_i$:
+Two assumptions from Week 1, now used together:
+\begin{enumerate}\itemsep3pt
+  \item \textbf{Linear CEF}: $\E[Y_i \mid X_i] = \beta_0 + \beta_1 X_i$.
+  \item \textbf{Normal errors}: $\epsilon_i \sim \mathcal N(0,\sigma^2)$,
+        independently.
+\end{enumerate}
+Together they say $Y_i \mid X_i \sim \mathcal N(\beta_0 + \beta_1 X_i,\
+\sigma^2)$: the bell's centre $\mu$ is the line. Put $\mu = b_0 + b_1X_i$
+into the density, and one observation's likelihood at candidate values
+$(b_0,b_1)$ is
 \begin{align*}
   f(Y_i \mid b_0, b_1)
   = \frac{1}{\sqrt{2\pi\sigma^2}}
-    \exp\!\left(-\frac{\big(Y_i - b_0 - b_1 X_i\big)^2}{2\sigma^2}\right) .
+    \exp\!\left(-\frac{(Y_i - b_0 - b_1 X_i)^2}{2\sigma^2}\right) .
 \end{align*}
-\vskip2pt
-Read the exponent: the density is largest when the observation sits \emph{on}
-the candidate line, and it decays with the \alert{squared vertical miss}. The
-square is already inside the normal density; nobody put it there.
 \end{frame}
 
-\begin{frame}{Cashing the Hook: OLS Is an MLE, Step 2\core}
-Apply this section's recipe, independence $\Rightarrow$ product, $\log$
-$\Rightarrow$ sum:
+\begin{frame}{Cashing the Hook: OLS Is an MLE\core}
+Product over independent observations, then log:
 \begin{align*}
   \loglik(b_0, b_1)
-  = \underbrace{-\frac n2 \log\!\big(2\pi\sigma^2\big)}_{\text{no } b_0,\, b_1}
-  \;-\; \frac{1}{2\sigma^2}\,
-  \underbrace{\sum_{i=1}^n \big(Y_i - b_0 - b_1X_i\big)^2}_{\text{Week 1's
-  objective } S(b_0, b_1)} .
+  &= \sum_{i=1}^n \log f(Y_i \mid b_0, b_1)
+   = \sum_{i=1}^n \Big[ -\tfrac12\log(2\pi\sigma^2)
+     - \frac{(Y_i - b_0 - b_1X_i)^2}{2\sigma^2} \Big] \\[1pt]
+  &= \underbrace{-\frac n2\log(2\pi\sigma^2)}_{\text{no } b_0, b_1}
+     \;-\; \frac{1}{2\sigma^2}
+     \underbrace{\sum_{i=1}^n (Y_i - b_0 - b_1X_i)^2}_{\text{Week 1's } S(b_0,b_1)} .
 \end{align*}
-\begin{itemize}\itemsep3pt
-  \item The candidates enter \emph{only} through $S(b_0, b_1)$, with a minus
-        sign and a positive factor in front. \alert{Maximizing the
-        log-likelihood is exactly minimizing the sum of squares}: the same
-        argmin, hence the same estimates, digit for digit.
+\begin{itemize}\itemsep2pt
+  \item The candidates enter only through $S$, with a minus sign and a
+        positive factor in front. \alert{Maximizing $\loglik$ is exactly
+        minimizing $S$}: the MLE is the least-squares line, digit for digit.
   \item Least squares was never arbitrary: it is what ``make the data as
-        probable as possible'' prescribes when the errors are normal bells.
-  \item Change the distribution, binary, count, duration, and the same
-        principle produces new estimators. That is the rest of this week, and
-        all of next.
+        probable as possible'' prescribes for normal errors around a line.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{What the Hook Does Not Say\core}
+\begin{itemize}\itemsep6pt
+  \item \textbf{OLS itself never needed normality.} Weeks 1--2 built it
+        from moments alone, and its inference came from the CLT, not from
+        any error distribution.
+  \item \textbf{Normality is the price of admission} to the likelihood
+        framework. For a continuous outcome it buys nothing new: OLS already
+        gave the estimate, and Week 2 already gave its standard errors, with
+        no distribution assumed.
+\end{itemize}
+\vskip6pt
+\begin{block}{The point of the exercise}
+Not ``assume normality,'' but ``one principle contains least squares as a
+special case and extends to everything least squares cannot do.''
+\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -460,9 +645,11 @@ parameter:
         FOC for least squares.
   \item Second-order condition: $\partial^2\loglik/\partial\theta^2 < 0$ at
         $\hat\theta$, so that we have a maximum rather than a minimum.
-  \item A key population fact: $\E[S(\theta_0)] = 0$ at the true parameter. The
-        score is a \emph{mean-zero} random variable, which is why the CLT will
-        apply to it.
+  \item A population fact: $\E[S(\theta_0)] = 0$ (derived in Section 4).
+        \textbf{Mind the direction}: here the true $\theta_0$ is fixed and
+        the data vary, Week 2's sampling-distribution view, which is how any
+        estimator is judged. Estimation runs the other way (data fixed,
+        $\theta$ varies).
 \end{itemize}
 \end{frame}
 
@@ -483,40 +670,55 @@ Multiply through by $\theta(1-\theta)$:
 The MLE of a probability is the sample proportion, derived, not assumed.
 \end{frame}
 
-\begin{frame}{Poisson: Deriving $\hat\theta$}
+\begin{frame}{Poisson: Deriving $\hat\theta$\core}
+Differentiate the log-likelihood and set the score to zero:
 \begin{align*}
-  \loglik(\theta) &= \log(\theta)\sum_i y_i - n\theta - \sum_i\log(y_i!) \\[4pt]
-  S(\theta) &= \frac{\sum_i y_i}{\theta} - n \ \overset{!}{=}\ 0
-  \qquad\Longrightarrow\qquad
-  \boxed{\;\hat\theta = \bar y\;}
+  \loglik(\theta) &= \log(\theta)\sum_i y_i - n\theta - \sum_i\log(y_i!) \\[2pt]
+  S(\theta) &= \frac{\sum_i y_i}{\theta} - n
+    && \text{\footnotesize $\tfrac{d}{d\theta}\log\theta = \tfrac1\theta$;
+       the constant's derivative is $0$} \\[2pt]
+  S(\hat\theta) = 0 &\ \Longrightarrow\ \frac{\sum_i y_i}{\hat\theta} = n
+   \ \Longrightarrow\ \boxed{\;\hat\theta = \frac{\sum_i y_i}{n} = \bar y\;}
 \end{align*}
-\vskip4pt
-Check the second-order condition:
+\vskip2pt
+Second-order condition, to be sure it is a maximum:
 \begin{align*}
-  \frac{\partial^2 \loglik}{\partial\theta^2} = -\frac{\sum_i y_i}{\theta^2} < 0 ,
+  \frac{\partial^2 \loglik}{\partial\theta^2} = -\frac{\sum_i y_i}{\theta^2} < 0 .
+  \quad\checkmark
 \end{align*}
-so we really have a maximum. \\[4pt]
-Both examples give $\bar y$, which is not a coincidence: for these distributions
-the mean \emph{is} the parameter.
+\vskip2pt
+Both examples give $\bar y$, which is not a coincidence: for these
+distributions the mean \emph{is} the parameter, and maximum likelihood
+finds it.
 \end{frame}
 
-\begin{frame}{Normal: Deriving $\hat\mu$ and $\hat\sigma^2$}
-Two parameters, so two first-order conditions.
+\begin{frame}{Normal Linear Model: Deriving $\hat\beta$ and $\hat\sigma^2$\core}
+Three parameters, so three first-order conditions. With
+$e_i = Y_i - b_0 - b_1X_i$:
+\begingroup\small
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
 \begin{align*}
-  \frac{\partial\loglik}{\partial\mu}
-  &= \frac{1}{\sigma^2}\sum_i (y_i - \mu) \overset{!}{=} 0
-  \quad\Longrightarrow\quad \hat\mu = \bar y . \\[6pt]
+  \frac{\partial\loglik}{\partial b_0}
+  &= \frac{1}{\sigma^2}\sum_i e_i \overset{!}{=} 0,
+  \qquad
+  \frac{\partial\loglik}{\partial b_1}
+  = \frac{1}{\sigma^2}\sum_i X_i\, e_i \overset{!}{=} 0
+    && \text{\footnotesize Week 1's normal equations, exactly} \\[4pt]
   \frac{\partial\loglik}{\partial\sigma^2}
-  &= -\frac{n}{2\sigma^2} + \frac{1}{2\sigma^4}\sum_i (y_i-\mu)^2 \overset{!}{=} 0
+  &= -\frac{n}{2\sigma^2} + \frac{1}{2\sigma^4}\sum_i e_i^2 \overset{!}{=} 0
   \quad\Longrightarrow\quad
-  \hat\sigma^2 = \frac1n\sum_i (y_i - \hat\mu)^2 .
+  \hat\sigma^2 = \frac1n\sum_i \hat e_i^{\,2}
+    && \text{\footnotesize solve; $\hat e_i$ are the OLS residuals}
 \end{align*}
-\pause
+\endgroup
+The first two conditions are Week 1's normal equations, so
+$\hat\beta_0, \hat\beta_1$ are the OLS estimates: the hook, cashed a second
+way.
+\vskip3pt
 \begin{alertblock}{The MLE of $\sigma^2$ is biased}
-It divides by $n$, not $n-1$. So $\E[\hat\sigma^2] = \frac{n-1}{n}\sigma^2 < \sigma^2$.
+It divides by $n$, not $n-2$: $\E[\hat\sigma^2] = \frac{n-2}{n}\sigma^2 <
+\sigma^2$. Week 1's $s^2$ was the bias-corrected version.
 \end{alertblock}
-This is our first warning: \alert{maximum likelihood does not promise
-unbiasedness}. What it promises is good behaviour as $n$ grows.
 \end{frame}
 
 \begin{frame}{When There Is No Closed Form}
@@ -530,14 +732,72 @@ Start at $\theta^{(0)}$ and iterate
   \theta^{(t+1)} = \theta^{(t)} - \left[\frac{\partial^2\loglik}{\partial\theta^2}
   \bigg|_{\theta^{(t)}}\right]^{-1} S(\theta^{(t)}) ,
 \end{align*}
-i.e.\ take a step whose size is the score divided by the curvature. Steep
-curvature $\Rightarrow$ small confident steps; flat $\Rightarrow$ large steps.
+a step of size score over curvature. The next frame draws it.
 \end{block}
 \vskip3pt
-Variants you will meet: \textbf{BFGS} (approximates the second derivative),
-\textbf{Fisher scoring} (uses the expected rather than observed second
-derivative; this is what \texttt{glm()} does, as iteratively reweighted least
-squares).
+Variants: \textbf{BFGS} approximates the second derivative; \textbf{Fisher
+scoring} uses its expectation (what \texttt{glm()} does, as iteratively
+reweighted least squares).
+\end{frame}
+
+\begin{frame}{Finding the Peak: Newton--Raphson in a Picture}
+\begin{center}
+\begin{tikzpicture}[x=0.55cm,y=0.30cm]
+  % Poisson, y = 5: l(theta) = 5 ln theta - theta; S = 5/theta - 1; l'' = -5/theta^2
+  % Newton from 1.5: 1.5 -> 2.55 -> 3.80 -> 4.71 -> 5
+  % ---------- left: the log-likelihood and the guesses ----------
+  \begin{scope}
+    \draw[->] (0,0) -- (9.4,0) node[right]{\scriptsize $\theta$};
+    \draw[->] (0,0) -- (0,3.5) node[above]{\scriptsize $\loglik(\theta)$};
+    \draw[dukeblue,very thick,smooth,samples=120,domain=1.3:9,variable=\x]
+      plot ({\x},{5*ln(\x)-\x});
+    \foreach \x/\lab in {1.5/{$\theta^{(0)}$},2.55/{$\theta^{(1)}$},3.8/{$\theta^{(2)}$}}
+      {\draw[gray,dashed] (\x,0) -- (\x,{5*ln(\x)-\x});
+       \node[below] at (\x,0) {\scriptsize \lab};}
+    \draw[gray,dashed] (5,-0.55) -- (5,3.047); \node[below] at (5,-0.55) {\scriptsize $\hat\theta$};
+    \node[circle,fill=accent,inner sep=1.6pt] at (1.5,0.527) {};
+    \node[circle,fill=accent!65,inner sep=1.6pt] at (2.55,2.13) {};
+    \node[circle,fill=accent!35,inner sep=1.6pt] at (3.8,2.875) {};
+  \end{scope}
+  % ---------- right: the second derivative, one curve ----------
+  \begin{scope}[xshift=5.9cm,yshift=1.55cm]
+    \draw[->] (0,0) -- (9.4,0) node[right]{\scriptsize $\theta$};
+    \draw[->] (0,0.3) -- (0,-3.3) node[below]{\scriptsize $\loglik''(\theta)$};
+    \draw[dukeblue,very thick,smooth,samples=120,domain=1.4:9,variable=\x]
+      plot ({\x},{-5/(\x*\x)});
+    \foreach \x/\lab in {1.5/{$\theta^{(0)}$},2.55/{$\theta^{(1)}$},3.8/{$\theta^{(2)}$},5/{$\hat\theta$}}
+      {\draw[gray,dashed] (\x,0) -- (\x,{-5/(\x*\x)});
+       \node[above] at (\x,0) {\scriptsize \lab};}
+    \node[circle,fill=accent,inner sep=1.6pt] at (1.5,-2.222) {};
+    \node[circle,fill=accent!65,inner sep=1.6pt] at (2.55,-0.769) {};
+    \node[circle,fill=accent!35,inner sep=1.6pt] at (3.8,-0.346) {};
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+\vskip-8pt
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lcccc}
+\toprule
+guess $\theta$ & 1.50 & 2.55 & 3.80 & 4.71 \\
+slope $S$ & 2.33 & 0.96 & 0.32 & 0.06 \\
+$-\loglik''$ & 2.22 & 0.77 & 0.35 & 0.23 \\
+step $S/(-\loglik'')$ & 1.05 & 1.25 & 0.91 & 0.27 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-7pt
+\begin{itemize}\itemsep0pt
+  \item Poisson, one observation $y = 5$: $\loglik = 5\log\theta - \theta$;
+        right panel $\loglik'' = -5/\theta^{2}$. Step $=$ slope
+        $\div (-\loglik'')$: gradient ascent, ``learning rate''
+        $1/(-\loglik'')$ set by the data.
+  \item The step is a \emph{ratio}. Near the peak $-\loglik''$ is smallest
+        and the learning rate largest, yet the step shrinks: the slope goes
+        to zero faster. Far out the slope is large, but so is $-\loglik''$.
+        At $\hat\theta$, $S = 0$ and $-\loglik''(\hat\theta)$ becomes the
+        standard error.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Practical Matters in \texttt{R}}
@@ -548,10 +808,11 @@ squares).
         most common cause of failed convergence.
   \item Always check the convergence code (\texttt{\$convergence == 0}), a
         returned number is not the same as a converged number.
-  \item Ask for \texttt{hessian = TRUE}; you need it for standard errors.
-        Remember the sign: if you minimized $-\loglik$, then the returned Hessian
-        is $-\partial^2\loglik/\partial\theta\partial\theta'$, which is already
-        the observed information.
+  \item Ask for \texttt{hessian = TRUE}. The \emph{Hessian} is the matrix
+        of second derivatives of the function you optimized, computed
+        numerically at the solution; with one parameter it is the single
+        number $-\loglik''(\hat\theta)$ (sign flipped because you minimized
+        $-\loglik$), i.e.\ the observed information: your standard error.
   \item Try several starting values. If they land in different places, your
         likelihood is multimodal or your model is not identified.
 \end{itemize}
@@ -611,55 +872,187 @@ Both log-likelihoods peak at the same $\hat\theta$. But on the left, many nearby
 values of $\theta$ fit almost as well; we are uncertain. On the right, moving
 away from $\hat\theta$ costs a lot of fit; we are confident.
 \vskip3pt
-\alert{The second derivative measures exactly this.}
+\alert{The second derivative measures exactly this: the more negative, the
+more information.}
 \end{frame}
 
 \begin{frame}{Fisher Information\core}
-\begin{block}{Definition (one parameter)}
+\begin{block}{Definition (one parameter, at the true value)}
 \begin{align*}
-  \Info(\theta) \;\equiv\; -\E\!\left[\frac{\partial^2 \loglik(\theta)}{\partial\theta^2}\right]
-  \;=\; \E\!\left[\left(\frac{\partial \loglik(\theta)}{\partial\theta}\right)^{\!2}\right]
-  \;=\; \Var\big(S(\theta)\big) .
+  \Info(\theta_0) \;\equiv\; -\E\!\left[\loglik''(\theta_0)\right]
+  \;=\; \E\!\left[S(\theta_0)^{2}\right]
+  \;=\; \Var\big(S(\theta_0)\big) .
 \end{align*}
 \end{block}
-\vskip4pt
-The second equality is the \alert{information equality}, it holds when the
-model is correctly specified, and it will matter a great deal in a moment.
-\vskip4pt
+\vskip2pt
+Same direction as the Score frame: $\theta_0$ fixed, data random; $\E$ and
+$\Var$ average over $y \sim f(y\mid\theta_0)$. Minus sign because
+$\loglik''<0$ at a peak. $-\E[\loglik''] = \E[S^2]$ is the
+\alert{information equality} (orange frames; needs the model to be right);
+$\E[S^2] = \Var(S)$ is only $\E[S(\theta_0)] = 0$.
+\vskip2pt
 \begin{itemize}\itemsep3pt
-  \item The minus sign is there because the log-likelihood is concave at a
-        maximum, so the second derivative is negative.
-  \item Information is \emph{additive over independent observations}: with $n$
-        i.i.d.\ observations, $\Info_n(\theta) = n\,\Info_1(\theta)$. This is the
-        source of the familiar $1/n$ in variances.
-  \item Two estimators are available: the \emph{expected} information
-        $\Info(\hat\theta)$ and the \emph{observed} information
-        $-\partial^2\loglik/\partial\theta^2$ evaluated at $\hat\theta$. They are
-        asymptotically equivalent under correct specification, and software
-        typically reports the observed version.
+  \item \emph{Additive over independent observations}:
+        $\Info_n = n\,\Info_1$, the source of the familiar $1/n$.
+  \item \textbf{From data}: plug $\hat\theta$ into your sample's own
+        $-\loglik''(\theta)$. This is the \emph{observed information},
+        what software reports.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Information Equality: Why Care\adv}
+Four frames, one identity; its payoff is the variance of $\hat\theta$. At
+the peak the score is zero; expand it around the true $\theta_0$ (one Newton
+step, slope over curvature):
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  0 = S(\hat\theta) \approx S(\theta_0) + \loglik''(\theta_0)\,(\hat\theta-\theta_0)
+  \quad\Longrightarrow\quad
+  \hat\theta - \theta_0 \approx \frac{S(\theta_0)}{-\loglik''(\theta_0)} .
+\end{align*}
+The denominator is a sum over observations, so by the LLN replace it by its
+expectation (Week 2's move): $\hat\theta - \theta_0 \approx c\,S(\theta_0)$
+with $c = 1/(-\E[\loglik''(\theta_0)])$ fixed. Then $\Var(cS) = c^{2}\Var(S)$:
+\begin{align*}
+  \Var(\hat\theta) \approx
+  \frac{\Var\big(S(\theta_0)\big)}{\big(-\E[\loglik''(\theta_0)]\big)^{2}} ,
+  \quad \text{\footnotesize $\approx$: first-order expansion; exact in the $\sqrt n$ limit (Properties).}
+\end{align*}
+\vskip-4pt
+\endgroup
+Two different quantities. The information equality,
+$\Var(S(\theta_0)) = -\E[\loglik''(\theta_0)]$, says both equal
+$\Info(\theta_0)$, so the ratio collapses:
+$\Var(\hat\theta) \approx \Info/\Info^{2} = 1/\Info(\theta_0)$.
+\begin{itemize}\itemsep1pt
+  \item One number, the second derivative at the peak, is the whole
+        standard error: software inverts the Hessian at $\hat\theta$ and
+        stops. Without the equality you would need both pieces separately.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Information Equality: Goal and Plan\adv}
+\textbf{What we want to show.} One observation $y \sim f(y\mid\theta)$ with
+its own score $s(y;\theta) \equiv \partial\log f(y\mid\theta)/\partial\theta
+= (\partial f/\partial\theta)/f$, at that same true $\theta$, random only
+through $y$, which $\E$ averages over; the full score is $S = \sum_i s(y_i;\theta)$:
+\begingroup
+\setlength{\abovedisplayskip}{3pt}\setlength{\belowdisplayskip}{3pt}
+\begin{align*}
+  -\E\!\left[\frac{\partial^2 \log f}{\partial\theta^2}\right]
+  \;=\; \E\big[s^2\big] \;=\; \Var(s) .
+\end{align*}
+\endgroup
+\textbf{The only tool.} The density integrates to one at \emph{every}
+$\theta$, so all its $\theta$-derivatives vanish:
+\begin{align*}
+  \int f(y\mid\theta)\,dy = 1 \ \text{ for all }\theta
+  \qquad\Longrightarrow\qquad
+  \frac{d}{d\theta}\int f(y\mid\theta)\,dy = 0 .
+\end{align*}
+\textbf{Plan.}
+\begin{enumerate}\itemsep0pt
+  \item Differentiate once $\Rightarrow$ $\E[s] = 0$.
+  \item Differentiate twice $\Rightarrow$ $\E\big[(\partial^2 f/\partial\theta^2)/f\big] = 0$.
+  \item Quotient rule on $s$ $\Rightarrow$ $\partial^2\log f/\partial\theta^2 = (\partial^2 f/\partial\theta^2)/f - s^2$.
+  \item Take expectations of step 3; steps 1--2 leave only $s^2$.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Information Equality: Steps 1--2\adv}
+\textbf{Step 1: differentiate once.}
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  0 &= \frac{d}{d\theta}\int f(y\mid\theta)\,dy
+    && \text{\footnotesize derivative of the constant $1$} \\
+    &= \int \frac{\partial f(y\mid\theta)}{\partial\theta}\,dy
+    && \text{\footnotesize move the derivative inside the integral} \\
+    &= \int s(y;\theta)\, f(y\mid\theta)\,dy
+    && \text{\footnotesize $s = (\partial f/\partial\theta)/f$, so $\partial f/\partial\theta = s\,f$; $s$ depends on $y$ too} \\
+    &= \E\big[s(y;\theta)\big]
+    && \text{\footnotesize $\int g(y)\,f(y\mid\theta)\,dy = \E[g(y)]$ for $y\sim f(\cdot\mid\theta)$, this same $\theta$}
+\end{align*}
+\endgroup
+\textbf{Step 2: differentiate twice.} Line two above is $0$ at every $\theta$; differentiate it again:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  0 &= \int \frac{\partial^2 f(y\mid\theta)}{\partial\theta^2}\,dy
+    && \text{\footnotesize derivative of a zero is zero} \\
+    &= \int \frac{\partial^2 f/\partial\theta^2}{f}\; f\,dy
+     = \E\!\left[\frac{\partial^2 f/\partial\theta^2}{f}\right]
+    && \text{\footnotesize multiply and divide by $f$: an expectation}
+\end{align*}
+\endgroup
+\end{frame}
+
+\begin{frame}{Information Equality: Step 3\adv}
+\textbf{Step 3: differentiate the score.} $s = (\partial f/\partial\theta)/f$
+is a ratio, so use the quotient rule $(u/v)' = (u'v - uv')/v^2$ with
+$u = \partial f/\partial\theta$ and $v = f$:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \frac{\partial^2 \log f}{\partial\theta^2}
+  &= \frac{\partial s}{\partial\theta}
+    && \text{\footnotesize $s$ is the first derivative of $\log f$} \\[2pt]
+  &= \frac{\dfrac{\partial^2 f}{\partial\theta^2}\, f
+          \;-\; \dfrac{\partial f}{\partial\theta}\,\dfrac{\partial f}{\partial\theta}}{f^{2}}
+    && \text{\footnotesize $u' = \partial^2 f/\partial\theta^2$, $v' = \partial f/\partial\theta$} \\[2pt]
+  &= \frac{\partial^2 f/\partial\theta^2}{f}
+     \;-\; \left(\frac{\partial f/\partial\theta}{f}\right)^{\!2}
+    && \text{\footnotesize split the fraction; cancel one $f$ in each piece} \\[2pt]
+  &= \frac{\partial^2 f/\partial\theta^2}{f} \;-\; s^{2}
+    && \text{\footnotesize the bracket is $s$ by definition}
+\end{align*}
+\endgroup
+\vskip2pt
+An identity in $y$ and $\theta$, no expectation yet. The first term is the
+quantity step 2 showed has mean zero; the second is the squared score.
+\end{frame}
+
+\begin{frame}{Information Equality: Step 4\adv}
+\textbf{Step 4: take expectations of step 3.}
+\begin{align*}
+  \E\!\left[\frac{\partial^2 \log f}{\partial\theta^2}\right]
+  &= \E\!\left[\frac{\partial^2 f/\partial\theta^2}{f}\right] - \E[s^2]
+    && \text{\footnotesize expectation of a difference} \\[3pt]
+  &= 0 - \E[s^2]
+    && \text{\footnotesize step 2 kills the first term} \\[3pt]
+  &= -\Var(s)
+    && \text{\footnotesize step 1: $\E[s]=0$, so $\Var(s) = \E[s^2] - 0^2$}
+\end{align*}
+Multiply by $-1$:
+$\;-\E\big[\partial^2 \log f/\partial\theta^2\big] = \Var(s)$. Done, for one observation.
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item With $n$ independent observations, $\loglik'' = \sum_i \partial^2\log f(y_i\mid\theta)/\partial\theta^2$
+        and $S = \sum_i s(y_i;\theta)$: expectations add, and variances of
+        independent terms add, so $-\E[\loglik''] = \Var(S)$ as well.
+  \item Every expectation was taken under the \emph{same} $f$ that
+        integrates to one. If the data come from some other $g$, steps 1
+        and 2 fail, the two sides part ways, and the Hessian standard error
+        is wrong.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{The Variance of the MLE\core}
 \begin{align*}
-  \boxed{\;\hat{V}(\hat\theta) = \Info(\hat\theta)^{-1}
-  \qquad\text{or}\qquad
-  \left[-\frac{\partial^2\loglik}{\partial\theta^2}\bigg|_{\hat\theta}\right]^{-1}\;}
+  \boxed{\;\hat{V}(\hat\theta)
+  = \left[-\frac{\partial^2\loglik}{\partial\theta^2}\bigg|_{\hat\theta}\right]^{-1}
+  = \frac{1}{\text{observed information}}\;}
 \end{align*}
 \vskip3pt
-Read it as a sentence: \emph{the variance of the estimate is the reciprocal of
-the curvature of the log-likelihood at its peak}.
-\vskip3pt
-{\footnotesize These are two \emph{different} estimators, expected and observed
-information, equal only asymptotically and under correct specification. Pick one
-and say which.}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Sharper peak $\Rightarrow$ larger information $\Rightarrow$ smaller
-        variance.
-  \item With several parameters\adv, $\Info$ is a matrix and
-        $\hat{V}(\hat{\bm\theta}) = \Info(\hat{\bm\theta})^{-1}$; the
-        standard errors are the square roots of its diagonal.
+Read it as a sentence: \emph{the variance of the estimate is one over minus
+the second derivative of the log-likelihood at its peak}: the faster the
+slope changes there, the smaller the variance.
+\vskip6pt
+\begin{itemize}\itemsep4pt
+  \item With several parameters\adv, the observed information is a matrix
+        (the Hessian, sign flipped); invert it, and the standard errors are
+        the square roots of its diagonal.
   \item This is why \texttt{optim(..., hessian = TRUE)} is not optional.
 \end{itemize}
 \end{frame}
@@ -699,12 +1092,9 @@ so
   \hat{V}(\hat\theta) = \frac{\bar y}{n} .
 \end{align*}
 \vskip4pt
-Sanity check by direct calculation: $\hat\theta = \bar y$ and
-$\Var(\bar Y) = \Var(Y)/n = \theta/n$ because the Poisson mean equals its
-variance. \checkmark
-\vskip4pt
-Two routes, same answer. When you can compute the variance directly, do so; 
-it is a free check on your information calculation.
+Check directly: $\hat\theta = \bar y$ and $\Var(\bar Y) = \Var(Y)/n =
+\theta/n$, because the Poisson mean equals its variance. \checkmark\ Two
+routes, same answer; when a direct calculation exists, use it as a check.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -712,18 +1102,17 @@ it is a free check on your information calculation.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Four Properties\core}
+\begin{frame}{The Four Properties}
 Under regularity conditions, as $n\to\infty$:
 \begin{enumerate}\itemsep5pt
-  \item \textbf{Consistency}: $\hat\theta \pto \theta_0$.
-  \item \textbf{Asymptotic normality}:
+  \item \textbf{Consistency}\core: $\hat\theta \pto \theta_0$.
+  \item \textbf{Asymptotic normality}\core:
         $\hat\theta \overset{a}{\sim} \mathcal N\big(\theta_0, \Info(\theta_0)^{-1}\big)$.
-  \item \textbf{Asymptotic efficiency}: among \emph{regular} estimators, and when
-        the model is correctly specified, none has a smaller asymptotic variance
-, the MLE attains the \alert{Cramér--Rao lower bound}. This is much
-        stronger than Gauss--Markov, which only ranked \emph{linear} unbiased
-        estimators.
-  \item \textbf{Invariance}: if $\hat\theta$ is the MLE of $\theta$, then
+  \item \textbf{Asymptotic efficiency}\adv: if the model is right, no
+        regular estimator has a smaller asymptotic variance (the
+        \alert{Cramér--Rao bound}). Stronger than Gauss--Markov, which ranked
+        only \emph{linear} unbiased estimators.
+  \item \textbf{Invariance}\adv: if $\hat\theta$ is the MLE of $\theta$, then
         $c(\hat\theta)$ is the MLE of $c(\theta)$ for any continuous $c(\cdot)$.
         Wonderfully convenient: the MLE of the odds is the odds of the MLE.
 \end{enumerate}
@@ -757,37 +1146,20 @@ average in the numerator, a sample average in the denominator, LLN below and CLT
 above.
 \end{frame}
 
-\begin{frame}{Regularity Conditions, and When They Fail}
-The theory needs: a correctly specified and identified model; a parameter space
-in which $\theta_0$ is an \emph{interior} point; a support for $y$ that does not
-depend on $\theta$; and enough smoothness to differentiate twice under the
-integral.
-\vskip4pt
-\begin{block}{Failures you will actually meet}
-\begin{itemize}\itemsep2pt
-  \item \textbf{Boundary}: testing whether a variance component is zero. The
-        usual $\chi^2$ reference distribution is wrong.
-  \item \textbf{Support depends on $\theta$}: $Y_i\sim U[0,\theta]$ gives
-        $\hat\theta = \max_i Y_i$, which is \emph{always} below $\theta$, badly
-        biased and not asymptotically normal.
-  \item \textbf{Separation} in logit: the MLE runs off to infinity. Week 4.
-  \item \textbf{Too many parameters relative to $n$}: incidental parameters.
-\end{itemize}
-\end{block}
-\end{frame}
-
 \begin{frame}{Maximum Likelihood Is Not Unbiased\core}
 \begin{itemize}\itemsep4pt
-  \item We already saw it: $\hat\sigma^2_{\text{MLE}} = \frac1n\sum_i(y_i-\bar y)^2$
-        has $\E[\hat\sigma^2] = \frac{n-1}{n}\sigma^2$.
-  \item $Y_i \sim U[0,\theta]$: the MLE is $\max_i Y_i$, which is below $\theta$
-        with probability one.
-  \item And unbiasedness does not survive transformation: even if $\hat\theta$ is
-        unbiased for $\theta$, $c(\hat\theta)$ is generally biased for
-        $c(\theta)$. (Invariance holds for the \emph{MLE property}, not for
-        unbiasedness.)
+  \item We already saw it: $\hat\sigma^2_{\text{MLE}} = \frac1n\sum_i \hat e_i^{\,2}$
+        has $\E[\hat\sigma^2] = \frac{n-2}{n}\sigma^2$ in the bivariate
+        model; $s^2$ divides by $n-2$ precisely to undo this.
 \end{itemize}
-\vskip4pt
+\vskip6pt
+\textbf{The general claim.} Maximum likelihood makes no promise about
+unbiasedness in a finite sample. Some MLEs happen to be unbiased (the Poisson
+$\hat\theta = \bar y$; $\hat\beta$ in the normal linear model, which is OLS);
+others are biased ($\hat\sigma^2$ above). What the method guarantees is that
+the bias shrinks to zero as $n$ grows: that is consistency, the first of the
+four properties.
+\vskip8pt
 \begin{alertblock}{The trade we are making}
 Give up exact unbiasedness in finite samples; get consistency, asymptotic
 efficiency, and a completely general recipe that works for any probability model
@@ -795,33 +1167,31 @@ you can write down.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{When the Model Is Wrong: the Sandwich Returns\adv}
-The information equality
-$-\E[\partial^2\loglik/\partial\theta^2] = \E[S(\theta)^2]$ holds only if the
-model is correctly specified. When it is not, the two sides differ and
-\begin{align*}
-  \Var(\hat\theta) \approx
-  \underbrace{\big[-\E \partial^2\loglik\big]^{-1}}_{\text{bread}}
-  \underbrace{\E\big[S(\theta)S(\theta)'\big]}_{\text{meat}}
-  \underbrace{\big[-\E \partial^2\loglik\big]^{-1}}_{\text{bread}} .
-\end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Exactly the sandwich from Week 2, with the score in place of
-        $X_i\epsilon_i$. It is called the \emph{quasi-} or \emph{pseudo-MLE}
-        variance, or the Huber--White variance for likelihood models.
-  \item In \texttt{R}: \texttt{sandwich::vcovHC()} works on \texttt{glm} objects
-        too, and \texttt{vcovCL()} clusters them.
-  \item The estimator $\hat\theta$ then converges to the parameter of the
-        \emph{best-approximating} model in the Kullback--Leibler sense, the
-        likelihood analogue of ``best linear approximation to the CEF.''
-\end{itemize}
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Testing]{Likelihood-Based Tests}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Why Three Tests\core}
+The intuitive test is Week 2's: $z = (\hat\theta - \theta_0)/\SE(\hat\theta)$,
+the \textbf{Wald} test. It is right whenever $\loglik$ is a parabola, because
+then the curvature at $\hat\theta$ describes the whole curve. It only
+\emph{knows} the curve at $\hat\theta$, and when the curve is not a parabola
+it can fail outright.
+\vskip4pt
+Twenty trials, zero successes: $\hat\theta = 0$ and
+$\SE = \sqrt{\hat\theta(1-\hat\theta)/n} = 0$, so Wald cannot test
+$\theta_0 = 0.1$ at all. Yet $\loglik(0.1) - \loglik(0) = 20\log 0.9 = -2.1$:
+imposing $\theta_0$ costs $2.1$ units of fit, and $2 \times 2.1 = 4.2 > 3.84$
+rejects. The likelihood knew; the Wald test could not see it. (A logit near
+separation fails the same way, Week 4.)
+\vskip4pt
+Hence two more distances. \textbf{Likelihood ratio}: the drop in $\loglik$
+between $\hat\theta$ and $\theta_0$. \textbf{Score}: the slope at $\theta_0$,
+no alternative fitted. All three agree when $\loglik$ is a parabola, which
+large samples deliver. In your output: \texttt{summary(glm)} $z$ is Wald,
+\texttt{anova} on two \texttt{glm} fits is LR, overdispersion tests are score.
+\end{frame}
 
 \begin{frame}{Three Ways to Measure the Same Distance}
 \begin{center}
@@ -838,14 +1208,14 @@ model is correctly specified. When it is not, the two sides differ and
   \node at (2.2,-0.35) {\scriptsize $\theta_0$};
   % LR: vertical distance
   \draw[accent,thick,<->] (2.2,{3.0-0.14*9}) -- (2.2,3.0);
-  \node[accent,right] at (2.3,2.35) {\scriptsize LR: drop in $\loglik$};
+  \node[accent,anchor=east] at (2.05,2.5) {\scriptsize LR: drop in $\loglik$};
   % Wald: horizontal distance
   \draw[accent,thick,<->] (2.2,0.28) -- (5.2,0.28);
   \node[accent] at (3.7,0.6) {\scriptsize Wald: distance in $\theta$};
-  % score: slope at theta0
-  \draw[accent,very thick] (1.5,{3.0-0.14*(1.5-5.2)^2-0.7*(1.5-2.2)})
-                        -- (3.1,{3.0-0.14*(3.1-5.2)^2*0+1.08-0.7*(3.1-2.2)});
-  \node[accent] at (1.5,1.75) {\scriptsize score: slope at $\theta_0$};
+  % score: tangent at theta0; l(2.2)=1.74, l'(2.2)=0.84
+  \draw[accent,very thick] (1.3,{1.74+0.84*(1.3-2.2)}) -- (3.1,{1.74+0.84*(3.1-2.2)});
+  \fill[accent] (2.2,1.74) circle (0.06);
+  \node[accent,anchor=west] at (3.35,1.45) {\scriptsize score: slope at $\theta_0$};
 \end{tikzpicture}
 \end{center}
 \vskip-6pt
@@ -863,15 +1233,19 @@ Compare the maximized log-likelihood with and without the restriction:
 where $q$ is the number of restrictions.
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item Logic: if the restriction is true, imposing it should not cost much fit.
-  \item The restricted likelihood is always weakly \emph{lower}, so $LR \geq 0$.
-  \item \textbf{Requires estimating both models.} Usually easy, and generally the
-        best-behaved of the three in finite samples, prefer it when you can.
+  \item If the restriction is true, imposing it should cost little fit. The
+        restricted $\loglik$ is never higher, so $LR \geq 0$.
+  \item \textbf{Requires both models.} Usually easy, and the best-behaved of
+        the three in finite samples: prefer it when you can.
   \item \texttt{R}: \texttt{lmtest::lrtest(m0, m1)}, or \texttt{anova(m0, m1,
         test = "Chisq")} for \texttt{glm}.
   \item \alert{The models must be nested and fitted on the same observations.}
         Silently dropping different rows to missingness invalidates the test.
 \end{itemize}
+\vskip1pt
+{\footnotesize $\chi^2_q$: the distribution of a sum of $q$ squared
+independent standard normals. With one restriction, $\chi^2_1$ is
+$\mathcal N(0,1)^2$, so the 5\% critical value is $1.96^2 = 3.84$.}
 \end{frame}
 
 \begin{frame}{The Wald Test\core}
@@ -928,22 +1302,37 @@ LR, Wald and score all require \emph{nested} models. For non-nested comparison:
   \item Comparable only across models fitted on \emph{exactly the same} data with
         the same outcome scale.
 \end{itemize}
-\vskip3pt
-We return to model selection properly in Week 12, where cross-validation replaces
-these analytic penalties.
+\end{frame}
+
+\begin{frame}{AIC and BIC in Research Practice\core}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Typical uses}: non-nested specifications (income vs.\ log
+        income; probit vs.\ logit), the number of classes in a latent class
+        analysis, random-effects structures in multilevel models.
+  \item \textbf{Reading $\Delta$BIC} \srct{(Raftery 1995)}: 0--2 weak,
+        2--6 positive, 6--10 strong, $>10$ very strong. Report the
+        differences, not just the winner.
+  \item \textbf{The trap}: \alert{both models must be fitted to the same
+        observations}. Listwise deletion changes the sample when
+        specifications use different variables; fix the sample first.
+  \item They referee between \emph{theoretically motivated} candidates, not
+        hundreds of searched specifications (Week 2's multiple-testing
+        caution).
+\end{itemize}
+\vskip2pt
+Week 12 returns to model selection with cross-validation.
 \end{frame}
 
 \begin{frame}{Where This Leaves Us}
 \begin{itemize}\itemsep5pt
   \item A likelihood is the data's probability read as a function of the
-        parameter. The MLE maximizes it; the score is the derivative you set to
+        parameter. The MLE maximizes it; the score is the derivative set to
         zero.
-  \item The \emph{curvature} of the log-likelihood is information, and its
-        inverse is the variance. Everything about precision follows from the shape
-        of the peak.
+  \item The curvature of the log-likelihood is information; its inverse is
+        the variance.
   \item The MLE is consistent, asymptotically normal, and efficient, but not
-        unbiased, and all of the guarantees are asymptotic.
-  \item LR, Wald, and score are three views of the same question.
+        unbiased; every guarantee is asymptotic.
+  \item LR, Wald, and score are three measures of one distance.
 \end{itemize}
 \vskip6pt
 \begin{block}{Next}
@@ -963,8 +1352,9 @@ Ch.\ 3 additional]
 2nd ed. Duxbury. [Ch.\ 7 and 10, for a fuller treatment]
 \item King, Gary. 1998. \textit{Unifying Political Methodology: The Likelihood
 Theory of Statistical Inference}. University of Michigan Press.
-\item White, Halbert. 1982. ``Maximum Likelihood Estimation of Misspecified
-Models.'' \textit{Econometrica} 50(1): 1--25. [the quasi-MLE sandwich]
+\item Raftery, Adrian E. 1995. ``Bayesian Model Selection in Social
+Research.'' \textit{Sociological Methodology} 25: 111--163. [the BIC
+reading sociologists use]
 \end{itemize}
 \end{frame}
 

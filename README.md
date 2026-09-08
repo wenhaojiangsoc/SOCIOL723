@@ -135,31 +135,35 @@ Duflo, and Mullainathan (2004).
   <summary><h2>Week 3 &nbsp;·&nbsp; Maximum Likelihood: Theory</h2></summary>
 
 Least squares asks which line is closest to the data. Likelihood asks which
-parameter values make the data we actually saw most probable. It is the general
-engine behind almost every model sociologists use, and — as we show at the
-outset — OLS under normal errors is already a special case of it.
+parameter values would have made the data we actually saw most likely. It is
+the engine behind almost every model sociologists use, and OLS with normal
+errors turns out to be one of its special cases.
 
 ### Roadmap
-- Design-based versus model-based inference, and why the normal linear model is
-  not enough for binary, count, categorical, ordered, or censored outcomes.
+- **Why more than least squares**: where the line runs out (a 0/1 outcome
+  regressed by OLS), the question underneath, and the design-based versus
+  model-based stances the course uses.
 - **Probability versus likelihood**: the same formula read with the data fixed
-  and the parameter varying. Worked from a binomial example.
-- Build likelihoods and log-likelihoods for the Bernoulli, Poisson, and normal
-  cases; see least squares fall out of the normal log-likelihood.
-- The **score function** as the derivative you set to zero, with the MLE derived
-  by hand in all three examples — including the fact that
-  $\hat\sigma^2_{\text{MLE}}$ divides by $n$ and is therefore biased.
-- Numerical maximization: Newton–Raphson, BFGS, Fisher scoring; starting values,
-  convergence codes, and the sign of the Hessian. **Identification** as a flat
-  likelihood — the analogue of perfect collinearity.
-- **Curvature is information**: Fisher information, observed information, and
-  $\widehat{\mathrm{Var}}(\hat\theta) = \mathcal{I}(\hat\theta)^{-1}$,
-  verified against the closed-form variances for the Bernoulli and Poisson.
-- Consistency, asymptotic normality, efficiency, invariance — and the regularity
-  conditions that fail in practice (boundaries, separation, support depending on
-  the parameter). The quasi-MLE **sandwich** when the model is wrong. ★
-- **Likelihood ratio, Wald, and score tests** as three ways of measuring the same
-  distance, plus AIC and BIC for non-nested comparison.
+  and the parameter varying, built slowly from a bag of marbles.
+- **Worked examples**: the binomial count (with its distribution plotted);
+  counting units versus counting events; the **Poisson built from the binomial**
+  by slicing time ever finer; the normal linear model, from which least squares
+  falls out digit for digit — and what that result does *not* say.
+- The **score** as the derivative you set to zero, with the MLE derived by hand
+  in all three examples, including the biased $\hat\sigma^2_{\text{MLE}}$.
+- Numerical maximization: **Newton–Raphson in a picture**, with the step size
+  set by the data's second derivative; `optim()` practicalities; identification
+  as a flat likelihood.
+- **Curvature is information**: Fisher information at the true value, why the
+  information equality matters (it is what makes one number, the second
+  derivative at the peak, the whole standard error), and a four-step proof ★;
+  variance as one over the observed information, checked against the closed
+  forms for the Bernoulli and Poisson.
+- Consistency and asymptotic normality (proof sketch ★), efficiency and
+  invariance ★; why maximum likelihood is not unbiased.
+- **Testing**: why the intuitive Wald ratio is not enough, and the likelihood
+  ratio and score tests as the other two measures of the same distance; AIC and
+  BIC for non-nested comparison, with Raftery's reading of $\Delta$BIC.
 
 ### Materials
 - [Slides: Week 3 — Maximum Likelihood: Theory](./Week%203%20Maximum%20Likelihood%20Theory/slides.pdf)
@@ -174,10 +178,11 @@ outset — OLS under normal errors is already a special case of it.
 <details>
   <summary><h2>Week 4 &nbsp;·&nbsp; Maximum Likelihood: Applications</h2></summary>
 
-Now we put covariates inside the likelihood. The generalized linear model keeps
-the linear predictor $X'\beta$ and pushes all the nonlinearity into a link
-function — which means everything from Weeks 1–2 still applies, but
-interpretation becomes the hard part.
+Now we put covariates inside the likelihood: the one $\theta$ of Week 3 becomes
+a $\theta_i$ for each person, a function of their characteristics. The
+generalized linear model keeps the linear predictor $X'\beta$ and pushes all
+the nonlinearity into a link function — which means everything from Weeks 1–2
+still applies, but interpretation becomes the hard part.
 
 ### Roadmap
 - The **GLM recipe**: random component, linear predictor, link. Why `glm()` is

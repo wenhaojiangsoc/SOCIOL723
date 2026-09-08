@@ -134,7 +134,7 @@
 \begin{frame}{Today}
   \tableofcontents
   \vskip6pt
-  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
+  {\footnotesize Stars: \core{} examinable; \adv{} never examined.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,13 +143,15 @@
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Putting Covariates Inside the Likelihood\core}
-Last week the parameter $\theta$ was a single number. Now we let it depend on
-covariates. Three ingredients:
+Last week's picture: a line predicting ``probabilities'' outside $[0,1]$.
+Last week's preview: $\theta_i = \exp(\beta_0 + \beta_1 X_i)$, one parameter
+per observation. The general version has three ingredients:
 \vskip4pt
 \begin{block}{The GLM recipe}
 \begin{enumerate}\itemsep3pt
   \item \textbf{Random component}: a distribution for $Y_i$ with mean
-        $\mu_i = \E[Y_i\mid X_i]$, normal, Bernoulli, Poisson, \dots
+        $\mu_i = \E[Y_i\mid X_i]$ (last week's $\theta_i$): normal, Bernoulli,
+        Poisson, \dots
   \item \textbf{Systematic component}: a \emph{linear predictor}
         $\eta_i = X_i'\bm\beta$.
   \item \textbf{Link function}: $g(\mu_i) = \eta_i$, connecting the two.
@@ -157,10 +159,10 @@ covariates. Three ingredients:
 \end{block}
 \vskip4pt
 \begin{itemize}\itemsep2pt
-  \item The linear predictor is always linear. All the nonlinearity lives in the
-        link, whose job is to map $\mu_i$ from its natural range (a probability in
-        $[0,1]$, a rate in $[0,\infty)$) onto the whole real line.
-  \item This is why we can keep using everything from Weeks 1--2 about $X'\beta$.
+  \item The linear predictor stays linear; all the nonlinearity lives in the
+        link, which maps $\mu_i$ from its natural range ($[0,1]$ for a
+        probability, $[0,\infty)$ for a rate) onto the real line.
+  \item So everything from Weeks 1--2 about $X'\beta$ still applies.
 \end{itemize}
 \end{frame}
 
@@ -181,10 +183,11 @@ Ordered, $J$ categories & latent logistic & cumulative logit & \texttt{MASS::pol
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip6pt
-The \emph{canonical} link for each distribution (logit for the binomial, log for
-the Poisson) makes the algebra especially clean, but you are free to choose
-another, probit is not canonical and nobody minds.
+\vskip2pt
+The first row is last week's hook: the Gaussian GLM \emph{is} least squares.
+The \emph{canonical} link for each distribution (logit for the binomial, log
+for the Poisson) makes the algebra especially clean, but you are free to
+choose another; probit is not canonical and nobody minds.
 \end{frame}
 
 \begin{frame}{How \texttt{glm()} Actually Fits\adv}
@@ -200,7 +203,8 @@ where $V(\mu)$ is the variance function implied by the distribution.
         the difference is the weight $\frac{\partial\mu/\partial\eta}{V(\mu)}$.
   \item So GLMs are fitted by \alert{iteratively reweighted least squares}: run a
         weighted regression, update the weights from the new fitted values, repeat.
-        This is Fisher scoring in disguise.
+        This is last week's Newton--Raphson picture with the expected curvature
+        in place of the observed one (Fisher scoring).
   \item Practical consequence: \texttt{glm()} usually converges in 4--6
         iterations, and failure to converge is a real signal (often separation).
 \end{itemize}
@@ -212,8 +216,9 @@ where $V(\mu)$ is the variance function implied by the distribution.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Start With the Linear Probability Model\core}
-Just run OLS with a $0/1$ outcome: $\Pr(Y_i = 1\mid X_i) = X_i'\bm\beta$.
-\vskip4pt
+Last week's picture, taken seriously: OLS on a $0/1$ outcome,
+$\Pr(Y_i = 1\mid X_i) = X_i'\bm\beta$.
+\vskip2pt
 \begin{columns}[T]
 \begin{column}{0.47\textwidth}
 \textbf{In its favour}
@@ -234,7 +239,7 @@ Just run OLS with a $0/1$ outcome: $\Pr(Y_i = 1\mid X_i) = X_i'\bm\beta$.
 \end{itemize}
 \end{column}
 \end{columns}
-\vskip6pt
+\vskip3pt
 \begin{block}{A reasonable position}
 For a causal contrast with a binary treatment, the LPM is often fine and easier
 to interpret. For prediction, extrapolation, or when the probabilities are near
@@ -263,13 +268,14 @@ for $F$ the CDF of $-\epsilon_i$.
         \alert{probit} model.
 \end{itemize}
 \vskip3pt
-The choice between them is a choice about the tails of an unobservable. It almost
-never matters empirically.
+The choice between them is a choice about the tails of an unobservable; it
+almost never matters.
 \end{frame}
 
 \begin{frame}{The Logit Likelihood\core}
-With $p_i \equiv \Lambda(X_i'\bm\beta) = \dfrac{\exp(X_i'\bm\beta)}{1+\exp(X_i'\bm\beta)}$,
-the Bernoulli log-likelihood from last week becomes
+Last week's Worked Example 1 had one $\theta$ for every draw. Give each
+draw its own, $p_i \equiv \Lambda(X_i'\bm\beta) = \dfrac{\exp(X_i'\bm\beta)}{1+\exp(X_i'\bm\beta)}$,
+and the same Bernoulli log-likelihood becomes
 \begin{align*}
   \loglik(\bm\beta) = \sum_{i=1}^{n}\Big[\, Y_i \log p_i + (1-Y_i)\log(1-p_i)\Big] .
 \end{align*}
@@ -285,13 +291,12 @@ This is globally concave in $\bm\beta$, and \emph{strictly} concave once $\X$ ha
 full column rank, which is what makes the maximizer unique when it exists. Probit
 shares the property.
 \vskip2pt
-{\footnotesize ``When it exists'' is doing real work. Concavity alone does not
-deliver a finite maximizer: under perfect separation the likelihood keeps
-climbing and $\hat{\bm\beta}$ diverges. We return to this later.}
+{\footnotesize ``When it exists'': under perfect separation the likelihood
+keeps climbing and $\hat{\bm\beta}$ diverges. Later today.}
 \end{frame}
 
-\begin{frame}{The Logit Score}
-Differentiate. The key fact is $\dfrac{\partial \Lambda(z)}{\partial z} = \Lambda(z)\big(1-\Lambda(z)\big)$:
+\begin{frame}{The Logit Score\core}
+Differentiate, as last week: the score is the first derivative. The key fact is $\dfrac{\partial \Lambda(z)}{\partial z} = \Lambda(z)\big(1-\Lambda(z)\big)$:
 \begin{align*}
   \frac{\partial\loglik}{\partial\bm\beta}
   = \sum_{i=1}^n \left[ Y_i X_i - \frac{e^{X_i'\bm\beta}}{1+e^{X_i'\bm\beta}}X_i\right]
@@ -304,9 +309,10 @@ orthogonal to the regressors. \alert{Exactly the OLS normal equations}, with the
 fitted probability in place of the fitted value.
 \end{alertblock}
 \vskip3pt
-There is no closed-form solution because $p_i$ depends on $\bm\beta$
-nonlinearly, hence the numerical optimization from last week. The information
-matrix\adv{} is $\Info(\bm\beta) = \sum_i p_i(1-p_i)X_iX_i'$.
+No closed form: $p_i$ depends on $\bm\beta$ nonlinearly, so Newton--Raphson
+from last week. The curvature\adv{} is
+$\Info(\bm\beta) = \sum_i p_i(1-p_i)X_iX_i'$, and, as last week, its inverse
+at $\hat{\bm\beta}$ is the variance matrix: standard errors for free.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Logit Versus Probit}
@@ -383,13 +389,13 @@ Probability & $p = \Lambda(X'\bm\beta)$ & \alert{what we care about}, but the
 \end{center}
 \vskip6pt
 \begin{itemize}\itemsep3pt
-  \item The model is linear on the first scale and nonlinear on the third. That
-        tension is the whole interpretation problem.
-  \item \alert{An odds ratio is not a risk ratio}, and it is not a probability
-        difference. An odds ratio of 2 can correspond to a probability change from
-        $0.01$ to $0.02$ or from $0.33$ to $0.50$.
-  \item Report probabilities or marginal effects. Report odds ratios only if your
-        audience genuinely works in odds.
+  \item Linear on the first scale, nonlinear on the third: that is the whole
+        interpretation problem.
+  \item \alert{An odds ratio is not a risk ratio} or a probability
+        difference: an odds ratio of 2 fits $0.01 \to 0.02$ and
+        $0.33 \to 0.50$ alike.
+  \item Report probabilities or marginal effects; odds ratios only for an
+        audience that thinks in odds.
 \end{itemize}
 \end{frame}
 
@@ -453,15 +459,16 @@ $\bhat$, so you cannot read their standard errors off the regression table. Thre
 options:
 \vskip3pt
 \begin{enumerate}\itemsep4pt
-  \item \textbf{Delta method} (Week 2): linearize and use
-        $\nabla g(\bhat)'\hat{V}(\bhat)\nabla g(\bhat)$. Fast, analytic,
+  \item \textbf{Delta method}: linearize $g(\bhat)$ around $\bm\beta$ and
+        use $\nabla g(\bhat)'\hat{V}(\bhat)\nabla g(\bhat)$. Fast, analytic,
         and the default in \texttt{marginaleffects}.
   \item \textbf{Simulation} \srcp{King, Tomz, and Wittenberg 2000}: draw
         $\tilde{\bm\beta}^{(s)} \sim \mathcal N\big(\bhat, \hat{V}(\bhat)\big)$
         for $s = 1,\dots,S$, compute the quantity of interest at each draw, and
         take percentiles. Trivial to implement, handles any nonlinearity.
-  \item \textbf{Bootstrap}: resample the data, refit, recompute. Slowest, makes
-        the fewest assumptions about the shape of the sampling distribution.
+  \item \textbf{Bootstrap} (Week 2): resample the data, refit, recompute.
+        Slowest, makes the fewest assumptions about the shape of the sampling
+        distribution.
 \end{enumerate}
 \vskip3pt
 \alert{Do not} compute a confidence interval on the log-odds scale and then
@@ -502,16 +509,13 @@ For an unordered outcome with $J$ categories, pick a base category $J$ and model
   \qquad \bm\beta_J \equiv \zero .
 \end{align*}
 \begin{itemize}\itemsep3pt
-  \item You estimate $J-1$ coefficient vectors, interpretation burden grows
-        fast. Report predicted probabilities by category, not coefficient tables.
-  \item Every coefficient is relative to the omitted base category. Changing the
-        base changes every number without changing the model.
-  \item \textbf{IIA}: the ratio $\Pr(Y=j)/\Pr(Y=m)$ does not depend on what other
-        options exist, the ``red bus / blue bus'' problem. Testable in
-        principle (Hausman--McFadden), but the tests behave poorly; think
-        substantively instead.
-  \item Alternatives when IIA is untenable: nested logit, multinomial probit,
-        mixed logit.
+  \item $J-1$ coefficient vectors, all relative to the base category:
+        changing the base changes every number. Report predicted
+        probabilities by category, not coefficient tables.
+  \item \textbf{IIA}: $\Pr(Y=j)/\Pr(Y=m)$ does not depend on which other
+        options exist (``red bus / blue bus''). The formal tests behave
+        poorly; judge it substantively.
+  \item If IIA is untenable: nested logit, multinomial probit, mixed logit.
 \end{itemize}
 \end{frame}
 
@@ -526,35 +530,35 @@ This gives the cumulative-logit form
 $\Pr(Y_i \leq j \mid X_i) = \Lambda(\tau_j - X_i'\bm\beta)$.
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item Only \emph{one} $\bm\beta$ regardless of $J$: far more parsimonious than
-        multinomial logit. That parsimony is the \alert{proportional odds
-        assumption}, the effect of $X$ is the same at every cutpoint.
-  \item Test it with a Brant test, or by comparing to a generalized ordered logit
-        that relaxes it (\texttt{VGAM}, \texttt{ordinal::clm}).
-  \item If proportional odds fails badly and the categories are genuinely ordered,
-        a partial proportional odds model is usually the right compromise.
+  \item One $\bm\beta$ whatever $J$ is: far more parsimonious than
+        multinomial logit. The parsimony is the \alert{proportional odds
+        assumption}: the same effect of $X$ at every cutpoint.
+  \item Test it (Brant test, or against a generalized ordered logit:
+        \texttt{ordinal::clm}); if it fails badly, a partial proportional
+        odds model is the usual compromise.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Poisson Regression for Counts\core}
+Last week's rule: units out of $n$, logit; events over exposure, Poisson.
+Last week's preview, now in full:
 \begin{align*}
   Y_i \mid X_i \sim \text{Poisson}(\mu_i), \qquad \log\mu_i = X_i'\bm\beta .
 \end{align*}
 \begin{itemize}\itemsep3pt
-  \item Log link keeps $\mu_i > 0$; coefficients are \emph{semi-elasticities}:
-        $e^{\beta_j}$ is the multiplicative change in the expected count, so
-        $\beta_j = 0.10$ means about $10\%$ more events.
-  \item \textbf{Exposure}: if units are observed for different lengths of time or
-        have different populations at risk, model the \emph{rate} by adding an
+  \item The log link keeps $\mu_i > 0$; $e^{\beta_j}$ is the multiplicative
+        change in the expected count, so $\beta_j = 0.10$ means about
+        $10\%$ more events.
+  \item \textbf{Exposure}: units observed for different lengths of time, or
+        with different populations at risk: model the \emph{rate} via
         \texttt{offset(log(exposure))}, a coefficient constrained to 1.
-  \item The Poisson imposes $\Var(Y_i\mid X_i) = \E[Y_i\mid X_i]$. That is a
-        strong restriction and it is usually violated.
+  \item The Poisson imposes $\Var(Y_i\mid X_i) = \E[Y_i\mid X_i]$: a strong
+        restriction, usually violated (next frame).
 \end{itemize}
 \vskip3pt
-Useful fact: with a log link, Poisson regression is \emph{consistent for the
-conditional mean even when the Poisson distribution is wrong}, provided the mean
-is correctly specified. Pair it with robust standard errors and it is a
-workhorse for non-negative outcomes.
+Log link $\Rightarrow$ \emph{consistent for the conditional mean even if the
+Poisson is wrong}; with robust standard errors, a workhorse for any
+non-negative outcome.
 \end{frame}
 
 \begin{frame}{Overdispersion\core}
@@ -570,12 +574,13 @@ heterogeneity makes some units systematically more event-prone.
   \item \textbf{Negative binomial}: model the heterogeneity explicitly as a gamma
         mixture, giving $\Var(Y) = \mu + \mu^2/\theta$. A genuine likelihood, so
         AIC and LR tests apply. \texttt{MASS::glm.nb}.
-  \item \textbf{Robust standard errors} on a Poisson fit are the pragmatic
-        third option, and are consistent under any variance function.
+  \item \textbf{Robust standard errors} on a Poisson fit: Week 2's
+        sandwich, consistent under any variance function. Report them as a
+        matter of course.
 \end{itemize}
 \vskip3pt
-Test with a score test for overdispersion (\texttt{AER::dispersiontest}), a
-nice example of a test that needs only the restricted model.
+Test with a score test for overdispersion (\texttt{AER::dispersiontest}):
+last week's third distance, needing only the restricted model.
 \end{frame}
 
 \begin{frame}{Excess Zeros}
@@ -592,10 +597,10 @@ volunteering.
 \end{itemize}
 \vskip4pt
 \begin{alertblock}{Choose on substance, not fit}
-Zero-inflation says some zeros are of a different \emph{kind}; a hurdle says
-crossing from zero to one is a different \emph{process}. Ask which story your
-theory tells before letting AIC decide. And check first whether a negative
-binomial already accommodates the zeros, often it does.
+Zero-inflation: some zeros are a different \emph{kind}. Hurdle: crossing
+from zero to one is a different \emph{process}. Ask which story your theory
+tells before AIC decides, and check first whether a negative binomial
+already fits the zeros; often it does.
 \end{alertblock}
 \end{frame}
 
@@ -728,10 +733,9 @@ trick reduces event history to this week's tools \srcp{Allison 2014}:
         \texttt{glm(..., binomial)}. Everything from this week applies,
         marginal effects included.
   \item \textbf{Watch for}: informative censoring (dropout related to event
-        risk breaks the likelihood above); left truncation (units entering
-        the risk set late); unobserved heterogeneity (``frailty'') making
-        hazards look spuriously declining.
-  \item Depth: Allison (2014) is the standard sociological treatment.
+        risk breaks the likelihood); left truncation (late entry to the risk
+        set); unobserved heterogeneity (``frailty'') making hazards look
+        spuriously declining. Allison (2014) covers all three.
 \end{itemize}
 \end{frame}
 
@@ -749,7 +753,8 @@ interior maximum. The coefficient marches off to $\pm\infty$.
 \begin{itemize}\itemsep2pt
   \item Symptoms: enormous coefficients (10, 20, 40) with enormous standard
         errors; convergence warnings; results that change when you change
-        \texttt{maxit}.
+        \texttt{maxit}. The Wald $z$ is meaningless here (last week: Wald
+        breaks when $\loglik$ is far from a parabola); an LR test still works.
   \item Common with rare outcomes, small samples, and many dummy variables, 
         i.e.\ very common in practice.
   \item \textbf{Do not} respond by dropping the variable; that discards the
@@ -765,18 +770,15 @@ interior maximum. The coefficient marches off to $\pm\infty$.
   \item \textbf{Deviance} $= 2\big(\loglik_{\text{saturated}} - \loglik_{\text{fitted}}\big)$:
         the GLM analogue of the residual sum of squares. The saturated term is
         common to nested models, so \emph{differences} in deviance are exactly LR
-        tests.
-  \item \textbf{Pseudo-$R^2$} (McFadden: $1 - \loglik_{\text{full}}/\loglik_{\text{null}}$).
-        Interpretable only as a rank ordering, never as ``proportion of variance
-        explained.'' Values of $0.2$--$0.4$ are considered excellent.
-  \item \textbf{Classification accuracy}: needs a threshold, and is misleading
-        with rare outcomes, always compare against the null model that predicts
-        the majority class.
-  \item \textbf{ROC / AUC}: accuracy across all thresholds. $0.5$ is a coin flip,
-        $1.0$ is perfect.
-  \item \textbf{Predictive distribution checks}: simulate outcomes from the fitted
-        model and compare their distribution to the data. This is the most
-        informative diagnostic and the least often used.
+        tests. Non-nested models: AIC and BIC, last week.
+  \item \textbf{Pseudo-$R^2$} (McFadden: $1 - \loglik_{\text{full}}/\loglik_{\text{null}}$):
+        a rank ordering, not ``variance explained''; $0.2$--$0.4$ counts as
+        excellent.
+  \item \textbf{Classification accuracy} needs a threshold and misleads with
+        rare outcomes: compare against always predicting the majority class.
+        \textbf{AUC} averages over thresholds: $0.5$ is a coin flip.
+  \item \textbf{Predictive checks}: simulate outcomes from the fitted model
+        and compare to the data. Most informative, least used.
 \end{itemize}
 \end{frame}
 
@@ -792,22 +794,22 @@ interior maximum. The coefficient marches off to $\pm\infty$.
         in an appendix.
   \item Never compare raw coefficients across nested logit models or across
         groups. Compare marginal effects.
-  \item Use robust or clustered standard errors, exactly as in Week 2, the
-        sandwich applies to \texttt{glm} objects too.
+  \item Cluster whenever the design has clusters (Week 2). For counts,
+        robust standard errors as a matter of course. For a logit, a large gap
+        between robust and model-based standard errors is a warning that the
+        model is wrong, not a fix: repair the model.
 \end{enumerate}
 \end{frame}
 
 \begin{frame}{Looking Ahead}
 \begin{itemize}\itemsep5pt
-  \item We now have both estimation engines: least squares and maximum
-        likelihood. Everything in the rest of the course is one of them, applied
-        to a cleverly chosen quantity.
-  \item \alert{Notice what we have \emph{not} done}: nothing in Weeks 1--4 says
-        any coefficient is a causal effect. We have been describing conditional
-        distributions.
-  \item \textbf{Week 5} changes the question. Potential outcomes and DAGs give us
-        a language for saying what we \emph{want} to estimate, and what would have
-        to be true to get it.
+  \item Both estimation engines are now in hand: least squares and maximum
+        likelihood. The rest of the course applies one of them to a
+        well-chosen quantity.
+  \item \alert{Nothing in Weeks 1--4 says a coefficient is a causal effect.}
+        We have been describing conditional distributions.
+  \item \textbf{Week 5} changes the question: potential outcomes and DAGs say
+        what we \emph{want} to estimate and what must hold to get it.
 \end{itemize}
 \vskip6pt
 \begin{block}{Problem Set 2}
