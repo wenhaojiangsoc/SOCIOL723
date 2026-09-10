@@ -162,12 +162,13 @@ errors turns out to be one of its special cases.
 - Consistency and asymptotic normality (proof sketch ★), efficiency and
   invariance ★; why maximum likelihood is not unbiased.
 - **Testing**: why the intuitive Wald ratio is not enough, and the likelihood
-  ratio and score tests as the other two measures of the same distance; AIC and
-  BIC for non-nested comparison, with Raftery's reading of $\Delta$BIC.
+  ratio and score tests as the other two measures of the same distance; when
+  the log-likelihood is a parabola and when it is not.
 
 ### Materials
 - [Slides: Week 3 — Maximum Likelihood: Theory](./Week%203%20Maximum%20Likelihood%20Theory/slides.pdf)
 - [Lab 3: Coding and Maximizing a Likelihood](./Week%203%20Maximum%20Likelihood%20Theory/lab3.pdf)
+- [Lab 3 Exercise Solutions](./Week%203%20Maximum%20Likelihood%20Theory/lab3_answers.pdf)
 
 ### Reading
 *Required*: Pawitan Ch. 2 and 4. &nbsp;·&nbsp; *Additional*: Pawitan Ch. 3.

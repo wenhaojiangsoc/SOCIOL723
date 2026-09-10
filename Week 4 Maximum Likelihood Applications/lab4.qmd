@@ -273,8 +273,12 @@ round(exp(coef(m_pois)), 3)
 #| label: overdispersion
 c(mean = mean(gss$childs), var = var(gss$childs))
 
+## a score-type test: it uses only the Poisson fit (the restricted model,
+## variance = mean) and asks whether the slope toward variance > mean is zero
 dispersiontest(m_pois, trafo = 1)
 ```
+
+This is lecture's third ruler. The Poisson model is the restricted one, and the test never fits the negative binomial; it reads the slope of the log-likelihood at the Poisson fit in the direction of extra variance.
 
 ```{r}
 #| label: remedies

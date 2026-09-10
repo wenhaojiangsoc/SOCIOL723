@@ -186,9 +186,7 @@ round(sapply(c("const", "HC0", "HC1", "HC2", "HC3"),
 
 ## The convenience tool: `stargazer`
 
-For a paper-style table, hand `stargazer` the model once per column and a
-list of standard errors; it recomputes the stars from whatever SEs you
-supply.
+For a paper-style table, hand `stargazer` the model once per column and a list of standard errors; it recomputes the stars from whatever SEs you supply.
 
 ```{r}
 #| label: stargazer
@@ -201,13 +199,10 @@ stargazer(m, m, m,
           keep = c("educ", "female", "black"),
           keep.stat = c("n", "rsq"),
           digits = 4,
-          type = "text", no.space = TRUE)
+          type = "html", out = "table.html", no.space = TRUE)
 ```
 
-Same coefficients in every column, only the standard errors move: the whole
-lecture in one table. For a paper, switch `type = "text"` to
-`type = "latex"` and always say in the table note which variance estimator
-each column uses.
+Same coefficients in every column, only the standard errors move: the whole lecture in one table. For a paper, switch `type = "text"` to `type = "latex"` and always say in the table note which variance estimator each column uses.
 
 # Clustering
 
@@ -215,9 +210,7 @@ The GSS is a multi-stage area probability sample: it draws primary sampling unit
 
 ## By hand: sum within clusters first, then square
 
-Lecture's boxed scalar formula, plus the finite-sample scaling software
-applies by default (the cluster analogue of HC1's degrees-of-freedom
-correction; Stata's default too):
+Lecture's boxed scalar formula, plus the finite-sample scaling software applies by default (the cluster analogue of HC1's degrees-of-freedom correction; Stata's default too):
 
 $$\hat V_{\text{CR1}}(\hat\beta_1)
 = \underbrace{\frac{G}{G-1}\cdot\frac{n-1}{n-k}}_{c}\ 
@@ -236,22 +229,11 @@ round(c(scaling = c1, cr_manual = se_cr_manual,
         cr_sandwich = se_cr_pkg, hc0 = se_hc0_manual), 6)
 ```
 
-Sum within clusters first, then square. And to be explicit about the
-software: a bare `vcovCL()` call is already the small-sample-adjusted
-version --- its defaults `type = "HC1"` and `cadjust = TRUE` multiply the
-base formula by $(n-1)/(n-k)$ and $G/(G-1)$ respectively, which is exactly
-the $c$ above and matches Stata's `vce(cluster)`. With
-`r n_distinct(gss$psu)` clusters the scaling is negligible; it matters when
-clusters are few. Up to that factor, one observation per cluster collapses
-this to the robust formula: the two are one idea.
+Sum within clusters first, then square. And to be explicit about the software: a bare `vcovCL()` call is already the small-sample-adjusted version --- its defaults `type = "HC1"` and `cadjust = TRUE` multiply the base formula by $(n-1)/(n-k)$ and $G/(G-1)$ respectively, which is exactly the $c$ above and matches Stata's `vce(cluster)`. With `r n_distinct(gss$psu)` clusters the scaling is negligible; it matters when clusters are few. Up to that factor, one observation per cluster collapses this to the robust formula: the two are one idea.
 
 ## Which level for the GSS?
 
-The GSS is a multi-stage sample: PSUs are the *sampled* units, and no
-regressor in this model varies at any group level. So the design says
-**cluster on `psu`**, full stop. Coarser levels would allow extra dependence
-the design gives no reason to expect, at the price of a noisier variance
-estimate.
+The GSS is a multi-stage sample: PSUs are the *sampled* units, and no regressor in this model varies at any group level. So the design says **cluster on `psu`**, full stop. Coarser levels would allow extra dependence the design gives no reason to expect, at the price of a noisier variance estimate.
 
 ```{r}
 #| label: stargazer-cluster
@@ -264,9 +246,7 @@ stargazer(m, m, m,
           type = "text", no.space = TRUE)
 ```
 
-Clustering moves the standard errors only modestly here: GSS PSUs hold few
-respondents each, and `educ` varies mostly *within* PSUs, so the surviving
-cross terms are few and small.
+Clustering moves the standard errors only modestly here: GSS PSUs hold few respondents each, and `educ` varies mostly *within* PSUs, so the surviving cross terms are few and small.
 
 # The bootstrap
 
@@ -358,9 +338,9 @@ The `| year` term absorbs year fixed effects (FWL under the hood, as in Lab 1), 
 
 2.  **HC3 versus HC0 in small samples.** For $n \in \{30, 60, 120, 500\}$, simulate 2,000 heteroskedastic datasets and record the coverage of intervals built from HC0 and from HC3. At what $n$ does the difference stop mattering?
 
-4.  **Choosing the cluster level.** Suppose you wanted to estimate the effect of a state-level minimum-wage law on individual earnings, using individual GSS data. At what level would you cluster, and why? What if the law varied by state *and* year?
+3.  **Choosing the cluster level.** Suppose you wanted to estimate the effect of a state-level minimum-wage law on individual earnings, using individual GSS data. At what level would you cluster, and why? What if the law varied by state *and* year?
 
-5.  **A statistic with no easy formula.** Estimate the experience profile's turning point $-\hat\beta_{\text{exper}} / (2\hat\beta_{\text{exper}^2})$ and bootstrap it ($B = 5{,}000$). Plot the histogram of the replicates: is it bell-shaped? Report both the normal-approximation and the percentile interval, and say which you would report and why.
+4.  **A statistic with no easy formula.** Estimate the experience profile's turning point $-\hat\beta_{\text{exper}} / (2\hat\beta_{\text{exper}^2})$ and bootstrap it ($B = 5{,}000$). Plot the histogram of the replicates: is it bell-shaped? Report both the normal-approximation and the percentile interval, and say which you would report and why.
 
 # Session information
 

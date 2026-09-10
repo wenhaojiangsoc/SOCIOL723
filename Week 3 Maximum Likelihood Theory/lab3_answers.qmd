@@ -1,0 +1,174 @@
+---
+title: "\\textbf{Lab 3 Exercise Solutions}"
+subtitle: "SOCIOL 723, Social Statistics II"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \newcommand{\loglik}{\ell}
+        \newcommand{\Info}{\mathcal{I}}
+        \usepackage{setspace}
+        \setstretch{1.12}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.2, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999)
+```
+
+```{r}
+#| label: packages
+library(dplyr)
+gss <- readRDS("../Data/gss_earnings.rds")
+```
+
+# Exercise 1: Bernoulli information
+
+```{r}
+#| label: ex1
+set.seed(723)
+n <- 200
+y <- rbinom(n, size = 1, prob = 0.3)
+
+nll <- function(theta) -sum(dbinom(y, size = 1, prob = theta, log = TRUE))
+fit <- optim(par = 0.5, fn = nll, method = "Brent", lower = 0.001,
+             upper = 0.999, hessian = TRUE)
+th  <- fit$par
+
+c(mle = th, ybar = mean(y),
+  se_hessian = sqrt(1 / as.numeric(fit$hessian)),
+  se_by_hand = sqrt(th * (1 - th) / n))
+```
+
+The MLE is the sample proportion, and the two standard errors agree to the
+precision of the numerical derivative. The Hessian is a finite-difference
+approximation to $-\loglik''(\hat\theta) = n/[\hat\theta(1-\hat\theta)]$, the
+expression derived in lecture, so this is a check on the software, not on the
+theory.
+
+# Exercise 2: Curvature is information
+
+```{r}
+#| label: fig-ex2
+#| fig-cap: "Poisson log-likelihoods for four sample sizes, each shifted to peak at zero."
+set.seed(723)
+th_grid <- seq(1.2, 3.0, length.out = 300)
+ll_shift <- function(n) {
+  y <- rpois(n, 2)
+  ll <- sapply(th_grid, function(t) sum(dpois(y, t, log = TRUE)))
+  ll - max(ll)
+}
+curves <- sapply(c(25, 100, 400, 1600), ll_shift)
+
+matplot(th_grid, curves, type = "l", lty = 1, lwd = 2,
+        col = c("grey70", "steelblue", "navy", "firebrick"),
+        ylim = c(-40, 0), xlab = expression(theta), ylab = "log-likelihood, peak at 0")
+legend("bottomright", legend = paste0("n = ", c(25, 100, 400, 1600)),
+       col = c("grey70", "steelblue", "navy", "firebrick"), lwd = 2, bty = "n")
+```
+
+Each time $n$ quadruples the peak gets visibly sharper: moving the same
+distance from $\hat\theta$ costs four times as much fit. That is
+$\Info_n = n\,\Info_1$ read off the picture: the second derivative is a sum
+over observations, so it scales with $n$, and the width of the peak, which is
+$1/\sqrt{\Info_n}$, halves each time.
+
+# Exercise 3: Newton--Raphson by hand
+
+```{r}
+#| label: ex3
+S  <- function(th) 5 / th - 1
+H  <- function(th) -5 / th^2
+
+th <- 1.5
+out <- NULL
+for (t in 0:4) {
+  step <- -S(th) / H(th)
+  out  <- rbind(out, c(guess = th, slope = S(th), minus_l2 = -H(th), step = step))
+  th   <- th + step
+}
+round(out, 2)
+```
+
+The table matches the slide. The step is the ratio slope $\div(-\loglik'')$.
+Near the peak $-\loglik''$ is at its smallest, so the "learning rate"
+$1/(-\loglik'')$ is at its largest, but the slope is heading to zero faster
+than the learning rate grows, and their product shrinks; the last step lands
+on $\hat\theta = 5$ almost exactly.
+
+# Exercise 4: Not unbiased, but consistent
+
+```{r}
+#| label: ex4
+set.seed(723)
+sig2_mle <- function(n, reps = 5000) {
+  replicate(reps, {
+    x <- rnorm(n); y <- 1 + 0.5 * x + rnorm(n)
+    e <- residuals(lm(y ~ x))
+    sum(e^2) / n
+  })
+}
+s20  <- sig2_mle(20)
+s200 <- sig2_mle(200)
+
+rbind(n_20  = c(mean_mle = mean(s20),  expected = (20 - 2) / 20),
+      n_200 = c(mean_mle = mean(s200), expected = (200 - 2) / 200))
+```
+
+At $n = 20$ the MLE of $\sigma^2$ averages about $0.9$, not $1$: the
+$(n-2)/n$ from lecture. At $n = 200$ the shortfall is one percent. The bias is
+real and it disappears as $n$ grows, which is exactly what maximum likelihood
+promises: consistency, not unbiasedness.
+
+# Exercise 5: Where the $z$-test fails
+
+```{r}
+#| label: ex5
+n <- 20; th0 <- 0.1
+ll <- function(theta, s) ifelse(s == 0, 0, s * log(theta)) + (n - s) * log(1 - theta)
+rulers <- function(s) {
+  th <- s / n
+  se <- sqrt(th * (1 - th) / n)
+  c(theta_hat = th, se = se, z = (th - th0) / se, W = ((th - th0) / se)^2,
+    LR = 2 * (ll(th, s) - ll(th0, s)))
+}
+round(rbind(zero_successes = rulers(0), one_success = rulers(1)), 3)
+```
+
+With zero successes the standard error is zero and the Wald ratio is
+undefined: the test cannot even be formed. The LR statistic exists,
+$LR = 4.21$, and rejects $\theta_0 = 0.1$. With one success both can be
+computed, and both accept, but at different values, $W = 1.05$ against
+$LR = 0.67$, because the log-likelihood at $\hat\theta = 0.05$ is nowhere
+near a parabola: it drops steeply toward zero and gently toward larger
+$\theta$. The Wald test extrapolates the width at the peak; the LR test
+measures the actual loss of fit between $\hat\theta$ and $\theta_0$.
+
+Which to trust: lecture's exact table for $n = 20$ says neither is at
+its nominal 5% here. Zero successes has probability $0.9^{20} = 12\%$ under
+the null, so any test that rejects it (LR does) has size at least 12%, and
+any test that cannot score it (Wald) is not a test at all. With two expected
+successes there is no parabola to read, and the honest answer is an exact
+binomial test. What survives is the ranking: the Wald ruler is the one that
+breaks, in both directions, because it reads only the peak; from $n = 50$
+onward LR sits nearest 5% and is the one to believe when they disagree.

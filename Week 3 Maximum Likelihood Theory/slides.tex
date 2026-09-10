@@ -213,13 +213,14 @@ bell curve centred on a line for earnings. In return:
   \item One method for any outcome: binary, count, ordered, duration.
   \item Standard errors from the shape of the likelihood, not a new formula
         per model.
-  \item One way to compare models, logit or Poisson alike: LR tests, AIC, BIC.
+  \item One way to test hypotheses, logit or Poisson alike: three tests
+        read off the same curve.
   \item Nothing lost: with bell-shaped errors it returns the least-squares
-        line exactly.
+        line exactly. (Call this \emph{the hook}; we cash it at the end of
+        the next section.)
 \end{itemize}
-\vskip4pt
+\vskip6pt
 Hence two weeks: this week the method, next week logit, probit, Poisson.
-\par\vskip2pt\noindent{\footnotesize Stars: \core{} examinable; \adv{} never examined.}
 \end{frame}
 
 \begin{frame}{Two Stances, Both Legitimate}
@@ -230,7 +231,7 @@ Two questions, two stances toward a regression; this course uses both.
         generated; let the \emph{research design} carry the causal claim.
   \item \textbf{Model-based} (Weeks 3--4): write a probability model for
         $Y$ and estimate the parameter values that make the data most
-        probable. Needed when the outcome is not a real number.
+        probable. Needed when the outcome is not a continuous, unbounded number.
 \end{itemize}
 \vskip4pt
 \begin{block}{Neither is ``the right one''}
@@ -348,24 +349,23 @@ it factors:
 $f(y_1, y_2 \mid \theta) = f(y_1 \mid \theta)\, f(y_2 \mid \theta)$, the
 probability of both is the product; $n$ observations just repeat the step.)}
 \pause
-Products of many small numbers underflow and are painful to differentiate, so we
-take logs:
+A product of hundreds of numbers below one rounds to zero on a computer
+and is awkward to differentiate, so we take logs:
 \begin{align*}
   \boxed{\;\loglik(\theta) \equiv \log \lik(\theta) = \sum_{i=1}^{n}\log f(y_i\mid\theta)\;}
 \end{align*}
 \vskip2pt
 \begin{itemize}\itemsep2pt
   \item $\log$ is strictly increasing, so it \alert{does not move the maximum}.
-  \item A product becomes a sum, so the derivative is a sum, which is why every
-        MLE formula looks like a sample average.
+  \item A product becomes a sum, so the derivative is a sum over
+        observations: setting it to zero is a kind of averaging.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Worked Example 1: A Binomial Count\core}
+\begin{frame}{Worked Example 1: Bernoulli Draws\core}
 The marble game: $n$ Bernoulli draws, $Y_i \in \{0,1\}$,
-$\Pr(Y_i=1)=\theta$. The data that matter are the \emph{count} of
-successes out of $n$; $\theta$ is the probability to estimate from it.
-One draw's mass function as a single formula:
+$\Pr(Y_i=1)=\theta$. We observe the $n$ draws and estimate $\theta$, the
+probability of a success. One draw's mass function as a single formula:
 \begin{align*}
   f(y_i\mid\theta) = \theta^{y_i}(1-\theta)^{1-y_i} .
 \end{align*}
@@ -380,9 +380,8 @@ One draw's mass function as a single formula:
 \end{align*}
 \textbf{Sequence or count?} This is the probability of the \emph{particular}
 $0/1$ sequence; the binomial multiplies it by $\binom{n}{\sum y_i}$ for the
-probability of the \emph{count}. A constant factor, so the same MLE: for
-$\theta$, \alert{the count is all that matters} (the data enter only through
-$\sum_i y_i$, a \emph{sufficient statistic}). Counts are where we are headed.
+\emph{count}. A constant factor, so the same MLE: \alert{the total
+$\sum_i y_i$ is all the data can tell you about $\theta$}.
 \end{frame}
 
 \begin{frame}{Worked Example 1: Reading the Binomial\core}
@@ -424,11 +423,12 @@ $\sum_i y_i$, a \emph{sufficient statistic}). Counts are where we are headed.
   \item \textbf{The pieces}: $\theta^{y}$ for the $y$ successes,
         $(1-\theta)^{n-y}$ for the failures, $\binom{n}{y}$ for the orders
         they can come in.
-  \item \textbf{The shape}: centred at $n\theta$, spread $n\theta(1-\theta)$,
-        and a hard ceiling: no count above $n$ is possible.
-  \item \textbf{Read down, not across}: the marble game fixes $y = 7$ and
-        asks which panel puts the most mass on $7$. The $\theta = 0.7$ panel
-        wins: that is the likelihood.
+  \item \textbf{The shape}: mean $n\theta$, variance $n\theta(1-\theta)$
+        ($n$ independent draws with mean $\theta$ and variance
+        $\theta(1-\theta)$; both add), and a hard ceiling at $n$.
+  \item \textbf{Fix the data, compare the panels}: fix $y = 7$; which
+        panel puts the most mass on $7$? The $\theta = 0.7$ panel. Data
+        fixed, $\theta$ varying: the likelihood.
 \end{itemize}
 \end{frame}
 
@@ -460,20 +460,24 @@ Start from the binomial count of Worked Example 1:
 Read it as \emph{arrests of one person in a year}: slice the year into $n$
 moments, each a Bernoulli trial with chance $p$ of an arrest. Then $y$ is
 the number of arrests: $p^{y}$ for the $y$ moments with one, $(1-p)^{n-y}$
-for the moments without, $\binom{n}{y}$ for which moments they were.
+for the rest, $\binom{n}{y}$ for which moments they were.
 \vskip2pt
 Now slice finer: 365 days, 8{,}760 hours, 525{,}600 minutes, $\dots$ The
 slices $n \to \infty$ and the chance per slice $p \to 0$, but the expected
-arrests per year, $np = \E[Y] = \theta$, cannot depend on how you slice.
-Fix $y$ and take the limit:
+arrests per year, $np = \E[Y] = \theta$, cannot depend on the slicing. Fix
+$y$ and take the limit:
 \begingroup\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
 \begin{align*}
   \binom{n}{y}p^{y}(1-p)^{n-y} \ \longrightarrow\
   \frac{\theta^{y}e^{-\theta}}{y!}, \qquad y = 0, 1, 2, \dots
 \end{align*}
 \endgroup
-The \alert{Poisson distribution}: one parameter $\theta$, the expected
-count. Neither $n$ nor $p$ survives, so nothing caps the count.
+The \alert{Poisson distribution}: one parameter $\theta$ (the letter is
+recycled; it always means ``the parameter''), the expected count. Neither
+$n$ nor $p$ survives, so nothing caps the count.
+\vskip-3pt
+{\footnotesize Why\adv: $p = \theta/n$, so $\binom{n}{y}p^{y} \to \theta^{y}/y!$
+and $(1-\theta/n)^{n-y} \to e^{-\theta}$.}
 \end{frame}
 
 \begin{frame}{Worked Example 2: Reading the Poisson\core}
@@ -515,8 +519,9 @@ count. Neither $n$ nor $p$ survives, so nothing caps the count.
   \item \textbf{The shapes}: piled at zero and right-skewed for small
         $\theta$; nearly a bell centred at $\theta$ for large $\theta$. No
         ceiling anywhere: the binomial's $n$ is gone.
-  \item \textbf{The signature}: mean and variance are both $\theta$, so the
-        spread grows with the mean: heteroskedasticity built in.
+  \item \textbf{The signature}: mean and variance are both $\theta$
+        (inherited from the binomial: $np \to \theta$ and
+        $np(1-p) \to \theta$ as $p \to 0$). Spread grows with the mean.
 \end{itemize}
 \end{frame}
 
@@ -545,32 +550,13 @@ Independent Poisson counts $Y_1,\dots,Y_n$, common $\theta$; step by step:
 \vskip-3pt
 \end{frame}
 
-\begin{frame}{Preview: Where the Regressors Go\core}
-So far every observation shares one $\theta$. Next week each observation
-gets its own, driven by covariates:
-\begin{align*}
-  \theta_i = \exp(\beta_0 + \beta_1 X_i),
-  \qquad
-  \loglik(\beta_0,\beta_1) = \sum_i \Big[\, y_i(\beta_0 + \beta_1 X_i)
-  - e^{\beta_0 + \beta_1 X_i} - \log(y_i!)\Big] .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item The exponential keeps every $\theta_i$ positive, whatever the
-        covariates do; this is the \emph{log link} of Poisson regression.
-  \item Same recipe: density, product, log, sum. Only the parameter changed
-        from a number to a function of $X_i$.
-  \item No closed form any more ($\beta$ sits inside and outside the
-        exponential), so the maximum is found numerically: Section 3.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{Worked Example 3: The Normal Linear Model\core}
 The normal (Gaussian) density, a bell centred at $\mu$ with spread $\sigma$:
 \begin{align*}
   f(y \mid \mu, \sigma^2)
   = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(y-\mu)^2}{2\sigma^2}\right) .
 \end{align*}
-Two assumptions from Week 1, now used together:
+One assumption from Week 1 and one new one, with $\sigma^2$ held fixed:
 \begin{enumerate}\itemsep3pt
   \item \textbf{Linear CEF}: $\E[Y_i \mid X_i] = \beta_0 + \beta_1 X_i$.
   \item \textbf{Normal errors}: $\epsilon_i \sim \mathcal N(0,\sigma^2)$,
@@ -610,18 +596,36 @@ Product over independent observations, then log:
 \begin{frame}{What the Hook Does Not Say\core}
 \begin{itemize}\itemsep6pt
   \item \textbf{OLS itself never needed normality.} Weeks 1--2 built it
-        from moments alone, and its inference came from the CLT, not from
-        any error distribution.
+        from moments alone; its large-sample inference came from the CLT.
+        Normality entered only to make the $t$ table exact.
   \item \textbf{Normality is the price of admission} to the likelihood
-        framework. For a continuous outcome it buys nothing new: OLS already
-        gave the estimate, and Week 2 already gave its standard errors, with
-        no distribution assumed.
+        framework. For a continuous outcome it buys little: OLS already
+        gave the estimate, and Week 2 already gave its standard errors.
 \end{itemize}
 \vskip6pt
 \begin{block}{The point of the exercise}
 Not ``assume normality,'' but ``one principle contains least squares as a
 special case and extends to everything least squares cannot do.''
 \end{block}
+\end{frame}
+
+\begin{frame}{Preview: Where the Regressors Go\core}
+So far every observation shares one $\theta$. Next week each observation
+gets its own, driven by covariates:
+\begin{align*}
+  \theta_i = \exp(\beta_0 + \beta_1 X_i),
+  \qquad
+  \loglik(\beta_0,\beta_1) = \sum_i \Big[\, y_i(\beta_0 + \beta_1 X_i)
+  - e^{\beta_0 + \beta_1 X_i} - \log(y_i!)\Big] .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item The exponential keeps every $\theta_i$ positive, whatever the
+        covariates do; this is the \emph{log link} of Poisson regression.
+  \item Same recipe: density, product, log, sum. Only the parameter changed
+        from a number to a function of $X_i$.
+  \item No closed form any more ($\beta$ sits inside the exponential), so
+        the maximum is found numerically: Section 3 does it by hand.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -645,11 +649,10 @@ parameter:
         FOC for least squares.
   \item Second-order condition: $\partial^2\loglik/\partial\theta^2 < 0$ at
         $\hat\theta$, so that we have a maximum rather than a minimum.
-  \item A population fact: $\E[S(\theta_0)] = 0$ (derived in Section 4).
-        \textbf{Mind the direction}: here the true $\theta_0$ is fixed and
-        the data vary, Week 2's sampling-distribution view, which is how any
-        estimator is judged. Estimation runs the other way (data fixed,
-        $\theta$ varies).
+  \item Write $\theta_0$ for the \emph{true} value. A population fact,
+        derived in Section 4: across repeated samples, $\E[S(\theta_0)] = 0$
+        (the true $\theta_0$ fixed, the data varying: Week 2's
+        sampling-distribution view).
 \end{itemize}
 \end{frame}
 
@@ -727,22 +730,21 @@ with covariates, have no algebraic solution to $S(\theta)=0$. We search
 numerically.
 \vskip4pt
 \begin{block}{Newton--Raphson}
-Start at $\theta^{(0)}$ and iterate
+Start at a guess $\theta^{[0]}$ (superscript in brackets: an iteration count, not the true value) and iterate
 \begin{align*}
-  \theta^{(t+1)} = \theta^{(t)} - \left[\frac{\partial^2\loglik}{\partial\theta^2}
-  \bigg|_{\theta^{(t)}}\right]^{-1} S(\theta^{(t)}) ,
+  \theta^{[t+1]} = \theta^{[t]} - \left[\frac{\partial^2\loglik}{\partial\theta^2}
+  \bigg|_{\theta^{[t]}}\right]^{-1} S(\theta^{[t]}) ,
 \end{align*}
 a step of size score over curvature. The next frame draws it.
 \end{block}
 \vskip3pt
 Variants: \textbf{BFGS} approximates the second derivative; \textbf{Fisher
-scoring} uses its expectation (what \texttt{glm()} does, as iteratively
-reweighted least squares).
+scoring} uses its expectation (what \texttt{glm()} does).
 \end{frame}
 
 \begin{frame}{Finding the Peak: Newton--Raphson in a Picture}
 \begin{center}
-\begin{tikzpicture}[x=0.55cm,y=0.30cm]
+\begin{tikzpicture}[x=0.55cm,y=0.27cm]
   % Poisson, y = 5: l(theta) = 5 ln theta - theta; S = 5/theta - 1; l'' = -5/theta^2
   % Newton from 1.5: 1.5 -> 2.55 -> 3.80 -> 4.71 -> 5
   % ---------- left: the log-likelihood and the guesses ----------
@@ -751,7 +753,7 @@ reweighted least squares).
     \draw[->] (0,0) -- (0,3.5) node[above]{\scriptsize $\loglik(\theta)$};
     \draw[dukeblue,very thick,smooth,samples=120,domain=1.3:9,variable=\x]
       plot ({\x},{5*ln(\x)-\x});
-    \foreach \x/\lab in {1.5/{$\theta^{(0)}$},2.55/{$\theta^{(1)}$},3.8/{$\theta^{(2)}$}}
+    \foreach \x/\lab in {1.5/{$\theta^{[0]}$},2.55/{$\theta^{[1]}$},3.8/{$\theta^{[2]}$}}
       {\draw[gray,dashed] (\x,0) -- (\x,{5*ln(\x)-\x});
        \node[below] at (\x,0) {\scriptsize \lab};}
     \draw[gray,dashed] (5,-0.55) -- (5,3.047); \node[below] at (5,-0.55) {\scriptsize $\hat\theta$};
@@ -760,12 +762,12 @@ reweighted least squares).
     \node[circle,fill=accent!35,inner sep=1.6pt] at (3.8,2.875) {};
   \end{scope}
   % ---------- right: the second derivative, one curve ----------
-  \begin{scope}[xshift=5.9cm,yshift=1.55cm]
+  \begin{scope}[xshift=5.9cm,yshift=0.95cm]
     \draw[->] (0,0) -- (9.4,0) node[right]{\scriptsize $\theta$};
     \draw[->] (0,0.3) -- (0,-3.3) node[below]{\scriptsize $\loglik''(\theta)$};
     \draw[dukeblue,very thick,smooth,samples=120,domain=1.4:9,variable=\x]
       plot ({\x},{-5/(\x*\x)});
-    \foreach \x/\lab in {1.5/{$\theta^{(0)}$},2.55/{$\theta^{(1)}$},3.8/{$\theta^{(2)}$},5/{$\hat\theta$}}
+    \foreach \x/\lab in {1.5/{$\theta^{[0]}$},2.55/{$\theta^{[1]}$},3.8/{$\theta^{[2]}$},5/{$\hat\theta$}}
       {\draw[gray,dashed] (\x,0) -- (\x,{-5/(\x*\x)});
        \node[above] at (\x,0) {\scriptsize \lab};}
     \node[circle,fill=accent,inner sep=1.6pt] at (1.5,-2.222) {};
@@ -786,18 +788,106 @@ step $S/(-\loglik'')$ & 1.05 & 1.25 & 0.91 & 0.27 \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip-7pt
+\vskip-1pt
 \begin{itemize}\itemsep0pt
-  \item Poisson, one observation $y = 5$: $\loglik = 5\log\theta - \theta$;
+  \item Poisson, one observation $y = 5$: $\loglik = 5\log\theta - \theta$,
         right panel $\loglik'' = -5/\theta^{2}$. Step $=$ slope
-        $\div (-\loglik'')$: gradient ascent, ``learning rate''
-        $1/(-\loglik'')$ set by the data.
-  \item The step is a \emph{ratio}. Near the peak $-\loglik''$ is smallest
-        and the learning rate largest, yet the step shrinks: the slope goes
-        to zero faster. Far out the slope is large, but so is $-\loglik''$.
-        At $\hat\theta$, $S = 0$ and $-\loglik''(\hat\theta)$ becomes the
-        standard error.
+        $\div (-\loglik'')$: gradient ascent with the step set by the curvature.
+  \item The step is a \emph{ratio} of two things that both change with
+        $\theta$; it stops when the slope is zero. $-\loglik''(\hat\theta)$
+        is the observed information: next section.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Poisson by Hand: Newton--Raphson\core}
+Five counts: $2, 0, 3, 1, 4$. So $n = 5$, $\sum y_i = 10$, and we know the
+answer, $\hat\theta = \bar y = 2$. Pretend we do not.
+\begingroup\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \loglik(\theta) = 10\log\theta - 5\theta + \text{const},
+  \qquad
+  S(\theta) = \frac{10}{\theta} - 5,
+  \qquad
+  \loglik''(\theta) = -\frac{10}{\theta^{2}} .
+\end{align*}
+\endgroup
+Start at a guess $\theta^{[0]} = 1$ and step by slope over curvature,
+$\theta^{[t+1]} = \theta^{[t]} - S/\loglik''$:
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{ccccc}
+\toprule
+guess $\theta$ & slope $S$ & $-\loglik''$ & step $S/(-\loglik'')$ & next guess \\
+\midrule
+1.000 & 5.000 & 10.00 & 0.500 & 1.500 \\
+1.500 & 1.667 & 4.44  & 0.375 & 1.875 \\
+1.875 & 0.333 & 2.84  & 0.117 & 1.992 \\
+1.992 & 0.020 & 2.52  & 0.008 & 2.000 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+Four steps to $2.000$. At the answer $S = 0$ and $-\loglik''(2) = 2.5$: the
+observed information, so $\SE = 1/\sqrt{2.5} = 0.63$. Check:
+$\sqrt{\bar y/n} = \sqrt{2/5} = 0.63$.
+\end{frame}
+
+\begin{frame}{Regressors Inside: $\beta_1$ by Hand, the Function\core}
+Give each count its own mean, $\theta_i = e^{\beta_1 X_i}$ (intercept known
+to be $0$ for now). Four made-up observations, $X = 0, 1, 2, 3$ and
+$y = 1, 2, 4, 8$. The Poisson log-likelihood is
+$\sum_i [\, y_i \log\theta_i - \theta_i\,]$ plus a constant, and
+$\log\theta_i = \beta_1 X_i$. Write out all four terms:
+\begingroup\small\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \loglik(\beta_1)
+  &= \big[1\cdot\beta_1\cdot 0 - e^{0}\big]
+   + \big[2\cdot\beta_1\cdot 1 - e^{\beta_1}\big]
+    && \text{\footnotesize $i = 1, 2$: $X_i = 0, 1$; $y_i = 1, 2$} \\
+  &\quad + \big[4\cdot\beta_1\cdot 2 - e^{2\beta_1}\big]
+   + \big[8\cdot\beta_1\cdot 3 - e^{3\beta_1}\big]
+    && \text{\footnotesize $i = 3, 4$: $X_i = 2, 3$; $y_i = 4, 8$} \\
+  &= 34\,\beta_1 \;-\; 1 - e^{\beta_1} - e^{2\beta_1} - e^{3\beta_1}
+    && \text{\footnotesize $0 + 2 + 8 + 24 = 34$} \\[3pt]
+  S(\beta_1) &= 34 \;-\; e^{\beta_1} - 2e^{2\beta_1} - 3e^{3\beta_1}
+    && \text{\footnotesize differentiate: $\tfrac{d}{d\beta_1}e^{kX\beta_1} = k\,e^{k\beta_1}$} \\[3pt]
+  \loglik''(\beta_1) &= -\,e^{\beta_1} - 4e^{2\beta_1} - 9e^{3\beta_1}
+    && \text{\footnotesize differentiate again; always negative}
+\end{align*}
+\endgroup
+\vskip2pt
+$S(\beta_1) = 0$ has no closed form: $\beta_1$ sits inside three different
+exponentials. But try $\beta_1 = \log 2$, so $e^{\beta_1} = 2$:
+$S = 34 - 2 - 2\cdot 4 - 3\cdot 8 = 0$. That is the answer; Newton finds it
+without the lucky guess.
+\end{frame}
+
+\begin{frame}{Regressors Inside: $\beta_1$ by Hand, the Iterations\core}
+Slope over curvature, starting from $\beta_1 = 0.5$. At each guess, first the
+four fitted means $\theta_i = e^{\beta_1 X_i}$, then $S$ and $\loglik''$
+from the previous frame:
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{cccccc}
+\toprule
+guess $\beta_1$ & $\theta_i = e^{\beta_1 X_i}$ & slope $S$ & $-\loglik''$ & step & next \\
+\midrule
+0.500 & 1, 1.65, 2.72, 4.48 & $13.47$ & 52.9  & $0.255$  & 0.755 \\
+0.755 & 1, 2.13, 4.53, 9.63 & $-6.06$ & 106.9 & $-0.057$ & 0.698 \\
+0.698 & 1, 2.01, 4.04, 8.12 & $-0.45$ & 91.3  & $-0.005$ & 0.693 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+First row, spelled out: $S = 34 - 1.65 - 2(2.72) - 3(4.48) = 13.47$ and
+$-\loglik'' = 1.65 + 4(2.72) + 9(4.48) = 52.9$, so the step is
+$13.47/52.9 = 0.255$.
+\vskip4pt
+$\hat\beta_1 = 0.693 = \log 2$: the fitted means $1, 2, 4, 8$ match the
+data exactly. $e^{\hat\beta_1} = 2$: each unit of $X$ doubles the expected
+count. The final curvature, $90.0$, gives $\SE = 1/\sqrt{90} = 0.105$. With
+an intercept too, the same steps run on two equations at once; that is what
+\texttt{glm(y \~{} X, family = poisson)} does.
 \end{frame}
 
 \begin{frame}{Practical Matters in \texttt{R}}
@@ -811,8 +901,8 @@ step $S/(-\loglik'')$ & 1.05 & 1.25 & 0.91 & 0.27 \\
   \item Ask for \texttt{hessian = TRUE}. The \emph{Hessian} is the matrix
         of second derivatives of the function you optimized, computed
         numerically at the solution; with one parameter it is the single
-        number $-\loglik''(\hat\theta)$ (sign flipped because you minimized
-        $-\loglik$), i.e.\ the observed information: your standard error.
+        number $-\loglik''(\hat\theta)$, the observed information. Invert it
+        for the variance; square-root for the standard error.
   \item Try several starting values. If they land in different places, your
         likelihood is multimodal or your model is not identified.
 \end{itemize}
@@ -885,58 +975,80 @@ more information.}
 \end{align*}
 \end{block}
 \vskip2pt
-Same direction as the Score frame: $\theta_0$ fixed, data random; $\E$ and
-$\Var$ average over $y \sim f(y\mid\theta_0)$. Minus sign because
-$\loglik''<0$ at a peak. $-\E[\loglik''] = \E[S^2]$ is the
-\alert{information equality} (orange frames; needs the model to be right);
-$\E[S^2] = \Var(S)$ is only $\E[S(\theta_0)] = 0$.
-\vskip2pt
-\begin{itemize}\itemsep3pt
-  \item \emph{Additive over independent observations}:
-        $\Info_n = n\,\Info_1$, the source of the familiar $1/n$.
+\textbf{Mind the direction}: the true $\theta_0$ is fixed and the data
+vary, Week 2's sampling-distribution view, which is how any estimator is
+judged (estimation ran the other way). $\E$ and $\Var$ average over
+$y \sim f(y\mid\theta_0)$. Minus sign because $\loglik''<0$ at a peak.
+\vskip1pt
+\begin{itemize}\itemsep2pt
+  \item The second and third forms are the \alert{information equality},
+        $-\E[\loglik''] = \Var(S)$: proved in the orange frames, true if the
+        model is right. It lets one number, the curvature at the peak, give
+        the standard error.
+  \item \emph{Additive}: $\loglik$ is a sum of $n$ like terms, so
+        $-\E[\loglik'']$ is too: $\Info_n = n\,\Info_1$, the familiar $1/n$.
   \item \textbf{From data}: plug $\hat\theta$ into your sample's own
         $-\loglik''(\theta)$. This is the \emph{observed information},
         what software reports.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Information Equality: Why Care\adv}
-Four frames, one identity; its payoff is the variance of $\hat\theta$. At
-the peak the score is zero; expand it around the true $\theta_0$ (one Newton
-step, slope over curvature):
-\begingroup
-\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{frame}{The Variance of the MLE\core}
 \begin{align*}
-  0 = S(\hat\theta) \approx S(\theta_0) + \loglik''(\theta_0)\,(\hat\theta-\theta_0)
-  \quad\Longrightarrow\quad
+  \boxed{\;\hat{V}(\hat\theta)
+  = \left[-\frac{\partial^2\loglik}{\partial\theta^2}\bigg|_{\hat\theta}\right]^{-1}
+  = \frac{1}{\text{observed information}}\;}
+\end{align*}
+Read it as a sentence: \emph{the variance is one over minus the second
+derivative of the log-likelihood at its peak}. \textbf{Why}, in one Newton
+step from the truth: the score is zero at the peak, so
+\begingroup\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  0 = S(\hat\theta) \approx S(\theta_0) + \loglik''(\theta_0)(\hat\theta-\theta_0)
+  \ \Longrightarrow\
   \hat\theta - \theta_0 \approx \frac{S(\theta_0)}{-\loglik''(\theta_0)} .
 \end{align*}
-The denominator is a sum over observations, so by the LLN replace it by its
-expectation (Week 2's move): $\hat\theta - \theta_0 \approx c\,S(\theta_0)$
-with $c = 1/(-\E[\loglik''(\theta_0)])$ fixed. Then $\Var(cS) = c^{2}\Var(S)$:
+\endgroup
+The score varies across samples with variance $\Info$ (the information
+equality); dividing by the curvature $\Info$ leaves
+$\Var(\hat\theta) \approx \Info/\Info^2 = 1/\Info$. The orange frames fill
+in the steps. This is why \texttt{optim(..., hessian = TRUE)} is not
+optional.
+\vskip1pt
+{\footnotesize Several parameters\adv: the observed information is a matrix
+(the Hessian, sign flipped); invert it, and the standard errors are the
+square roots of its diagonal.}
+\end{frame}
+
+\begin{frame}{Information Equality: Why Care\adv}
+The Variance frame's Newton step:
+$\hat\theta - \theta_0 \approx S(\theta_0)/(-\loglik''(\theta_0))$. The
+denominator is a sum over observations, so by the law of large numbers (as
+in Week 2) replace it by its expectation, a fixed number
+$1/c = -\E[\loglik''(\theta_0)]$. Then $\Var(cS) = c^2\Var(S)$:
 \begin{align*}
   \Var(\hat\theta) \approx
-  \frac{\Var\big(S(\theta_0)\big)}{\big(-\E[\loglik''(\theta_0)]\big)^{2}} ,
-  \quad \text{\footnotesize $\approx$: first-order expansion; exact in the $\sqrt n$ limit (Properties).}
+  \frac{\Var\big(S(\theta_0)\big)}{\big(-\E[\loglik''(\theta_0)]\big)^{2}} .
 \end{align*}
-\vskip-4pt
-\endgroup
-Two different quantities. The information equality,
-$\Var(S(\theta_0)) = -\E[\loglik''(\theta_0)]$, says both equal
-$\Info(\theta_0)$, so the ratio collapses:
-$\Var(\hat\theta) \approx \Info/\Info^{2} = 1/\Info(\theta_0)$.
-\begin{itemize}\itemsep1pt
-  \item One number, the second derivative at the peak, is the whole
-        standard error: software inverts the Hessian at $\hat\theta$ and
-        stops. Without the equality you would need both pieces separately.
+These are two different quantities. The information equality,
+$\Var(S(\theta_0)) = -\E[\loglik''(\theta_0)] = \Info(\theta_0)$, says they
+are the same number, so the ratio collapses to $\Info/\Info^2 = 1/\Info$.
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item One number, the curvature at the peak, is the whole standard error.
+        Without the equality you would need both pieces separately: Week
+        2's sandwich.
+  \item The $\approx$ is a first-order expansion, exact in the $\sqrt n$
+        limit (Properties section).
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Information Equality: Goal and Plan\adv}
-\textbf{What we want to show.} One observation $y \sim f(y\mid\theta)$ with
-its own score $s(y;\theta) \equiv \partial\log f(y\mid\theta)/\partial\theta
-= (\partial f/\partial\theta)/f$, at that same true $\theta$, random only
-through $y$, which $\E$ averages over; the full score is $S = \sum_i s(y_i;\theta)$:
+\textbf{What we want to show.} Setting, in three lines: one observation
+$y \sim f(y\mid\theta)$; its own score $s(y;\theta) \equiv
+\partial\log f(y\mid\theta)/\partial\theta = (\partial f/\partial\theta)/f$,
+evaluated at that same true $\theta$; only $y$ is random, and $\E$ averages
+over it. The full score is $S = \sum_i s(y_i;\theta)$. Then:
 \begingroup
 \setlength{\abovedisplayskip}{3pt}\setlength{\belowdisplayskip}{3pt}
 \begin{align*}
@@ -945,13 +1057,15 @@ through $y$, which $\E$ averages over; the full score is $S = \sum_i s(y_i;\thet
 \end{align*}
 \endgroup
 \textbf{The only tool.} The density integrates to one at \emph{every}
-$\theta$, so all its $\theta$-derivatives vanish:
+$\theta$, so all its $\theta$-derivatives vanish (we may swap $d/d\theta$
+and $\int$, one of the ``regularity conditions''):
 \begin{align*}
   \int f(y\mid\theta)\,dy = 1 \ \text{ for all }\theta
   \qquad\Longrightarrow\qquad
   \frac{d}{d\theta}\int f(y\mid\theta)\,dy = 0 .
 \end{align*}
 \textbf{Plan.}
+\vskip-2pt
 \begin{enumerate}\itemsep0pt
   \item Differentiate once $\Rightarrow$ $\E[s] = 0$.
   \item Differentiate twice $\Rightarrow$ $\E\big[(\partial^2 f/\partial\theta^2)/f\big] = 0$.
@@ -1038,25 +1152,6 @@ $\;-\E\big[\partial^2 \log f/\partial\theta^2\big] = \Var(s)$. Done, for one obs
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Variance of the MLE\core}
-\begin{align*}
-  \boxed{\;\hat{V}(\hat\theta)
-  = \left[-\frac{\partial^2\loglik}{\partial\theta^2}\bigg|_{\hat\theta}\right]^{-1}
-  = \frac{1}{\text{observed information}}\;}
-\end{align*}
-\vskip3pt
-Read it as a sentence: \emph{the variance of the estimate is one over minus
-the second derivative of the log-likelihood at its peak}: the faster the
-slope changes there, the smaller the variance.
-\vskip6pt
-\begin{itemize}\itemsep4pt
-  \item With several parameters\adv, the observed information is a matrix
-        (the Hessian, sign flipped); invert it, and the standard errors are
-        the square roots of its diagonal.
-  \item This is why \texttt{optim(..., hessian = TRUE)} is not optional.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{Worked: Bernoulli Information}
 \begin{align*}
   S(\theta) &= \frac{\sum_i y_i}{\theta} - \frac{n-\sum_i y_i}{1-\theta}, \\[3pt]
@@ -1109,41 +1204,21 @@ Under regularity conditions, as $n\to\infty$:
   \item \textbf{Asymptotic normality}\core:
         $\hat\theta \overset{a}{\sim} \mathcal N\big(\theta_0, \Info(\theta_0)^{-1}\big)$.
   \item \textbf{Asymptotic efficiency}\adv: if the model is right, no
-        regular estimator has a smaller asymptotic variance (the
+        other well-behaved estimator has a smaller asymptotic variance (the
         \alert{Cramér--Rao bound}). Stronger than Gauss--Markov, which ranked
         only \emph{linear} unbiased estimators.
   \item \textbf{Invariance}\adv: if $\hat\theta$ is the MLE of $\theta$, then
-        $c(\hat\theta)$ is the MLE of $c(\theta)$ for any continuous $c(\cdot)$.
+        $c(\hat\theta)$ is the MLE of $c(\theta)$ for any function $c(\cdot)$.
         Wonderfully convenient: the MLE of the odds is the odds of the MLE.
 \end{enumerate}
 \vskip6pt
 \alert{The first three are asymptotic}, none of them says anything about
 $n = 40$. Invariance, by contrast, holds exactly in any sample.
-\end{frame}
-
-\begin{frame}{Why Consistency and Normality Hold\adv}
-The argument is a first-order Taylor expansion of the score around $\theta_0$:
-\begin{align*}
-  0 = S(\hat\theta) \approx S(\theta_0)
-  + \frac{\partial S(\theta_0)}{\partial\theta}(\hat\theta - \theta_0)
-  \ \Longrightarrow\
-  \sqrt n(\hat\theta-\theta_0)
-  \approx \frac{\tfrac{1}{\sqrt n}S(\theta_0)}
-               {-\tfrac1n \partial S(\theta_0)/\partial\theta} .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item The \textbf{denominator} is a sample average of second derivatives; by the
-        LLN it converges to $\Info_1(\theta_0)$.
-  \item The \textbf{numerator} is a normalized sum of the i.i.d.\ mean-zero
-        scores; by the CLT it is asymptotically
-        $\mathcal N\big(0,\Info_1(\theta_0)\big)$.
-  \item Combining: $\sqrt n(\hat\theta-\theta_0)\dto
-        \mathcal N\big(0,\Info_1(\theta_0)^{-1}\big)$.
-\end{itemize}
-\vskip3pt
-\alert{This is structurally identical to the OLS argument in Week 2}: a sample
-average in the numerator, a sample average in the denominator, LLN below and CLT
-above.
+\vskip2pt
+{\footnotesize Why 1--2 hold: the Newton step from the truth (Variance
+frame), $\hat\theta - \theta_0 \approx S(\theta_0)/(-\loglik''(\theta_0))$,
+has a sum in the numerator (CLT: normal) and a sum in the denominator (LLN:
+converges to $\Info$), structurally Week 2's OLS argument\adv.}
 \end{frame}
 
 \begin{frame}{Maximum Likelihood Is Not Unbiased\core}
@@ -1157,8 +1232,8 @@ above.
 unbiasedness in a finite sample. Some MLEs happen to be unbiased (the Poisson
 $\hat\theta = \bar y$; $\hat\beta$ in the normal linear model, which is OLS);
 others are biased ($\hat\sigma^2$ above). What the method guarantees is that
-the bias shrinks to zero as $n$ grows: that is consistency, the first of the
-four properties.
+$\hat\theta$ closes in on $\theta_0$ as $n$ grows (consistency); whatever
+bias there is at $n = 40$ is a finite-sample matter that vanishes with it.
 \vskip8pt
 \begin{alertblock}{The trade we are making}
 Give up exact unbiasedness in finite samples; get consistency, asymptotic
@@ -1167,195 +1242,371 @@ you can write down.
 \end{alertblock}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Testing]{Likelihood-Based Tests}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Why Three Tests\core}
-The intuitive test is Week 2's: $z = (\hat\theta - \theta_0)/\SE(\hat\theta)$,
-the \textbf{Wald} test. It is right whenever $\loglik$ is a parabola, because
-then the curvature at $\hat\theta$ describes the whole curve. It only
-\emph{knows} the curve at $\hat\theta$, and when the curve is not a parabola
-it can fail outright.
+\begin{frame}{Goal and Plan}
+\textbf{What we want.} A test of a hypothesis about $\theta$ that uses
+nothing but the log-likelihood curve, and a clear reading of which test
+\texttt{R} ran when it printed a $p$-value.
 \vskip4pt
-Twenty trials, zero successes: $\hat\theta = 0$ and
-$\SE = \sqrt{\hat\theta(1-\hat\theta)/n} = 0$, so Wald cannot test
-$\theta_0 = 0.1$ at all. Yet $\loglik(0.1) - \loglik(0) = 20\log 0.9 = -2.1$:
-imposing $\theta_0$ costs $2.1$ units of fit, and $2 \times 2.1 = 4.2 > 3.84$
-rejects. The likelihood knew; the Wald test could not see it. (A logit near
-separation fails the same way, Week 4.)
-\vskip4pt
-Hence two more distances. \textbf{Likelihood ratio}: the drop in $\loglik$
-between $\hat\theta$ and $\theta_0$. \textbf{Score}: the slope at $\theta_0$,
-no alternative fitted. All three agree when $\loglik$ is a parabola, which
-large samples deliver. In your output: \texttt{summary(glm)} $z$ is Wald,
-\texttt{anova} on two \texttt{glm} fits is LR, overdispersion tests are score.
+\textbf{The plan.}
+\begin{enumerate}\itemsep3pt
+  \item A null hypothesis is one value, $\theta_0$. The question: is
+        $\theta_0$ far from the peak $\hat\theta$?
+  \item The obvious ruler, $z = (\hat\theta - \theta_0)/\SE$, works at large
+        $n$ and breaks at small $n$ near a boundary.
+  \item The curve offers two ways to measure ``far'': the horizontal gap
+        (Wald) and the vertical drop in fit (likelihood ratio). On a
+        parabola (i.e., with large $n$) they are one number.
+  \item Off a parabola they differ. Compute both on Simulation 2's
+        samples: which one still works at small $n$?
+  \item Which test your software ran, and what to report in practice.
+\end{enumerate}
 \end{frame}
 
-\begin{frame}{Three Ways to Measure the Same Distance}
+\begin{frame}{A Null Hypothesis Is a Smaller Model\core}
+Week 2 tested $\beta_j = 0$. Look closely at what that null is.
+\begin{itemize}\itemsep5pt
+  \item $\beta_j = 0$ is the model \emph{without} $X_j$: the same regression
+        with one parameter pinned at a fixed value.
+  \item In general, $\theta = \theta_0$ is the model with $\theta$ pinned at
+        $\theta_0$, the \textbf{restricted} model. The model where $\theta$ is
+        free is the \textbf{unrestricted} one; its best value is $\hat\theta$.
+\end{itemize}
+\vskip6pt
+So these are the same question:
+\begin{itemize}\itemsep4pt
+  \item Is $\hat\beta_j$ statistically significant?
+  \item Does the model with $X_j$ fit better than the model without it?
+\end{itemize}
+\vskip6pt
 \begin{center}
-\begin{tikzpicture}[scale=1.05]
+\alert{Is the null value $\theta_0$ far from the peak $\hat\theta$?}
+\end{center}
+One question. The log-likelihood curve will give three ways to measure
+``far.'' Start with the one you already know.
+\end{frame}
+
+\begin{frame}{The Obvious Ruler: $z$\core}
+The last section gave $\hat\theta$ and
+$\SE(\hat\theta) = 1/\sqrt{\text{observed information}}$. Week 2's test
+divided an estimate by its standard error, so:
+\begin{align*}
+  z = \frac{\hat\theta - \theta_0}{\SE(\hat\theta)} ,
+  \qquad \text{reject if } |z| > 1.96 .
+\end{align*}
+\begin{itemize}\itemsep5pt
+  \item This is the \textbf{Wald test}. It is what \texttt{summary(glm)}
+        prints next to every coefficient.
+\end{itemize}
+\vskip6pt
+Does it work? Check it the way Week 2 checked everything: simulate under the
+null and count rejections. Two settings, one comfortable, one not.
+\end{frame}
+
+\begin{frame}{Simulation 1: $z$ at Large $n$\core}
+Poisson counts, true $\theta_0 = 2$, $n = 200$. Draw $20{,}000$ samples;
+in each, compute $\hat\theta = \bar y$, $\SE = \sqrt{\hat\theta/n}$ (Worked:
+Poisson Information), and $z = (\hat\theta - \theta_0)/\SE$.
+\begin{columns}[c]
+\begin{column}{0.52\textwidth}
+\centering
+\includegraphics[width=\linewidth]{figs/sim_z_large.pdf}
+\end{column}
+\begin{column}{0.46\textwidth}
+\begin{itemize}\itemsep5pt
+  \item The histogram sits on the $\mathcal N(0,1)$ curve.
+  \item Reject when $|z| > 1.96$: $5.1\%$ of samples, as advertised.
+\end{itemize}
+\vskip4pt
+\textbf{Verdict}: at large $n$ the ruler works. The normal limit from the
+Properties section is doing exactly what it promised.
+\end{column}
+\end{columns}
+\vskip4pt
+Before the uncomfortable setting, one change of units that the other
+ruler will need.
+\end{frame}
+
+\begin{frame}{Square It: $z^2$ and the $\chi^2$}
+\begin{columns}[c]
+\begin{column}{0.42\textwidth}
+\centering
+\begin{tikzpicture}[x=0.40cm,y=2.6cm]
+  \draw[->] (0,0) -- (11,0) node[right]{\scriptsize $z^2$};
+  \draw[->] (0,0) -- (0,0.66);
+  % chi2_1 density: exp(-x/2)/sqrt(2 pi x)
+  \draw[dukeblue,very thick,smooth,samples=120,domain=0.4:10.5,variable=\x]
+    plot ({\x},{exp(-\x/2)/sqrt(2*pi*\x)});
+  % chi2_3 density: sqrt(x) exp(-x/2)/2.5066
+  \draw[accent,very thick,smooth,samples=120,domain=0.02:10.5,variable=\x]
+    plot ({\x},{sqrt(\x)*exp(-\x/2)/2.5066});
+  \draw[gray,dashed] (3.84,0) -- (3.84,0.45);
+  \node[gray,above] at (3.84,0.45) {\scriptsize $3.84 = 1.96^2$};
+  \foreach \t in {0,2,4,6,8,10} \node[below] at (\t,0) {\tiny \t};
+  \node[dukeblue] at (1.6,0.36) {\scriptsize $\chi^2_1$};
+  \node[accent] at (4.8,0.2) {\scriptsize $\chi^2_3$};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.56\textwidth}
+\begin{itemize}\itemsep4pt
+  \item $|z| > 1.96$ is the same event as $z^2 > 1.96^2 = 3.84$. Same
+        test, written on the square.
+  \item Under the null $z$ is standard normal, so $z^2$ has a fixed
+        distribution too. Its name is $\chi^2_1$, ``chi-squared with one
+        degree of freedom.'' Its 95\% point is $3.84$ by construction.
+  \item Squares add. A null that pins $q$ parameters at once gives $q$
+        squared $z$'s summed: $\chi^2_q$, mean $q$, cut-offs $3.84$,
+        $5.99$, $7.81$ for $q = 1, 2, 3$.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Simulation 2: Small $n$, Near a Boundary\core}
+Bernoulli trials, $\theta_0 = 0.1$, $n = 20$,
+$\SE = \sqrt{\hat\theta(1-\hat\theta)/n}$ (Worked: Bernoulli). Draw
+$20{,}000$ samples; each is $s$ successes out of $20$, so $z$ takes only a
+few values.
+\begin{columns}[c]
+\begin{column}{0.50\textwidth}
+\centering
+\includegraphics[width=\linewidth]{figs/sim_z_small.pdf}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{itemize}\itemsep4pt
+  \item $s = 0$ happens in $12\%$ of samples. Then $\hat\theta = 0$,
+        $\SE = 0$: $z$ does not exist.
+  \item The lowest finite $z$ is $-1.03$ ($s = 1$: $\hat\theta = 0.05$,
+        $\SE = 0.049$). The test can \emph{never} reject from below.
+  \item It rejects $0.2\%$ of the time, not $5\%$.
+\end{itemize}
+\vskip4pt
+\textbf{Verdict}: the ruler breaks. Why? $z$ uses two numbers, the peak
+and its width, and nothing else. What curve is it reading? Take one sample
+and draw it.
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Simulation 2: the Curve $z$ Is Reading}
+One sample, $s = 2$ of $n = 20$: $\loglik(\theta) = 2\log\theta +
+18\log(1-\theta)$, peak $\hat\theta = 0.1$, $\SE =
+0.067$ (Worked frames). 
+
+What $z$ ever sees is a peak and a curvature of a parabola 
+$\loglik(\hat\theta) - 1/2 \cdot \mathcal{I}\,(\theta-0.1)^2$.
+\begin{columns}[c]
+\begin{column}{0.56\textwidth}
+\centering
+\includegraphics[width=0.88\linewidth]{figs/loglik_n20.pdf}
+\end{column}
+\begin{column}{0.44\textwidth}
+\begin{itemize}\itemsep3pt
+  \item Solid: the real $\loglik$. Dashed: the parabola $z$ reads.
+  \item \textbf{Left of the peak} the real curve dives to $-\infty$ at
+        $\theta = 0$ (two successes are impossible there); the parabola
+        sails past into negative probabilities.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip0pt
+Wald's 95\% set, $0.1 \pm 1.96 \times 0.067 = (-0.03,\ 0.23)$, contains
+impossible values. Is this a small-$n$ disease? Watch the same curve as
+$n$ grows.
+\end{frame}
+
+\begin{frame}{Large $n$ Makes a Parabola: Watch It Happen}
+\begin{columns}[c]
+\begin{column}{0.56\textwidth}
+\centering
+\includegraphics[width=\linewidth]{figs/parabola_n.pdf}
+\end{column}
+\begin{column}{0.42\textwidth}
+Bernoulli with $\hat\theta = 0.1$: the real $\loglik$ (solid) and
+the parabola with the same peak and curvature (dashed), each panel
+$\hat\theta \pm 3$ SEs.
+\vskip8pt
+From $n = 20$ to $n = 2000$ the solid curve straightens into the dashed
+parabola, exactly over the window a test looks at: a few SEs either side
+of the peak. Why? Next frame.
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Why Large $n$ Makes a Parabola\adv}
+Expand $\loglik$ around its peak one term past the parabola, and look $c$
+standard errors away, at $\theta = \hat\theta + c\,\SE$:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \loglik(\hat\theta + c\,\SE) - \loglik(\hat\theta)
+  &= -\tfrac12\,\Info\,(c\,\SE)^2 + \tfrac16\,\loglik'''(\hat\theta)\,(c\,\SE)^3 + \cdots
+  && \text{\footnotesize Taylor; slope $0$ at the peak} \\
+  &= -\frac{c^2}{2} \;+\; \frac{c^3}{6}\cdot\frac{\loglik'''(\hat\theta)}{\Info^{3/2}} + \cdots
+  && \text{\footnotesize $\SE = 1/\sqrt{\Info}$}
+\end{align*}
+\endgroup
+\begin{itemize}\itemsep4pt
+  \item The first term is the parabola: at $c$ SEs from the peak it drops
+        by $c^2/2$, whatever $n$ is.
+  \item The second term is the bend away from the parabola. $\loglik$ is a
+        sum of $n$ terms, so $\loglik'''$ grows like $n$, while
+        $\Info^{3/2}$ grows like $n^{3/2}$: the ratio shrinks like
+        $1/\sqrt n$.
+\end{itemize}
+\vskip4pt
+So within a few SEs of the peak, which is the only place a test looks, the
+drop is $c^2/2$ plus an error that vanishes as $n$ grows: the last frame's
+panels. Next: what exactly a test reads off this curve.
+\end{frame}
+
+\begin{frame}{Three Rulers\core}
+\begin{center}
+\begin{tikzpicture}[xscale=0.9,yscale=0.75]
   \draw[->] (0,0) -- (8.6,0) node[right]{\small $\theta$};
   \draw[->] (0,0) -- (0,3.5) node[above]{\small $\loglik(\theta)$};
   \draw[dukeblue,very thick,smooth,samples=80,domain=0.5:8.1,variable=\x]
     plot ({\x},{3.0-0.14*(\x-5.2)^2});
-  % MLE
   \draw[dashed,gray] (5.2,0) -- (5.2,3.0);
   \node at (5.2,-0.35) {\scriptsize $\hat\theta$};
-  % null
-  \draw[dashed,gray] (2.2,0) -- (2.2,{3.0-0.14*(2.2-5.2)^2});
+  \draw[dashed,gray] (2.2,0) -- (2.2,1.74);
   \node at (2.2,-0.35) {\scriptsize $\theta_0$};
-  % LR: vertical distance
-  \draw[accent,thick,<->] (2.2,{3.0-0.14*9}) -- (2.2,3.0);
-  \node[accent,anchor=east] at (2.05,2.5) {\scriptsize LR: drop in $\loglik$};
-  % Wald: horizontal distance
-  \draw[accent,thick,<->] (2.2,0.28) -- (5.2,0.28);
-  \node[accent] at (3.7,0.6) {\scriptsize Wald: distance in $\theta$};
-  % score: tangent at theta0; l(2.2)=1.74, l'(2.2)=0.84
-  \draw[accent,very thick] (1.3,{1.74+0.84*(1.3-2.2)}) -- (3.1,{1.74+0.84*(3.1-2.2)});
+  \draw[dotted,gray] (0,3.0) -- (5.2,3.0);
+  \draw[dotted,gray] (0,1.74) -- (2.2,1.74);
+  \node[gray,anchor=east] at (-0.05,3.0) {\scriptsize $\loglik(\hat\theta)$};
+  \node[gray,anchor=east] at (-0.05,1.74) {\scriptsize $\loglik(\theta_0)$};
+  \draw[accent,thick,<->] (2.2,1.74) -- (2.2,3.0);
+  \node[accent,left] at (2.1,2.6) {\scriptsize vertical: drop in $\loglik$};
+  \draw[accent,thick,<->] (2.2,-0.75) -- (5.2,-0.75);
+  \node[accent] at (3.7,-1.1) {\scriptsize horizontal: $\hat\theta - \theta_0$};
+  \draw[accent,very thick] (1.5,{1.74+0.84*(1.5-2.2)}) -- (2.9,{1.74+0.84*(2.9-2.2)});
   \fill[accent] (2.2,1.74) circle (0.06);
-  \node[accent,anchor=west] at (3.35,1.45) {\scriptsize score: slope at $\theta_0$};
+  \node[accent,anchor=west] at (3.1,1.55) {\scriptsize slope at $\theta_0$};
 \end{tikzpicture}
 \end{center}
-\vskip-6pt
-All three ask: \emph{is $\theta_0$ far from $\hat\theta$?} They are
-asymptotically equivalent but can differ in finite samples.
+\vskip-4pt
+\begin{itemize}\itemsep4pt
+  \item \textbf{Horizontal}: the gap $\hat\theta - \theta_0$, in
+        standard-error units. \hfill \emph{Wald: the $z$-test}
+  \item \textbf{Vertical}: the fit lost by moving from $\hat\theta$ down to
+        $\theta_0$. \hfill \emph{Likelihood ratio}
+  \item \textbf{Slope at $\theta_0$}: at a peak it would be zero. A third
+        ruler; we use it in Week 4. \hfill \emph{Score}
+\end{itemize}
 \end{frame}
 
-\begin{frame}{The Likelihood Ratio Test\core}
-Compare the maximized log-likelihood with and without the restriction:
-\begin{align*}
-  LR = -2\big[\loglik(\hat\theta_{\text{restricted}})
-            - \loglik(\hat\theta_{\text{unrestricted}})\big]
-  \ \dto\ \chi^2_{q} ,
-\end{align*}
-where $q$ is the number of restrictions.
+\begin{frame}{Two Rulers: the Formulas\core}
+Each is a squared $z$, so each is compared with $\chi^2_1$: reject above
+$3.84$.
+\begin{itemize}\itemsep6pt
+  \item \textbf{Wald: the gap over its standard error, squared.}
+        $W = z^2 = \Info\,(\hat\theta-\theta_0)^2$, where
+        $\Info = -\loglik''(\hat\theta)$ is the observed information and
+        $\SE = 1/\sqrt{\Info}$ (Variance frame).
+  \item \textbf{Likelihood ratio: the drop in fit, doubled.}
+        $LR = 2\,[\loglik(\hat\theta) - \loglik(\theta_0)]$. Never negative,
+        because the peak is the highest point. Why doubled: next frame.
+\end{itemize}
 \vskip4pt
-\begin{itemize}\itemsep3pt
-  \item If the restriction is true, imposing it should cost little fit. The
-        restricted $\loglik$ is never higher, so $LR \geq 0$.
-  \item \textbf{Requires both models.} Usually easy, and the best-behaved of
-        the three in finite samples: prefer it when you can.
-  \item \texttt{R}: \texttt{lmtest::lrtest(m0, m1)}, or \texttt{anova(m0, m1,
-        test = "Chisq")} for \texttt{glm}.
-  \item \alert{The models must be nested and fitted on the same observations.}
-        Silently dropping different rows to missingness invalidates the test.
-\end{itemize}
-\vskip1pt
-{\footnotesize $\chi^2_q$: the distribution of a sum of $q$ squared
-independent standard normals. With one restriction, $\chi^2_1$ is
-$\mathcal N(0,1)^2$, so the 5\% critical value is $1.96^2 = 3.84$.}
+{\footnotesize With $q$ restrictions:
+$LR = 2\,[\loglik(\hat\theta_{\text{unrestricted}}) -
+\loglik(\hat\theta_{\text{restricted}})] \dto \chi^2_q$, and likewise $W$.
+The one-parameter case has $\hat\theta_{\text{restricted}} = \theta_0$.}
 \end{frame}
 
-\begin{frame}{The Wald Test\core}
-Measure the horizontal distance, scaled by the estimated standard error:
+\begin{frame}{On a Parabola, the Two Rulers Are One Number}
+Suppose $\loglik$ \emph{is} the parabola with peak $\hat\theta$ and
+curvature $-\Info$:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
 \begin{align*}
-  W = \frac{(\hat\theta - \theta_0)^2}{\hat{V}(\hat\theta)} \ \dto\ \chi^2_1 ,
-  \qquad\text{or }\ z = \frac{\hat\theta-\theta_0}{\SE(\hat\theta)} .
+  \loglik(\theta) &= \loglik(\hat\theta) - \tfrac12\,\Info\,(\theta-\hat\theta)^2
+    && \text{\footnotesize the parabola: peak at $\hat\theta$, curvature $-\Info$} \\
+  \loglik(\hat\theta) - \loglik(\theta_0) &= \tfrac12\,\Info\,(\hat\theta-\theta_0)^2
+    && \text{\footnotesize plug in $\theta = \theta_0$: the drop} \\
+  LR = 2 \times \text{drop} &= \Info\,(\hat\theta-\theta_0)^2 = W
+    && \text{\footnotesize doubling undoes the $\tfrac12$}
 \end{align*}
-\begin{itemize}\itemsep3pt
-  \item This is the $t$-ratio you already read off every regression table.
-  \item \textbf{Requires only the unrestricted model}, convenient when the
-        restricted model is hard to fit.
-  \item Multi-parameter version\adv:
-        $W = (\bm R\hat{\bm\theta}-\bm q)'[\bm R\hat{V}(\hat{\bm\theta})\bm R']^{-1}
-        (\bm R\hat{\bm\theta}-\bm q)$, identical in form to Week 2.
-  \item \alert{Caution}: the Wald test is not invariant to how you parameterize
-        the restriction. Testing $\theta = 1$ and $\log\theta = 0$ can give
-        different answers. The LR test does not have this problem.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Score (Lagrange Multiplier) Test}
-Measure the slope of the log-likelihood \emph{at the null}:
-\begin{align*}
-  LM = \frac{S(\theta_0)^2}{\Info(\theta_0)} \ \dto\ \chi^2_q .
-\end{align*}
+\endgroup
 \begin{itemize}\itemsep2pt
-  \item Logic: if $\theta_0$ were the maximum, the slope there would be zero. A
-        steep slope is evidence against it.
-  \item \textbf{Requires only the restricted model}, useful when the
-        unrestricted model is expensive to fit, e.g.\ testing for overdispersion
-        without fitting the negative binomial.
-  \item Many familiar specification tests are score tests in disguise, including
-        Breusch--Pagan for heteroskedasticity.
-  \item \textbf{Which to use?} Asymptotically the three are identical. In finite
-        samples: LR if you can fit both models, Wald if only the unrestricted is
-        available, score if only the restricted is.
+  \item So $W = LR$: one distance, two names, one cut-off.
+  \item Read the $LR$ line backwards: $LR > 3.84$ is $\text{drop} > 1.92$,
+        Simulation 2's dotted line. ``$1.96$ SEs from the peak'' and
+        ``$1.92$ below the peak'' are the same set of $\theta$'s.
+\end{itemize}
+So the rulers agree exactly when \alert{$\loglik$ is a parabola}.
+Simulation 2's curve was not one: compute both on it.
+\end{frame}
+
+\begin{frame}{Simulation 2, Continued: Both Rulers}
+Same setting, both rulers. Exact rejection rates at $3.84$, true
+$\theta_0 = 0.1$:
+\vskip-2pt
+\begin{center}
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{rccc}
+\toprule
+$n$ & $W$ undefined & $W$ rejects & $LR$ rejects \\
+\midrule
+20   & $12.2\%$ & $0.2\%$  & $13.3\%$ \\
+50   & $0.5\%$  & $11.6\%$ & $5.8\%$  \\
+100  & $0$      & $6.8\%$  & $4.4\%$  \\
+500  & $0$      & $5.7\%$  & $5.2\%$  \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip1pt
+\begin{itemize}\itemsep2pt
+  \item $n = 20$: neither ruler is at $5\%$. The $s = 0$ samples show why:
+        $W$ does not exist, and $LR = 2[0 - 20\log 0.9] = 4.21$ rejects a
+        sample that occurs $12\%$ of the time under the null. Two expected
+        successes: no parabola; use an exact binomial test.
+  \item $n = 50$: $W$'s failure flips. One or two successes give a tiny
+        $\SE$, so a huge $|z|$: $W$ rejects $11.6\%$. $LR$ is near $5\%$.
+  \item $n \ge 100$: both settle toward $5\%$, $W$ the slower: $LR$
+        reads the curve, $W$ extrapolates it. Each row down is the
+        parabola arriving, as the panels showed.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Model Comparison Beyond Nested Tests\core}
-LR, Wald and score all require \emph{nested} models. For non-nested comparison:
-\begin{align*}
-  AIC = -2\loglik(\hat\theta) + 2k ,
-  \qquad
-  BIC = -2\loglik(\hat\theta) + k\log n .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item Both penalize fit by complexity; \alert{lower is better}.
-  \item BIC penalizes more heavily once $n > 7$, and increasingly so with $n$.
-        BIC targets the ``true'' model if it is in the candidate set; AIC targets
-        predictive accuracy.
-  \item Neither is a hypothesis test; there is no $p$-value and no threshold.
-  \item Comparable only across models fitted on \emph{exactly the same} data with
-        the same outcome scale.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{AIC and BIC in Research Practice\core}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Typical uses}: non-nested specifications (income vs.\ log
-        income; probit vs.\ logit), the number of classes in a latent class
-        analysis, random-effects structures in multilevel models.
-  \item \textbf{Reading $\Delta$BIC} \srct{(Raftery 1995)}: 0--2 weak,
-        2--6 positive, 6--10 strong, $>10$ very strong. Report the
-        differences, not just the winner.
-  \item \textbf{The trap}: \alert{both models must be fitted to the same
-        observations}. Listwise deletion changes the sample when
-        specifications use different variables; fix the sample first.
-  \item They referee between \emph{theoretically motivated} candidates, not
-        hundreds of searched specifications (Week 2's multiple-testing
-        caution).
-\end{itemize}
-\vskip2pt
-Week 12 returns to model selection with cross-validation.
-\end{frame}
-
-\begin{frame}{Where This Leaves Us}
-\begin{itemize}\itemsep5pt
-  \item A likelihood is the data's probability read as a function of the
-        parameter. The MLE maximizes it; the score is the derivative set to
-        zero.
-  \item The curvature of the log-likelihood is information; its inverse is
-        the variance.
-  \item The MLE is consistent, asymptotically normal, and efficient, but not
-        unbiased; every guarantee is asymptotic.
-  \item LR, Wald, and score are three measures of one distance.
-\end{itemize}
+\begin{frame}{Which Test Your Software Ran\core}
+At large $n$ the two rulers agree. In a small sample or near a boundary
+(Simulation 2) they do not, and it matters which one you are reading.
 \vskip6pt
-\begin{block}{Next}
-\textbf{Thursday}: code a likelihood and maximize it numerically in \texttt{R}. \\
-\textbf{Week 4}: put covariates inside the likelihood, the generalized linear
-model, and the limited dependent variable models you will actually use.
+\begin{block}{In your output}
+\begin{itemize}\itemsep4pt
+  \item \texttt{summary(glm)} $z$-statistics and $p$-values: \textbf{Wald}.
+  \item \texttt{anova(m0, m1, test = "Chisq")}, the deviance, ``does
+        adding this block improve the fit'': \textbf{likelihood ratio}.
+\end{itemize}
 \end{block}
+\vskip6pt
+\textbf{When Wald and LR disagree, believe LR}: it measured the curve,
+$z$ extrapolated it. The next frame says which one to reach for.
 \end{frame}
 
-\begin{frame}{References}
-\footnotesize
-\begin{itemize}\itemsep3pt
-\item Pawitan, Yudi. 2013. \textit{In All Likelihood: Statistical Modeling and
-Inference Using Likelihood}. Oxford University Press. [Ch.\ 2 and 4 required;
-Ch.\ 3 additional]
-\item Casella, George and Roger L. Berger. 2002. \textit{Statistical Inference},
-2nd ed. Duxbury. [Ch.\ 7 and 10, for a fuller treatment]
-\item King, Gary. 1998. \textit{Unifying Political Methodology: The Likelihood
-Theory of Statistical Inference}. University of Michigan Press.
-\item Raftery, Adrian E. 1995. ``Bayesian Model Selection in Social
-Research.'' \textit{Sociological Methodology} 25: 111--163. [the BIC
-reading sociologists use]
+\begin{frame}{In Practice: What to Report\core}
+\begin{block}{The working rules}
+\begin{itemize}\itemsep5pt
+  \item \textbf{One coefficient, large $n$, an ordinary variable}: the Wald
+        $z$ and $p$ that \texttt{summary()} prints are fine. That is what
+        published tables report, and at large $n$ it equals LR.
+  \item \textbf{A block}: dummies for a categorical variable, an
+        interaction, a set of controls, ``does adding these help.'' Fit both
+        models and use LR: \texttt{anova(m0, m1, test = "Chisq")}. No
+        single $z$ answers that question (Lab 3, region).
+  \item \textbf{A rare outcome, a small group, a huge standard error, a
+        coefficient near a boundary}: do not trust $z$. Refit without the
+        term and report LR.
 \end{itemize}
+\end{block}
+\vskip4pt
+The habit to build: when a $z$ looks strange, ask what curve it read.
 \end{frame}
 
 \end{document}

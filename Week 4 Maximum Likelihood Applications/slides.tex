@@ -561,6 +561,35 @@ Poisson is wrong}; with robust standard errors, a workhorse for any
 non-negative outcome.
 \end{frame}
 
+\begin{frame}{The Third Ruler: the Score Test\core}
+Week 3 drew three ways to measure how far a null $\theta_0$ is from the
+peak and used two: the gap (Wald) and the drop (LR). The third was the
+\textbf{slope at $\theta_0$}. At a peak the slope is zero, so a steep
+slope at $\theta_0$ says the peak is far away.
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  S(\theta_0) = \loglik'(\theta_0) &= \Info\,(\hat\theta - \theta_0)
+    && \text{\footnotesize on a parabola: differentiate $\loglik(\hat\theta) - \tfrac12\Info(\theta-\hat\theta)^2$} \\
+  LM = \frac{S(\theta_0)^2}{\Info(\theta_0)} &= \Info\,(\hat\theta-\theta_0)^2 = W = LR
+    && \text{\footnotesize the same number as the other two rulers}
+\end{align*}
+\endgroup
+\begin{itemize}\itemsep3pt
+  \item Under the null $S(\theta_0)$ has mean $0$ and variance
+        $\Info(\theta_0)$ (Week 3's information equality), so
+        $S/\sqrt{\Info}$ is a $z$ and $LM \dto \chi^2_q$ for $q$
+        restrictions. Cut-off $3.84$ for one.
+  \item \textbf{Everything is evaluated at $\theta_0$}: the score test
+        needs only the \emph{restricted} model. You never fit the
+        alternative.
+\end{itemize}
+\vskip3pt
+That is exactly the overdispersion situation: the Poisson fit is the
+restricted model (variance $=$ mean). Ask whether the slope toward
+``variance $>$ mean'' is zero, without fitting a negative binomial.
+\end{frame}
+
 \begin{frame}{Overdispersion\core}
 In practice $\Var(Y_i\mid X_i) > \E[Y_i\mid X_i]$ almost always, unobserved
 heterogeneity makes some units systematically more event-prone.
@@ -573,14 +602,14 @@ heterogeneity makes some units systematically more event-prone.
         standard errors by $\sqrt{\hat\phi}$.
   \item \textbf{Negative binomial}: model the heterogeneity explicitly as a gamma
         mixture, giving $\Var(Y) = \mu + \mu^2/\theta$. A genuine likelihood, so
-        AIC and LR tests apply. \texttt{MASS::glm.nb}.
+        LR tests and AIC (Fit section) apply. \texttt{MASS::glm.nb}.
   \item \textbf{Robust standard errors} on a Poisson fit: Week 2's
         sandwich, consistent under any variance function. Report them as a
         matter of course.
 \end{itemize}
 \vskip3pt
-Test with a score test for overdispersion (\texttt{AER::dispersiontest}):
-last week's third distance, needing only the restricted model.
+Test with the score test of the previous frame
+(\texttt{AER::dispersiontest}): it uses only the Poisson fit.
 \end{frame}
 
 \begin{frame}{Excess Zeros}
@@ -770,7 +799,7 @@ interior maximum. The coefficient marches off to $\pm\infty$.
   \item \textbf{Deviance} $= 2\big(\loglik_{\text{saturated}} - \loglik_{\text{fitted}}\big)$:
         the GLM analogue of the residual sum of squares. The saturated term is
         common to nested models, so \emph{differences} in deviance are exactly LR
-        tests. Non-nested models: AIC and BIC, last week.
+        tests. Non-nested models: AIC and BIC, next frame.
   \item \textbf{Pseudo-$R^2$} (McFadden: $1 - \loglik_{\text{full}}/\loglik_{\text{null}}$):
         a rank ordering, not ``variance explained''; $0.2$--$0.4$ counts as
         excellent.
@@ -779,6 +808,31 @@ interior maximum. The coefficient marches off to $\pm\infty$.
         \textbf{AUC} averages over thresholds: $0.5$ is a coin flip.
   \item \textbf{Predictive checks}: simulate outcomes from the fitted model
         and compare to the data. Most informative, least used.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{AIC and BIC\core}
+LR, Wald, and score need a null, so the models must be nested. Two
+non-nested covariate sets, or the negative binomial against the Poisson:
+score each model by fit minus a price per parameter, $k$.
+\begin{align*}
+  AIC = -2\loglik(\hat\theta) + 2k ,
+  \qquad
+  BIC = -2\loglik(\hat\theta) + k\log n ,
+  \qquad \alert{\text{lower is better.}}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item No null, no $p$-value. BIC charges more per parameter once
+        $n > 7$, so it prefers smaller models.
+  \item For nested models the two tools meet:
+        $BIC_{\text{small}} - BIC_{\text{big}} = LR - q\log n$. A test asks
+        ``too large for chance?''; BIC asks ``worth the parameters?''
+  \item \textbf{Reading $\Delta$BIC} \srct{(Raftery 1995)}: 0--2 weak,
+        2--6 positive, 6--10 strong, $>10$ very strong. Report differences,
+        not just the winner.
+  \item \textbf{The trap}: both models on the \emph{same observations}.
+        Listwise deletion changes the sample when specifications use
+        different variables; fix the sample first.
 \end{itemize}
 \end{frame}
 
