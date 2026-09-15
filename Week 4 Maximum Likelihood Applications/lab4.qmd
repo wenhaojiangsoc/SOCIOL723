@@ -39,14 +39,15 @@ options(digits = 4, scipen = 999)
 
 # Goals
 
-1.  Fit and read logit and probit models, and see how little the choice matters.
-2.  Interpret on the probability scale: average marginal effects and predicted
-    probabilities, with intervals.
-3.  Handle interactions correctly in a nonlinear model.
-4.  Diagnose and repair separation.
-5.  Fit count models, detect overdispersion, and choose a remedy.
-6.  Fit an ordered logit and test proportional odds.
-7.  Fit a random-intercept model, read the intraclass correlation and
+1.  Fit a logit, then read it on the probability scale: predicted probabilities
+    first, average marginal effects second, odds ratios as a footnote.
+2.  Handle an interaction in a nonlinear model: when to include the product,
+    and how to report the interaction.
+3.  Fit a multinomial logit on a nominal outcome and an ordered logit on an
+    ordered one; check proportional odds.
+4.  Fit count models: Poisson, the three overdispersion repairs, the hurdle
+    model; compare them by AIC and BIC.
+5.  Fit a random-intercept model, read the intraclass correlation and
     shrinkage, and compare it with fixed effects (Thursday's multilevel
     session).
 
@@ -59,6 +60,8 @@ library(marginaleffects)
 library(sandwich); library(lmtest)
 library(MASS)      # glm.nb, polr
 library(AER)       # dispersiontest
+library(nnet)      # multinom
+library(pscl)      # hurdle, zeroinfl
 library(brglm2)    # Firth penalized likelihood
 library(pROC)
 
@@ -67,66 +70,92 @@ gss <- readRDS("../Data/gss_earnings.rds")
 
 # Binary outcomes
 
-Outcome: `ba`, whether the respondent holds a bachelor's degree or more.
+Outcome: `ba`, whether the respondent holds a bachelor's degree or more. The
+model is Tuesday's: parents' education, vocabulary score, female, black.
 
 ```{r}
 #| label: fit-binary
-f <- ba ~ pareduc + wordsum + female + black + exper
+f <- ba ~ pareduc + wordsum + female + black
 
-m_lpm    <- lm(f, data = gss)
 m_logit  <- glm(f, data = gss, family = binomial(link = "logit"))
 m_probit <- glm(f, data = gss, family = binomial(link = "probit"))
+m_lpm    <- lm(f, data = gss)
 
-round(cbind(LPM = coef(m_lpm),
-            logit = coef(m_logit),
-            probit = coef(m_probit),
-            ratio = coef(m_logit) / coef(m_probit)), 4)
+## the logit table from the slides: coefficient, SE, z, exp(coefficient)
+round(cbind(coef(summary(m_logit))[, 1:3], exp_b = exp(coef(m_logit))), 3)
 ```
 
-The logit-to-probit ratio hovers around 1.7, as the theory predicts. The two are
-*different* models, different link functions, different assumed error
-distributions, but they are close enough empirically that the choice between
-them almost never matters for the quantities we report.
+## Three scales, one coefficient
+
+The `wordsum` coefficient is $0.391$ on the log-odds scale, $e^{0.391} = 1.48$
+on the odds scale, and *not one number* on the probability scale. The first
+two are exact and uninterpretable to most readers; the third is what the
+reader wants and depends on where the person starts.
 
 ```{r}
-#| label: lpm-range
-## how often does the LPM predict outside [0,1]?
-mean(fitted(m_lpm) < 0 | fitted(m_lpm) > 1)
-range(fitted(m_lpm))
+#| label: three-scales
+## one person at a time: log-odds, odds, probability for wordsum = 3, 6, 9
+## with the other covariates at pareduc = 12, female = 0, black = 0
+b  <- coef(m_logit)
+xb <- b["(Intercept)"] + b["pareduc"] * 12 + b["wordsum"] * c(3, 6, 9)
+round(cbind(wordsum = c(3, 6, 9), log_odds = xb, odds = exp(xb),
+            prob = plogis(xb)), 3)
 ```
 
-::: callout-note
-The linear probability model is not automatically wrong, but check this
-number. If a substantial share of fitted values leaves $[0,1]$, the linear
-approximation is being asked to do something it cannot.
-:::
+Each step of three words adds the same $3 \times 0.391 = 1.17$ to the
+log-odds and multiplies the odds by the same $e^{1.17} = 3.23$; the probability
+moves by a different amount each time.
 
-## Odds ratios
+## Start with predicted probabilities
+
+How likely is a degree if your parents finished high school (12 years) rather
+than college (16)? The observed-value approach: set `pareduc` to 12 for
+*everyone*, keep every other covariate at its actual value, average the fitted
+probabilities; repeat at 16.
 
 ```{r}
-#| label: odds
-round(exp(cbind(OR = coef(m_logit), confint.default(m_logit))), 3)
+#| label: predprob
+## avg_predictions() does exactly that loop, with a delta-method interval
+avg_predictions(m_logit, variables = list(pareduc = c(8, 12, 16, 20)))
 ```
 
-Read the `wordsum` row as: each additional correct word multiplies the *odds* of
-holding a BA by about 1.5. Whether that corresponds to a big or small change in
-the *probability* depends entirely on where you start, which is why we now
-move to the probability scale.
+```{r}
+#| label: contrast
+## the contrast we report: high school to college, 18 points
+avg_comparisons(m_logit, variables = list(pareduc = c(12, 16)))
+```
 
-## Average marginal effects
+```{r}
+#| label: fig-predprob
+#| fig-cap: "Average predicted probability of holding a BA by parents' education (observed-value approach), with 95% intervals."
+plot_predictions(m_logit, by = "pareduc") +
+  labs(x = "Parents' education (years)", y = "Pr(bachelor's or more)") +
+  theme_minimal(base_size = 10)
+```
+
+Contrast with setting everything else to its mean, which describes one
+hypothetical person (a 0.5 woman, a 0.13 Black respondent):
+
+```{r}
+#| label: predprob-mean
+predictions(m_logit, newdata = datagrid(pareduc = c(12, 16)))
+```
+
+## Then marginal effects: one number per variable
 
 ```{r}
 #| label: ame
+## AME: each person's own slope dp/dx = beta * p(1 - p), averaged
 avg_slopes(m_logit)
 ```
 
-Compare with the marginal effect at the mean, and with the LPM coefficients:
+Compare with the marginal effect at the mean and with the LPM coefficients:
 
 ```{r}
 #| label: ame-vs-mem
 mem <- slopes(m_logit, newdata = "mean")
 comparison <- data.frame(
-  variable = c("pareduc", "wordsum", "female", "black", "exper"),
+  variable = c("pareduc", "wordsum", "female", "black"),
   AME  = avg_slopes(m_logit)$estimate,
   MEM  = mem$estimate,
   LPM  = coef(m_lpm)[-1]
@@ -134,49 +163,28 @@ comparison <- data.frame(
 round(comparison[, -1], 4) |> `rownames<-`(comparison$variable)
 ```
 
-Three observations worth taking seriously:
+-   The AME and the LPM coefficients are close. This is typical, and it is the
+    main reason people defend the LPM for descriptive and causal work.
+-   The MEM answers a different question: the slope for one hypothetical person
+    at the mean of everything, including the means of dummies.
+-   Report the AME (Hanmer and Kalkan 2013).
 
--   The AME and the LPM coefficients are very close. This is typical, and it is
-    the main reason people defend the LPM for descriptive and causal work.
--   The MEM differs from the AME. It answers a different question: the effect for
-    one hypothetical person at the mean of everything, including means of dummy
-    variables.
--   Following Hanmer and Kalkan (2013), report the **AME**.
-
-## Predicted probabilities, the observed-value way
+## Odds ratios, at most as a footnote
 
 ```{r}
-#| label: predprob
-avg_predictions(m_logit, variables = list(wordsum = c(3, 6, 9)))
+#| label: odds
+round(exp(cbind(OR = coef(m_logit), confint.default(m_logit))), 3)
 ```
 
-This sets `wordsum` to each value for *every* respondent, leaving their other
-covariates alone, computes predicted probabilities, and averages. Contrast with
-setting everything else to its mean:
+Each correct word multiplies the *odds* of a BA by 1.48. That is one number for
+everyone, because the model is linear on the log-odds scale. It is not "48%
+more likely": the probability change depends on where the person starts, which
+is why the probabilities came first.
 
-```{r}
-#| label: predprob-mean
-predictions(m_logit, newdata = datagrid(wordsum = c(3, 6, 9)))
-```
+## Uncertainty: robust and clustered standard errors
 
-```{r}
-#| label: fig-predprob
-#| fig-cap: "Average predicted probability of holding a BA by vocabulary score (observed-value approach), with 95% intervals."
-plot_predictions(m_logit, by = "wordsum") +
-  labs(x = "Vocabulary score (0-10)", y = "Pr(bachelor's or more)") +
-  theme_minimal(base_size = 10)
-```
-
-And the contrast we probably want to report:
-
-```{r}
-#| label: contrast
-avg_comparisons(m_logit, variables = list(wordsum = c(3, 9)))
-```
-
-## Robust and clustered standard errors
-
-Everything from Week 2 carries over, the sandwich works on `glm` objects.
+The sandwich from Week 2 works on `glm` objects, and `marginaleffects` will
+carry a chosen variance through to the AMEs.
 
 ```{r}
 #| label: glm-robust
@@ -192,37 +200,75 @@ round(cbind(
 avg_slopes(m_logit, vcov = ~ psu)
 ```
 
+## Probit: another S-curve
+
+```{r}
+#| label: probit
+## coefficients differ by a scale factor; AMEs do not
+round(cbind(logit = coef(m_logit), probit = coef(m_probit),
+            ratio = coef(m_logit) / coef(m_probit)), 3)
+round(cbind(AME_logit  = avg_slopes(m_logit)$estimate,
+            AME_probit = avg_slopes(m_probit)$estimate), 4) |>
+  `rownames<-`(avg_slopes(m_logit)$term)
+```
+
+The coefficients differ by a factor of about 1.6 to 1.7 because the two
+S-curves have different steepness at the center. The AMEs agree to two
+decimals. Default to logit; use probit when the next step needs a normal
+(selection models, bivariate probit) or when the subfield expects it.
+
+::: callout-important
+Never compare raw logit or probit coefficients across nested models or across
+groups. Adding a covariate rescales every coefficient, even ones whose effect is
+unchanged (Mood 2010). Compare AMEs or predicted probabilities.
+:::
+
 # Interactions
 
-Does the vocabulary gradient differ by gender?
+Does parents' education matter more for women? Two questions: should the
+product `pareduc * female` be in the model, and do the models with and
+without it agree on the probability scale?
 
 ```{r}
 #| label: interaction
-m_int <- glm(ba ~ pareduc + wordsum * female + black + exper,
-             data = gss, family = binomial)
-round(coef(summary(m_int))[, 1:2], 4)
+## no product: one log-odds slope for pareduc, forced equal for men and women
+m_np  <- glm(ba ~ pareduc + female + wordsum + black, data = gss, family = binomial)
+## with product: the slope is beta_1 + beta_12 * female; the data choose beta_12
+m_int <- glm(ba ~ pareduc * female + wordsum + black, data = gss, family = binomial)
+round(coef(summary(m_int))[, 1:3], 3)
+## LR test of the product
+anova(m_np, m_int, test = "LRT")
 ```
 
-The product-term coefficient is on the **log-odds** scale. What we actually want
-is whether the *marginal effect on the probability* differs by gender:
+The product is $0.021$ on the log-odds scale, $z = 0.79$. That is the wrong
+scale for the question. The AME of parents' education, by gender, in both
+models:
 
 ```{r}
 #| label: interaction-me
-avg_slopes(m_int, variables = "wordsum", by = "female")
+## no product: the AMEs still differ by gender, through p(1 - p) alone
+avg_slopes(m_np,  variables = "pareduc", by = "female")
+## with product: they differ through p(1 - p) and through beta_12
+avg_slopes(m_int, variables = "pareduc", by = "female")
 ```
 
 ```{r}
 #| label: interaction-diff
-avg_comparisons(m_int, variables = "wordsum", by = "female",
-                hypothesis = "b2 - b1 = 0")
+## the interaction we report: the difference in AMEs, with an interval
+avg_slopes(m_int, variables = "pareduc", by = "female",
+           hypothesis = "b2 - b1 = 0")
 ```
 
-::: callout-important
-Note the two can disagree in sign or significance (Ai and Norton 2003). In a
-nonlinear model the interaction on the probability scale depends on where each
-person sits on the curve, not only on the product term. **Always report the
-quantity you actually mean**, with an interval.
-:::
+-   **Include the product** whenever the question is whether $X_1$'s effect
+    differs by $X_2$. Without it the answer is fixed in advance: zero on the
+    log-odds scale, and on the probability scale whatever the S-curve gives
+    (the no-product model already shows women with a larger AME, because
+    they sit where the curve is steeper: Ai and Norton 2003).
+-   **The two models agree** on probabilities only when $\hat\beta_{12}$ is
+    near zero, as here. When it is not, the no-product model has the wrong
+    probabilities in the cells.
+-   **Report** the difference in AMEs with its interval, here $0.006$ per year,
+    SE $0.004$. The answer is no.
 
 # Separation
 
@@ -236,8 +282,8 @@ m_sep <- glm(ba ~ pareduc + perfect, data = gss2, family = binomial)
 round(coef(summary(m_sep))[, 1:2], 3)
 ```
 
-The `perfect` coefficient is enormous with an enormous standard error, the
-classic signature. The fix is Firth's penalized likelihood:
+An enormous coefficient with an enormous standard error is the signature. The
+fix is Firth's penalized likelihood:
 
 ```{r}
 #| label: firth
@@ -249,93 +295,55 @@ round(coef(summary(m_firth))[, 1:2], 3)
 Finite estimates, usable standard errors, and the variable is retained
 (Zorn 2005).
 
-# Count outcomes
+# Outcomes with several categories
 
-Outcome: `childs`, the number of children.
+## Multinomial logit: a nominal outcome
 
-```{r}
-#| label: poisson
-m_pois <- glm(childs ~ educ + female + black + exper + evermar,
-              data = gss, family = poisson(link = "log"))
-round(coef(summary(m_pois))[, 1:2], 4)
-```
-
-Coefficients are semi-elasticities: $e^{\beta}$ is the multiplicative change in
-the expected count.
+Where a respondent lives, in four census regions. The categories have no
+order, so one logit for every region against a base (the Midwest).
 
 ```{r}
-#| label: pois-irr
-round(exp(coef(m_pois)), 3)
+#| label: region4
+## collapse the nine GSS regions to four; Midwest first so it is the base
+gss$region4 <- factor(case_when(
+  gss$region %in% c("New England", "Middle Atlantic") ~ "Northeast",
+  gss$region %in% c("E. North Central", "W. North Central") ~ "Midwest",
+  gss$region %in% c("South Atlantic", "E. South Central", "W. South Central") ~ "South",
+  TRUE ~ "West"), levels = c("Midwest", "Northeast", "South", "West"))
+table(gss$region4)
+
+m_mn <- multinom(region4 ~ educ + black + female + age, data = gss, trace = FALSE)
+## one row per non-base region: exp(coef) multiplies the odds AGAINST THE MIDWEST
+round(exp(coef(m_mn)), 2)
 ```
 
-## Is it overdispersed?
+Read the `black` column: being Black multiplies the odds of South-versus-Midwest
+by about 2.9 and of West-versus-Midwest by about 0.8. Those are odds against
+the base, not probabilities; the four probabilities move together and add to
+one:
 
 ```{r}
-#| label: overdispersion
-c(mean = mean(gss$childs), var = var(gss$childs))
-
-## uses only the Poisson fit: does the variance exceed the mean by more than
-## chance allows?
-dispersiontest(m_pois, trafo = 1)
+#| label: region4-pred
+## observed-value predicted probabilities, one column per region
+avg_predictions(m_mn, variables = "black")
+## check: for each person the four probabilities sum to one
+range(rowSums(fitted(m_mn)))
 ```
-
-The test uses only the Poisson fit: it asks whether the residual variance grows with the mean faster than the Poisson allows, without fitting the negative binomial.
 
 ```{r}
-#| label: remedies
-m_qp <- glm(childs ~ educ + female + black + exper + evermar,
-            data = gss, family = quasipoisson)
-m_nb <- glm.nb(childs ~ educ + female + black + exper + evermar, data = gss)
-
-round(cbind(
-  poisson_se   = sqrt(diag(vcov(m_pois))),
-  quasi_se     = sqrt(diag(vcov(m_qp))),
-  negbin_se    = sqrt(diag(vcov(m_nb)))[names(coef(m_pois))],
-  poisson_robust = sqrt(diag(vcovHC(m_pois, type = "HC0")))
-), 4)
+#| label: region4-lr
+## do the covariates matter at all? LR against the intercept-only model
+m_mn0 <- multinom(region4 ~ 1, data = gss, trace = FALSE)
+lr <- 2 * (as.numeric(logLik(m_mn)) - as.numeric(logLik(m_mn0)))
+df <- length(coef(m_mn)) - length(coef(m_mn0))
+c(LR = round(lr, 1), df = df)
+pchisq(lr, df, lower.tail = FALSE) < 0.001
 ```
 
-Note that the coefficients barely move but the standard errors do. That is the
-signature of overdispersion: the mean is fine, the variance assumption is not.
+## Ordered logit: an ordered outcome
 
-```{r}
-#| label: nb-theta
-c(theta = m_nb$theta, se_theta = m_nb$SE.theta)
-AIC(m_pois, m_nb)
-```
-
-A finite $\hat\theta$ well away from infinity, and a much lower AIC, both say the
-negative binomial is doing real work.
-
-## Does the model reproduce the data?
-
-```{r}
-#| label: fig-ppc
-#| fig-cap: "Observed distribution of the number of children against the distributions implied by the Poisson and negative binomial fits."
-set.seed(1)
-n <- nrow(gss)
-sim <- bind_rows(
-  tibble::tibble(k = gss$childs,                                source = "observed"),
-  tibble::tibble(k = rpois(n, fitted(m_pois)),                  source = "Poisson"),
-  tibble::tibble(k = rnbinom(n, mu = fitted(m_nb), size = m_nb$theta),
-                                                                source = "Neg. binomial")
-) |>
-  count(source, k) |>
-  group_by(source) |> mutate(p = n / sum(n)) |> ungroup() |>   # normalize on FULL n
-  filter(k <= 8)                                              # then trim for display
-
-ggplot(sim, aes(k, p, fill = source)) +
-  geom_col(position = "dodge") +
-  scale_fill_manual(values = c("observed" = "grey30", "Poisson" = "navy",
-                               "Neg. binomial" = "firebrick")) +
-  labs(x = "number of children", y = "proportion", fill = NULL) +
-  theme_minimal(base_size = 10)
-```
-
-This *predictive check* is the single most informative count diagnostic, and the
-one people most often skip.
-
-# Ordered outcomes
+Highest degree, five ordered categories. One coefficient vector and four
+cutpoints.
 
 ```{r}
 #| label: ordered
@@ -344,49 +352,251 @@ m_ord <- polr(degree ~ pareduc + wordsum + female + black,
 round(coef(summary(m_ord)), 4)
 ```
 
-`polr()` does not print $p$-values; get them from the $t$-values, or better, work
-on the probability scale:
+`polr()` does not print $p$-values; get them from the $t$-values, or better,
+work on the probability scale.
+
+```{r}
+#| label: gates
+## the cutpoints are gates: for one person, X'beta and the four cumulative
+## probabilities Pr(Y <= j) = Lambda(kappa_j - X'beta); differences are the
+## five category probabilities
+b <- coef(m_ord); kappa <- m_ord$zeta
+x  <- c(pareduc = 12, wordsum = 5, female = 0, black = 0)
+xb <- sum(b * x)
+cum <- plogis(kappa - xb)
+round(c(xb = xb), 3)
+round(rbind(cumulative = c(cum, 1), category = diff(c(0, cum, 1))), 3) |>
+  `colnames<-`(levels(gss$degree))
+```
 
 ```{r}
 #| label: ordered-pred
+## the same, averaged over everyone, at two vocabulary scores
 avg_predictions(m_ord, variables = list(wordsum = c(3, 9)), type = "probs")
 ```
 
-## Testing proportional odds
+## Checking proportional odds
 
-The model imposes one $\beta$ across all cutpoints. Compare it to a multinomial
-logit, which frees the coefficients:
-
-The proportional-odds model is *nested inside* a generalized ordered logit that
-lets each cutpoint have its own coefficients, so we can test the restriction by
-a likelihood-ratio test against that model.
+One $\beta$ for every cutpoint is an assumption: vocabulary pushes people past
+the high-school line and the bachelor's line by the same log-odds. Check it
+the direct way, with four separate binary logits, "above cut $j$" versus not.
 
 ```{r}
 #| label: prop-odds
-library(VGAM)
-## proportional odds imposed
-m_po  <- vglm(degree ~ pareduc + wordsum + female + black,
-              family = cumulative(parallel = TRUE), data = gss)
-## proportional odds relaxed
-m_npo <- vglm(degree ~ pareduc + wordsum + female + black,
-              family = cumulative(parallel = FALSE), data = gss)
-
-lr <- 2 * (logLik(m_npo) - logLik(m_po))
-df <- length(coef(m_npo)) - length(coef(m_po))
-c(LR = lr, df = df, p = pchisq(lr, df, lower.tail = FALSE))
+## one binary logit per cut; under proportional odds the four rows agree
+cuts <- levels(gss$degree)[-5]
+above <- sapply(1:4, function(k) {
+  yk <- as.integer(as.integer(gss$degree) > k)   # 1 if above cut k
+  coef(glm(yk ~ pareduc + wordsum + female + black, data = gss, family = binomial))[-1]
+})
+colnames(above) <- paste("above", cuts)
+round(cbind(above, ordered = coef(m_ord)), 3)
 ```
 
-A small $p$-value says the proportional-odds restriction is rejected. With $n$
-this large that is common; look at *how much* the free coefficients differ
-before abandoning the parsimony. (An ordered logit and a *multinomial* logit are
-not nested, so their deviances cannot be compared this way.)
+The ordered model's `wordsum` coefficient is a compromise between the four;
+proportional odds is a fair summary here.
+
+```{r}
+#| label: ordered-vs-multinom
+## the formal check: a multinomial logit on degree frees all four rows
+m_mn_deg <- multinom(degree ~ pareduc + wordsum + female + black, data = gss, trace = FALSE)
+k_ord <- length(coef(m_ord)) + length(m_ord$zeta)   # 4 slopes + 4 cutpoints
+k_mn  <- length(coef(m_mn_deg))                      # 4 rows x 5 columns
+lr <- 2 * (as.numeric(logLik(m_mn_deg)) - as.numeric(logLik(m_ord)))
+c(LR = round(lr, 1), df = k_mn - k_ord,
+  p = round(pchisq(lr, k_mn - k_ord, lower.tail = FALSE), 3))
+
+## the same comparison by AIC and BIC
+rbind(ordered     = c(k = k_ord, AIC = AIC(m_ord),    BIC = BIC(m_ord)),
+      multinomial = c(k = k_mn,  AIC = AIC(m_mn_deg), BIC = BIC(m_mn_deg)))
+```
+
+The LR rejects at $n = 3{,}509$, as everything does (Week 3). BIC charges
+$12 \log 3509 = 98$ for the twelve extra parameters and gets back $27$, so it
+keeps the ordered model; AIC charges $24$ and is close to indifferent. Judge
+the table first, then the test. If one covariate fails badly, free that
+covariate only (`ordinal::clm` with a `nominal =` term).
+
+# Count outcomes
+
+Outcome: `childs`, the number of children.
+
+```{r}
+#| label: poisson
+f_c <- childs ~ educ + female + black + exper + evermar
+m_pois <- glm(f_c, data = gss, family = poisson(link = "log"))
+## exp(coef) multiplies the expected count
+round(cbind(coef(summary(m_pois))[, 1:2], exp_b = exp(coef(m_pois))), 3)
+```
+
+## Is it overdispersed?
+
+The Poisson makes one strong claim: $\Var(Y_i \mid X_i) = \theta_i$. Check it
+three ways.
+
+```{r}
+#| label: overdispersion
+## raw: variance against mean
+c(mean = mean(gss$childs), var = var(gss$childs))
+
+## Pearson dispersion: under the Poisson each (y - theta)^2 / theta averages 1
+n <- nrow(gss); k <- length(coef(m_pois))
+phi <- sum((gss$childs - fitted(m_pois))^2 / fitted(m_pois)) / (n - k)
+c(phi = phi)
+
+## formal test, using only the Poisson fit
+dispersiontest(m_pois, trafo = 1)
+```
+
+The counts scatter 15% more than the Poisson allows. The claim is false, so
+the Poisson SE is wrong. Three repairs, each replacing the claim with a
+different one:
+
+```{r}
+#| label: remedies
+m_qp <- glm(f_c, data = gss, family = quasipoisson)   # Var = phi * theta
+m_nb <- glm.nb(f_c, data = gss)                       # Var = theta + theta^2 / alpha
+
+round(cbind(
+  poisson = sqrt(diag(vcov(m_pois))),
+  quasi   = sqrt(diag(vcov(m_qp))),
+  negbin  = sqrt(diag(vcov(m_nb)))[names(coef(m_pois))],
+  robust  = sqrt(diag(vcovHC(m_pois, type = "HC0")))   # no claim at all
+), 4)
+
+## the quasi-Poisson SE is the Poisson SE times sqrt(phi); check on evermar
+c(by_hand = sqrt(diag(vcov(m_pois)))["evermar"] * sqrt(phi),
+  quasi   = sqrt(diag(vcov(m_qp)))["evermar"])
+```
+
+The coefficients barely move (check `coef(m_nb)` against `coef(m_pois)`); the
+standard errors do. The robust SE for `evermar` is much larger than the other
+two because the excess scatter is not uniform: it sits among the never
+married, exactly the group this dummy compares.
+
+```{r}
+#| label: nb-theta
+## the negative binomial's alpha (theta in MASS): large means close to Poisson
+c(alpha = m_nb$theta, se_alpha = m_nb$SE.theta)
+```
+
+## Excess zeros, and the hurdle model
+
+```{r}
+#| label: zeros
+## share of zeros: observed, and averaged over the fitted distributions
+c(observed = mean(gss$childs == 0),
+  poisson  = mean(dpois(0, fitted(m_pois))),
+  negbin   = mean(dnbinom(0, mu = fitted(m_nb), size = m_nb$theta)))
+```
+
+Thirty percent are childless; neither model has a way to make zeros special.
+The hurdle model does: a logit for zero versus positive, then a truncated
+Poisson for the positives, the same covariates in both parts.
+
+```{r}
+#| label: hurdle
+m_hur <- hurdle(f_c, data = gss, dist = "poisson")
+## the two parts tell different stories
+round(cbind(any_child = exp(coef(m_hur, model = "zero")),
+            how_many  = exp(coef(m_hur, model = "count"))), 2)
+## the zero share is matched exactly: the logit part is fitted to it
+mean(predict(m_hur, type = "prob")[, 1])
+```
+
+Marriage multiplies the odds of *any* child by about 9 but the count among
+parents by about 1.35; women are likelier to have any child and have slightly
+fewer. One Poisson averaged these two processes.
+
+## Comparing the count models by AIC and BIC
+
+Poisson and negative binomial are nested (the Poisson is the negative binomial
+with $\alpha \to \infty$), so an LR test applies. The hurdle is not nested in
+either, so use AIC and BIC, which need only a log-likelihood and a parameter
+count.
+
+```{r}
+#| label: count-compare
+## LR: negative binomial against Poisson, one parameter (alpha)
+2 * (as.numeric(logLik(m_nb)) - as.numeric(logLik(m_pois)))
+
+## AIC = -2 loglik + 2k;  BIC = -2 loglik + k log n
+mods <- list(Poisson = m_pois, `Neg. binomial` = m_nb, Hurdle = m_hur)
+tab <- t(sapply(mods, function(m) {
+  ll <- logLik(m)
+  c(logLik = as.numeric(ll), k = attr(ll, "df"),
+    AIC = -2 * as.numeric(ll) + 2 * attr(ll, "df"),
+    BIC = -2 * as.numeric(ll) + attr(ll, "df") * log(n))
+}))
+round(tab, 1)
+## check against the built-in functions
+round(c(AIC(m_hur), BIC(m_hur)), 1)
+```
+
+Read the Poisson-versus-hurdle line the Week 3 way. The hurdle adds six
+parameters (a second intercept and five more coefficients). BIC charges
+$6 \log 3509 = 49$ for them, AIC charges $12$; the log-likelihood rises by
+about $155$, so $-2\,\ell$ falls by about $310$. Both criteria prefer the
+hurdle by a wide margin, and BIC's heavier penalty does not change the verdict.
+The negative binomial is the interesting line: one extra parameter, a gain of
+$2.4$ in log-likelihood. AIC prefers it to the Poisson by about $3$; BIC
+prefers the Poisson by about $3$. That is Week 3's disagreement in the wild:
+the evidence for $\alpha$ is real (the LR is $4.8$) but not strong enough to
+pay BIC's $\log 3509 = 8.2$ per parameter. Both criteria agree that the
+zeros, not the variance, are where the Poisson is wrong.
+
+::: callout-note
+AIC and BIC compare models fitted to the *same rows* with the *same outcome*.
+They say nothing about whether either model is right; the predictive check
+below does.
+:::
+
+## Does the model reproduce the data?
+
+```{r}
+#| label: fig-ppc
+#| fig-cap: "Observed distribution of the number of children against the distributions implied by the Poisson, negative binomial, and hurdle fits."
+## for each count k, average Pr(Y = k) over everyone's fitted distribution
+ks <- 0:8
+dist <- bind_rows(
+  tibble::tibble(k = ks, source = "observed",
+                 p = as.numeric(table(factor(gss$childs, levels = ks))) / n),
+  tibble::tibble(k = ks, source = "Poisson",
+                 p = sapply(ks, function(j) mean(dpois(j, fitted(m_pois))))),
+  tibble::tibble(k = ks, source = "Neg. binomial",
+                 p = sapply(ks, function(j) mean(dnbinom(j, mu = fitted(m_nb), size = m_nb$theta)))),
+  tibble::tibble(k = ks, source = "Hurdle",
+                 p = colMeans(predict(m_hur, type = "prob")[, 1:9]))
+) |> mutate(source = factor(source, levels = c("observed", "Poisson", "Neg. binomial", "Hurdle")))
+
+ggplot(dist, aes(k, p, fill = source)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(values = c("observed" = "grey30", "Poisson" = "navy",
+                               "Neg. binomial" = "firebrick", "Hurdle" = "darkgreen")) +
+  labs(x = "number of children", y = "proportion", fill = NULL) +
+  theme_minimal(base_size = 10)
+```
+
+This predictive check is the single most informative count diagnostic, and the
+one people most often skip. The hurdle matches the zeros by construction; no
+count model matches the bump at two children.
+
+::: callout-note
+**Which count model.** Start with Poisson and robust SEs. Run the
+overdispersion test; if it rejects and you need a likelihood (prediction, AIC,
+an LR test), fit the negative binomial. Look at the observed and predicted
+distributions. Choose hurdle or zero-inflated on substance: hurdle when
+crossing from zero to one is a different *process*, zero-inflated when some
+zeros are a different *kind* of person. The two are not nested; AIC or BIC
+between them.
+:::
 
 # Model fit
 
 ```{r}
 #| label: fit-compare
-AIC(m_logit, m_int)
-BIC(m_logit, m_int)
+AIC(m_np, m_int)
+BIC(m_np, m_int)
 
 ## McFadden's pseudo-R2
 m_null <- glm(ba ~ 1, data = gss, family = binomial)
@@ -521,8 +731,8 @@ of `u_j`.
     using Mood (2010).
 
 3.  **Simulation-based intervals.** Take the logit model and get an interval for
-    the difference in predicted probability between `wordsum = 3` and
-    `wordsum = 9` by simulating 10,000 draws of $\tilde\beta$ from
+    the difference in predicted probability between `pareduc = 12` and
+    `pareduc = 16` by simulating 10,000 draws of $\tilde\beta$ from
     $\mathcal N(\hat\beta, \hat{V}(\hat\beta))$
     (King, Tomz, and Wittenberg 2000). Compare to the delta-method interval from
     `avg_comparisons()`.
@@ -531,13 +741,16 @@ of `u_j`.
     rather than children. Add `offset(log(pmax(age - 18, 1)))` to the Poisson and
     interpret the coefficients. What changed?
 
-5.  **Zero inflation.** Fit `pscl::zeroinfl(childs ~ ... | evermar + age)` and
-    compare with the negative binomial by AIC and by the predictive check above.
-    Does the zero-inflation story make substantive sense here?
+5.  **Hurdle versus zero-inflated.** Fit
+    `pscl::zeroinfl(childs ~ educ + female + black + exper + evermar, dist = "negbin")`
+    and add it to the AIC/BIC table. The two are not nested: which does each
+    criterion prefer, and by how much? Then say which story fits the outcome:
+    is a childless respondent someone who has not crossed a hurdle, or a
+    different kind of person who could never have a positive count?
 
-6.  **Separation in the wild.** Fit a logit for `ba` including
-    `factor(region) * black`. Does anything blow up? If so, apply Firth and
-    report what changes.
+6.  **A block test in the multinomial.** Drop `educ` from the region model
+    and test it with an LR test (how many degrees of freedom?) and with BIC.
+    Do the two agree? Explain in one sentence why they might not at $n = 3509$.
 
 7.  **Random slopes.** Extend the random-intercept model to
     `MathAch ~ SES + Sector + (1 + SES | School)`, so that the SES slope varies

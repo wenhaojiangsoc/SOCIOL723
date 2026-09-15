@@ -10,6 +10,8 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
 | 2026-09-15 | user | Pager frame derived the intercept FROM the 34% (log(.34/.66) = -0.66) | Go the model's direction: start from beta-hat, exponentiate, then the probability |
 | 2026-09-15 | user | Multinomial log-lik written as sum log p_{i,y_i}; Y_i invisible | Write sum_i sum_j 1[Y_i=j] log p_ij and show the J=2 reduction |
 | 2026-09-15 | user | Interaction frames answered Ai-Norton but not the reader's questions | Lead with the two questions: include the product? do the two models agree on probabilities? Answer each in one bullet |
+| 2026-09-15 | self | lab4's VGAM `cumulative(parallel = FALSE)` LR test printed `LR NaN` in the committed PDF too (nonparallel fit has no usable logLik) | Dropped VGAM. Proportional odds now checked as on the slide: four binary logits at each cut + LR/AIC/BIC ordered vs `multinom` (LR 27.3 on 12 df; BIC keeps ordered) |
+| 2026-09-15 | self | `options(scipen = 999)` in lab setup makes tiny p-values print as 40-digit decimals | Round LR, print `p < 0.001` as a logical, or `round(p, 3)` |
 | 2026-09-15 | self | Ajrouch et al. 2016 ZINB was described with hurdle language (whether / how much among those who do) | Describe ZI as structural-zero logit + count that can be zero; say the authors read it as a hurdle and that in practice the two are blurry |
 
 ## User Preferences
@@ -56,6 +58,19 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
 - Labs/handouts are `.qmd` (Quarto) -> PDF, `pdf-engine: pdflatex`, 12pt, 1.1in margins,
   same newpx font stack, custom `\maketitle` block. See `../SOCIOL690S/Homework/homework1/`.
 - Quarto binary is NOT on PATH: `/Applications/RStudio.app/Contents/Resources/app/quarto/bin/quarto`.
+  **Sandbox gotcha (2026-09-15)**: the launcher calls `/usr/sbin/sysctl`, which the sandbox
+  blocks ("quarto script failed: unrecognized architecture"). Fix: copy the launcher to
+  `$TMPDIR`, sed `FULLARCH="Apple"` and hard-code `SCRIPT_PATH` to the real bin dir, run that.
+- On the wj93 machine `pscl`, `AER`, `VGAM`, `brglm2` are NOT in the system R library. Install
+  into `$TMPDIR` with `allowed_domains` cloud.r-project.org and render with `R_LIBS=$TMPDIR`.
+  The user should `install.packages(c("pscl","AER","VGAM","brglm2"))` to render locally.
+- **TeX tree mismatch on wj93 (2026-09-15)**: `~/Library/TinyTeX` has tcolorbox 6.9.0 (Nov 2025)
+  on a LaTeX kernel 2025-06-01; tcolorbox calls `\NewStructureName` etc. and every Quarto
+  callout fails ("Undefined control sequence ... \NewStructureName"). Slides are unaffected.
+  Sandbox cannot write TinyTeX; workaround: tcolorbox 6.6.0 from
+  texlive.info/tlnet-archive/2025/06/15/tlnet/archive/tcolorbox.tar.xz extracted under
+  `$TMPDIR/tex`, render with `TEXINPUTS="$TMPDIR/tex//:"`. Real fix for the user:
+  `tlmgr update --self --all` (kernel + tcolorbox together). Math Review uses tcolorbox too.
 - LaTeX toolchain: TinyTeX / TeX Live 2025 at `/usr/local/bin/pdflatex`.
 - Syllabus lives in `syllabus/` (`main.tex` + `schedule.tex`).
 
@@ -78,6 +93,18 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (pareduc x female; product 0.021 n.s.; AME gap 0.006). Separation frame DROPPED (Zorn ref
   and one protocol line remain). Multinomial now uses region4 (nominal); ordered keeps degree
   with a "cutpoints are gates" frame. User is weighing multilevel in place of event history.
+- 2026-09-15 lab4 rebuilt to follow the slides: main logit is `ba ~ pareduc + wordsum + female
+  + black` (no exper, matches slide table); order predicted probabilities -> AMEs -> odds ratios
+  as footnote -> robust/cluster -> probit AMEs agree; interaction `pareduc * female` with the
+  no-product vs with-product AME columns; NEW multinomial on region4; ordered logit with the
+  "gates" computation by hand; counts: Pearson phi by hand, three repairs, hurdle, AIC/BIC
+  table by hand (Poisson 10778/10815, NB 10775/10818, hurdle 10479/10553: AIC and BIC DISAGREE
+  on NB vs Poisson, both pick hurdle). Exercises 5-6 now hurdle-vs-ZINB by AIC/BIC and an LR/BIC
+  block test in the multinomial.
+- 2026-09-15 multilevel motivation (user asked "why not OLS with clustered SE"): new frame "Why
+  Not OLS With Clustered Standard Errors?" after "Observations Come in Groups" with a
+  question-by-question table (SE right both ways; ICC, shrinkage, SES 2.95 vs 2.38, random
+  slopes only in the model) + Sampson 1997 as "the variance is the finding". Deck = 61 pages.
 - 2026-09-15 Week 4 pass (user): "Three Readings of beta_record" frame dropped; \core removed from
   the two overdispersion-repair frames (understanding only, no star); exposure bullet gets \adv;
   "Lesson:" line, "What no count model fixes" bullet, and the DiPrete 2011 paragraph+reference all

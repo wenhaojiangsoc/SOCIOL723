@@ -42,14 +42,15 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - Weeks 1-2: done. Week 3 (MLE theory): testing section rebuilt; score test dropped from the
   course except as the third line of the rulers picture; LR-for-a-block + AIC/BIC + BIC-in-
   practice + "large n rejects everything / where BIC came from" close the deck (72 pp).
-- Week 4 (MLE applications, 60 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
+- Week 4 (MLE applications, 61 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
   logit, Newton by hand, score = normal equations) -> interpretation (three scales, predicted
   probabilities first, Pager 2003 read slowly, AME person by person, AME/MEM, uncertainty,
   probit, recommendation, interactions with real output) -> several categories (multinomial on
   four-region residence, derivation, computation, ordered logit on degree, cutpoints as gates,
   proportional odds) -> counts (Poisson, overdispersion: three beliefs + where the numbers come
   from, excess zeros, hurdle) -> MULTILEVEL (replaced event history 2026-09-14; HSB data via
-  nlme, lme4) -> practice. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
+  nlme, lme4; opens with "why not OLS + clustered SE") -> practice. Lab 4 follows the same
+  order and adds multinomial (region4) and an AIC/BIC table Poisson vs NB vs hurdle. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
   Jonsson 2000, Zajacova et al. 2017, Olzak 2021, Ajrouch et al. 2016,
   Sampson et al. 1997; all web-verified.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
@@ -58,6 +59,9 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
 ## Gotchas
+- Quarto renders can fail on this machine for two reasons unrelated to the lab: the sandbox
+  blocks the launcher's `sysctl` call, and `~/Library/TinyTeX` has tcolorbox 6.9 on a 2025-06
+  kernel (fix: `tlmgr update --self --all`). Workarounds are in the napkin.
 - Dropbox sometimes drops `slides.pdf` mid-session; just recompile. Delete any
   "conflicted copy" build artifacts (.aux/.out/figure pdfs); they are junk.
 - `glmer(..., nAGQ = 10)` in lab 4 takes about a minute.

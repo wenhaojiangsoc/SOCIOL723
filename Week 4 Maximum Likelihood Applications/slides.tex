@@ -1220,6 +1220,34 @@ Running example: High School and Beyond, $7{,}185$ students in $160$
 schools ($14$ to $67$ each); outcome a math score (mean $12.6$, SD $6.9$).
 \end{frame}
 
+\begin{frame}{Why Not OLS With Clustered Standard Errors?\core}
+Clustering repairs the standard errors of a pooled regression and stops there:
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lll}
+\toprule
+Question & OLS, clustered SE & Random intercept \\
+\midrule
+SE of the SES slope & $0.13$, right & $0.11$, right \\
+share of variance between schools & no answer & $\tau^2/(\tau^2 + \sigma^2) = 0.18$ \\
+one school's mean, $14$ students & its raw mean & shrunk toward the grand mean \\
+the SES slope & pooled, $2.95$ & $2.38$, within-school information weighted in \\
+does the slope vary across schools & no answer & a second variance \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep1pt
+  \item The pooled $2.95$ is untouched by clustering; it mixes the
+        within-school gradient ($2.19$) with high-SES students attending
+        high-scoring schools.
+  \item Often the variance \emph{is} the finding: Sampson, Raudenbush, and
+        Earls (1997) ask how much violence varies across neighborhoods and
+        how much collective efficacy explains.
+  \item \textbf{Rule}: groups a nuisance, cluster (Week 2) or fixed
+        effects (Week 10). Groups part of the question, model them.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{The Random-Intercept Model\core}
 Student $i$ in school $j$:
 \begin{align*}
