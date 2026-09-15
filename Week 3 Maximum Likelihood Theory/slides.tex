@@ -1496,7 +1496,8 @@ panels. Next: what exactly a test reads off this curve.
   \item \textbf{Vertical}: the fit lost by moving from $\hat\theta$ down to
         $\theta_0$. \hfill \emph{Likelihood ratio}
   \item \textbf{Slope at $\theta_0$}: at a peak it would be zero. A third
-        ruler; we use it in Week 4. \hfill \emph{Score}
+        ruler, used by software for specification tests; not needed here.
+        \hfill \emph{Score}
 \end{itemize}
 \end{frame}
 
@@ -1607,6 +1608,111 @@ $z$ extrapolated it. The next frame says which one to reach for.
 \end{block}
 \vskip4pt
 The habit to build: when a $z$ looks strange, ask what curve it read.
+\end{frame}
+
+\begin{frame}{LR in Practice: Testing a Block\core}
+Thursday's lab asks: does \emph{region} predict holding a degree, given
+parental education, vocabulary, gender, and race? Nine census regions,
+eight dummies.
+\begin{itemize}\itemsep3pt
+  \item \textbf{Unrestricted model}: the logit with the eight region
+        dummies. \textbf{Restricted model}: the same logit without them,
+        eight coefficients pinned at $0$.
+  \item $LR = 2\,[\loglik_{\text{with}} - \loglik_{\text{without}}] = 27.8$
+        on $q = 8$ degrees of freedom; the $\chi^2_8$ cut-off is $15.5$,
+        so $p = 0.0005$.
+  \item One at a time, only two of the eight dummies are significant.
+        The block test asks the question no single $z$ can.
+\end{itemize}
+\vskip4pt
+\begin{block}{In \texttt{R}}
+\texttt{anova(m\_without, m\_with, test = "Chisq")}: the ``Deviance''
+column is $LR$, ``Df'' is $q$. Both models on the same rows, or the
+comparison is meaningless.
+\end{block}
+\end{frame}
+
+\begin{frame}{AIC and BIC: a Price per Parameter\core}
+A test asks ``too large for chance?'' A different question: ``worth the
+parameters?''
+\begin{align*}
+  AIC = -2\loglik(\hat\theta) + 2k ,
+  \qquad
+  BIC = -2\loglik(\hat\theta) + k\log n ,
+  \qquad \alert{\text{lower is better.}}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Fit minus a price per parameter. No null, no $p$-value, and the
+        models need not be nested (two covariate sets; Week 4's count
+        models).
+  \item Nested models make the price explicit: $BIC_{\text{small}} -
+        BIC_{\text{big}} = LR - q\log n$. At $n = 3{,}509$ a parameter must
+        buy $\log n = 8.2$ units of $LR$ under BIC, only $2$ under AIC.
+\end{itemize}
+\vskip1pt
+\textbf{The region block again}, $LR = 27.8$ for $q = 8$:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lccc}
+\toprule
+ & $LR$ test & $\Delta AIC$ & $\Delta BIC$ \\
+\midrule
+small model minus big model & $p = 0.0005$ & $+11.8$ & $-37.5$ \\
+verdict & region matters & keep region & \alert{drop region} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{BIC in Practice, and When LR Is Still Needed\core}
+Test and BIC disagree about region, and both are right: eight parameters
+bought $27.8$ units of fit, $3.5$ each, too much for chance, too little for
+BIC's price of $8.2$.
+\begin{itemize}\itemsep1pt
+  \item \textbf{Why BIC} \srcp{Raftery 1995}: with $n$ in the thousands
+        every block is ``significant.'' A test's cut-off never grows with
+        $n$; BIC's price does, so it keeps asking whether a term earns its
+        place.
+  \item \textbf{Reading $\Delta BIC$} (Raftery): 0--2 weak, 2--6
+        positive, 6--10 strong, $>10$ very strong. Report differences.
+        Region: ``very strong'' for the simpler model.
+  \item \textbf{When LR is still the tool}: one hypothesis about nested
+        models. Non-nested comparisons have no restriction to test: BIC
+        only.
+  \item \textbf{What neither decides}: which controls to hold constant.
+        If region is in the model as a confounder of the effect you care
+        about, it stays, whatever BIC says. Selection criteria choose
+        descriptions, not identification.
+\end{itemize}
+Rule of thumb: nested and one question, LR. A menu of models, BIC. Same
+rows in every model, always.
+\end{frame}
+
+\begin{frame}{Large $n$ Rejects Everything; Where BIC Came From\core}
+LR grows with $n$ for any effect that is not exactly zero; the cut-off
+stays at $3.84$. The same South dummy in the degree logit ($-0.14$) on
+nested subsamples:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lccc}
+\toprule
+$n$ & $500$ & $1{,}000$ & $3{,}509$ \\
+\midrule
+$LR$ for South & $0.1$ & $2.8$ & $3.0$ \\
+$\Delta BIC$ (small minus big) & $-6.1$ & $-4.2$ & $-5.2$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+The effect never changes; the verdict does. Only an exactly-zero effect
+keeps a $5\%$ rejection rate at every $n$, and in social data nothing is
+exactly zero.
+\vskip2pt
+\textbf{Where BIC entered sociology.} Grusky and Hauser (1984, \emph{ASR}):
+log-linear models for sixteen countries' mobility tables, over
+$100{,}000$ cases, every model rejected by LR. Raftery (1986, \emph{ASR}):
+BIC picks a parsimonious model among the rejected ones. Hout (1988,
+\emph{AJS}) chose his mobility models by BIC; it has been the standard for
+log-linear and latent class models since.
 \end{frame}
 
 \end{document}

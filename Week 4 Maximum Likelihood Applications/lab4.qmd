@@ -46,12 +46,13 @@ options(digits = 4, scipen = 999)
 4.  Diagnose and repair separation.
 5.  Fit count models, detect overdispersion, and choose a remedy.
 6.  Fit an ordered logit and test proportional odds.
-7.  Handle censored durations: Kaplan--Meier, the Cox model, and the
-    discrete-time person-period logit (Thursday's event-history session).
+7.  Fit a random-intercept model, read the intraclass correlation and
+    shrinkage, and compare it with fixed effects (Thursday's multilevel
+    session).
 
 ```{r}
 #| label: packages
-library(survival)  # Surv, survfit, coxph, survSplit
+library(lme4)      # lmer, glmer
 library(dplyr)
 library(ggplot2)
 library(marginaleffects)
@@ -273,12 +274,12 @@ round(exp(coef(m_pois)), 3)
 #| label: overdispersion
 c(mean = mean(gss$childs), var = var(gss$childs))
 
-## a score-type test: it uses only the Poisson fit (the restricted model,
-## variance = mean) and asks whether the slope toward variance > mean is zero
+## uses only the Poisson fit: does the variance exceed the mean by more than
+## chance allows?
 dispersiontest(m_pois, trafo = 1)
 ```
 
-This is lecture's third ruler. The Poisson model is the restricted one, and the test never fits the negative binomial; it reads the slope of the log-likelihood at the Poisson fit in the direction of extra variance.
+The test uses only the Poisson fit: it asks whether the residual variance grows with the mean faster than the Poisson allows, without fitting the negative binomial.
 
 ```{r}
 #| label: remedies
@@ -408,107 +409,104 @@ c(model = mean(pred == gss$ba),
   always_majority = max(mean(gss$ba), 1 - mean(gss$ba)))
 ```
 
-# Event history (Thursday's session)
+# Multilevel models (Thursday's session)
 
-The GSS extract has no duration variable, so we simulate one — which has the
-usual advantage that we *know the truth* and can see whether each method
-recovers it.
-
-## A duration with censoring, by construction
-
-Time (in years after age 18) to first union formation. College graduates form
-unions at a lower rate — the true log hazard ratio is $-0.5$ — and everyone is
-observed for at most 12 years, so long durations are censored.
+The GSS extract has no natural grouping, so this section uses the High School
+and Beyond data that ship with `nlme`: 7,185 students in 160 schools, a math
+achievement score, student SES, and school sector.
 
 ```{r}
-#| label: sim-duration
-set.seed(4)
-n <- 3000
-sim <- tibble::tibble(
-  college = rbinom(n, 1, 0.35),
-  rate    = exp(-2.2 - 0.5 * college),   # hazard, events per year
-  t_true  = rexp(n, rate),               # latent duration
-  time    = pmin(t_true, 12),            # observed: censored at 12 years
-  event   = as.integer(t_true <= 12)     # 1 = union observed, 0 = censored
-)
-sim |> count(college, event)
+#| label: hsb
+data(MathAchieve, package = "nlme"); data(MathAchSchool, package = "nlme")
+hsb <- merge(as.data.frame(MathAchieve),
+             as.data.frame(MathAchSchool)[, c("School", "Sector")], by = "School")
+hsb$School <- factor(as.character(hsb$School))   # plain factor, not ordered
+c(students = nrow(hsb), schools = length(unique(hsb$School)))
+range(table(hsb$School))
 ```
 
-A third to a half of each group is censored. That is the normal situation in
-event-history data, not a pathology.
-
-## Why the naive fixes fail
-
-Before doing it right, do it wrong twice:
+## The null model and the intraclass correlation
 
 ```{r}
-#| label: naive
-sim |>
-  group_by(college) |>
-  summarise(
-    drop_censored   = mean(time[event == 1]),   # naive 1: drop censored
-    censored_as_event = mean(time),             # naive 2: censoring = event
-    truth           = mean(1 / rate)            # true expected duration
-  ) |> round(2)
+#| label: null-model
+## no predictors: a grand mean, a school variance, a student variance
+m0 <- lmer(MathAch ~ 1 + (1 | School), data = hsb, REML = FALSE)
+vc <- as.data.frame(VarCorr(m0))
+tau2 <- vc$vcov[1]; sigma2 <- vc$vcov[2]
+c(grand_mean = fixef(m0), tau2 = tau2, sigma2 = sigma2, ICC = tau2 / (tau2 + sigma2))
+
+## is tau2 zero? LR against plain OLS, one parameter pinned at zero
+ols0 <- lm(MathAch ~ 1, data = hsb)
+2 * (as.numeric(logLik(m0)) - as.numeric(logLik(ols0)))
 ```
 
-Both naive columns understate the true durations, and — worse — they
-understate them *more for college graduates*, whose long durations are
-censored more often. The college gap itself is distorted, not just the level.
+Eighteen percent of the variance in math scores is between schools. The LR
+statistic is enormous; schools matter.
 
-## Kaplan--Meier
+## Shrinkage, school by school
 
 ```{r}
-#| label: fig-km
-#| fig-cap: "Kaplan–Meier survival curves by college. Each downward step is an observed union; censored units leave the risk set without a step."
-km <- survfit(Surv(time, event) ~ college, data = sim)
-plot(km, col = c("navy", "firebrick"), lwd = 2,
-     xlab = "Years since age 18", ylab = "Share still unpartnered")
-legend("bottomleft", c("No college", "College"),
-       col = c("navy", "firebrick"), lwd = 2, bty = "n")
-```
+#| label: shrinkage
+## own mean, model estimate, and the weight the model puts on the own mean
+school_means <- aggregate(MathAch ~ School, data = hsb, mean)
+names(school_means)[2] <- "own_mean"
+school_means$n <- as.vector(table(hsb$School))
+school_means$model <- fixef(m0) + ranef(m0)$School[school_means$School, 1]
+school_means$weight <- school_means$n * tau2 / (school_means$n * tau2 + sigma2)
 
-## The Cox model recovers the truth
+## check the formula on the smallest and largest school
+sm <- school_means[c(which.min(school_means$n), which.max(school_means$n)), ]
+sm$by_hand <- sm$weight * sm$own_mean + (1 - sm$weight) * fixef(m0)
+data.frame(school = sm$School, round(sm[, -1], 2))
+```
 
 ```{r}
-#| label: cox
-fit_cox <- coxph(Surv(time, event) ~ college, data = sim)
-summary(fit_cox)$coefficients |> round(3)
+#| label: fig-shrinkage
+#| fig-cap: "Model estimates against raw school means. Points below the 45-degree line on the left and above it on the right are being pulled toward the grand mean; small schools move furthest."
+plot(school_means$own_mean, school_means$model, cex = 0.3 + school_means$n / 40,
+     col = adjustcolor("navy", 0.6), pch = 16,
+     xlab = "school's own mean", ylab = "model estimate of the school mean")
+abline(0, 1, col = "gray50"); abline(h = fixef(m0), lty = 3, col = "firebrick")
 ```
 
-The coefficient is the true $-0.5$ up to sampling noise, and
-$e^{\hat\beta} \approx 0.61$: college graduates form unions at about 61% of
-the non-college rate *at every point in time*. Censoring was handled by the
-likelihood, not by us.
-
-## Discrete time: the person-period logit
-
-Cut time into years, give every person one row per year at risk, and run the
-logit from this week:
+## Predictors at both levels
 
 ```{r}
-#| label: person-period
-pp <- survSplit(Surv(time, event) ~ college, data = sim,
-                cut = 1:11, episode = "period")
-c(rows_people = n, rows_person_periods = nrow(pp))
+#| label: two-levels
+m_ols <- lm(MathAch ~ SES + Sector, data = hsb)
+m_re  <- lmer(MathAch ~ SES + Sector + (1 | School), data = hsb, REML = FALSE)
+m_fe  <- lm(MathAch ~ SES + Sector + School, data = hsb)
 
-fit_dt <- glm(event ~ college + factor(period),
-              family = binomial, data = pp)
-round(coef(fit_dt)["college"], 3)
+round(cbind(
+  pooled      = coef(m_ols)[c("SES", "SectorCatholic")],
+  pooled_clSE = sqrt(diag(vcovCL(m_ols, cluster = hsb$School)))[c("SES", "SectorCatholic")],
+  random_int  = fixef(m_re)[c("SES", "SectorCatholic")],
+  random_SE   = sqrt(diag(vcov(m_re)))[c("SES", "SectorCatholic")],
+  fixed_eff   = coef(m_fe)[c("SES", "SectorCatholic")]), 3)
+as.data.frame(VarCorr(m_re))$vcov
 ```
 
-The person-period logit coefficient is essentially the Cox estimate: with
-small per-period hazards, the discrete-time logit and the proportional-hazards
-model agree. The period dummies play the role of the baseline hazard, and
-censored people simply stop contributing rows — the likelihood logic from
-lecture, implemented by data construction.
+Sector is `NA` under fixed effects: it is constant within school, so the
+school dummies absorb it. The random-intercept model estimates it, with a
+standard error that treats the 160 schools, not the 7,185 students, as the
+units. The between-school variance fell from `r round(tau2, 2)` to about 3.6:
+SES and sector explain more than half of it.
 
-::: callout-note
-Everything from earlier in this lab now applies to `fit_dt`: robust standard
-errors (cluster on the *person* — one person contributes many rows), average
-marginal effects, predicted per-period probabilities. That is the appeal of
-the discrete-time approach for sociologists.
-:::
+## A random-intercept logit
+
+```{r}
+#| label: glmer
+hsb$top <- as.integer(hsb$MathAch > quantile(hsb$MathAch, 0.75))
+g1 <- glmer(top ~ SES + Sector + (1 | School), data = hsb,
+            family = binomial, nAGQ = 10)   # nAGQ: accuracy of the integral over u_j
+round(summary(g1)$coefficients, 3)
+as.data.frame(VarCorr(g1))$vcov
+```
+
+The same logit as this morning, with a school shift on the log-odds scale
+whose variance is estimated. Coefficients are within-school; for
+population-average probabilities, average predictions over the distribution
+of `u_j`.
 
 # Exercises
 
@@ -541,11 +539,12 @@ the discrete-time approach for sociologists.
     `factor(region) * black`. Does anything blow up? If so, apply Firth and
     report what changes.
 
-7.  **Censoring harder.** Rerun the event-history simulation with observation
-    ending at 6 years instead of 12. How much censoring do you get now? Do
-    Kaplan--Meier and the Cox model still recover the truth? What happens to
-    the two naive estimates? (The lesson: the likelihood methods degrade
-    gracefully; the naive ones get *worse* as censoring grows.)
+7.  **Random slopes.** Extend the random-intercept model to
+    `MathAch ~ SES + Sector + (1 + SES | School)`, so that the SES slope varies
+    across schools. Report the variance of the slope and its correlation with
+    the intercept, test the extension against the random-intercept model with
+    an LR test, and say in one sentence what a school with a steep SES slope
+    looks like.
 
 # Session information
 

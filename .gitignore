@@ -1,5 +1,6 @@
 logs/
-.claude/
+.claude/*
+!.claude/napkin.md
 .DS_Store
 *.aux
 *.log

@@ -16,6 +16,11 @@ regularization, and double/debiased ML).
 Tuesday sessions are lectures; Thursday sessions are hands-on `R` labs.
 
 - [Syllabus](./Syllabus.pdf)
+- [Math review](./Math%20Review/math_review.pdf): calculus, Taylor expansion,
+  linear algebra, probability and conditional expectation, asymptotics,
+  integrals, and penalized optimization, each tied to the week that uses it,
+  with exercises and answers. Sections 1–4 serve Weeks 1–4; Sections 5–9 serve
+  the causal-inference and machine-learning weeks.
 - Lab data: [`Data/gss_earnings.rds`](./Data) — a GSS 2010–2022 extract of
   full-time workers aged 25–64 (*n* = 3,509), built by
   [`Data/build_gss_extract.R`](./Data/build_gss_extract.R).
@@ -162,8 +167,11 @@ errors turns out to be one of its special cases.
 - Consistency and asymptotic normality (proof sketch ★), efficiency and
   invariance ★; why maximum likelihood is not unbiased.
 - **Testing**: why the intuitive Wald ratio is not enough, and the likelihood
-  ratio and score tests as the other two measures of the same distance; when
-  the log-likelihood is a parabola and when it is not.
+  ratio test as the other measure of the same distance; when the
+  log-likelihood is a parabola and when it is not; LR for a block; AIC and
+  BIC as a price per parameter, why sociologists report BIC (Raftery 1995),
+  why LR rejects everything at large n, and where BIC entered sociology
+  (Grusky and Hauser 1984; Raftery 1986; Hout 1988).
 
 ### Materials
 - [Slides: Week 3 — Maximum Likelihood: Theory](./Week%203%20Maximum%20Likelihood%20Theory/slides.pdf)
@@ -186,31 +194,45 @@ the nonlinearity into a link function — which means everything from Weeks 1–
 still applies, but interpretation becomes the hard part.
 
 ### Roadmap
-- The **GLM recipe**: random component, linear predictor, link. Why `glm()` is
-  iteratively reweighted least squares. ★
-- **Binary outcomes**: the case for and against the linear probability model; the
-  latent-variable motivation for logit and probit; deriving the logit
-  log-likelihood and score, and noticing that the score equations are the OLS
-  normal equations with $\hat p_i$ in place of $\hat Y_i$.
-- Why logit and probit are the same model in different units, and why the
-  **scale is not identified** — so logit coefficients cannot be compared across
-  nested models or across groups (Allison 1999; Mood 2010).
-- **Interpretation on the probability scale**: odds ratios and their traps;
-  average marginal effects versus marginal effects at the mean; predicted
-  probabilities via the observed-value approach (Hanmer and Kalkan 2013);
-  uncertainty by delta method, simulation, or bootstrap.
-- **Interactions in nonlinear models**: why a product term is neither necessary
-  nor sufficient for interaction on the probability scale (Ai and Norton 2003;
-  Berry, DeMeritt, and Esarey 2010).
-- **Multinomial** logit and IIA; **ordered** logit and proportional odds.
-- **Counts**: Poisson and the log link; exposure offsets; overdispersion and the
-  quasi-Poisson / negative binomial / robust-SE remedies; zero-inflation and
-  hurdle models.
-- **Diagnostics**: separation and Firth's penalized likelihood (Zorn 2005);
-  deviance, pseudo-$R^2$, ROC, and predictive checks.
-- **Event history (Thursday)**: a short standalone introduction to survival
-  analysis, the natural MLE application to durations — censoring, hazard rates,
-  the Kaplan–Meier estimator, and the Cox proportional-hazards model.
+- **Putting $X$ inside $\theta$**: where Week 3 left us; why one $\theta$ is
+  not a regression, why the line $X'\beta$ leaves the allowed range, and the
+  fix, a function with the right range: identity, logistic, normal CDF,
+  exponential. The link function is just that function's inverse. Every GLM
+  is a Week 3 likelihood with $\theta_i = h(X_i'\beta)$ substituted. ★
+- **Binary outcomes**, each step on a GSS logit of holding a degree: the
+  model written two ways and why they are equivalent; the S-curve and why OLS
+  on the log-odds is impossible; the likelihood; **Newton by hand** on real
+  data; the score as the OLS normal equations; three scales for one
+  coefficient; observed-value **predicted probabilities** first, the way
+  journals present them (Hanmer and Kalkan 2013), then average marginal
+  effects, computed person by person, and how to read them; Pager (2003)
+  read slowly, one scale at a time; delta-method, simulation, and bootstrap
+  intervals; probit as another S-curve and a recommendation; interactions (Ai
+  and Norton 2003) with real output, the product coefficient against the
+  difference in average marginal effects by gender.
+- **Outcomes with several categories**: multinomial logit on a genuinely
+  nominal outcome, region of residence, one logit per category against a
+  base and the derivation from J−1 log-odds to J probabilities, IIA; then
+  ordered logit on the five-level degree variable, the cutpoints as gates on
+  the X'β line with two worked respondents, reading the whole distribution,
+  and checking proportional odds.
+- **Counts** on number of children: Poisson regression and $e^{\beta}$;
+  overdispersion as the Poisson's one strong claim, the score test for it, and
+  three repairs compared on the same data; **excess zeros** with the observed
+  and predicted distributions, and a hurdle model whose two parts tell
+  different stories; how to choose a count model.
+- **Multilevel models (Thursday)**: the random-intercept model as a GLM with
+  one added variance, the intraclass correlation, shrinkage school by school,
+  predictors at both levels against pooled OLS and fixed effects, and a
+  random-intercept logit, on the High School and Beyond data.
+- **In the literature**: one published application per method, with the
+  question, the model, and one reported result: Pager (2003) for the logit;
+  Kuo and Raley (2016) and Breen and Jonsson (2000) for the multinomial;
+  Zajacova et al. (2017) for the ordered logit; Olzak (2021) for the negative
+  binomial and DiPrete et al. (2011) for overdispersion as a finding; Ajrouch
+  et al. (2016) for zero inflation; Sampson, Raudenbush, and Earls (1997) for
+  the multilevel model.
+- **Practice**: deviance, pseudo-$R^2$, ROC, predictive checks; a protocol.
 
 ### Materials
 - [Slides: Week 4 — Maximum Likelihood: Applications](./Week%204%20Maximum%20Likelihood%20Applications/slides.pdf)
@@ -218,8 +240,8 @@ still applies, but interpretation becomes the hard part.
 
 ### Reading
 *Required*: ISL Ch. 4; Hanmer and Kalkan (2013). &nbsp;·&nbsp; *Additional*:
-Berry, DeMeritt, and Esarey (2010); Zorn (2005); Mood (2010); Allison (2014),
-*Event History and Survival Analysis*.
+Berry, DeMeritt, and Esarey (2010); Zorn (2005); Mood (2010); Raudenbush and
+Bryk (2002), *Hierarchical Linear Models*, Ch. 1–2 and 4.
 
 ---
 </details>
