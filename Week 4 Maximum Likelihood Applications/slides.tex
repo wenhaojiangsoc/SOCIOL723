@@ -458,8 +458,9 @@ parents' educ & $\Pr(\text{degree})$ & 95\% CI \\
 jobs; the outcome is a callback ($0/1$); the regressors are
 \emph{record}, \emph{Black}, and their product. Appendix table B1:
 $\hat\beta_{\text{record}} = -0.99$, $\hat\beta_{\text{Black}} = -1.25$,
-interaction $-0.29$. Take the white, no-record cell as the anchor:
-$34\%$ callbacks, so $\hat\beta_0 = \log\frac{0.34}{0.66} = -0.66$.
+interaction $-0.29$. The base cell is white, no record, so
+$\hat\beta_0 = -0.66$: odds $e^{-0.66} = 0.52$, probability
+$0.52/1.52 = 0.34$, Pager's $34\%$.
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.05}\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lcccc}
@@ -478,33 +479,6 @@ Read one column at a time. A coefficient \emph{adds} on the log-odds
 scale (column 2); exponentiating turns adding into multiplying (column
 3); odds over one plus odds is a probability (column 4), which is what the
 audit counted (column 5; the small gaps are Pager's two controls).
-\end{frame}
-
-\begin{frame}{Three Readings of $\hat\beta_{\text{record}} = -0.99$, Kept Apart\core}
-\begin{center}\scriptsize
-\renewcommand{\arraystretch}{1.15}\setlength{\tabcolsep}{4pt}
-\begin{tabular}{llll}
-\toprule
-Scale & Number & Reading & Same for both races? \\
-\midrule
-log-odds & $-0.99$ & a record subtracts $0.99$ & yes, by construction \\
-odds & $e^{-0.99} = 0.37$ & a record multiplies the odds by $0.37$ & yes; $0.28$ with the interaction \\
-probability & $0.34 \to 0.16$;\ $0.13 \to 0.04$ & $18$ points (white), $9$ (Black) & \alert{no} \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip4pt
-\begin{itemize}\itemsep3pt
-  \item The odds ratio is one number because the model is linear on the
-        log-odds scale. The probability change is not one number because
-        the S-curve is steep near $0.34$ and flat near $0.13$.
-  \item ``$63\%$ lower odds'' is \emph{not} ``$63\%$ fewer callbacks.''
-        Callbacks fell by half for whites ($34 \to 17$) and by nearly two
-        thirds for Black applicants ($14 \to 5$): risk ratios $0.5$ and
-        $0.36$, neither of them $0.37$.
-  \item Report the probabilities, as Pager did; the odds ratio at most
-        as a footnote.
-\end{itemize}
 \end{frame}
 
 \begin{frame}{The Average Marginal Effect, Person by Person\core}
@@ -635,21 +609,35 @@ AME, logit / probit & $0.040$ / $0.038$ & $0.075$ / $0.075$ & $0.054$ / $0.052$ 
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Interactions in Nonlinear Models}
-In a logit the effect of $X_1$ on the probability depends on $X_2$
-\emph{even with no product term}: the S-curve is steep in the middle and
-flat at the ends, and $X_2$ moves people along it.
-\begin{itemize}\itemsep3pt
-  \item So a significant $\hat\beta_{12}$ on the log-odds scale is neither
-        necessary nor sufficient for interaction on the probability scale
-        \srcp{Ai and Norton 2003}.
-  \item And leaving the product out imposes one specific, unmotivated form
-        of interaction on the probability scale
-        \srcp{Berry, DeMeritt, and Esarey 2010}.
-  \item \textbf{Practice}: include the product if theory says the latent
-        effects interact; then report the interaction you care about as a
-        \alert{difference in AMEs}, with an interval:
-        \texttt{avg\_comparisons(m, variables = "x1", by = "x2")}.
+\begin{frame}{Interactions in Nonlinear Models\core}
+Two questions: should the product $X_1 X_2$ be in the model, and do the
+models with and without it agree on probabilities? What each can say
+about $X_1$'s effect across $X_2$:
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lll}
+\toprule
+ & log-odds scale & probability scale \\
+\midrule
+no product & one slope, $\beta_1$, forced equal across $X_2$ &
+  differs across $X_2$ anyway, by $p_i(1-p_i)$ only \\
+with product & $\beta_1 + \beta_{12} X_2$, the data choose $\beta_{12}$ &
+  differs by $p_i(1-p_i)$ \emph{and} by $\beta_{12}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt
+  \item \textbf{Include the product} whenever the question is whether
+        $X_1$'s effect differs by $X_2$. Without it the answer is fixed in
+        advance: zero on the log-odds scale, whatever the S-curve gives on
+        the probability scale
+        \srcp{Ai and Norton 2003; Berry, DeMeritt, and Esarey 2010}.
+  \item \textbf{The two models agree} on probabilities only when
+        $\hat\beta_{12} \approx 0$; otherwise the no-product model has the
+        wrong probabilities in the cells.
+  \item \textbf{Report} the interaction as a difference in AMEs of $X_1$
+        between the $X_2$ groups, with an interval. $\hat\beta_{12}$ is on
+        the wrong scale for the question.
 \end{itemize}
 \end{frame}
 
@@ -679,23 +667,23 @@ AME of parents' educ & no product & with product \\
 \midrule
 among men & $0.039$ & $0.037$ \\
 among women & $0.041$ & $0.043$ \\
-difference (SE) & & $0.006$ ($0.004$) \\
+difference (SE) & $0.002$ & $0.006$ ($0.004$) \\
 \bottomrule
 \end{tabular}
 \end{column}
 \end{columns}
 \vskip3pt
 \begin{itemize}\itemsep2pt
-  \item \textbf{The product, $0.021$}: on the log-odds scale a year of
-        parents' education adds $0.197$ for men and $0.197 + 0.021$ for
-        women. Not significant ($z = 0.79$, LR $= 0.6$).
-  \item \textbf{No-product column}: that model already gives women a
-        larger effect on the probability scale, $0.041$ against $0.039$,
-        because women sit higher on the S-curve where it is steeper. Ai
-        and Norton's point: interaction in probabilities needs no product.
-  \item \textbf{With-product column}: the gap is $0.006$ points per year,
-        SE $0.004$. That, not $0.021$, answers the question; here the
-        answer is no. \texttt{avg\_slopes(m, variables = "pareduc", by = "female")}.
+  \item \textbf{Log-odds scale}: a year of parents' education adds
+        $0.197$ for men and $0.197 + 0.021$ for women. The product is not
+        significant ($z = 0.79$, LR $= 0.6$).
+  \item \textbf{No-product column}: women's AME is already larger,
+        $0.041$ against $0.039$, with no product in the model. That gap
+        is the S-curve alone: women sit where it is steeper.
+  \item \textbf{With-product column}: the gap is $0.006$ per year, SE
+        $0.004$. This answers the question; the answer is no. The two
+        models nearly agree because $\hat\beta_{12}$ is near zero.
+        \texttt{avg\_slopes(m, variables = "pareduc", by = "female")}.
 \end{itemize}
 \end{frame}
 
@@ -715,8 +703,8 @@ with probabilities $p_{i1}, \dots, p_{iJ}$ adding to one:
 \begingroup
 \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
 \begin{align*}
-  \loglik = \sum_{i=1}^n \log p_{i,\,y_i}
-  \qquad\text{($J = 2$: the Bernoulli log-likelihood).}
+  \loglik = \sum_{i=1}^n \sum_{j=1}^J \mathbf 1[Y_i = j]\,\log p_{ij}
+  \qquad\text{\footnotesize one nonzero term per person; $J = 2$ is Week 3's Bernoulli.}
 \end{align*}
 \endgroup
 \textbf{The regression.} Four probabilities per person from $X_i$. Pick a
@@ -966,8 +954,7 @@ on person-months from the National Survey of Family Growth, two cohorts.
         marriage shifted from staying together to breaking up.
 \end{itemize}
 \vskip2pt
-\textbf{The classic.} Breen and Jonsson (2000, \emph{ASR}) modelled
-Swedish educational careers as multinomial transitions: ``continue or
+\textbf{Breen and Jonsson (2000, \emph{ASR}).} Swedish educational careers as multinomial transitions: ``continue or
 leave'' hides \emph{which} branch a student continues into.
 \end{frame}
 
@@ -1018,7 +1005,7 @@ ever married & $0.947$ & $0.043$ & $2.58$ & $2.6$ times as many \\
   \item $e^{\hat\beta_j}$ multiplies the expected count, because
         $h = \exp$ turns adding into multiplying; a small $\hat\beta$ is
         about a percentage.
-  \item \textbf{Exposure}: counts over different windows (years observed,
+  \item \textbf{Exposure}\adv: counts over different windows (years observed,
         population at risk) model the \emph{rate}:
         \texttt{offset(log(exposure))}, a coefficient fixed at $1$.
   \item Why not OLS on $\log y$: $\log 0$ is undefined and $30\%$ have no
@@ -1048,7 +1035,7 @@ Three repairs, next frame; all three leave $\hat{\bm\beta}$ nearly alone
 and fix the SEs.
 \end{frame}
 
-\begin{frame}{Three Repairs, Three Beliefs About the Variance\core}
+\begin{frame}{Three Repairs, Three Beliefs About the Variance}
 The Poisson standard error comes from the Poisson's variance claim,
 $\Var(Y_i \mid X_i) = \theta_i$. Once that claim is false, the SE is wrong,
 and each repair replaces the claim with a different one:
@@ -1075,7 +1062,7 @@ Next: the arithmetic behind each number for one coefficient, \emph{ever
 married}, whose Poisson SE is $0.0430$.
 \end{frame}
 
-\begin{frame}{Where the Three Numbers Come From\core}
+\begin{frame}{Where the Three Numbers Come From}
 \begin{itemize}\itemsep4pt
   \item \textbf{Quasi-Poisson, $0.0461$.} $\hat\phi = \frac{1}{n-k}\sum_i
         (y_i - \hat\theta_i)^2/\hat\theta_i = 1.149$: under the Poisson
@@ -1096,8 +1083,6 @@ married}, whose Poisson SE is $0.0430$.
         $\hat\phi = 1.15$ averages them; the sandwich sees that this
         dummy compares exactly the two groups whose scatter differs.
 \end{itemize}
-Lesson: when the three disagree, the disagreement says \emph{where} the
-Poisson is wrong.
 \end{frame}
 
 \begin{frame}{Excess Zeros\core}
@@ -1148,8 +1133,6 @@ ever married & $2.187$ & $8.91$ & $0.298$ & $1.35$ \\
         to have any child and have slightly fewer. One Poisson averaged these.
   \item Fit: $\loglik$ rises from $-5{,}383$ (Poisson) to $-5{,}228$,
         AIC $10{,}778 \to 10{,}479$, six more parameters. Zeros matched exactly.
-  \item What no count model fixes: the bump at two children. A norm, not
-        a distribution.
 \end{itemize}
 \end{frame}
 
@@ -1187,14 +1170,6 @@ mean, so negative binomial rather than Poisson.
         under the Poisson too, but the standard errors would be badly
         too small.
 \end{itemize}
-\vskip3pt
-\textbf{Overdispersion as the finding. DiPrete, Gelman, McCormick,
-Teitler, and Zheng (2011, \emph{AJS}).} ``How many people do you know who
-are \dots?'' counts from the 2006 GSS, an overdispersed Poisson per group.
-The overdispersion is not a nuisance here: its size measures how unevenly
-ties to a group are spread across respondents, that is, how segregated
-acquaintanceship is. Verdict: the wide acquaintanceship network is about
-as segregated by race as the tiny core network.
 \end{frame}
 
 \begin{frame}{In the Literature: Excess Zeros\core}
@@ -1202,19 +1177,22 @@ as segregated by race as the tiny core network.
 Gerontology: Series B}).} Hours volunteered, two waves, $n = 543$; most
 respondents report zero.
 \begin{itemize}\itemsep3pt
-  \item A zero-inflated negative binomial: one equation for whether a
-        person volunteers at all, another for how many hours among those
-        who do.
-  \item The two equations tell different stories, as in our hurdle: network
-        proximity and contact predict \emph{whether}; education predicts
-        \emph{how much}, and proximate networks substitute for education.
+  \item A zero-inflated negative binomial: a logit for being a
+        never-volunteer, and a negative binomial for hours that can also
+        give a zero (a volunteer with no hours this wave).
+  \item The authors read the two equations as \emph{whether} and
+        \emph{how much}, which is the hurdle's reading: network proximity
+        and contact predict whether; education predicts how much.
+  \item Strictly, only the hurdle splits zeros from positives that
+        cleanly. In practice the two give similar coefficients and are
+        read the same way; they differ only in what a zero may mean, and
+        the data rarely say which.
 \end{itemize}
-\vskip4pt
-\textbf{Where you will and will not see these.} Hurdle and zero-inflated
-models are common in health, criminology, and gerontology (hours, arrests,
-visits). In \emph{ASR} and \emph{AJS} a negative binomial with robust
-standard errors usually carries the day. Reach for a two-part model when
-zero is a different kind of answer, not because the zeros are many.
+\vskip2pt
+\textbf{Where you will see these.} Health, criminology, gerontology. In
+\emph{ASR} and \emph{AJS} a negative binomial with robust SEs usually
+carries the day. Use a two-part model when zero is a different kind of
+answer, not because zeros are many.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1514,9 +1492,6 @@ Gerontology: Series B} 71(2): 309--319.
 \item Breen, Richard and Jan O. Jonsson. 2000. ``Analyzing Educational Careers:
 A Multinomial Transition Model.'' \textit{American Sociological Review} 65(5):
 754--772.
-\item DiPrete, Thomas A., Andrew Gelman, Tyler McCormick, Julien Teitler, and
-Tian Zheng. 2011. ``Segregation in Social Networks Based on Acquaintanceship
-and Trust.'' \textit{American Journal of Sociology} 116(4): 1234--1283.
 \item Kuo, Janet Chen-Lan and R. Kelly Raley. 2016. ``Diverging Patterns of
 Union Transition among Cohabitors by Race-Ethnicity and Education.''
 \textit{Demography} 53(4): 921--935.

@@ -38,11 +38,11 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - The user edits `slides.tex` between turns: always re-grep exact text before replacing.
 - Lab code chunks carry `##` explanatory notes on every step.
 
-## State of the course (as of 2026-09-14)
+## State of the course (as of 2026-09-15)
 - Weeks 1-2: done. Week 3 (MLE theory): testing section rebuilt; score test dropped from the
   course except as the third line of the rulers picture; LR-for-a-block + AIC/BIC + BIC-in-
   practice + "large n rejects everything / where BIC came from" close the deck (72 pp).
-- Week 4 (MLE applications, 62 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
+- Week 4 (MLE applications, 60 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
   logit, Newton by hand, score = normal equations) -> interpretation (three scales, predicted
   probabilities first, Pager 2003 read slowly, AME person by person, AME/MEM, uncertainty,
   probit, recommendation, interactions with real output) -> several categories (multinomial on
@@ -50,7 +50,7 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   proportional odds) -> counts (Poisson, overdispersion: three beliefs + where the numbers come
   from, excess zeros, hurdle) -> MULTILEVEL (replaced event history 2026-09-14; HSB data via
   nlme, lme4) -> practice. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
-  Jonsson 2000, Zajacova et al. 2017, Olzak 2021, DiPrete et al. 2011, Ajrouch et al. 2016,
+  Jonsson 2000, Zajacova et al. 2017, Olzak 2021, Ajrouch et al. 2016,
   Sampson et al. 1997; all web-verified.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.

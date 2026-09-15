@@ -7,6 +7,10 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
 ## Corrections
 | Date | Source | What Went Wrong | What To Do Instead |
 |------|--------|----------------|-------------------|
+| 2026-09-15 | user | Pager frame derived the intercept FROM the 34% (log(.34/.66) = -0.66) | Go the model's direction: start from beta-hat, exponentiate, then the probability |
+| 2026-09-15 | user | Multinomial log-lik written as sum log p_{i,y_i}; Y_i invisible | Write sum_i sum_j 1[Y_i=j] log p_ij and show the J=2 reduction |
+| 2026-09-15 | user | Interaction frames answered Ai-Norton but not the reader's questions | Lead with the two questions: include the product? do the two models agree on probabilities? Answer each in one bullet |
+| 2026-09-15 | self | Ajrouch et al. 2016 ZINB was described with hurdle language (whether / how much among those who do) | Describe ZI as structural-zero logit + count that can be zero; say the authors read it as a hurdle and that in practice the two are blurry |
 
 ## User Preferences
 - Never add `Co-Authored-By` to commits.
@@ -74,6 +78,11 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (pareduc x female; product 0.021 n.s.; AME gap 0.006). Separation frame DROPPED (Zorn ref
   and one protocol line remain). Multinomial now uses region4 (nominal); ordered keeps degree
   with a "cutpoints are gates" frame. User is weighing multilevel in place of event history.
+- 2026-09-15 Week 4 pass (user): "Three Readings of beta_record" frame dropped; \core removed from
+  the two overdispersion-repair frames (understanding only, no star); exposure bullet gets \adv;
+  "Lesson:" line, "What no count model fixes" bullet, and the DiPrete 2011 paragraph+reference all
+  dropped. Deck is 60 pages. Pre-existing overfulls at slides.log lines ~306 (hbox 3pt) and ~784
+  (vbox 1.7pt) are tolerated.
 - Week 4 "In the Literature" frames (2026-09-14): every citation was web-verified this session
   (Pager 2003 AJS incl. Table B1 coefficients; Killewald 2016 ASR 2.5%/3.3%; Kuo & Raley 2016
   Demography; Zajacova et al. 2017 SSM; Olzak 2021 ASR 11%/7%; DiPrete et al. 2011 AJS; Ajrouch
