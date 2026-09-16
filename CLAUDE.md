@@ -52,8 +52,8 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   nlme, lme4; opens with Coleman 1966 / Catholic-school motivation and "why not OLS +
   clustered SE", u_j tied to Week 2's error components model; no likelihood derivation frames,
   the user cut them; NO null model anywhere, everything from the full model; no shrinkage frame; "When You Need a
-  Random Intercept" = Tomaskovic-Devey 2020 between-workplace share + group-level x + Mundlak
-  fix; no multilevel literature frame) -> EVENT HISTORY (restored 2026-09-16: censoring, S/h, KM, Cox, discrete
+  Random Intercept" = Tomaskovic-Devey 2020 between-workplace share + few-groups case, "otherwise
+  clustered OLS is enough"; no multilevel literature frame) -> EVENT HISTORY (restored 2026-09-16: censoring, S/h, KM, Cox, discrete
   time) -> practice. Lab 4 follows the same order and adds multinomial (region4), an AIC/BIC
   table Poisson vs NB vs hurdle, and a simulated event-history section. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
   Jonsson 2000, Zajacova et al. 2017, Olzak 2021, Ajrouch et al. 2016,

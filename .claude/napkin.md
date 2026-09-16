@@ -154,6 +154,14 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   share rose in 12 of 14, fell in none, fastest in private sector; web-verified 2026-09-16);
   (2) group-level variable; (3) within effect with u_j correlated with x -> FE or Mundlak.
   "In the Literature: Multilevel" (Sampson 1997) frame and its reference DROPPED. Deck = 70 pp.
+- 2026-09-16 (user: "group-level variable: why not just OLS + clustered SE?"): he is right;
+  the frame now says so. "When You Need a Random Intercept" = (1) the between/within split is
+  the finding (Tomaskovic-Devey 2020); (2) a group-level variable with FEW groups (clustered
+  SEs unreliable below a few dozen clusters, Cameron & Miller 2015; HSB 160 schools: 1.94
+  (0.32) vs 2.10 (0.34) either works); "Otherwise: many groups, no interest in the variance,
+  clustered OLS is enough." Mundlak scenario dropped from slides (refs removed); the lab keeps
+  its short "Is u_j uncorrelated with SES?" subsection. Never sell RI on a claim clustered OLS
+  can also deliver.
 - **2026-09-16 (user, decisive): NO null-model / "with no predictors" anywhere in the multilevel
   section.** All "8.55 -> 3.62" comparisons deleted from slides AND lab. Everything (ICC 0.09,
   shrinkage, LR 332) is computed from the full model math ~ SES + Catholic + (1|School).

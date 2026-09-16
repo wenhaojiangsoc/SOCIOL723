@@ -1342,17 +1342,18 @@ $\hat\tau^2$, $\hat\sigma^2$ & & & $3.62$, $37.0$ & \\
         countries and fell in none, fastest in the private sector. That
         share is $\tau^2/(\tau^2 + \sigma^2)$ with the workplace as the
         group; fixed effects and clustered OLS have no such number.
-  \item \textbf{A group-level variable is the question.} School sector,
-        neighborhood collective efficacy, a country's bargaining coverage.
-        Fixed effects absorb it.
-  \item \textbf{A within-group effect is the question and $u_j$ may
-        correlate with $x$.} On HSB it does: $\hat u_j$ correlate $0.51$
-        with school-mean SES, and the slope drifts from the within-school
-        $2.19$ to $2.38$. Use fixed effects, or add the group mean of $x$
-        \srcp{Mundlak 1978; Bell and Jones 2015}: SES $2.19$ ($0.11$),
-        the fixed-effects number; school-mean SES $3.14$ ($0.38$);
-        Catholic $1.23$ ($0.30$), still estimable.
+  \item \textbf{A group-level variable with few groups.} Clustered SEs
+        are a many-clusters tool: they rely on the clusters being many
+        independent draws and are unreliable below a few dozen
+        \srcp{Cameron and Miller 2015}. Twelve countries or twenty firms:
+        the random intercept's model-based SE is the credible one, at the
+        price of assuming $u_j$ normal and uncorrelated with $x$. With
+        $160$ schools either works: Catholic $1.94$ ($0.32$) clustered,
+        $2.10$ ($0.34$) random intercept.
 \end{enumerate}
+\vskip4pt
+\textbf{Otherwise}: a group-level coefficient, many groups, no interest in
+the variance. OLS with clustered SEs is enough.
 \end{frame}
 
 \begin{frame}{Random-Intercept Logit, and \texttt{R}\core}
@@ -1604,9 +1605,9 @@ Probit Models.'' \textit{Economics Letters} 80(1): 123--129.
 Groups.'' \textit{Sociological Methods \& Research} 28(2): 186--208.
 \item Allison, Paul D. 2014. \textit{Event History and Survival Analysis},
 2nd ed. Sage.
-\item Bell, Andrew and Kelvyn Jones. 2015. ``Explaining Fixed Effects: Random
-Effects Modeling of Time-Series Cross-Sectional and Panel Data.''
-\textit{Political Science Research and Methods} 3(1): 133--153.
+\item Cameron, A. Colin and Douglas L. Miller. 2015. ``A Practitioner's Guide
+to Cluster-Robust Inference.'' \textit{Journal of Human Resources} 50(2):
+317--372.
 \item Berry, William D., Jacqueline H.R. DeMeritt, and Justin Esarey. 2010.
 ``Testing for Interaction in Binary Logit and Probit Models: Is a Product Term
 Essential?'' \textit{American Journal of Political Science} 54(1): 248--266.
@@ -1623,8 +1624,6 @@ Statistical Analyses: Improving Interpretation and Presentation.''
 \textit{American Journal of Political Science} 44(2): 347--361.
 \item Long, J. Scott. 1997. \textit{Regression Models for Categorical and Limited
 Dependent Variables}. Sage. [the standard sociological reference]
-\item Mundlak, Yair. 1978. ``On the Pooling of Time Series and Cross Section
-Data.'' \textit{Econometrica} 46(1): 69--85.
 \item Raftery, Adrian E. 1995. ``Bayesian Model Selection in Social
 Research.'' \textit{Sociological Methodology} 25: 111--163.
 \item Mood, Carina. 2010. ``Logistic Regression: Why We Cannot Do What We Think We
