@@ -1201,23 +1201,27 @@ answer, not because zeros are many.
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Observations Come in Groups\core}
-Students in schools, residents in neighborhoods, workers in firms. Two
-students in the same school are more alike than two drawn at random, so $n$
-observations carry less than $n$ pieces of information about anything that
-varies between schools. That is the nuisance; the groups are also the question.
-\begin{itemize}\itemsep1pt
-  \item \emph{How much variation is between groups?} How much of an
-        outcome's inequality comes from where people are rather than who they
-        are. Coleman et al.\ (1966) asked it of schools and found most of
-        the variation within them. Here: $18\%$ between schools.
-  \item \emph{Do group-level variables matter?} They are the theory: a
-        school's sector, a neighborhood's collective efficacy, a country's
-        welfare regime. Whether Catholic schools raise achievement net of who
-        attends them was fought on these very data (Coleman, Hoffer, and
-        Kilgore 1982).
-\end{itemize}
-Running example: High School and Beyond, $7{,}185$ students in $160$
-schools ($14$ to $67$ each); math score, mean $12.6$, SD $6.9$.
+Often the question is about a group's characteristic as much as the
+individual's: does a Catholic school raise achievement net of who attends it
+(Coleman, Hoffer, and Kilgore 1982)? The intuitive move: put both kinds of
+variable in one OLS. High School and Beyond, $7{,}185$ students, $160$ schools:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \text{math}_{ij} = \beta_0 + \beta_1\,\text{SES}_{ij}
+  + \beta_2\,\text{Catholic}_j + e_{ij},
+  \qquad \hat\beta_2 = 1.94,\ \text{SE}\ 0.15.
+\end{align*}
+\endgroup
+\begin{alertblock}{What is wrong}
+Catholic takes $160$ values, not $7{,}185$. Students in the same school share
+what the model left out about it, so their errors are correlated and OLS counts
+each school's evidence many times over. The clustered SE (Week 2) is $0.32$,
+twice the OLS one.
+\end{alertblock}
+\textbf{The bonus.} Name the shared part $u_j$ and its variance is a
+parameter: how much variation is between schools ($18\%$ here), the question
+Coleman et al.\ (1966) made famous.
 \end{frame}
 
 \begin{frame}{Why Not OLS With Clustered Standard Errors?\core}

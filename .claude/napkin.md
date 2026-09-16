@@ -110,10 +110,12 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (Week 4 Lab sentence + Allison 2014 in further reading), Syllabus.pdf updated. Deck = 71 pp.
 - 2026-09-16 (user): "(Thursday's Session)" tags removed from slide/lab section titles; the
   user finds them unnecessary. Do not add day-of-week tags to frame titles.
-- 2026-09-16 (user asked "why should we care" about ICC and group-level variables): the
-  "Observations Come in Groups" frame now motivates both questions sociologically: Coleman
-  et al. 1966 (most variation within schools) and the Catholic-school debate on HSB itself
-  (Coleman, Hoffer & Kilgore 1982). Both references added to the References frame.
+- 2026-09-16 (user): multilevel motivation order he wants: (1) we care about GROUP
+  characteristics too (Catholic school; Coleman, Hoffer & Kilgore 1982 on HSB); (2) the
+  intuitive move is one OLS with individual + group variables; (3) what is wrong on clustered
+  data: Catholic 1.94, OLS SE 0.15 vs clustered 0.32 (school evidence counted many times);
+  (4) the BONUS is the between-school variance (18%, Coleman 1966). "Why not clustered SE"
+  frame then follows. Lead with the intuitive model and what breaks, not with the variance.
 - 2026-09-15 multilevel motivation (user asked "why not OLS with clustered SE"): new frame "Why
   Not OLS With Clustered Standard Errors?" after "Observations Come in Groups" with a
   question-by-question table (SE right both ways; ICC, shrinkage, SES 2.95 vs 2.38, random
