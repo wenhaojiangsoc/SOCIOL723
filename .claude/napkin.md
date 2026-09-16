@@ -146,6 +146,12 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (raw split of variation before anything explains it), why sigma^2 is within-school
   (e_ij is distance from own school's mean; anything classmates share is in u_j), and what
   tau^2/sigma^2 mean with controls (3.62 / 37.0, between fell 58%, within 5%).
+- 2026-09-16 (user: "why start from no predictors? report all values and interpret"): the ICC
+  frame is now "Reading the Fit, and the ICC": full-model table (b0 11.72, SES 2.38 (0.11),
+  Catholic 2.10 (0.34), tau^2 3.62, sigma^2 37.0; ICC 0.09; LR vs OLS 332), interpretation
+  bullet per row, and the no-predictor split (8.55/39.15, ICC 0.18) as a comparison at the end.
+  Shrinkage frame flagged as the no-predictor model (anchor = grand mean 12.64). Lesson: the
+  user wants the FULL fitted model reported and read first; special cases come after.
 - 2026-09-16 (user: "don't you have Catholic in your equation?"): the Random-Intercept Model
   frame now carries the SAME equation as slides 46-47 (math = b0 + b1 SES + b2 Catholic + u_j
   + e_ij), five parameters, lmer(math ~ ses + catholic + (1|school)); the likelihood frames

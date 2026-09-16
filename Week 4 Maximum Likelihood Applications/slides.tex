@@ -1274,45 +1274,50 @@ $(\bm\beta, \tau^2, \sigma^2)$.
 \texttt{lme4::lmer(math \~{} ses + catholic + (1 | school))}.
 \end{frame}
 
-\begin{frame}{The Intraclass Correlation\core}
-Start with no predictors, $\text{math}_{ij} = \beta_0 + u_j + e_{ij}$. The
-question is how the raw variation in scores splits between schools and
-students, before anything explains it. School $j$'s mean is $\beta_0 + u_j$;
-$e_{ij}$ is a student's distance from it, so whatever classmates share is
-already in $u_j$.
+\begin{frame}{Reading the Fit, and the Intraclass Correlation\core}
 \begin{columns}[c]
-\begin{column}{0.42\textwidth}
+\begin{column}{0.46\textwidth}
 \centering\small
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{lc}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lcc}
 \toprule
-grand mean $\hat\beta_0$ & $12.64$ \\
-between schools $\hat\tau^2$ & $8.55$ \\
-within schools $\hat\sigma^2$ & $39.15$ \\
+ & estimate & SE \\
+\midrule
+intercept $\hat\beta_0$ & $11.72$ & $0.23$ \\
+SES $\hat\beta_1$ & $2.38$ & $0.11$ \\
+Catholic $\hat\beta_2$ & $2.10$ & $0.34$ \\
+between schools $\hat\tau^2$ & $3.62$ & \\
+within schools $\hat\sigma^2$ & $37.0$ & \\
 \bottomrule
 \end{tabular}
 \end{column}
-\begin{column}{0.56\textwidth}
-\begin{align*}
-  \text{ICC} = \frac{\tau^2}{\tau^2 + \sigma^2} = \frac{8.55}{8.55 + 39.15} = 0.18
-\end{align*}
+\begin{column}{0.52\textwidth}
+\begin{itemize}\itemsep1pt
+  \item $\hat\beta$: as in any regression. A unit of SES adds $2.4$
+        points; a Catholic school adds $2.1$ at the same SES.
+  \item $\hat\tau^2$: schools of the same sector with the same SES
+        students still differ, SD $\sqrt{3.62} = 1.9$ points.
+  \item $\hat\sigma^2$: classmates differ from their school's line by
+        SD $\sqrt{37.0} = 6.1$ points.
+\end{itemize}
 \end{column}
 \end{columns}
+\vskip2pt
 \begin{itemize}\itemsep1pt
-  \item $18\%$ of the variance lies between schools, $82\%$ within.
-        Equivalently, two classmates' scores correlate at $0.18$: Week 2's
-        $\rho_e$, now estimated rather than only corrected for.
-  \item Is $\tau^2$ zero? LR against plain OLS: $984$.
-  \item With SES and sector in the model, $\tau^2$ and $\sigma^2$ become
-        what the controls leave unexplained: $3.62$ and $37.0$. Between
-        fell by $58\%$, within by $5\%$: the controls explain differences
-        between schools, not between classmates.
+  \item $\text{ICC} = \hat\tau^2/(\hat\tau^2 + \hat\sigma^2) = 3.62/40.6
+        = 0.09$: of the variation SES and sector leave unexplained, $9\%$ is
+        between schools; two classmates of the same SES correlate at
+        $0.09$, Week 2's $\rho_e$ now estimated. Is $\tau^2$ zero? LR
+        against OLS with the same $x$: $332$.
+  \item With no predictors: $\hat\tau^2 = 8.55$, $\hat\sigma^2 = 39.15$,
+        ICC $= 0.18$, the raw split. SES and sector cut the between-school
+        variance by $58\%$, the within-school by $5\%$.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Shrinkage: What the Model Says About One School\core}
-The model's estimate of school $j$'s mean is a weighted average of the
-school's own mean and the grand mean:
+With no predictors, the model's estimate of school $j$'s mean is a weighted
+average of the school's own mean and the grand mean $12.64$:
 \begin{align*}
   \hat\mu_j = w_j\,\bar y_j + (1 - w_j)\,\hat\beta_0,
   \qquad
