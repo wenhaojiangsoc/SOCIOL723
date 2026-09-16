@@ -1268,91 +1268,45 @@ distributions filled in:
         could not include Catholic.
 \end{itemize}
 \vskip3pt
+\textbf{Estimation.} $u_j$ is never observed, so each school's likelihood
+averages over the values it could take; Newton maximizes the result in
+$(\bm\beta, \tau^2, \sigma^2)$.
 \texttt{lme4::lmer(math \~{} ses + catholic + (1 | school))}.
 \end{frame}
 
-\begin{frame}{The Likelihood, Step by Step\core}
-\textbf{Goal}: $\loglik(\bm\beta, \tau^2, \sigma^2)$ when $u_j$ is never
-observed. \textbf{Plan}: (1) pretend $u_j$ is known; (2) average over
-what $u_j$ could be; (3) multiply over schools. $y_j$: school $j$'s scores.
-\begingroup
-\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
-\begin{align*}
-  f(y_j \mid u_j)
-  &= \prod_{i=1}^{n_j} \phi\big(y_{ij};\ X_{ij}'\bm\beta + u_j,\ \sigma^2\big)
-  && \text{\footnotesize given $u_j$, students are independent} \\
-  L_j &= \int f(y_j \mid u)\; \phi(u;\ 0, \tau^2)\, du
-  && \text{\footnotesize $u_j$ unseen: total probability over its values} \\
-  \loglik &= \sum_{j=1}^{J} \log L_j
-  && \text{\footnotesize schools are independent}
-\end{align*}
-\endgroup
-\begin{itemize}\itemsep0pt
-  \item Step 2 is not a choice. We observed the scores, not $u_j$, and the
-        scores can arise from any $u_j$; the integral adds up every route,
-        weighted by how likely that $u_j$ is. Censoring is the same move.
-  \item Where each parameter lives: $\bm\beta$ in every student's mean;
-        $\sigma^2$ in students' spread around their school; $\tau^2$ in
-        schools' spread around the grand mean.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Integral Has a Closed Form Here\adv}
-Averaging normals over a normal $u_j$ gives a normal. A school with two
-students:
-\begingroup\small
-\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
-\begin{align*}
-  \begin{pmatrix} y_{1j} \\ y_{2j} \end{pmatrix}
-  \sim \mathcal N\!\left(
-  \begin{pmatrix} X_{1j}'\bm\beta \\ X_{2j}'\bm\beta \end{pmatrix},\
-  \underbrace{\begin{pmatrix} \tau^2 + \sigma^2 & \tau^2 \\ \tau^2 & \tau^2 + \sigma^2 \end{pmatrix}}_{V_j}
-  \right)
-  && \text{\footnotesize $u_j$ is in both scores: $\Cov = \tau^2$}
-\end{align*}
-\endgroup
-The off-diagonal $\tau^2$ is Week 2's shared shock; the correlation
-$\tau^2/(\tau^2 + \sigma^2)$ is the ICC. In general $V_j = \sigma^2 I +
-\tau^2 \bm 1 \bm 1'$ and, from the multivariate normal density,
-\begingroup\small
-\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
-\begin{align*}
-  \loglik = \sum_{j=1}^{J}\Big[-\tfrac12 \log |V_j|
-  - \tfrac12\, (y_j - X_j\bm\beta)'\, V_j^{-1}\, (y_j - X_j\bm\beta)\Big] + \text{const}.
-\end{align*}
-\endgroup
-\begin{itemize}\itemsep1pt
-  \item $\bm\beta$ enters through the mean, $\sigma^2$ and $\tau^2$ through
-        $V_j$. Newton on all of them, as in Week 3; the curvature gives the
-        SEs. On HSB: $\hat\tau^2 = 8.55$, $\hat\sigma^2 = 39.15$.
-  \item For a logit outcome the average over $u_j$ has no closed form;
-        \texttt{glmer} computes each $L_j$ on a grid (the lab's
-        \texttt{nAGQ = 10} is the number of grid points).
-\end{itemize}
-\end{frame}
-
 \begin{frame}{The Intraclass Correlation\core}
-Fit the model with no $x$, the \emph{null model}:
-\begin{center}\small
+Start with no predictors, $\text{math}_{ij} = \beta_0 + u_j + e_{ij}$. The
+question is how the raw variation in scores splits between schools and
+students, before anything explains it. School $j$'s mean is $\beta_0 + u_j$;
+$e_{ij}$ is a student's distance from it, so whatever classmates share is
+already in $u_j$.
+\begin{columns}[c]
+\begin{column}{0.42\textwidth}
+\centering\small
 \renewcommand{\arraystretch}{1.0}
 \begin{tabular}{lc}
 \toprule
 grand mean $\hat\beta_0$ & $12.64$ \\
-between-school variance $\hat\tau^2$ & $8.55$ \\
-within-school variance $\hat\sigma^2$ & $39.15$ \\
+between schools $\hat\tau^2$ & $8.55$ \\
+within schools $\hat\sigma^2$ & $39.15$ \\
 \bottomrule
 \end{tabular}
-\end{center}
+\end{column}
+\begin{column}{0.56\textwidth}
 \begin{align*}
-  \text{ICC} = \frac{\tau^2}{\tau^2 + \sigma^2} = \frac{8.55}{8.55 + 39.15} = 0.18 .
+  \text{ICC} = \frac{\tau^2}{\tau^2 + \sigma^2} = \frac{8.55}{8.55 + 39.15} = 0.18
 \end{align*}
-\begin{itemize}\itemsep3pt
+\end{column}
+\end{columns}
+\begin{itemize}\itemsep1pt
   \item $18\%$ of the variance lies between schools, $82\%$ within.
         Equivalently, two classmates' scores correlate at $0.18$: Week 2's
         $\rho_e$, now estimated rather than only corrected for.
   \item Is $\tau^2$ zero? LR against plain OLS: $984$.
-  \item ICC $= 0$: schools do not matter, OLS is fine. ICC near $1$:
-        students are copies of their school.
+  \item With SES and sector in the model, $\tau^2$ and $\sigma^2$ become
+        what the controls leave unexplained: $3.62$ and $37.0$. Between
+        fell by $58\%$, within by $5\%$: the controls explain differences
+        between schools, not between classmates.
 \end{itemize}
 \end{frame}
 

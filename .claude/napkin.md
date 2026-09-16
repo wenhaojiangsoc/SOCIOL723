@@ -138,6 +138,14 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   "The Integral Has a Closed Form Here" (adv: 2-student school bivariate normal with V_j,
   off-diagonal tau^2 = Week 2's shared shock, general V_j = sigma^2 I + tau^2 11', MVN
   loglik, Newton; glmer nAGQ grid). Deck = 73 pages.
+- 2026-09-16 (user): the two likelihood frames ("Step by Step", "Closed Form") were DROPPED
+  the same day as "too complex"; a one-line Estimation note is back on the model frame. Lesson:
+  for this user, a derivation the user did not ask for by name gets cut; ask before adding
+  >1 derivation frame to an applied section.
+- 2026-09-16 (user: "no x, the null model, is weird"): ICC frame now says WHY no predictors
+  (raw split of variation before anything explains it), why sigma^2 is within-school
+  (e_ij is distance from own school's mean; anything classmates share is in u_j), and what
+  tau^2/sigma^2 mean with controls (3.62 / 37.0, between fell 58%, within 5%).
 - 2026-09-16 (user: "don't you have Catholic in your equation?"): the Random-Intercept Model
   frame now carries the SAME equation as slides 46-47 (math = b0 + b1 SES + b2 Catholic + u_j
   + e_ij), five parameters, lmer(math ~ ses + catholic + (1|school)); the likelihood frames

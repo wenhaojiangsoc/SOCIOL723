@@ -42,7 +42,7 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - Weeks 1-2: done. Week 3 (MLE theory): testing section rebuilt; score test dropped from the
   course except as the third line of the rulers picture; LR-for-a-block + AIC/BIC + BIC-in-
   practice + "large n rejects everything / where BIC came from" close the deck (72 pp).
-- Week 4 (MLE applications, 73 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
+- Week 4 (MLE applications, 71 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
   logit, Newton by hand, score = normal equations) -> interpretation (three scales, predicted
   probabilities first, Pager 2003 read slowly, AME person by person, AME/MEM, uncertainty,
   probit, recommendation, interactions with real output) -> several categories (multinomial on
@@ -50,8 +50,8 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   proportional odds) -> counts (Poisson, overdispersion: three beliefs + where the numbers come
   from, excess zeros, hurdle) -> MULTILEVEL (replaced event history 2026-09-14; HSB data via
   nlme, lme4; opens with Coleman 1966 / Catholic-school motivation and "why not OLS +
-  clustered SE", u_j tied to Week 2's error components model, likelihood derived step by
-  step with a closed-form frame) -> EVENT HISTORY (restored 2026-09-16: censoring, S/h, KM, Cox, discrete
+  clustered SE", u_j tied to Week 2's error components model; no likelihood derivation frames,
+  the user cut them) -> EVENT HISTORY (restored 2026-09-16: censoring, S/h, KM, Cox, discrete
   time) -> practice. Lab 4 follows the same order and adds multinomial (region4), an AIC/BIC
   table Poisson vs NB vs hurdle, and a simulated event-history section. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
   Jonsson 2000, Zajacova et al. 2017, Olzak 2021, Ajrouch et al. 2016,
