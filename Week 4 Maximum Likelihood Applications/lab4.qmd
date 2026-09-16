@@ -47,8 +47,8 @@ options(digits = 4, scipen = 999)
     ordered one; check proportional odds.
 4.  Fit count models: Poisson, the three overdispersion repairs, the hurdle
     model; compare them by AIC and BIC.
-5.  Fit a random-intercept model, read the intraclass correlation and
-    shrinkage, and compare it with fixed effects.
+5.  Fit a random-intercept model, read the two variances and the intraclass
+    correlation, and compare it with fixed effects.
 6.  Handle censored durations: Kaplan-Meier, the Cox model, and the
     person-period logit.
 
@@ -672,38 +672,9 @@ c(tau2 = tau2, sigma2 = sigma2, ICC = tau2 / (tau2 + sigma2))
 2 * (as.numeric(logLik(m_re)) - as.numeric(logLik(m_ols)))
 ```
 
-Of the variation SES and sector leave unexplained, 9% is between schools;
-two classmates of the same SES correlate at 0.09. The LR statistic is
-enormous; schools still differ after the controls.
-
-## Shrinkage, school by school
-
-```{r}
-#| label: shrinkage
-## the model estimated tau2, not 160 shifts; each u_j is predicted afterwards
-## as a weighted average of the school's average residual (from the fixed
-## part, beta only) and zero
-hsb$resid_fixed <- hsb$MathAch - predict(m_re, re.form = NA)
-school <- aggregate(resid_fixed ~ School, data = hsb, mean)
-names(school)[2] <- "mean_resid"
-school$n <- as.vector(table(hsb$School))
-school$weight <- school$n * tau2 / (school$n * tau2 + sigma2)
-school$u_hat <- ranef(m_re)$School[as.character(school$School), 1]
-
-## check the formula on the smallest and largest school
-sm <- school[c(which.min(school$n), which.max(school$n)), ]
-sm$by_hand <- sm$weight * sm$mean_resid
-data.frame(school = sm$School, round(sm[, -1], 2))
-```
-
-```{r}
-#| label: fig-shrinkage
-#| fig-cap: "Predicted school shifts against the schools' average residuals. Every point lies between the 45-degree line and zero; small schools are pulled furthest."
-plot(school$mean_resid, school$u_hat, cex = 0.3 + school$n / 40,
-     col = adjustcolor("navy", 0.6), pch = 16,
-     xlab = "school's average residual", ylab = "predicted shift u_j")
-abline(0, 1, col = "gray50"); abline(h = 0, lty = 3, col = "firebrick")
-```
+Of the variation SES and sector leave unexplained, 9% is between schools and
+91% within. The LR statistic is enormous; schools still differ after the
+controls.
 
 ## Is u_j uncorrelated with SES?
 
@@ -712,10 +683,11 @@ the covariates. Check it, then fix it.
 
 ```{r}
 #| label: within-between
-## do high-SES schools have higher shocks?
+## do high-SES schools have higher shocks? u_hat: the model's predicted u_j
 hsb$meanSES <- ave(hsb$SES, hsb$School)
-school$meanSES <- ave(hsb$SES, hsb$School)[!duplicated(hsb$School)]
-round(cor(school$meanSES, school$u_hat), 2)
+u_hat <- ranef(m_re)$School[, 1]
+school_meanSES <- tapply(hsb$meanSES, hsb$School, mean)[rownames(ranef(m_re)$School)]
+round(cor(school_meanSES, u_hat), 2)
 
 ## the fix: add the school mean of SES as a regressor (Mundlak 1978)
 m_wb <- lmer(MathAch ~ SES + meanSES + Sector + (1 | School), data = hsb, REML = FALSE)

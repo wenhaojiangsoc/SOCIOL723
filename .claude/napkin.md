@@ -146,6 +146,14 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (raw split of variation before anything explains it), why sigma^2 is within-school
   (e_ij is distance from own school's mean; anything classmates share is in u_j), and what
   tau^2/sigma^2 mean with controls (3.62 / 37.0, between fell 58%, within 5%).
+- 2026-09-16 (user): "two classmates correlate at 0.09" phrasing of the ICC confused him
+  ("9% is between schools, they are not classmates!"): state the ICC only as a variance share
+  (9% between, 91% within). Shrinkage frame + lab section DROPPED. "Fixed or Random?" replaced
+  by "When You Need a Random Intercept": (1) the split is the finding: Tomaskovic-Devey et al.
+  2020 PNAS (14 countries, 25 years, 2bn job-years in 50m workplace-years; between-workplace
+  share rose in 12 of 14, fell in none, fastest in private sector; web-verified 2026-09-16);
+  (2) group-level variable; (3) within effect with u_j correlated with x -> FE or Mundlak.
+  "In the Literature: Multilevel" (Sampson 1997) frame and its reference DROPPED. Deck = 70 pp.
 - **2026-09-16 (user, decisive): NO null-model / "with no predictors" anywhere in the multilevel
   section.** All "8.55 -> 3.62" comparisons deleted from slides AND lab. Everything (ICC 0.09,
   shrinkage, LR 332) is computed from the full model math ~ SES + Catholic + (1|School).

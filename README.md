@@ -222,8 +222,9 @@ still applies, but interpretation becomes the hard part.
   and predicted distributions, and a hurdle model whose two parts tell
   different stories; how to choose a count model.
 - **Multilevel models (Thursday)**: the random-intercept model as a GLM with
-  one added variance, the intraclass correlation, shrinkage school by school,
-  predictors at both levels against pooled OLS and fixed effects, and a
+  one added variance, the two variances and the intraclass correlation,
+  predictors at both levels against pooled OLS and fixed effects, the
+  within-between fix when group shocks correlate with a covariate, and a
   random-intercept logit, on the High School and Beyond data.
 - **Event history (Thursday)**: censoring and the likelihood it demands,
   survival and hazard, the Kaplan–Meier estimator, the Cox
@@ -234,8 +235,8 @@ still applies, but interpretation becomes the hard part.
   Kuo and Raley (2016) and Breen and Jonsson (2000) for the multinomial;
   Zajacova et al. (2017) for the ordered logit; Olzak (2021) for the negative
   binomial; Ajrouch et al. (2016) for zero inflation; Sampson, Raudenbush, and
-  Earls (1997) for the multilevel model; Killewald (2016) for discrete-time
-  event history.
+  Tomaskovic-Devey et al. (2020) for the between-workplace share of
+  inequality; Killewald (2016) for discrete-time event history.
 - **Practice**: deviance, pseudo-$R^2$, ROC, predictive checks; a protocol.
 
 ### Materials
