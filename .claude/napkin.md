@@ -116,6 +116,11 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   data: Catholic 1.94, OLS SE 0.15 vs clustered 0.32 (school evidence counted many times);
   (4) the BONUS is the between-school variance (18%, Coleman 1966). "Why not clustered SE"
   frame then follows. Lead with the intuitive model and what breaks, not with the variance.
+- 2026-09-16 (user): the "Why Not Just OLS With Clustered SE?" frame is now TWO numbered points,
+  no table (user: "the table is too complicated"): (1) no number for between-school variance
+  (18%, Coleman 1966, Sampson 1997) = the bonus, merged here; (2) coefficient stays at the
+  pooled 2.95 (vs 2.38 modelled, 2.19 within). Define u_j in passing before using "random
+  intercept"; the user flagged the undefined term.
 - 2026-09-15 multilevel motivation (user asked "why not OLS with clustered SE"): new frame "Why
   Not OLS With Clustered Standard Errors?" after "Observations Come in Groups" with a
   question-by-question table (SE right both ways; ICC, shrinkage, SES 2.95 vs 2.38, random

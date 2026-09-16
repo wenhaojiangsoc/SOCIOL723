@@ -1219,37 +1219,28 @@ what the model left out about it, so their errors are correlated and OLS counts
 each school's evidence many times over. The clustered SE (Week 2) is $0.32$,
 twice the OLS one.
 \end{alertblock}
-\textbf{The bonus.} Name the shared part $u_j$ and its variance is a
-parameter: how much variation is between schools ($18\%$ here), the question
-Coleman et al.\ (1966) made famous.
 \end{frame}
 
-\begin{frame}{Why Not OLS With Clustered Standard Errors?\core}
-Clustering repairs the standard errors of a pooled regression and stops there:
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.1}\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lll}
-\toprule
-Question & OLS, clustered SE & Random intercept \\
-\midrule
-SE of the SES slope & $0.13$, right & $0.11$, right \\
-share of variance between schools & no answer & $\tau^2/(\tau^2 + \sigma^2) = 0.18$ \\
-one school's mean, $14$ students & its raw mean & shrunk toward the grand mean \\
-the SES slope & pooled, $2.95$ & $2.38$, within-school information weighted in \\
-does the slope vary across schools & no answer & a second variance \\
-\bottomrule
-\end{tabular}
-\end{center}
-\begin{itemize}\itemsep1pt
-  \item The pooled $2.95$ is untouched by clustering; it mixes the
-        within-school gradient ($2.19$) with high-SES students attending
-        high-scoring schools.
-  \item Often the variance \emph{is} the finding: Sampson, Raudenbush, and
-        Earls (1997) ask how much violence varies across neighborhoods and
-        how much collective efficacy explains.
-  \item \textbf{Rule}: groups a nuisance, cluster (Week 2) or fixed
-        effects (Week 10). Groups part of the question, model them.
-\end{itemize}
+\begin{frame}{Why Not Just OLS With Clustered Standard Errors?\core}
+Clustering repairs the standard errors and stops there. Two things it leaves
+on the table:
+\begin{enumerate}\itemsep6pt
+  \item \textbf{It has no number for how much variation is between schools.}
+        Give the shared part of the error a name, $u_j$, a shift of the
+        intercept for school $j$, and its variance is a parameter the
+        likelihood estimates. Here $18\%$ of the variance in math scores is
+        between schools: the question Coleman et al.\ (1966) made famous,
+        and often the finding itself (Sampson, Raudenbush, and Earls 1997).
+        Clustered OLS cannot say.
+  \item \textbf{It leaves the coefficient where pooled OLS put it.} The SES
+        slope is $2.95$ pooled, $2.38$ once schools are in the model,
+        $2.19$ within schools. The pooled slope mixes the within-school
+        gradient with high-SES students attending high-scoring schools.
+        Clustering changes the SE, not the $2.95$.
+\end{enumerate}
+\vskip4pt
+\textbf{Rule.} Groups a nuisance: cluster (Week 2) or fixed effects
+(Week 10). Groups part of the question: model them.
 \end{frame}
 
 \begin{frame}{The Random-Intercept Model\core}
