@@ -138,6 +138,13 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   "The Integral Has a Closed Form Here" (adv: 2-student school bivariate normal with V_j,
   off-diagonal tau^2 = Week 2's shared shock, general V_j = sigma^2 I + tau^2 11', MVN
   loglik, Newton; glmer nAGQ grid). Deck = 73 pages.
+- 2026-09-16 (user: "don't you have Catholic in your equation?"): the Random-Intercept Model
+  frame now carries the SAME equation as slides 46-47 (math = b0 + b1 SES + b2 Catholic + u_j
+  + e_ij), five parameters, lmer(math ~ ses + catholic + (1|school)); the likelihood frames
+  use X_ij'beta so they cover both covariates. Keep one running equation across a section.
+- User's mental model to reinforce: each school has its own intercept b0 + u_j; FE estimates
+  160 constants, RI assumes 160 normal draws and estimates tau^2; individual u_j come back
+  afterwards as shrinkage predictions (ranef), not as likelihood parameters.
 - 2026-09-15 multilevel motivation (user asked "why not OLS with clustered SE"): new frame "Why
   Not OLS With Clustered Standard Errors?" after "Observations Come in Groups" with a
   question-by-question table (SE right both ways; ICC, shrinkage, SES 2.95 vs 2.38, random

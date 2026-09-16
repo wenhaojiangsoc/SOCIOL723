@@ -1248,35 +1248,38 @@ the student's own deviation. Three things to do with $u_j$:
 \end{frame}
 
 \begin{frame}{The Random-Intercept Model\core}
-Student $i$ in school $j$:
+Student $i$ in school $j$, the equation from the last frame with the
+distributions filled in:
 \begin{align*}
-  y_{ij} = \beta_0 + \beta_1 x_{ij} + u_j + e_{ij},
+  \text{math}_{ij} = \beta_0 + \beta_1\,\text{SES}_{ij} + \beta_2\,\text{Catholic}_j + u_j + e_{ij},
   \qquad u_j \sim \mathcal N(0, \tau^2), \quad e_{ij} \sim \mathcal N(0, \sigma^2).
 \end{align*}
 \begin{itemize}\itemsep3pt
-  \item $u_j$ is school $j$'s shift of the intercept, shared by all its
-        students. It is not estimated as $160$ dummies; it is treated as a
-        draw from a distribution with one parameter, $\tau^2$.
+  \item Each school has its own intercept, $\beta_0 + u_j$. Fixed effects
+        would estimate the $160$ shifts as $160$ constants; here they are
+        $160$ draws from one distribution, and its variance $\tau^2$ is what
+        gets estimated.
   \item Two students in the same school share $u_j$, so
-        $\Cov(y_{ij}, y_{i'j}) = \tau^2$ and
-        $\Var(y_{ij}) = \tau^2 + \sigma^2$. The model \emph{is} the
+        $\Cov(\text{math}_{ij}, \text{math}_{i'j}) = \tau^2$ and
+        $\Var(\text{math}_{ij}) = \tau^2 + \sigma^2$. The model \emph{is} the
         correlation clustering corrects for.
-  \item Parameters: $\beta_0, \beta_1, \tau^2, \sigma^2$. Four, whatever
-        the number of schools. Fixed effects would need $162$.
+  \item Parameters: $\beta_0, \beta_1, \beta_2, \tau^2, \sigma^2$. Five,
+        whatever the number of schools. Fixed effects would need $162$ and
+        could not include Catholic.
 \end{itemize}
 \vskip3pt
-\texttt{lme4::lmer(y \~{} x + (1 | school))}.
+\texttt{lme4::lmer(math \~{} ses + catholic + (1 | school))}.
 \end{frame}
 
 \begin{frame}{The Likelihood, Step by Step\core}
-\textbf{Goal}: $\loglik(\beta_0, \beta_1, \tau^2, \sigma^2)$ when $u_j$ is
-never observed. \textbf{Plan}: (1) pretend $u_j$ is known; (2) average over
+\textbf{Goal}: $\loglik(\bm\beta, \tau^2, \sigma^2)$ when $u_j$ is never
+observed. \textbf{Plan}: (1) pretend $u_j$ is known; (2) average over
 what $u_j$ could be; (3) multiply over schools. $y_j$: school $j$'s scores.
 \begingroup
 \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
 \begin{align*}
   f(y_j \mid u_j)
-  &= \prod_{i=1}^{n_j} \phi\big(y_{ij};\ \beta_0 + \beta_1 x_{ij} + u_j,\ \sigma^2\big)
+  &= \prod_{i=1}^{n_j} \phi\big(y_{ij};\ X_{ij}'\bm\beta + u_j,\ \sigma^2\big)
   && \text{\footnotesize given $u_j$, students are independent} \\
   L_j &= \int f(y_j \mid u)\; \phi(u;\ 0, \tau^2)\, du
   && \text{\footnotesize $u_j$ unseen: total probability over its values} \\
@@ -1288,9 +1291,9 @@ what $u_j$ could be; (3) multiply over schools. $y_j$: school $j$'s scores.
   \item Step 2 is not a choice. We observed the scores, not $u_j$, and the
         scores can arise from any $u_j$; the integral adds up every route,
         weighted by how likely that $u_j$ is. Censoring is the same move.
-  \item Where each parameter lives: $\beta_0, \beta_1$ in every student's
-        mean; $\sigma^2$ in students' spread around their school; $\tau^2$
-        in schools' spread around the grand mean.
+  \item Where each parameter lives: $\bm\beta$ in every student's mean;
+        $\sigma^2$ in students' spread around their school; $\tau^2$ in
+        schools' spread around the grand mean.
 \end{itemize}
 \end{frame}
 
@@ -1302,7 +1305,7 @@ students:
 \begin{align*}
   \begin{pmatrix} y_{1j} \\ y_{2j} \end{pmatrix}
   \sim \mathcal N\!\left(
-  \begin{pmatrix} \beta_0 + \beta_1 x_{1j} \\ \beta_0 + \beta_1 x_{2j} \end{pmatrix},\
+  \begin{pmatrix} X_{1j}'\bm\beta \\ X_{2j}'\bm\beta \end{pmatrix},\
   \underbrace{\begin{pmatrix} \tau^2 + \sigma^2 & \tau^2 \\ \tau^2 & \tau^2 + \sigma^2 \end{pmatrix}}_{V_j}
   \right)
   && \text{\footnotesize $u_j$ is in both scores: $\Cov = \tau^2$}
