@@ -1304,17 +1304,15 @@ within schools $\hat\sigma^2$ & $37.0$ & \\
         between schools; two classmates of the same SES correlate at
         $0.09$, Week 2's $\rho_e$ now estimated. Is $\tau^2$ zero? LR
         against OLS with the same $x$: $332$.
-  \item With no predictors: $\hat\tau^2 = 8.55$, $\hat\sigma^2 = 39.15$,
-        ICC $= 0.18$, the raw split. SES and sector cut the between-school
-        variance by $58\%$, the within-school by $5\%$.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Shrinkage: What the Model Says About One School\core}
-With no predictors, the model's estimate of school $j$'s mean is a weighted
-average of the school's own mean and the grand mean $12.64$:
+The likelihood estimated $\tau^2$, not the $160$ shifts. Each $u_j$ comes
+afterwards, as a prediction: a weighted average of the school's average
+residual from the fixed part, $\bar r_j$, and zero, the average school:
 \begin{align*}
-  \hat\mu_j = w_j\,\bar y_j + (1 - w_j)\,\hat\beta_0,
+  \hat u_j = w_j\,\bar r_j,
   \qquad
   w_j = \frac{n_j\,\tau^2}{n_j\,\tau^2 + \sigma^2}.
 \end{align*}
@@ -1322,19 +1320,21 @@ average of the school's own mean and the grand mean $12.64$:
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{lcccc}
 \toprule
-school & $n_j$ & own mean $\bar y_j$ & weight $w_j$ & model estimate $\hat\mu_j$ \\
+school & $n_j$ & average residual $\bar r_j$ & weight $w_j$ & $\hat u_j$ \\
 \midrule
-smallest & $14$ & $4.55$ & $0.75$ & $6.54$ \\
-largest & $67$ & $11.14$ & $0.94$ & $11.23$ \\
+smallest & $14$ & $-7.23$ & $0.58$ & $-4.18$ \\
+largest & $67$ & $-1.19$ & $0.87$ & $-1.03$ \\
 \bottomrule
 \end{tabular}
 \end{center}
-\begin{itemize}\itemsep3pt
-  \item A $14$-student mean is noisy, so the model pulls it a quarter of
-        the way toward $12.64$; a $67$-student mean is nearly left alone.
+\begin{itemize}\itemsep1pt
+  \item A $14$-student average is noisy, so the model keeps $58\%$ of it and
+        pulls the rest toward zero; a $67$-student average keeps $87\%$.
   \item The weight rises with $n_j$ and with $\tau^2/\sigma^2$: the more
-        schools differ, the more each school's own mean counts.
+        schools differ, the more each school's own evidence counts.
+        Fixed effects keep $100\%$, noise included.
   \item Week 12's ridge shrinkage, arrived at by likelihood.
+        \texttt{ranef(m)}.
 \end{itemize}
 \end{frame}
 
@@ -1360,8 +1360,6 @@ $\hat\tau^2$, $\hat\sigma^2$ & & & $3.62$, $37.0$ & \\
   \item \textbf{SES} falls from $2.95$ to $2.38$ to $2.19$ as schools go
         from ignored to modelled to conditioned on: part of the pooled
         slope is high-SES students attending high-scoring schools.
-  \item $\hat\tau^2$ fell from $8.55$ to $3.62$: SES and sector explain
-        $58\%$ of the between-school variance.
 \end{itemize}
 \end{frame}
 
@@ -1375,19 +1373,23 @@ $\hat\tau^2$, $\hat\sigma^2$ & & & $3.62$, $37.0$ & \\
 group differences & $J$ dummies & one variance $\tau^2$ \\
 assumption & none about $u_j$ & $u_j$ uncorrelated with $x_{ij}$ \\
 group-level $x$ & impossible & estimable \\
-few units per group & noisy & shrinkage helps \\
 answers & within-group effect of $x$ & both levels; how much is between \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip3pt
-\begin{itemize}\itemsep3pt
-  \item The assumption that matters: if high-$u_j$ schools also have
-        high-SES students, the random-intercept SES slope is biased. Here
-        $2.38$ against $2.19$, a small violation.
-  \item \textbf{Practice}: a causal question about a within-group
-        variable, fixed effects. A group-level variable, or the groups
-        themselves, random intercept. Never plain OLS SEs.
+\begin{itemize}\itemsep1pt
+  \item \textbf{The assumption that matters}: $u_j$ uncorrelated with SES.
+        Here it is false: high-SES schools have higher shocks ($\hat u_j$
+        correlate $0.51$ with school-mean SES), and the slope absorbs some
+        of that: $2.38$ against the within-school $2.19$.
+  \item \textbf{The fix that keeps both}: add school-mean SES as a regressor
+        \srcp{Mundlak 1978; Bell and Jones 2015}. SES becomes $2.19$
+        ($0.11$), the fixed-effects slope exactly; school-mean SES $3.14$
+        ($0.38$) is the between-school part; Catholic $1.23$ ($0.30$).
+  \item \textbf{Practice}: within-group causal question, fixed effects.
+        Group-level variable or the groups themselves, random intercept
+        with the group means.
 \end{itemize}
 \end{frame}
 
@@ -1411,8 +1413,9 @@ $\hat\tau^2$ & $0.34$ & \\
   \item No closed form for the integral over $u_j$:
         \texttt{glmer(..., family = binomial, nAGQ = 10)} does it
         numerically, slower, and can fail to converge.
-  \item Coefficients are within-school. For population-average
-        probabilities, average predictions over $u_j$.
+  \item A coefficient is the log-odds change holding the school's $u_j$
+        fixed. For a population-average probability, average predictions
+        over $u_j$; the logit's curve makes the two differ.
   \item \texttt{lmer}/\texttt{glmer} print $\hat\tau$ as ``Std.Dev.'';
         square it. Random slopes: \texttt{(1 + x | school)}.
 \end{itemize}
@@ -1662,6 +1665,9 @@ Probit Models.'' \textit{Economics Letters} 80(1): 123--129.
 Groups.'' \textit{Sociological Methods \& Research} 28(2): 186--208.
 \item Allison, Paul D. 2014. \textit{Event History and Survival Analysis},
 2nd ed. Sage.
+\item Bell, Andrew and Kelvyn Jones. 2015. ``Explaining Fixed Effects: Random
+Effects Modeling of Time-Series Cross-Sectional and Panel Data.''
+\textit{Political Science Research and Methods} 3(1): 133--153.
 \item Berry, William D., Jacqueline H.R. DeMeritt, and Justin Esarey. 2010.
 ``Testing for Interaction in Binary Logit and Probit Models: Is a Product Term
 Essential?'' \textit{American Journal of Political Science} 54(1): 248--266.
@@ -1678,6 +1684,8 @@ Statistical Analyses: Improving Interpretation and Presentation.''
 \textit{American Journal of Political Science} 44(2): 347--361.
 \item Long, J. Scott. 1997. \textit{Regression Models for Categorical and Limited
 Dependent Variables}. Sage. [the standard sociological reference]
+\item Mundlak, Yair. 1978. ``On the Pooling of Time Series and Cross Section
+Data.'' \textit{Econometrica} 46(1): 69--85.
 \item Raftery, Adrian E. 1995. ``Bayesian Model Selection in Social
 Research.'' \textit{Sociological Methodology} 25: 111--163.
 \item Mood, Carina. 2010. ``Logistic Regression: Why We Cannot Do What We Think We

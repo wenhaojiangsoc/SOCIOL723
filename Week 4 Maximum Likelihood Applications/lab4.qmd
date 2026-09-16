@@ -637,50 +637,6 @@ c(students = nrow(hsb), schools = length(unique(hsb$School)))
 range(table(hsb$School))
 ```
 
-## The null model and the intraclass correlation
-
-```{r}
-#| label: null-model
-## no predictors: a grand mean, a school variance, a student variance
-m0 <- lmer(MathAch ~ 1 + (1 | School), data = hsb, REML = FALSE)
-vc <- as.data.frame(VarCorr(m0))
-tau2 <- vc$vcov[1]; sigma2 <- vc$vcov[2]
-c(grand_mean = fixef(m0), tau2 = tau2, sigma2 = sigma2, ICC = tau2 / (tau2 + sigma2))
-
-## is tau2 zero? LR against plain OLS, one parameter pinned at zero
-ols0 <- lm(MathAch ~ 1, data = hsb)
-2 * (as.numeric(logLik(m0)) - as.numeric(logLik(ols0)))
-```
-
-Eighteen percent of the variance in math scores is between schools. The LR
-statistic is enormous; schools matter.
-
-## Shrinkage, school by school
-
-```{r}
-#| label: shrinkage
-## own mean, model estimate, and the weight the model puts on the own mean
-school_means <- aggregate(MathAch ~ School, data = hsb, mean)
-names(school_means)[2] <- "own_mean"
-school_means$n <- as.vector(table(hsb$School))
-school_means$model <- fixef(m0) + ranef(m0)$School[school_means$School, 1]
-school_means$weight <- school_means$n * tau2 / (school_means$n * tau2 + sigma2)
-
-## check the formula on the smallest and largest school
-sm <- school_means[c(which.min(school_means$n), which.max(school_means$n)), ]
-sm$by_hand <- sm$weight * sm$own_mean + (1 - sm$weight) * fixef(m0)
-data.frame(school = sm$School, round(sm[, -1], 2))
-```
-
-```{r}
-#| label: fig-shrinkage
-#| fig-cap: "Model estimates against raw school means. Points below the 45-degree line on the left and above it on the right are being pulled toward the grand mean; small schools move furthest."
-plot(school_means$own_mean, school_means$model, cex = 0.3 + school_means$n / 40,
-     col = adjustcolor("navy", 0.6), pch = 16,
-     xlab = "school's own mean", ylab = "model estimate of the school mean")
-abline(0, 1, col = "gray50"); abline(h = fixef(m0), lty = 3, col = "firebrick")
-```
-
 ## Predictors at both levels
 
 ```{r}
@@ -695,14 +651,83 @@ round(cbind(
   random_int  = fixef(m_re)[c("SES", "SectorCatholic")],
   random_SE   = sqrt(diag(vcov(m_re)))[c("SES", "SectorCatholic")],
   fixed_eff   = coef(m_fe)[c("SES", "SectorCatholic")]), 3)
-as.data.frame(VarCorr(m_re))$vcov
 ```
 
 Sector is `NA` under fixed effects: it is constant within school, so the
 school dummies absorb it. The random-intercept model estimates it, with a
 standard error that treats the 160 schools, not the 7,185 students, as the
-units. The between-school variance fell from `r round(tau2, 2)` to about 3.6:
-SES and sector explain more than half of it.
+units. The SES slope sits between the pooled and the fixed-effects one: the
+random-intercept model uses both within-school and between-school variation.
+
+## The two variances and the intraclass correlation
+
+```{r}
+#| label: variances
+## tau2 = between-school variance of the intercepts, sigma2 = within-school
+vc <- as.data.frame(VarCorr(m_re))
+tau2 <- vc$vcov[1]; sigma2 <- vc$vcov[2]
+c(tau2 = tau2, sigma2 = sigma2, ICC = tau2 / (tau2 + sigma2))
+
+## is tau2 zero? LR against OLS with the same x, one parameter pinned at zero
+2 * (as.numeric(logLik(m_re)) - as.numeric(logLik(m_ols)))
+```
+
+Of the variation SES and sector leave unexplained, 9% is between schools;
+two classmates of the same SES correlate at 0.09. The LR statistic is
+enormous; schools still differ after the controls.
+
+## Shrinkage, school by school
+
+```{r}
+#| label: shrinkage
+## the model estimated tau2, not 160 shifts; each u_j is predicted afterwards
+## as a weighted average of the school's average residual (from the fixed
+## part, beta only) and zero
+hsb$resid_fixed <- hsb$MathAch - predict(m_re, re.form = NA)
+school <- aggregate(resid_fixed ~ School, data = hsb, mean)
+names(school)[2] <- "mean_resid"
+school$n <- as.vector(table(hsb$School))
+school$weight <- school$n * tau2 / (school$n * tau2 + sigma2)
+school$u_hat <- ranef(m_re)$School[as.character(school$School), 1]
+
+## check the formula on the smallest and largest school
+sm <- school[c(which.min(school$n), which.max(school$n)), ]
+sm$by_hand <- sm$weight * sm$mean_resid
+data.frame(school = sm$School, round(sm[, -1], 2))
+```
+
+```{r}
+#| label: fig-shrinkage
+#| fig-cap: "Predicted school shifts against the schools' average residuals. Every point lies between the 45-degree line and zero; small schools are pulled furthest."
+plot(school$mean_resid, school$u_hat, cex = 0.3 + school$n / 40,
+     col = adjustcolor("navy", 0.6), pch = 16,
+     xlab = "school's average residual", ylab = "predicted shift u_j")
+abline(0, 1, col = "gray50"); abline(h = 0, lty = 3, col = "firebrick")
+```
+
+## Is u_j uncorrelated with SES?
+
+The random-intercept model assumes the school shocks are uncorrelated with
+the covariates. Check it, then fix it.
+
+```{r}
+#| label: within-between
+## do high-SES schools have higher shocks?
+hsb$meanSES <- ave(hsb$SES, hsb$School)
+school$meanSES <- ave(hsb$SES, hsb$School)[!duplicated(hsb$School)]
+round(cor(school$meanSES, school$u_hat), 2)
+
+## the fix: add the school mean of SES as a regressor (Mundlak 1978)
+m_wb <- lmer(MathAch ~ SES + meanSES + Sector + (1 | School), data = hsb, REML = FALSE)
+round(summary(m_wb)$coefficients, 3)
+c(SES_fixed_effects = coef(m_fe)["SES"])
+```
+
+The SES coefficient is now the fixed-effects slope exactly: within a school, a
+unit of SES adds 2.19 points. The school-mean coefficient is the between-school
+part: a school whose students average one unit higher SES scores 3.14 points
+higher still, a contextual effect. Sector remains estimable. This is the
+random-intercept model with the fixed-effects assumption dropped.
 
 ## A random-intercept logit
 
@@ -716,9 +741,9 @@ as.data.frame(VarCorr(g1))$vcov
 ```
 
 The same logit as this morning, with a school shift on the log-odds scale
-whose variance is estimated. Coefficients are within-school; for
-population-average probabilities, average predictions over the distribution
-of `u_j`.
+whose variance is estimated. A coefficient is the log-odds change holding the
+school's `u_j` fixed; for a population-average probability, average
+predictions over the distribution of `u_j`.
 
 # Event history
 

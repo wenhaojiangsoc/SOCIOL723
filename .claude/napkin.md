@@ -146,6 +146,19 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (raw split of variation before anything explains it), why sigma^2 is within-school
   (e_ij is distance from own school's mean; anything classmates share is in u_j), and what
   tau^2/sigma^2 mean with controls (3.62 / 37.0, between fell 58%, within 5%).
+- **2026-09-16 (user, decisive): NO null-model / "with no predictors" anywhere in the multilevel
+  section.** All "8.55 -> 3.62" comparisons deleted from slides AND lab. Everything (ICC 0.09,
+  shrinkage, LR 332) is computed from the full model math ~ SES + Catholic + (1|School).
+  Shrinkage = u_hat_j = w_j * (school's average residual from the fixed part): school 8367
+  n=14 resid -7.23 w=0.58 u_hat -4.18; school 2305 n=67 resid -1.19 w=0.87 u_hat -1.03.
+- 2026-09-16 (user): "coefficients are within-school" (glmer frame + lab) was WRONG/misleading;
+  RI uses both within and between variation. Reworded: "log-odds change holding the school's
+  u_j fixed; population-average probability averages over u_j".
+- 2026-09-16 (user: "how come SES is uncorrelated with u_j?"): answered on "Fixed or Random?"
+  and in a new lab subsection: the assumption is FALSE on HSB (cor(u_hat, school-mean SES) =
+  0.51; slope 2.38 vs within 2.19); fix = Mundlak within-between (add school-mean SES): SES
+  2.19 (0.11) = FE exactly, meanSES 3.14 (0.38) contextual effect, Catholic 1.23 (0.30),
+  tau^2 2.31. References Mundlak 1978, Bell & Jones 2015 added. Lab 4 = 27 pp.
 - 2026-09-16 (user: "why start from no predictors? report all values and interpret"): the ICC
   frame is now "Reading the Fit, and the ICC": full-model table (b0 11.72, SES 2.38 (0.11),
   Catholic 2.10 (0.34), tau^2 3.62, sigma^2 37.0; ICC 0.09; LR vs OLS 332), interpretation
