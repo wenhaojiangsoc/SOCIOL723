@@ -49,8 +49,6 @@ options(digits = 4, scipen = 999)
     model; compare them by AIC and BIC.
 5.  Fit a random-intercept model, read the two variances and the intraclass
     correlation, and compare it with fixed effects.
-6.  Handle censored durations: Kaplan-Meier, the Cox model, and the
-    person-period logit.
 
 ```{r}
 #| label: packages
@@ -65,7 +63,6 @@ library(nnet)      # multinom
 library(pscl)      # hurdle, zeroinfl
 library(brglm2)    # Firth penalized likelihood
 library(pROC)
-library(survival)  # Surv, survfit, coxph, survSplit
 
 gss <- readRDS("../Data/gss_earnings.rds")
 ```
@@ -717,109 +714,6 @@ whose variance is estimated. A coefficient is the log-odds change holding the
 school's `u_j` fixed; for a population-average probability, average
 predictions over the distribution of `u_j`.
 
-# Event history
-
-The GSS extract has no duration variable, so this section simulates one. The
-advantage is that the truth is known, so each method can be checked against it.
-
-## A duration with censoring, by construction
-
-Time, in years after age 18, to first union formation. College graduates form
-unions at a lower rate, a true log hazard ratio of $-0.5$, and everyone is
-observed for at most 12 years, so long durations are censored.
-
-```{r}
-#| label: sim-duration
-set.seed(4)
-n_eh <- 3000
-sim <- tibble::tibble(
-  college = rbinom(n_eh, 1, 0.35),
-  rate    = exp(-2.2 - 0.5 * college),   # hazard, events per year
-  t_true  = rexp(n_eh, rate),            # the duration, never fully seen
-  time    = pmin(t_true, 12),            # observed: censored at 12 years
-  event   = as.integer(t_true <= 12)     # 1 = union observed, 0 = censored
-)
-sim |> count(college, event)
-```
-
-A third to a half of each group is censored. That is the normal situation in
-event-history data, not a pathology.
-
-## Why the naive fixes fail
-
-Before doing it right, do it wrong twice:
-
-```{r}
-#| label: naive
-sim |>
-  group_by(college) |>
-  summarise(
-    drop_censored     = mean(time[event == 1]),   # naive 1: drop censored
-    censored_as_event = mean(time),               # naive 2: censoring = event
-    truth             = mean(1 / rate)            # true expected duration
-  ) |> round(2)
-```
-
-Both naive columns understate the true durations, and they understate them
-*more for college graduates*, whose long durations are censored more often.
-The college gap itself is distorted, not just the level.
-
-## Kaplan-Meier
-
-```{r}
-#| label: fig-km
-#| fig-cap: "Kaplan-Meier survival curves by college. Each downward step is an observed union; censored units leave the risk set without a step."
-km <- survfit(Surv(time, event) ~ college, data = sim)
-plot(km, col = c("navy", "firebrick"), lwd = 2,
-     xlab = "Years since age 18", ylab = "Share still unpartnered")
-legend("bottomleft", c("No college", "College"),
-       col = c("navy", "firebrick"), lwd = 2, bty = "n")
-```
-
-## The Cox model recovers the truth
-
-```{r}
-#| label: cox
-fit_cox <- coxph(Surv(time, event) ~ college, data = sim)
-summary(fit_cox)$coefficients |> round(3)
-```
-
-The coefficient is the true $-0.5$ up to sampling noise, and
-$e^{\hat\beta} \approx 0.61$: college graduates form unions at about 61% of
-the non-college rate *at every point in time*. Censoring was handled by the
-likelihood, not by us.
-
-## Discrete time: the person-period logit
-
-Cut time into years, give every person one row per year at risk, and run the
-logit from this morning:
-
-```{r}
-#| label: person-period
-## one row per person per year at risk; `period` indexes the year
-pp <- survSplit(Surv(time, event) ~ college, data = sim,
-                cut = 1:11, episode = "period")
-c(rows_people = n_eh, rows_person_periods = nrow(pp))
-
-## period dummies = a nonparametric baseline hazard
-fit_dt <- glm(event ~ college + factor(period),
-              family = binomial, data = pp)
-round(coef(fit_dt)["college"], 3)
-```
-
-The person-period logit coefficient is essentially the Cox estimate: with
-small per-period hazards, the discrete-time logit and the proportional-hazards
-model agree. The period dummies play the role of the baseline hazard, and
-censored people simply stop contributing rows: the likelihood logic from
-lecture, implemented by data construction.
-
-::: callout-note
-Everything from earlier in this lab now applies to `fit_dt`: robust standard
-errors (cluster on the *person*, since one person contributes many rows),
-average marginal effects, predicted per-period probabilities. That is the
-appeal of the discrete-time approach for sociologists.
-:::
-
 # Exercises
 
 1.  **Logit versus LPM for a causal contrast.** Estimate the "effect" of being
@@ -860,12 +754,6 @@ appeal of the discrete-time approach for sociologists.
     the intercept, test the extension against the random-intercept model with
     an LR test, and say in one sentence what a school with a steep SES slope
     looks like.
-
-8.  **Censoring harder.** Rerun the event-history simulation with observation
-    ending at 6 years instead of 12. How much censoring do you get now? Do
-    Kaplan-Meier and the Cox model still recover the truth? What happens to
-    the two naive estimates? The likelihood methods degrade gracefully; the
-    naive ones get *worse* as censoring grows.
 
 # Session information
 

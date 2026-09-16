@@ -18,7 +18,8 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - Eyeball a slide (no poppler): `gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r70 -dFirstPage=N -dLastPage=N -sOutputFile=out.png slides.pdf`
 - Slide numbers in `.nav`: `grep framepages slides.nav`.
 - Every number on a slide comes from a saved script: `Week 3 .../figs/make_testing_figs.R`,
-  `figs/sim_reg_rare.R`, `Week 4 .../figs/w4_examples.R`. Rerun those, do not retype.
+  `figs/sim_reg_rare.R`, `Week 4 .../figs/w4_examples.R`, `Week 4 .../figs/w4_multilevel.R`.
+  Rerun those, do not retype.
 
 ## Conventions (locked in)
 - Fonts: Latin Modern, serif body (`\usefonttheme{serif}`), NOT newpx. Reuse Week 1's preamble.
@@ -42,7 +43,7 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - Weeks 1-2: done. Week 3 (MLE theory): testing section rebuilt; score test dropped from the
   course except as the third line of the rulers picture; LR-for-a-block + AIC/BIC + BIC-in-
   practice + "large n rejects everything / where BIC came from" close the deck (72 pp).
-- Week 4 (MLE applications, 70 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
+- Week 4 (MLE applications, 58 pp): X inside theta -> logit (two ways, S-curve, fitted GSS
   logit, Newton by hand, score = normal equations) -> interpretation (three scales, predicted
   probabilities first, Pager 2003 read slowly, AME person by person, AME/MEM, uncertainty,
   probit, recommendation, interactions with real output) -> several categories (multinomial on
@@ -53,11 +54,13 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   clustered SE", u_j tied to Week 2's error components model; no likelihood derivation frames,
   the user cut them; NO null model anywhere, everything from the full model; no shrinkage frame; "When You Need a
   Random Intercept" = Tomaskovic-Devey 2020 between-workplace share + few-groups case, "otherwise
-  clustered OLS is enough"; no multilevel literature frame) -> EVENT HISTORY (restored 2026-09-16: censoring, S/h, KM, Cox, discrete
-  time) -> practice. Lab 4 follows the same order and adds multinomial (region4), an AIC/BIC
-  table Poisson vs NB vs hurdle, and a simulated event-history section. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
+  clustered OLS is enough"; no multilevel literature frame; "Two Assumptions About u_j" frame; RI logit frame has a
+  predicted-probability figure from figs/w4_multilevel.R) -> Looking Ahead -> References.
+  EVENT HISTORY dropped again 2026-09-16 (restorable from commit 9ee5254); Assessing Fit and
+  Practical Protocol frames dropped. Lab 4 follows the same order and adds multinomial (region4)
+  and an AIC/BIC table Poisson vs NB vs hurdle. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
   Jonsson 2000, Zajacova et al. 2017, Olzak 2021, Ajrouch et al. 2016,
-  Tomaskovic-Devey et al. 2020, Killewald 2016; all web-verified. No "(Thursday's session)" tags in titles.
+  Tomaskovic-Devey et al. 2020; all web-verified. No "(Thursday's session)" tags in titles.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Remaining to build: Weeks 11-14 slides+labs, Problem Sets 2-5, midterm review, final packet.

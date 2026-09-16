@@ -1266,8 +1266,29 @@ Student $i$ in school $j$, the last frame's equation with distributions:
 \end{itemize}
 \vskip2pt
 \textbf{Estimation.} $u_j$ is never observed, so each school's likelihood
-averages over its possible values; Newton does the rest.
+averages over its possible values, using the distribution assumed for it;
+Newton does the rest.
 \texttt{lme4::lmer(math \~{} ses + catholic + (1 | school))}.
+\end{frame}
+
+\begin{frame}{Two Assumptions About $u_j$, and Why Estimation Needs Them\core}
+The likelihood averages over the unseen $u_j$. Averaging needs a
+distribution, and the same one for every school.
+\begin{enumerate}\itemsep2pt
+  \item \textbf{$u_j \sim \mathcal N(0, \tau^2)$.} The distribution to
+        average over. Mean zero is a normalization (any other mean goes
+        into $\beta_0$); normal makes the average a normal, so each
+        school's likelihood has a closed form with one parameter, $\tau^2$.
+  \item \textbf{$u_j$ uncorrelated with SES and Catholic}: $E[u_j \mid X]
+        = 0$. The same $\mathcal N(0, \tau^2)$ is used for high-SES and
+        low-SES schools. If high-SES schools tended to have higher $u_j$,
+        the model would credit that height to SES and $\hat\beta_1$ would
+        be too large: an omitted variable, since $u_j$ is part of the
+        error. Fixed effects estimate each $u_j$ instead of averaging over
+        it; that is what the $160$ dummies buy, and why they lose Catholic.
+\end{enumerate}
+\textbf{Check on HSB.} SES slope $2.38$ here, $2.19$ with fixed effects:
+high-SES schools do have somewhat higher $u_j$. The lab shows the fix.
 \end{frame}
 
 \begin{frame}{Reading the Fit, and the Intraclass Correlation\core}
@@ -1357,11 +1378,17 @@ the variance. OLS with clustered SEs is enough.
 \end{frame}
 
 \begin{frame}{Random-Intercept Logit, and \texttt{R}\core}
-Binary outcome, top quartile of the math score:
-$\Pr(y_{ij} = 1) = \Lambda(\beta_0 + \beta_1 x_{ij} + u_j)$, $u_j \sim
-\mathcal N(0, \tau^2)$. Week 4's logit with a school shift.
-\begin{center}\small
-\renewcommand{\arraystretch}{1.0}
+Top quartile in math:
+$\Pr(y_{ij} = 1) = \Lambda(\beta_0 + \beta_1\,\text{SES}_{ij} + \beta_2\,\text{Catholic}_j + u_j)$,
+$u_j \sim \mathcal N(0, \tau^2)$.
+\begin{columns}[c]
+\begin{column}{0.50\textwidth}
+\centering
+\includegraphics[width=\linewidth]{figs/glmer_pred.pdf}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering\small
+\renewcommand{\arraystretch}{0.95}
 \begin{tabular}{lcc}
 \toprule
  & $\hat\beta$ & SE \\
@@ -1371,211 +1398,16 @@ Catholic & $0.391$ & $0.112$ \\
 $\hat\tau^2$ & $0.34$ & \\
 \bottomrule
 \end{tabular}
-\end{center}
-\begin{itemize}\itemsep3pt
-  \item No closed form for the integral over $u_j$:
-        \texttt{glmer(..., family = binomial, nAGQ = 10)} does it
-        numerically, slower, and can fail to converge.
-  \item A coefficient is the log-odds change holding the school's $u_j$
-        fixed. For a population-average probability, average predictions
-        over $u_j$; the logit's curve makes the two differ.
-  \item \texttt{lmer}/\texttt{glmer} print $\hat\tau$ as ``Std.Dev.'';
-        square it. Random slopes: \texttt{(1 + x | school)}.
+\end{column}
+\end{columns}
+\begin{itemize}\itemsep0pt
+  \item Public schools at SES $= 0$: $0.12$ one SD below the average
+        school, $0.19$ at $u_j = 0$, $0.29$ one SD above; $0.20$ averaged
+        over schools. $\hat\beta_1$ is one school's slope; the average is
+        the curve for students overall. Report the one the question asks.
+  \item No closed form for the average over $u_j$:
+        \texttt{glmer(..., family = binomial, nAGQ = 10)} does it on a grid.
 \end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Event History]{Event History (Survival) Analysis}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{Durations Are Different\core}
-Time-to-event outcomes: age at first birth, time to marriage or divorce, job
-tenure, time to reoffending, organizational survival.
-\vskip2pt
-\begin{alertblock}{The defining problem: censoring}
-For many units the clock is still running when observation ends: a respondent
-aged 35 without a child is not a ``no,'' she is a \emph{not yet}. We observe
-$\min(T_i, C_i)$ plus an indicator $\delta_i$ for whether the event was seen.
-\end{alertblock}
-\begin{itemize}\itemsep2pt
-  \item Dropping censored cases selects on the outcome; coding them as
-        event-free forever understates durations. Both bias.
-  \item The fix is this week's principle: \alert{write down the probability of
-        exactly what you observed}, censoring included.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Two Building Blocks: Survival and Hazard\core}
-For a duration $T$ with density $f(t)$:
-\begin{align*}
-  S(t) = \Pr(T > t)
-  \qquad\text{and}\qquad
-  h(t) = \frac{f(t)}{S(t)} .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item $S(t)$, the \textbf{survival function}: the share still event-free at
-        $t$. Starts at 1, never rises.
-  \item $h(t)$, the \textbf{hazard}: the event \emph{rate} at $t$ among those
-        still at risk, the chance of a first birth at age 30 \emph{given}
-        childless at 30. This conditional rate is what sociological theory is
-        usually about.
-  \item Either determines the other; models are written on the hazard scale.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Likelihood That Censoring Demands\core}
-Each unit contributes the probability of what we actually saw:
-\begin{itemize}\itemsep2pt
-  \item event observed at $t_i$ ($\delta_i = 1$): contribute the density
-        $f(t_i)$;
-  \item censored at $t_i$ ($\delta_i = 0$): contribute
-        $S(t_i) = \Pr(T > t_i)$, the probability of lasting past the point
-        where we lost sight of them.
-\end{itemize}
-\begin{align*}
-  \lik = \prod_{i=1}^{n} f(t_i)^{\delta_i}\, S(t_i)^{1-\delta_i}
-  \qquad\Longrightarrow\qquad
-  \loglik = \sum_i \Big[\delta_i \log f(t_i) + (1-\delta_i)\log S(t_i)\Big] .
-\end{align*}
-\vskip2pt
-Censored units are neither dropped nor mislabelled; each contributes exactly
-the information it carries. Least squares has no way to write this down.
-\end{frame}
-
-\begin{frame}{Kaplan--Meier: $S(t)$ Without a Model\core}
-Order the observed event times $t_{(1)} < t_{(2)} < \cdots$; let $n_j$ be the
-number still at risk just before $t_{(j)}$ and $d_j$ the number of events
-there:
-\begin{align*}
-  \hat S(t) = \prod_{j:\, t_{(j)} \leq t} \left(1 - \frac{d_j}{n_j}\right) .
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Read it as a chain of conditional survivals: to be event-free at $t$
-        you must get past each earlier event time, and $1 - d_j/n_j$ estimates
-        each step.
-  \item Censored units sit in the risk sets $n_j$ while observed, then leave:
-        their partial information is used, then released.
-  \item The step-function plot of $\hat S(t)$, by group, is the field's
-        standard descriptive. Look at it before any model.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Cox Proportional-Hazards Model\core}
-Put covariates on the hazard, multiplicatively:
-\begin{align*}
-  h(t \mid X_i) = h_0(t)\, \exp\!\big(X_i'\bm\beta\big) .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item $h_0(t)$, the \textbf{baseline hazard}, is left completely
-        unspecified: no claim about \emph{when} events happen, only about how
-        covariates scale the rate.
-  \item $e^{\beta_j}$ is a \alert{hazard ratio}: $e^{\beta_j} = 1.3$ means a
-        30\% higher event rate at every moment, per unit of $X_j$.
-  \item Estimation\adv: the \emph{partial likelihood} compares, at each event
-        time, the unit that failed with everyone still at risk; $h_0(t)$
-        cancels out of every comparison \srcp{Cox 1972}.
-  \item The name is the assumption: \alert{proportional} hazards, a constant
-        ratio between any two units over time. Check it
-        (\texttt{cox.zph}) rather than assume it.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Discrete Time: Event History as the Logit You Already Know\core}
-Sociological clocks are usually discrete (ages, years, waves), and a standard
-construction reduces event history to this week's tools \srcp{Allison 2014}:
-\begin{enumerate}\itemsep2pt
-  \item Expand to \textbf{person-period} data: one row per unit per period at
-        risk (childless person-years, employed person-months).
-  \item Outcome $=1$ in the period the event occurs, $0$ otherwise; a unit's
-        rows stop at its event or its censoring.
-  \item Run a \alert{logit} of the outcome on covariates plus period dummies,
-        which act as a nonparametric baseline hazard.
-\end{enumerate}
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item The coefficients are discrete-time (log) hazard ratios, and
-        time-varying covariates enter for free, updated row by row.
-  \item Censoring is handled by construction: censored units simply stop
-        contributing rows, the likelihood logic from three frames back.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{In the Literature: Discrete-Time Event History\core}
-\textbf{Killewald (2016, \emph{ASR}).} ``Money, Work, and Marital
-Stability.'' Does a wife's economic independence, or a husband's failure to
-provide, raise the risk of divorce, and has that changed? Couples in the
-Panel Study of Income Dynamics, 1968--2013, followed year by year.
-\begin{itemize}\itemsep3pt
-  \item Person-year data and a logit on ``divorced this year,'' covariates
-        updated each year: the construction on the previous frame. Couples
-        still married when observation ends are censored, not ``never
-        divorced.''
-  \item For marriages begun after 1975, a husband not employed full-time
-        raises the predicted probability of divorce in the following year
-        from $2.5\%$ to $3.3\%$; neither the wife's full-time employment nor
-        her share of the housework predicts divorce.
-  \item Why not a logit on ``ever divorced'': couples are observed for
-        different lengths, and the risk each year is the quantity the theory
-        is about.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Event History in \texttt{R}, and What to Watch}
-\begin{itemize}\itemsep3pt
-  \item \texttt{survival::Surv(time, event)} builds the outcome;
-        \texttt{survfit()} gives Kaplan--Meier; \texttt{coxph()} fits the Cox
-        model; \texttt{cox.zph()} checks proportionality.
-  \item Discrete time: build the person-period data
-        (\texttt{survSplit()}), then plain \texttt{glm(..., binomial)}.
-        Everything from this week applies, marginal effects included; cluster
-        standard errors on the person.
-  \item \textbf{Watch for}: informative censoring (dropout related to event
-        risk breaks the likelihood); left truncation (late entry to the risk
-        set); unobserved heterogeneity (``frailty'') making hazards look
-        spuriously declining. Allison (2014) covers all three.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Practice]{Diagnostics and Practice}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{Assessing Fit}
-\begin{itemize}\itemsep2pt
-  \item \textbf{Deviance} $= 2\big(\loglik_{\text{saturated}} - \loglik_{\text{fitted}}\big)$:
-        the GLM analogue of the residual sum of squares. The saturated term is
-        common to nested models, so \emph{differences} in deviance are exactly LR
-        tests. Non-nested models: AIC and BIC (first section).
-  \item \textbf{Pseudo-$R^2$} (McFadden: $1 - \loglik_{\text{full}}/\loglik_{\text{null}}$):
-        a rank ordering, not ``variance explained''; $0.2$--$0.4$ counts as
-        excellent.
-  \item \textbf{Classification accuracy} needs a threshold and misleads with
-        rare outcomes: compare against always predicting the majority class.
-        \textbf{AUC} averages over thresholds: $0.5$ is a coin flip.
-  \item \textbf{Predictive checks}: simulate outcomes from the fitted model
-        and compare to the data. Most informative, least used.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{A Practical Protocol\core}
-\begin{enumerate}\itemsep4pt
-  \item Choose the distribution from the \emph{outcome}, and the link from
-        convention. Do not agonize over logit versus probit.
-  \item Fit, then check convergence and look for separation.
-  \item Check overdispersion for counts; check proportional odds for ordered
-        outcomes.
-  \item \alert{Report average marginal effects or predicted probabilities}, with
-        intervals from the delta method or simulation. Coefficient tables belong
-        in an appendix.
-  \item Never compare raw coefficients across nested logit models or across
-        groups. Compare marginal effects.
-  \item Cluster whenever the design has clusters (Week 2). For counts,
-        robust standard errors as a matter of course. For a logit, a large gap
-        between robust and model-based standard errors is a warning that the
-        model is wrong, not a fix: repair the model.
-\end{enumerate}
 \end{frame}
 
 \begin{frame}{Looking Ahead}
@@ -1603,16 +1435,12 @@ variable models on the GSS.
 Probit Models.'' \textit{Economics Letters} 80(1): 123--129.
 \item Allison, Paul D. 1999. ``Comparing Logit and Probit Coefficients Across
 Groups.'' \textit{Sociological Methods \& Research} 28(2): 186--208.
-\item Allison, Paul D. 2014. \textit{Event History and Survival Analysis},
-2nd ed. Sage.
 \item Cameron, A. Colin and Douglas L. Miller. 2015. ``A Practitioner's Guide
 to Cluster-Robust Inference.'' \textit{Journal of Human Resources} 50(2):
 317--372.
 \item Berry, William D., Jacqueline H.R. DeMeritt, and Justin Esarey. 2010.
 ``Testing for Interaction in Binary Logit and Probit Models: Is a Product Term
 Essential?'' \textit{American Journal of Political Science} 54(1): 248--266.
-\item Cox, D.R. 1972. ``Regression Models and Life-Tables.'' \textit{Journal
-of the Royal Statistical Society, Series B} 34(2): 187--220.
 \item Hanmer, Michael J. and Kerem Ozan Kalkan. 2013. ``Behind the Curve:
 Clarifying the Best Approach to Calculating Predicted Probabilities and Marginal
 Effects from Limited Dependent Variable Models.''
@@ -1644,9 +1472,6 @@ Printing Office.
 \item Coleman, James S., Thomas Hoffer, and Sally Kilgore. 1982. \textit{High
 School Achievement: Public, Catholic, and Private Schools Compared}. New York:
 Basic Books.
-\item Killewald, Alexandra. 2016. ``Money, Work, and Marital Stability:
-Assessing Change in the Gendered Determinants of Divorce.'' \textit{American
-Sociological Review} 81(4): 696--719.
 \item Kuo, Janet Chen-Lan and R. Kelly Raley. 2016. ``Diverging Patterns of
 Union Transition among Cohabitors by Race-Ethnicity and Education.''
 \textit{Demography} 53(4): 921--935.

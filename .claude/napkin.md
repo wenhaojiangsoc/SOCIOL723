@@ -154,6 +154,22 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   share rose in 12 of 14, fell in none, fastest in private sector; web-verified 2026-09-16);
   (2) group-level variable; (3) within effect with u_j correlated with x -> FE or Mundlak.
   "In the Literature: Multilevel" (Sampson 1997) frame and its reference DROPPED. Deck = 70 pp.
+- **2026-09-16 (user): EVENT HISTORY DROPPED AGAIN** ("too much"), same day it was restored.
+  Removed from slides (section + Allison 2014, Cox 1972, Killewald 2016 refs), lab (section,
+  exercise 8, library(survival), goal 6), syllabus main.tex, README. Restorable from commit
+  9ee5254. Do not re-add unless asked by name.
+- 2026-09-16 (user): "Two Assumptions About u_j, and Why Estimation Needs Them" frame added
+  after the model frame: (1) u_j ~ N(0, tau^2) = the distribution to average over (mean 0 a
+  normalization, normal gives closed form, one parameter); (2) E[u_j | X] = 0 = same
+  distribution for high- and low-SES schools, else beta_1 credited with u_j (omitted-variable
+  logic); FE avoids by estimating u_j. Check on HSB 2.38 vs 2.19.
+- 2026-09-16 (user: "plot the predicted probability in the RI logit, too abstract"): new saved
+  script figs/w4_multilevel.R -> figs/glmer_pred.pdf: Pr(top quartile) vs SES for public
+  schools at u_j = -tau, 0, +tau (blue) and the average over schools (orange, numeric
+  integration). Numbers at SES=0: 0.12 / 0.19 / 0.29, average 0.20; tau = 0.58.
+- 2026-09-16 (user): Practice section reduced to "Looking Ahead" (placed right after the RI
+  logit frame, no section header) + References. Assessing Fit and A Practical Protocol frames
+  DROPPED. Deck = 58 pages, lab = 23.
 - 2026-09-16 (user: "group-level variable: why not just OLS + clustered SE?"): he is right;
   the frame now says so. "When You Need a Random Intercept" = (1) the between/within split is
   the finding (Tomaskovic-Devey 2020); (2) a group-level variable with FEW groups (clustered
