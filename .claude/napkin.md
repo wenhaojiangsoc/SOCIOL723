@@ -101,6 +101,19 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   table by hand (Poisson 10778/10815, NB 10775/10818, hurdle 10479/10553: AIC and BIC DISAGREE
   on NB vs Poisson, both pick hurdle). Exercises 5-6 now hurdle-vs-ZINB by AIC/BIC and an LR/BIC
   block test in the multinomial.
+- **2026-09-16 event history RESTORED (user: "I wanted to talk more on Thursday")**: section
+  re-inserted after Multilevel, before Practice (8 frames: durations/censoring, S and h,
+  likelihood, Kaplan-Meier, Cox, discrete time, Killewald 2016 ASR literature frame [PSID
+  person-years; post-1975 marriages: husband not full-time 2.5% -> 3.3%], R + what to watch).
+  Lab: simulated union-formation duration (set.seed(4), n=3000, true log HR -0.5, Cox gives
+  -0.497) + person-period logit; exercise 8 "censoring harder". README, syllabus main.tex
+  (Week 4 Lab sentence + Allison 2014 in further reading), Syllabus.pdf updated. Deck = 71 pp.
+- 2026-09-16 (user): "(Thursday's Session)" tags removed from slide/lab section titles; the
+  user finds them unnecessary. Do not add day-of-week tags to frame titles.
+- 2026-09-16 (user asked "why should we care" about ICC and group-level variables): the
+  "Observations Come in Groups" frame now motivates both questions sociologically: Coleman
+  et al. 1966 (most variation within schools) and the Catholic-school debate on HSB itself
+  (Coleman, Hoffer & Kilgore 1982). Both references added to the References frame.
 - 2026-09-15 multilevel motivation (user asked "why not OLS with clustered SE"): new frame "Why
   Not OLS With Clustered Standard Errors?" after "Observations Come in Groups" with a
   question-by-question table (SE right both ways; ICC, shrinkage, SES 2.95 vs 2.38, random

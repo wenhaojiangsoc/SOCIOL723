@@ -1200,24 +1200,24 @@ answer, not because zeros are many.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Observations Come in Groups (Thursday's Session)\core}
-Students in schools, respondents in countries, employees in firms.
-\begin{alertblock}{The problem}
-Two students in the same school are more alike than two drawn at random.
-Their errors are correlated, so $n$ observations carry less than $n$
-pieces of information about anything that varies between schools.
-\end{alertblock}
-\begin{itemize}\itemsep2pt
-  \item \textbf{Week 2}: keep OLS, cluster the standard errors. Correct,
-        and silent about the groups.
-  \item \textbf{Today}: put the group in the model. One new parameter, the
-        between-group variance, estimated by maximum likelihood. It
-        answers what clustering cannot: how much variation is between
-        schools, and do school-level variables matter?
+\begin{frame}{Observations Come in Groups\core}
+Students in schools, residents in neighborhoods, workers in firms. Two
+students in the same school are more alike than two drawn at random, so $n$
+observations carry less than $n$ pieces of information about anything that
+varies between schools. That is the nuisance; the groups are also the question.
+\begin{itemize}\itemsep1pt
+  \item \emph{How much variation is between groups?} How much of an
+        outcome's inequality comes from where people are rather than who they
+        are. Coleman et al.\ (1966) asked it of schools and found most of
+        the variation within them. Here: $18\%$ between schools.
+  \item \emph{Do group-level variables matter?} They are the theory: a
+        school's sector, a neighborhood's collective efficacy, a country's
+        welfare regime. Whether Catholic schools raise achievement net of who
+        attends them was fought on these very data (Coleman, Hoffer, and
+        Kilgore 1982).
 \end{itemize}
-\vskip2pt
 Running example: High School and Beyond, $7{,}185$ students in $160$
-schools ($14$ to $67$ each); outcome a math score (mean $12.6$, SD $6.9$).
+schools ($14$ to $67$ each); math score, mean $12.6$, SD $6.9$.
 \end{frame}
 
 \begin{frame}{Why Not OLS With Clustered Standard Errors?\core}
@@ -1428,6 +1428,159 @@ High School and Beyond data used here.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Event History]{Event History (Survival) Analysis}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Durations Are Different\core}
+Time-to-event outcomes: age at first birth, time to marriage or divorce, job
+tenure, time to reoffending, organizational survival.
+\vskip2pt
+\begin{alertblock}{The defining problem: censoring}
+For many units the clock is still running when observation ends: a respondent
+aged 35 without a child is not a ``no,'' she is a \emph{not yet}. We observe
+$\min(T_i, C_i)$ plus an indicator $\delta_i$ for whether the event was seen.
+\end{alertblock}
+\begin{itemize}\itemsep2pt
+  \item Dropping censored cases selects on the outcome; coding them as
+        event-free forever understates durations. Both bias.
+  \item The fix is this week's principle: \alert{write down the probability of
+        exactly what you observed}, censoring included.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Two Building Blocks: Survival and Hazard\core}
+For a duration $T$ with density $f(t)$:
+\begin{align*}
+  S(t) = \Pr(T > t)
+  \qquad\text{and}\qquad
+  h(t) = \frac{f(t)}{S(t)} .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item $S(t)$, the \textbf{survival function}: the share still event-free at
+        $t$. Starts at 1, never rises.
+  \item $h(t)$, the \textbf{hazard}: the event \emph{rate} at $t$ among those
+        still at risk, the chance of a first birth at age 30 \emph{given}
+        childless at 30. This conditional rate is what sociological theory is
+        usually about.
+  \item Either determines the other; models are written on the hazard scale.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Likelihood That Censoring Demands\core}
+Each unit contributes the probability of what we actually saw:
+\begin{itemize}\itemsep2pt
+  \item event observed at $t_i$ ($\delta_i = 1$): contribute the density
+        $f(t_i)$;
+  \item censored at $t_i$ ($\delta_i = 0$): contribute
+        $S(t_i) = \Pr(T > t_i)$, the probability of lasting past the point
+        where we lost sight of them.
+\end{itemize}
+\begin{align*}
+  \lik = \prod_{i=1}^{n} f(t_i)^{\delta_i}\, S(t_i)^{1-\delta_i}
+  \qquad\Longrightarrow\qquad
+  \loglik = \sum_i \Big[\delta_i \log f(t_i) + (1-\delta_i)\log S(t_i)\Big] .
+\end{align*}
+\vskip2pt
+Censored units are neither dropped nor mislabelled; each contributes exactly
+the information it carries. Least squares has no way to write this down.
+\end{frame}
+
+\begin{frame}{Kaplan--Meier: $S(t)$ Without a Model\core}
+Order the observed event times $t_{(1)} < t_{(2)} < \cdots$; let $n_j$ be the
+number still at risk just before $t_{(j)}$ and $d_j$ the number of events
+there:
+\begin{align*}
+  \hat S(t) = \prod_{j:\, t_{(j)} \leq t} \left(1 - \frac{d_j}{n_j}\right) .
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Read it as a chain of conditional survivals: to be event-free at $t$
+        you must get past each earlier event time, and $1 - d_j/n_j$ estimates
+        each step.
+  \item Censored units sit in the risk sets $n_j$ while observed, then leave:
+        their partial information is used, then released.
+  \item The step-function plot of $\hat S(t)$, by group, is the field's
+        standard descriptive. Look at it before any model.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Cox Proportional-Hazards Model\core}
+Put covariates on the hazard, multiplicatively:
+\begin{align*}
+  h(t \mid X_i) = h_0(t)\, \exp\!\big(X_i'\bm\beta\big) .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item $h_0(t)$, the \textbf{baseline hazard}, is left completely
+        unspecified: no claim about \emph{when} events happen, only about how
+        covariates scale the rate.
+  \item $e^{\beta_j}$ is a \alert{hazard ratio}: $e^{\beta_j} = 1.3$ means a
+        30\% higher event rate at every moment, per unit of $X_j$.
+  \item Estimation\adv: the \emph{partial likelihood} compares, at each event
+        time, the unit that failed with everyone still at risk; $h_0(t)$
+        cancels out of every comparison \srcp{Cox 1972}.
+  \item The name is the assumption: \alert{proportional} hazards, a constant
+        ratio between any two units over time. Check it
+        (\texttt{cox.zph}) rather than assume it.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Discrete Time: Event History as the Logit You Already Know\core}
+Sociological clocks are usually discrete (ages, years, waves), and a standard
+construction reduces event history to this week's tools \srcp{Allison 2014}:
+\begin{enumerate}\itemsep2pt
+  \item Expand to \textbf{person-period} data: one row per unit per period at
+        risk (childless person-years, employed person-months).
+  \item Outcome $=1$ in the period the event occurs, $0$ otherwise; a unit's
+        rows stop at its event or its censoring.
+  \item Run a \alert{logit} of the outcome on covariates plus period dummies,
+        which act as a nonparametric baseline hazard.
+\end{enumerate}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The coefficients are discrete-time (log) hazard ratios, and
+        time-varying covariates enter for free, updated row by row.
+  \item Censoring is handled by construction: censored units simply stop
+        contributing rows, the likelihood logic from three frames back.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Discrete-Time Event History\core}
+\textbf{Killewald (2016, \emph{ASR}).} ``Money, Work, and Marital
+Stability.'' Does a wife's economic independence, or a husband's failure to
+provide, raise the risk of divorce, and has that changed? Couples in the
+Panel Study of Income Dynamics, 1968--2013, followed year by year.
+\begin{itemize}\itemsep3pt
+  \item Person-year data and a logit on ``divorced this year,'' covariates
+        updated each year: the construction on the previous frame. Couples
+        still married when observation ends are censored, not ``never
+        divorced.''
+  \item For marriages begun after 1975, a husband not employed full-time
+        raises the predicted probability of divorce in the following year
+        from $2.5\%$ to $3.3\%$; neither the wife's full-time employment nor
+        her share of the housework predicts divorce.
+  \item Why not a logit on ``ever divorced'': couples are observed for
+        different lengths, and the risk each year is the quantity the theory
+        is about.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Event History in \texttt{R}, and What to Watch}
+\begin{itemize}\itemsep3pt
+  \item \texttt{survival::Surv(time, event)} builds the outcome;
+        \texttt{survfit()} gives Kaplan--Meier; \texttt{coxph()} fits the Cox
+        model; \texttt{cox.zph()} checks proportionality.
+  \item Discrete time: build the person-period data
+        (\texttt{survSplit()}), then plain \texttt{glm(..., binomial)}.
+        Everything from this week applies, marginal effects included; cluster
+        standard errors on the person.
+  \item \textbf{Watch for}: informative censoring (dropout related to event
+        risk breaks the likelihood); left truncation (late entry to the risk
+        set); unobserved heterogeneity (``frailty'') making hazards look
+        spuriously declining. Allison (2014) covers all three.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Practice]{Diagnostics and Practice}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
@@ -1493,9 +1646,13 @@ variable models on the GSS.
 Probit Models.'' \textit{Economics Letters} 80(1): 123--129.
 \item Allison, Paul D. 1999. ``Comparing Logit and Probit Coefficients Across
 Groups.'' \textit{Sociological Methods \& Research} 28(2): 186--208.
+\item Allison, Paul D. 2014. \textit{Event History and Survival Analysis},
+2nd ed. Sage.
 \item Berry, William D., Jacqueline H.R. DeMeritt, and Justin Esarey. 2010.
 ``Testing for Interaction in Binary Logit and Probit Models: Is a Product Term
 Essential?'' \textit{American Journal of Political Science} 54(1): 248--266.
+\item Cox, D.R. 1972. ``Regression Models and Life-Tables.'' \textit{Journal
+of the Royal Statistical Society, Series B} 34(2): 187--220.
 \item Hanmer, Michael J. and Kerem Ozan Kalkan. 2013. ``Behind the Curve:
 Clarifying the Best Approach to Calculating Predicted Probabilities and Marginal
 Effects from Limited Dependent Variable Models.''
@@ -1520,6 +1677,16 @@ Gerontology: Series B} 71(2): 309--319.
 \item Breen, Richard and Jan O. Jonsson. 2000. ``Analyzing Educational Careers:
 A Multinomial Transition Model.'' \textit{American Sociological Review} 65(5):
 754--772.
+\item Coleman, James S., Ernest Q. Campbell, Carol J. Hobson, James McPartland,
+Alexander M. Mood, Frederic D. Weinfeld, and Robert L. York. 1966.
+\textit{Equality of Educational Opportunity}. Washington, DC: U.S. Government
+Printing Office.
+\item Coleman, James S., Thomas Hoffer, and Sally Kilgore. 1982. \textit{High
+School Achievement: Public, Catholic, and Private Schools Compared}. New York:
+Basic Books.
+\item Killewald, Alexandra. 2016. ``Money, Work, and Marital Stability:
+Assessing Change in the Gendered Determinants of Divorce.'' \textit{American
+Sociological Review} 81(4): 696--719.
 \item Kuo, Janet Chen-Lan and R. Kelly Raley. 2016. ``Diverging Patterns of
 Union Transition among Cohabitors by Race-Ethnicity and Education.''
 \textit{Demography} 53(4): 921--935.
