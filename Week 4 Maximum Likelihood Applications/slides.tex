@@ -1222,25 +1222,30 @@ twice the OLS one.
 \end{frame}
 
 \begin{frame}{Why Not Just OLS With Clustered Standard Errors?\core}
-Clustering repairs the standard errors and stops there. Two things it leaves
-on the table:
-\begin{enumerate}\itemsep6pt
-  \item \textbf{It has no number for how much variation is between schools.}
-        Give the shared part of the error a name, $u_j$, a shift of the
-        intercept for school $j$, and its variance is a parameter the
-        likelihood estimates. Here $18\%$ of the variance in math scores is
-        between schools: the question Coleman et al.\ (1966) made famous,
-        and often the finding itself (Sampson, Raudenbush, and Earls 1997).
-        Clustered OLS cannot say.
-  \item \textbf{It leaves the coefficient where pooled OLS put it.} The SES
-        slope is $2.95$ pooled, $2.38$ once schools are in the model,
-        $2.19$ within schools. The pooled slope mixes the within-school
-        gradient with high-SES students attending high-scoring schools.
-        Clustering changes the SE, not the $2.95$.
-\end{enumerate}
-\vskip4pt
-\textbf{Rule.} Groups a nuisance: cluster (Week 2) or fixed effects
-(Week 10). Groups part of the question: model them.
+OLS puts everything it cannot explain into one error, $e_{ij}$. Split it in
+two:
+\begingroup
+\setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
+\begin{align*}
+  \text{math}_{ij} = \beta_0 + \beta_1\,\text{SES}_{ij}
+  + \beta_2\,\text{Catholic}_j + u_j + e_{ij}.
+\end{align*}
+\endgroup
+$u_j$: how far school $j$ sits above or below the average school once SES
+and sector are accounted for, the same number for every student in it.
+$e_{ij}$: the student's own deviation. Three things to do with $u_j$:
+\begin{itemize}\itemsep2pt
+  \item \textbf{Clustered OLS} never separates it. The standard errors are
+        repaired; nothing is learned about schools.
+  \item \textbf{Fixed effects} (Week 10) estimate every $u_j$: $160$ school
+        dummies. That gives the within-school SES slope, but Catholic does
+        not vary within a school, so it is absorbed and cannot be estimated.
+  \item \textbf{This week} treats the $u_j$ as draws from a distribution and
+        estimates their \emph{variance}, one number. Catholic stays
+        estimable, and the variance answers what neither of the others can:
+        how much of the variation is between schools? Here $18\%$, the
+        question Coleman et al.\ (1966) made famous.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{The Random-Intercept Model\core}

@@ -121,6 +121,12 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (18%, Coleman 1966, Sampson 1997) = the bonus, merged here; (2) coefficient stays at the
   pooled 2.95 (vs 2.38 modelled, 2.19 within). Define u_j in passing before using "random
   intercept"; the user flagged the undefined term.
+- 2026-09-16 (user, third pass on that frame): "too wordy, hard for a regular person". Final
+  form: OLS has one error -> split it into u_j (school) + e_ij (student), plain-language
+  definition of u_j ("how far school j sits above or below the average school"), then three
+  bullets: clustered OLS never separates it; FE estimates every u_j (160 dummies, absorbs
+  Catholic); this week estimates their variance (18%). No "shared part of the error" jargon;
+  answer "how is this different from FE" on the same frame.
 - 2026-09-15 multilevel motivation (user asked "why not OLS with clustered SE"): new frame "Why
   Not OLS With Clustered Standard Errors?" after "Observations Come in Groups" with a
   question-by-question table (SE right both ways; ICC, shrinkage, SES 2.95 vs 2.38, random
