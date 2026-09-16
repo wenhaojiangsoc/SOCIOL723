@@ -127,6 +127,17 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   bullets: clustered OLS never separates it; FE estimates every u_j (160 dummies, absorbs
   Catholic); this week estimates their variance (18%). No "shared part of the error" jargon;
   answer "how is this different from FE" on the same frame.
+- 2026-09-16 (user): u_j must be LINKED to Week 2's error components model (eps_ig = nu_g +
+  eta_ig, "The Error Components Model" frame, Week 2 slides ~line 830): slide 47 now opens
+  with that split and says u_j is nu_g with school as cluster; ICC frame says "Week 2's rho_e,
+  now estimated rather than only corrected for". Always tie new notation to where it appeared.
+- 2026-09-16 (user: "write more slowly about the likelihood for the random intercept"): two
+  new frames after "The Random-Intercept Model": "The Likelihood, Step by Step" (core: goal,
+  plan, three-line align* with reasons: f(y_j|u_j) product, L_j = integral over u, sum of
+  logs; step 2 "not a choice", censoring is the same move; where each parameter lives) and
+  "The Integral Has a Closed Form Here" (adv: 2-student school bivariate normal with V_j,
+  off-diagonal tau^2 = Week 2's shared shock, general V_j = sigma^2 I + tau^2 11', MVN
+  loglik, Newton; glmer nAGQ grid). Deck = 73 pages.
 - 2026-09-15 multilevel motivation (user asked "why not OLS with clustered SE"): new frame "Why
   Not OLS With Clustered Standard Errors?" after "Observations Come in Groups" with a
   question-by-question table (SE right both ways; ICC, shrinkage, SES 2.95 vs 2.38, random
