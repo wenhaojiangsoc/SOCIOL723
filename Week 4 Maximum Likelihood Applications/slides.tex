@@ -1248,29 +1248,24 @@ the student's own deviation. Three things to do with $u_j$:
 \end{frame}
 
 \begin{frame}{The Random-Intercept Model\core}
-Student $i$ in school $j$, the equation from the last frame with the
-distributions filled in:
+Student $i$ in school $j$, the last frame's equation with distributions:
 \begin{align*}
   \text{math}_{ij} = \beta_0 + \beta_1\,\text{SES}_{ij} + \beta_2\,\text{Catholic}_j + u_j + e_{ij},
   \qquad u_j \sim \mathcal N(0, \tau^2), \quad e_{ij} \sim \mathcal N(0, \sigma^2).
 \end{align*}
-\begin{itemize}\itemsep3pt
-  \item Each school has its own intercept, $\beta_0 + u_j$. Fixed effects
-        would estimate the $160$ shifts as $160$ constants; here they are
-        $160$ draws from one distribution, and its variance $\tau^2$ is what
-        gets estimated.
-  \item Two students in the same school share $u_j$, so
-        $\Cov(\text{math}_{ij}, \text{math}_{i'j}) = \tau^2$ and
-        $\Var(\text{math}_{ij}) = \tau^2 + \sigma^2$. The model \emph{is} the
-        correlation clustering corrects for.
-  \item Parameters: $\beta_0, \beta_1, \beta_2, \tau^2, \sigma^2$. Five,
-        whatever the number of schools. Fixed effects would need $162$ and
-        could not include Catholic.
+\begin{itemize}\itemsep2pt
+  \item Each school has its own intercept, $\beta_0 + u_j$: $160$ draws
+        from one distribution, not $160$ constants as in fixed effects.
+  \item \alert{$\tau^2$ is the between-school variance}: how much school
+        intercepts spread around $\beta_0$. \alert{$\sigma^2$ is the
+        within-school variance}: how much students spread around their own
+        school's line. Total: $\Var(\text{math}_{ij}) = \tau^2 + \sigma^2$.
+  \item Classmates share $u_j$, so $\Cov(\text{math}_{ij}, \text{math}_{i'j})
+        = \tau^2$: the model \emph{is} the correlation clustering corrects for.
 \end{itemize}
-\vskip3pt
+\vskip2pt
 \textbf{Estimation.} $u_j$ is never observed, so each school's likelihood
-averages over the values it could take; Newton maximizes the result in
-$(\bm\beta, \tau^2, \sigma^2)$.
+averages over its possible values; Newton does the rest.
 \texttt{lme4::lmer(math \~{} ses + catholic + (1 | school))}.
 \end{frame}
 
