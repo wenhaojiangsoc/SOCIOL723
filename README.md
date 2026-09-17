@@ -268,13 +268,17 @@ languages answer it.
 - Identification under **conditional ignorability**, **positivity**, and SUTVA;
   why positivity fails silently as covariates accumulate, and why regression
   never warns you.
-- **DAGs**: from structural equations to graphs; chains, forks, and colliders;
-  $d$-separation and the **back-door criterion** as conditional ignorability read
-  off a picture.
+- **Identification is not estimation** (Manski): what no sample size can fix.
+- **DAGs**: Wright, Blau and Duncan's status-attainment diagram as theory made
+  into a graph; chains, forks, and colliders; $d$-separation; the intervention
+  graph and the $do$-operator; the **back-door criterion** as conditional
+  ignorability read off a picture, worked on college and earnings.
 - **Collider bias**: Berkson's paradox, the birth-weight paradox, and the
   recognition that sample selection *is* collider bias. A good-and-bad-controls
   table, including bias amplification (Cinelli, Forney, and Pearl 2024).
-- The **front-door criterion** and why to be sceptical of it.
+- The **front-door criterion**, its formula, Winship and Harding's (2008)
+  mechanism-based identification of age–period–cohort effects, and why to be
+  sceptical of front-door claims.
 - **Defining a well-posed estimand** (Lundberg, Johnson, and Stewart 2021):
   theoretical estimand → empirical estimand → estimation strategy.
 
@@ -283,8 +287,9 @@ languages answer it.
 - [Lab 5: Simulating Confounding, Colliders, and DAGs](./Week%205%20Potential%20Outcomes%20and%20DAGs/lab5.pdf)
 
 ### Reading
-*Required*: MHE Ch. 2; CCI Ch. 1–3; Lundberg, Johnson, and Stewart (2021).
-&nbsp;·&nbsp; *Additional*: Holland (1986); Greenland and Pearl (2017).
+*Required*: The Effect Ch. 6, 8; Lundberg, Johnson, and Stewart (2021);
+Elwert and Winship (2014). &nbsp;·&nbsp; *Additional*: MHE Ch. 2; CCI Ch. 1–3;
+Holland (1986); Winship and Harding (2008); Samii's Quant II lectures 1–2.
 
 ---
 </details>

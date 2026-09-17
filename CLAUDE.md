@@ -61,6 +61,14 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   and an AIC/BIC table Poisson vs NB vs hurdle. "In the Literature" frames: Pager 2003, Kuo & Raley 2016, Breen &
   Jonsson 2000, Zajacova et al. 2017, Olzak 2021, Ajrouch et al. 2016,
   Tomaskovic-Devey et al. 2020; all web-verified. No "(Thursday's session)" tags in titles.
+- Week 5 (PO + DAGs, 54 pp, rebuilt 2026-09-17): identification vs estimation (Manski) ->
+  potential outcomes (estimands, two decompositions, randomization, SUTVA/consistency,
+  selection on observables, positivity) -> path analysis to DAGs (Wright, Blau & Duncan
+  diagram, structural equations) -> reading a DAG (blocks, d-separation, intervention graph +
+  do, back-door with adjustment formula, bias amplification, college-and-earnings example) ->
+  colliders (admissions T/A/C, algebra, ancestors, birth-weight paradox) -> controls -> front
+  door (formula, APC via Winship & Harding 2008, critiques) -> estimands (Lundberg). Every DAG
+  uses the shared `dag` tikz style; no frame spills to a "(cont.)" page.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Remaining to build: Weeks 11-14 slides+labs, Problem Sets 2-5, midterm review, final packet.

@@ -75,6 +75,25 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
 - Syllabus lives in `syllabus/` (`main.tex` + `schedule.tex`).
 
 ## Patterns That Work
+- **Week 5 rebuilt 2026-09-17 (user: "too SOCIOL690S-alike", "drop do unless standard",
+  "fix figures")**: body rewritten, preamble untouched (16:9, 11pt, its own headline).
+  CausalML-textbook leftovers removed: 401(k) example -> college and earnings (D, Y, X family
+  background, A test score, U unmeasured -> A and Y, M occupation); SWIG frame dropped;
+  Hollywood T/B/C collider algebra -> T test, A athletics, C admitted (matches lab5);
+  "First Law" frame merged into back-door; Wooldridge quote dropped. do-notation KEPT (user
+  said keep if standard) alongside Y(d): intervention-graph frame (Samii lecture 2), back-door
+  adjustment in do form with Y(d) ⊥ D | Z beside it, front-door formula in do form.
+  Added from Samii (cyrussamii.com/?page_id=4190, lectures 1-2, verified by download): Manski
+  identification frame, ATE decomposition with "selection on the effect" term, VanderWeele &
+  Robinson 2014 on race effects. Added Blau & Duncan 1967 path diagram frame (V, X, U, W, Y).
+  Front door respecified for APC after Winship & Harding 2008 SMR 36(3): 362-401 (web-verified):
+  cohort effect through mechanisms M; leg 2 has A, P, M and no C; leg 1 needs an exclusion.
+  ALL 13 "(cont.)" spill pages removed (every frame fits one page); 26 DAGs redrawn with one
+  \tikzset style (dag/unobs/cond/lab/arr/uarr/bias; 9mm nodes, >=2.4cm spacing,
+  scale+transform shape when a figure must shrink). Deck 67 -> 54 pages. Old body backed up in
+  the session scratchpad only; git has it at commit 51df853.
+- Week 5 DAG style rule: use the `dag` tikz style; shrink with
+  `[dag,scale=0.8,every node/.append style={transform shape}]`, never by reducing node size.
 - lm() aliasing gotcha: with a group-constant regressor and group dummies, lm() drops the
   LAST collinear column. Put the dummies first (`y ~ School + x + Sector`) so the group-level
   variable shows NA; otherwise it reports a meaningless coefficient relative to a dropped dummy.
