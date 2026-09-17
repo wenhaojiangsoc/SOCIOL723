@@ -656,32 +656,6 @@ cause rather than out of $D$ to $Y$. If $Z$ closes all of them,
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Predictors of Treatment Are Not Controls}
-Two variables that each predict one thing only:
-\begin{center}
-\begin{tikzpicture}[dag,scale=0.8,every node/.append style={transform shape}]
-  \node (Z1) at (-2.4,0) {$Z$}; \node (D1) at (0,0) {$D$};
-  \node (X1) at (1.5,-1.7) {$X$}; \node (Y1) at (3,0) {$Y$};
-  \draw[arr] (Z1)--(D1); \draw[arr] (D1)--(Y1);
-  \draw[arr] (X1)--(D1); \draw[arr] (X1)--(Y1);
-  \node[lab] at (0.4,-2.5) {$Z$ predicts $D$ only};
-  \node (D2) at (7.0,0) {$D$}; \node (X2) at (8.5,-1.7) {$X$};
-  \node (Y2) at (10,0) {$Y$}; \node (Z2) at (12.4,0) {$Z$};
-  \draw[arr] (D2)--(Y2); \draw[arr] (X2)--(D2);
-  \draw[arr] (X2)--(Y2); \draw[arr] (Z2)--(Y2);
-  \node[lab] at (9.6,-2.5) {$Z$ predicts $Y$ only};
-\end{tikzpicture}
-\end{center}
-\begin{itemize}\itemsep1pt
-  \item \textbf{Right}: $Z$ is a \emph{precision} variable. It absorbs
-        residual variance in $Y$ and shrinks the standard error. Include it.
-  \item \textbf{Left}: $Z$ removes variation in $D$ and \alert{inflates} the
-        variance; if unmeasured confounding remains, it \alert{amplifies} the
-        bias \srcp{Cinelli, Forney, and Pearl 2024}. The rule is not
-        ``anything that predicts treatment.'' The rule is: close back doors.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{A Worked Example: College and Earnings}
 Does a college degree ($D$) raise earnings at 40 ($Y$)? Family background
 $X$ and a measured test score $A$ shape both; an unmeasured $U$ (school
@@ -922,6 +896,34 @@ Sample selection on a collider & implicit conditioning & \alert{no}, and often i
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Causes of the Outcome Only, or of the Treatment Only}
+\begin{center}
+\begin{tikzpicture}[dag,scale=0.75,every node/.append style={transform shape}]
+  \node (Z1) at (0,0) {$Z$}; \node (D1) at (2.2,0) {$D$}; \node (Y1) at (4.4,0) {$Y$};
+  \draw[arr] (D1)--(Y1); \draw[arr] (Z1) to[bend right=35] (Y1);
+  \node[lab] at (2.2,-1.9) {1: $Z \to Y$ only};
+  \node (Z2) at (6.4,0) {$Z$}; \node (D2) at (8.6,0) {$D$}; \node (Y2) at (10.8,0) {$Y$};
+  \draw[arr] (Z2)--(D2); \draw[arr] (D2)--(Y2);
+  \node[lab] at (8.6,-1.9) {2: $Z \to D$ only};
+  \node (Z3) at (12.8,0) {$Z$}; \node (D3) at (15.0,0) {$D$}; \node (Y3) at (17.2,0) {$Y$};
+  \node[unobs] (U3) at (16.1,-1.6) {$U$};
+  \draw[arr] (Z3)--(D3); \draw[arr] (D3)--(Y3); \draw[uarr] (U3)--(D3); \draw[uarr] (U3)--(Y3);
+  \node[lab] at (15.0,-2.5) {3: $Z \to D$ only, $U$ unmeasured};
+\end{tikzpicture}
+\end{center}
+\begin{itemize}\itemsep1pt
+  \item \textbf{1, good.} $Z$ is a \emph{precision} variable: it absorbs
+        residual variance in $Y$ and shrinks the standard error. Include it.
+  \item \textbf{2, neutral for bias, bad for precision.} $Z$ removes
+        variation in $D$; the estimate is unbiased but noisier.
+  \item \textbf{3, bad.} Adjusting for $Z$ throws away the clean variation
+        in $D$ and keeps the confounded part, so the remaining estimate
+        leans harder on $U$: \alert{bias amplification}. Variables like $Z$
+        are \emph{instruments} (Week 7); they identify an effect by a
+        different route and must never be used as controls.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Post-Treatment Variables, and How They Sneak In}
 \begin{itemize}\itemsep3pt
   \item Adjusting for a post-treatment variable is almost always a mistake,
@@ -938,6 +940,36 @@ Sample selection on a collider & implicit conditioning & \alert{no}, and often i
   \end{itemize}
   \item None of these appears in the model equation. All of them are
         conditioning.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Mediators, Their Descendants, and Their Causes}
+\begin{center}
+\begin{tikzpicture}[dag,scale=0.75,every node/.append style={transform shape}]
+  \node (D1) at (0,0) {$D$}; \node[cond] (M1) at (2.2,0) {$M$}; \node (Y1) at (4.4,0) {$Y$};
+  \draw[arr] (D1)--(M1); \draw[arr] (M1)--(Y1); \draw[arr] (D1) to[bend left=40] (Y1);
+  \node[lab] at (2.2,-2.5) {control $M$: bad};
+  \node (D2) at (6.4,0) {$D$}; \node (M2) at (8.6,0) {$M$}; \node (Y2) at (10.8,0) {$Y$};
+  \node[cond] (Z2) at (8.6,-1.7) {$Z$};
+  \draw[arr] (D2)--(M2); \draw[arr] (M2)--(Y2); \draw[arr] (D2) to[bend left=40] (Y2);
+  \draw[arr] (M2)--(Z2);
+  \node[lab] at (8.6,-2.5) {control $Z \leftarrow M$: bad};
+  \node (D3) at (12.8,0) {$D$}; \node (M3) at (15.0,0) {$M$}; \node (Y3) at (17.2,0) {$Y$};
+  \node[cond] (Z3) at (15.0,-1.7) {$Z$};
+  \draw[arr] (D3)--(M3); \draw[arr] (M3)--(Y3); \draw[arr] (D3) to[bend left=40] (Y3);
+  \draw[arr] (Z3)--(M3);
+  \node[lab] at (15.0,-2.5) {control $Z \to M$: neutral};
+\end{tikzpicture}
+\end{center}
+\begin{itemize}\itemsep1pt
+  \item \textbf{Left.} $M$ carries part of the effect of $D$. Holding it
+        fixed removes that part; what remains is not the total effect.
+  \item \textbf{Middle.} $Z$ is a \emph{descendant} of the mediator, a noisy
+        copy of it. Holding $Z$ fixed partly holds $M$ fixed: the same
+        damage, diluted.
+  \item \textbf{Right.} $Z$ causes the mediator but lies on no path from
+        $D$ to $Y$. Controlling for it leaves the total effect alone. The
+        rule is about \emph{paths}, not timing alone.
 \end{itemize}
 \end{frame}
 

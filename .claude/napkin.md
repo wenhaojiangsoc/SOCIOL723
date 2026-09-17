@@ -92,6 +92,13 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   \tikzset style (dag/unobs/cond/lab/arr/uarr/bias; 9mm nodes, >=2.4cm spacing,
   scale+transform shape when a figure must shrink). Deck 67 -> 54 pages. Old body backed up in
   the session scratchpad only; git has it at commit 51df853.
+- 2026-09-17 (user): the 690S good-and-bad-controls DAGs were brought back into Week 5's
+  Controls section as two three-panel frames redrawn in the shared style: "Causes of the
+  Outcome Only, or of the Treatment Only" (Z->Y precision; Z->D variance; Z->D with U = bias
+  amplification, Z is an instrument) and "Mediators, Their Descendants, and Their Causes"
+  (control M bad; control Z<-M bad; control Z->M neutral). The earlier two-panel "Predictors
+  of Treatment" frame in the DAG section was removed to avoid duplication. Deck = 55 pages.
+  Source: ../SOCIOL690S/Week 5 Causal Inference through DAG/slides.tex lines 818-975.
 - Week 5 DAG style rule: use the `dag` tikz style; shrink with
   `[dag,scale=0.8,every node/.append style={transform shape}]`, never by reducing node size.
 - lm() aliasing gotcha: with a group-constant regressor and group dummies, lm() drops the

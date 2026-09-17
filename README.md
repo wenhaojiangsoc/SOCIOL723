@@ -275,7 +275,9 @@ languages answer it.
   ignorability read off a picture, worked on college and earnings.
 - **Collider bias**: Berkson's paradox, the birth-weight paradox, and the
   recognition that sample selection *is* collider bias. A good-and-bad-controls
-  table, including bias amplification (Cinelli, Forney, and Pearl 2024).
+  table (Cinelli, Forney, and Pearl 2024) with the graphs drawn out: causes of
+  the outcome only, of the treatment only, and with unmeasured confounding
+  (bias amplification); mediators, their descendants, and their causes.
 - The **front-door criterion**, its formula, Winship and Harding's (2008)
   mechanism-based identification of age–period–cohort effects, and why to be
   sceptical of front-door claims.
