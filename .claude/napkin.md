@@ -75,6 +75,25 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
 - Syllabus lives in `syllabus/` (`main.tex` + `schedule.tex`).
 
 ## Patterns That Work
+- lm() aliasing gotcha: with a group-constant regressor and group dummies, lm() drops the
+  LAST collinear column. Put the dummies first (`y ~ School + x + Sector`) so the group-level
+  variable shows NA; otherwise it reports a meaningless coefficient relative to a dropped dummy.
+- Proportional odds is tested against the cumulative logit with cut-specific slopes
+  (generalized ordered logit), NOT against the multinomial (different family, not nested).
+  Tools: `brant::brant(polr_fit)` (Wald) and `VGAM::vglm(..., cumulative(parallel = FALSE ~ x))`
+  (LR, one covariate at a time; freeing all slopes gives non-monotone probabilities and NaN).
+  `brant` was installed to the user library on 2026-09-16.
+- Lab 4 robust-SE section (2026-09-16): four vcov choices (classical/HC0/HC1/~psu) for
+  coefficients, AMEs and avg_predictions, plus a by-hand delta-method check that reproduces
+  marginaleffects' clustered AME SE. GSS psu clusters are tiny (839, median 4) so clustering
+  barely moves anything here; say so rather than pretend otherwise.
+- marginaleffects 0.32 gotcha: `datagrid()` default and `newdata = "mean"` use the MODE for
+  binary and integer-valued variables (female 0, black 0, wordsum 6), not the mean. For the
+  slide's MEM (true means, 0.092 for wordsum) build the grid explicitly with mean(...). Lab 4 fixed.
+- marginaleffects gotcha (2026-09-16): `plot_predictions(m, by = "x")` with no newdata averages
+  fitted values AMONG units that have each observed x (subgroup means), NOT the counterfactual
+  observed-value curve. For the latter use `newdata = datagrid(x = ..., grid_type =
+  "counterfactual")` or `avg_predictions(m, variables = list(x = ...))`. Lab 4 Figure 1 fixed.
 - Week 3 BIC frames (2026-09-14): causal caveat added (selection criteria do not choose
   controls) and a frame on LR growing with n (South dummy at n=500/1000/3509) plus the
   Grusky & Hauser 1984 / Raftery 1986 ASR / Hout 1988 AJS origin story. Week 3 = 72 pages.
@@ -950,3 +969,7 @@ Course is serif Latin Modern everywhere, full stop.
   proofs: Poisson mean=var from np, np(1-p); binomial mean/var; Fisher
   additivity; dBIC = LR - q log n algebra. Deck 75 pages. Unpushed.
 - Standard-axis figures: loglik_n20 now theta on x, l(theta)=2log th+18 log(1-th) on y, parabola p(th) = -6.50 - 111(th-.1)^2, Wald set (-.03,.23) vs LR set (.02,.28); parabola_n and parabola_reg are 2x2 panels in raw theta/beta1. 'Why z Breaks' split: step-by-step definitions frame + curve-vs-parabola frame. 76 pages.
+
+- 2026-09-16 lab 4: dropped the Mundlak within-between subsection (u_hat, meanSES, m_wb) at the user's request; glmer chunk now ends with `avg_predictions(g1, variables = list(SES = c(-1, 0, 1)))` (observed-value, own-school u_j kept by default, re.form = NA sets u_j = 0; 0.137/0.232/0.365) instead of printing tau2. marginaleffects warns that SEs cover fixed effects only; chunk has `warning: false`.
+- 2026-09-16 lab 4 (final pass): dropped 'Checking proportional odds' (Brant + VGAM partial PO; restorable from git, `library(brant)` removed); dropped the AIC/BIC callout at the end of 'Comparing the count models'; RI-logit subsection now shows avg_predictions at SES -2..2 by 0.5 and reproduces the slide figure (u_j = +/-tau, 0, population average; tau = 0.58) in ggplot.
+- 2026-09-16 lab 4: new subsection 'Reading the lmer formula' (model equation, (1 | School) = random intercept, (1 + SES | School) / (0 + SES | School) / two grouping levels in an eval=false chunk) before 'Predictors at both levels'; ## note on REML = FALSE vs the REML default (ML vs REML differ in the third decimal on HSB).

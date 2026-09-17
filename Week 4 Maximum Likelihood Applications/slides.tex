@@ -911,9 +911,8 @@ difference & $-0.07$ & $-0.24$ & $+0.02$ & $+0.16$ & $+0.14$ \\
 \end{frame}
 
 \begin{frame}{Proportional Odds, and Checking It\core}
-One $\bm\beta$ for every cutpoint is an assumption: vocabulary pushes
-people past the HS line and the bachelor's line by the same log-odds.
-Check it with four separate binary logits, ``above cut $j$'' versus not:
+One $\bm\beta$ for every cutpoint is an assumption. Check it with four
+separate binary logits, ``above cut $j$'' versus not:
 \begin{center}\small
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{lcccc}
@@ -928,14 +927,14 @@ female & $0.252$ & $0.367$ & $0.279$ & $0.379$ \\
 \end{center}
 \vskip2pt
 \begin{itemize}\itemsep1pt
-  \item The ordered model's $0.358$ for vocabulary is a compromise between
-        $0.33$ and $0.41$: proportional odds is a fair summary here.
-  \item Formal check: LR against a multinomial logit on degree, which
-        frees all four rows ($20$ parameters): $27.3$ on $12$ df,
-        $p = 0.007$. Significant,
-        as everything is at $n = 3{,}509$; the table says the violation is
-        small. Judge the table, then the test; if it fails badly, free
-        that covariate only (\texttt{ordinal::clm}).
+  \item The alternative: the same cumulative model with a separate
+        $\bm\beta$ per cut, proportional odds nested by $\bm\beta_1 =
+        \cdots = \bm\beta_4$ (not the multinomial, a different family).
+  \item Brant test on the table: $32.5$ on $12$ df, $p = 0.001$.
+        Vocabulary fails ($12.3$ on $3$ df); the others pass. Its $0.36$
+        averages $0.41$ at the first cut and $0.28$ at the rest.
+  \item Remedy: free that slope only, partial proportional odds
+        (\texttt{VGAM::vglm}, \texttt{ordinal::clm}).
 \end{itemize}
 \end{frame}
 
@@ -1253,7 +1252,7 @@ Student $i$ in school $j$, the last frame's equation with distributions:
 \begin{align*}
   \text{math}_{ij} = \beta_0 + \beta_1\,\text{SES}_{ij} + \beta_2\,\text{Catholic}_j + u_j + e_{ij},
   \qquad u_j \sim \mathcal N(0, \tau^2), \quad e_{ij} \sim \mathcal N(0, \sigma^2).
-\end{align*}
+\end{align*} \\[-2pt]
 \begin{itemize}\itemsep2pt
   \item Each school has its own intercept, $\beta_0 + u_j$: $160$ draws
         from one distribution, not $160$ constants as in fixed effects.
@@ -1287,8 +1286,6 @@ distribution, and the same one for every school.
         error. Fixed effects estimate each $u_j$ instead of averaging over
         it; that is what the $160$ dummies buy, and why they lose Catholic.
 \end{enumerate}
-\textbf{Check on HSB.} SES slope $2.38$ here, $2.19$ with fixed effects:
-high-SES schools do have somewhat higher $u_j$. The lab shows the fix.
 \end{frame}
 
 \begin{frame}{Reading the Fit, and the Intraclass Correlation\core}
@@ -1410,24 +1407,6 @@ $\hat\tau^2$ & $0.34$ & \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Looking Ahead}
-\begin{itemize}\itemsep5pt
-  \item Both estimation engines are now in hand: least squares and maximum
-        likelihood. The rest of the course applies one of them to a
-        well-chosen quantity.
-  \item \alert{Nothing in Weeks 1--4 says a coefficient is a causal effect.}
-        We have been describing conditional distributions.
-  \item \textbf{Week 5} changes the question: potential outcomes and DAGs say
-        what we \emph{want} to estimate and what must hold to get it.
-\end{itemize}
-\vskip6pt
-\begin{block}{Problem Set 2}
-Assigned today, due Monday September 28. Covers Weeks 3--4: deriving and coding
-likelihoods, information and standard errors, and interpreting limited dependent
-variable models on the GSS.
-\end{block}
-\end{frame}
-
 \begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
@@ -1457,8 +1436,6 @@ Research.'' \textit{Sociological Methodology} 25: 111--163.
 \item Mood, Carina. 2010. ``Logistic Regression: Why We Cannot Do What We Think We
 Can Do, and What We Can Do About It.'' \textit{European Sociological Review}
 26(1): 67--82.
-\item Zorn, Christopher. 2005. ``A Solution to Separation in Binary Response
-Models.'' \textit{Political Analysis} 13: 157--170.
 \item Ajrouch, Kristine J., Toni C. Antonucci, and Noah J. Webster. 2016.
 ``Volunteerism: Social Network Dynamics and Education.'' \textit{Journals of
 Gerontology: Series B} 71(2): 309--319.

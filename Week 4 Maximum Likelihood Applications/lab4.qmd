@@ -44,7 +44,7 @@ options(digits = 4, scipen = 999)
 2.  Handle an interaction in a nonlinear model: when to include the product,
     and how to report the interaction.
 3.  Fit a multinomial logit on a nominal outcome and an ordered logit on an
-    ordered one; check proportional odds.
+    ordered one.
 4.  Fit count models: Poisson, the three overdispersion repairs, the hurdle
     model; compare them by AIC and BIC.
 5.  Fit a random-intercept model, read the two variances and the intraclass
@@ -61,8 +61,6 @@ library(MASS)      # glm.nb, polr
 library(AER)       # dispersiontest
 library(nnet)      # multinom
 library(pscl)      # hurdle, zeroinfl
-library(brglm2)    # Firth penalized likelihood
-library(pROC)
 
 gss <- readRDS("../Data/gss_earnings.rds")
 ```
@@ -127,17 +125,36 @@ avg_comparisons(m_logit, variables = list(pareduc = c(12, 16)))
 ```{r}
 #| label: fig-predprob
 #| fig-cap: "Average predicted probability of holding a BA by parents' education (observed-value approach), with 95% intervals."
-plot_predictions(m_logit, by = "pareduc") +
+## the counterfactual grid sets pareduc to each value for EVERYONE, then averages;
+## plain `by = "pareduc"` would instead average fitted values among the people
+## who actually have that pareduc, which mixes in their other covariates
+plot_predictions(m_logit, by = "pareduc",
+                 newdata = datagrid(pareduc = 8:20, grid_type = "counterfactual")) +
   labs(x = "Parents' education (years)", y = "Pr(bachelor's or more)") +
   theme_minimal(base_size = 10)
 ```
 
+::: callout-note
+`plot_predictions(m, by = "pareduc")` without the counterfactual grid is a
+different quantity: the average fitted probability *among respondents whose
+parents have that much education*. At 20 years it gives 0.75 rather than 0.69, and at 8 years 0.16
+rather than 0.20, because those respondents also differ in vocabulary and the
+other covariates. The counterfactual version isolates parents' education; the
+subgroup version describes who those people are.
+:::
+
 Contrast with setting everything else to its mean, which describes one
-hypothetical person (a 0.5 woman, a 0.13 Black respondent):
+hypothetical person (a 0.48 woman, a 0.15 Black respondent). Build that grid
+explicitly: `datagrid()`'s default is *not* the mean for every variable. It uses
+the mean for continuous covariates but the mode for binary and integer-valued
+ones, which here would give a man, not Black, with a vocabulary score of 6.
 
 ```{r}
 #| label: predprob-mean
-predictions(m_logit, newdata = datagrid(pareduc = c(12, 16)))
+## one row per pareduc value, every other covariate at its sample mean
+at_means <- datagrid(model = m_logit, pareduc = c(12, 16), wordsum = mean(gss$wordsum),
+                     female = mean(gss$female), black = mean(gss$black))
+predictions(m_logit, newdata = at_means)
 ```
 
 ## Then marginal effects: one number per variable
@@ -152,14 +169,21 @@ Compare with the marginal effect at the mean and with the LPM coefficients:
 
 ```{r}
 #| label: ame-vs-mem
-mem <- slopes(m_logit, newdata = "mean")
+## MEM: the slope for one person at the sample means (same caution as above:
+## newdata = "mean" would use modes for the binary and integer variables)
+mem <- slopes(m_logit, newdata = datagrid(model = m_logit, pareduc = mean(gss$pareduc),
+                                          wordsum = mean(gss$wordsum), female = mean(gss$female),
+                                          black = mean(gss$black)))
+ame <- avg_slopes(m_logit)
+## match by variable name: avg_slopes() returns terms in alphabetical order,
+## coef() in formula order
 comparison <- data.frame(
-  variable = c("pareduc", "wordsum", "female", "black"),
-  AME  = avg_slopes(m_logit)$estimate,
-  MEM  = mem$estimate,
-  LPM  = coef(m_lpm)[-1]
+  AME = ame$estimate,
+  MEM = mem$estimate[match(ame$term, mem$term)],
+  LPM = coef(m_lpm)[ame$term],
+  row.names = ame$term
 )
-round(comparison[, -1], 4) |> `rownames<-`(comparison$variable)
+round(comparison, 4)
 ```
 
 -   The AME and the LPM coefficients are close. This is typical, and it is the
@@ -182,22 +206,59 @@ is why the probabilities came first.
 
 ## Uncertainty: robust and clustered standard errors
 
-The sandwich from Week 2 works on `glm` objects, and `marginaleffects` will
-carry a chosen variance through to the AMEs.
+Every quantity in this section, a predicted probability, a contrast, an AME,
+is a function $q(\hat\beta)$ of the coefficients. Its standard error comes from
+the delta method: linearize $q$ around $\hat\beta$ and use
+$\widehat{\mathrm{Var}}(q) = \nabla q'\,\hat V(\hat\beta)\,\nabla q$. The
+gradient $\nabla q$ is fixed by the model; the only choice is which
+$\hat V(\hat\beta)$ to plug in. The `vcov` argument of every `marginaleffects`
+function makes that choice, so a robust or clustered standard error for an AME
+is the same sandwich as in Week 2, pushed through the same gradient.
+
+Three variance matrices for the coefficients first:
 
 ```{r}
 #| label: glm-robust
+## classical: inverse information (Week 3). HC0: the sandwich, each person's own
+## squared score. HC1: HC0 times n/(n - k). cluster: scores summed within a GSS
+## sampling unit (psu) before squaring, so people in the same psu may be correlated
 round(cbind(
   classical = sqrt(diag(vcov(m_logit))),
   HC0       = sqrt(diag(vcovHC(m_logit, type = "HC0"))),
+  HC1       = sqrt(diag(vcovHC(m_logit, type = "HC1"))),
   cluster   = sqrt(diag(vcovCL(m_logit, cluster = ~ psu)))
 ), 4)
 ```
 
+The same four choices carried through to the AMEs. `vcov = TRUE` is the
+classical matrix, a string names an HC type, a one-sided formula names the
+cluster variable:
+
 ```{r}
 #| label: ame-robust
-avg_slopes(m_logit, vcov = ~ psu)
+se_of <- function(v) {
+  a <- as.data.frame(avg_slopes(m_logit, vcov = v))
+  setNames(a$std.error, a$term)
+}
+round(rbind(classical = se_of(TRUE), HC0 = se_of("HC0"), HC1 = se_of("HC1"),
+            cluster_psu = se_of(~ psu)), 4)
 ```
+
+Predicted probabilities take the same argument:
+
+```{r}
+#| label: pred-robust
+avg_predictions(m_logit, variables = list(pareduc = c(12, 16)), vcov = ~ psu)
+```
+
+Two things to notice. The robust and classical standard errors are within a
+few percent of each other here: for a logit, a large gap between them is a
+warning that the model is misspecified rather than a fix, because the logit's
+variance is not a free parameter the way the Poisson's is. And clustering by
+`psu` matters little for this outcome because the GSS sampling units are small
+(839 of them, a median of four respondents each); with respondents nested in
+states or years it would matter more. A full design-based analysis would also
+use the strata and weights, through the `survey` package.
 
 ## Probit: another S-curve
 
@@ -269,31 +330,6 @@ avg_slopes(m_int, variables = "pareduc", by = "female",
 -   **Report** the difference in AMEs with its interval, here $0.006$ per year,
     SE $0.004$. The answer is no.
 
-# Separation
-
-Construct a variable that perfectly predicts the outcome, and watch the MLE run
-off to infinity.
-
-```{r}
-#| label: separation
-gss2 <- gss |> mutate(perfect = as.integer(educ >= 18 & ba == 1))
-m_sep <- glm(ba ~ pareduc + perfect, data = gss2, family = binomial)
-round(coef(summary(m_sep))[, 1:2], 3)
-```
-
-An enormous coefficient with an enormous standard error is the signature. The
-fix is Firth's penalized likelihood:
-
-```{r}
-#| label: firth
-m_firth <- glm(ba ~ pareduc + perfect, data = gss2,
-               family = binomial, method = "brglmFit")
-round(coef(summary(m_firth))[, 1:2], 3)
-```
-
-Finite estimates, usable standard errors, and the variable is retained
-(Zorn 2005).
-
 # Outcomes with several categories
 
 ## Multinomial logit: a nominal outcome
@@ -355,66 +391,29 @@ round(coef(summary(m_ord)), 4)
 work on the probability scale.
 
 ```{r}
-#| label: gates
-## the cutpoints are gates: for one person, X'beta and the four cumulative
-## probabilities Pr(Y <= j) = Lambda(kappa_j - X'beta); differences are the
-## five category probabilities
-b <- coef(m_ord); kappa <- m_ord$zeta
-x  <- c(pareduc = 12, wordsum = 5, female = 0, black = 0)
-xb <- sum(b * x)
-cum <- plogis(kappa - xb)
-round(c(xb = xb), 3)
-round(rbind(cumulative = c(cum, 1), category = diff(c(0, cum, 1))), 3) |>
-  `colnames<-`(levels(gss$degree))
-```
-
-```{r}
 #| label: ordered-pred
-## the same, averaged over everyone, at two vocabulary scores
+## observed-value predictions: set wordsum to 3 for everyone, then 9, keep the
+## other covariates as observed, average the five probabilities
 avg_predictions(m_ord, variables = list(wordsum = c(3, 9)), type = "probs")
 ```
 
-## Checking proportional odds
-
-One $\beta$ for every cutpoint is an assumption: vocabulary pushes people past
-the high-school line and the bachelor's line by the same log-odds. Check it
-the direct way, with four separate binary logits, "above cut $j$" versus not.
-
-```{r}
-#| label: prop-odds
-## one binary logit per cut; under proportional odds the four rows agree
-cuts <- levels(gss$degree)[-5]
-above <- sapply(1:4, function(k) {
-  yk <- as.integer(as.integer(gss$degree) > k)   # 1 if above cut k
-  coef(glm(yk ~ pareduc + wordsum + female + black, data = gss, family = binomial))[-1]
-})
-colnames(above) <- paste("above", cuts)
-round(cbind(above, ordered = coef(m_ord)), 3)
-```
-
-The ordered model's `wordsum` coefficient is a compromise between the four;
-proportional odds is a fair summary here.
+Four more words move about a quarter of the population out of "high school
+only," mostly into the two degree categories. The middle category barely
+moves: one coefficient pushes probability *through* a narrow band without
+piling it up there, so the sign of the effect on a middle category is not the
+sign of $\hat\beta$.
 
 ```{r}
-#| label: ordered-vs-multinom
-## the formal check: a multinomial logit on degree frees all four rows
-m_mn_deg <- multinom(degree ~ pareduc + wordsum + female + black, data = gss, trace = FALSE)
-k_ord <- length(coef(m_ord)) + length(m_ord$zeta)   # 4 slopes + 4 cutpoints
-k_mn  <- length(coef(m_mn_deg))                      # 4 rows x 5 columns
-lr <- 2 * (as.numeric(logLik(m_mn_deg)) - as.numeric(logLik(m_ord)))
-c(LR = round(lr, 1), df = k_mn - k_ord,
-  p = round(pchisq(lr, k_mn - k_ord, lower.tail = FALSE), 3))
-
-## the same comparison by AIC and BIC
-rbind(ordered     = c(k = k_ord, AIC = AIC(m_ord),    BIC = BIC(m_ord)),
-      multinomial = c(k = k_mn,  AIC = AIC(m_mn_deg), BIC = BIC(m_mn_deg)))
+#| label: ordered-ame
+## AMEs: one per covariate per category, the average change in each category's
+## probability per unit of the covariate (or for the dummy switching 0 to 1)
+avg_slopes(m_ord, type = "probs")
 ```
 
-The LR rejects at $n = 3{,}509$, as everything does (Week 3). BIC charges
-$12 \log 3509 = 98$ for the twelve extra parameters and gets back $27$, so it
-keeps the ordered model; AIC charges $24$ and is close to indifferent. Judge
-the table first, then the test. If one covariate fails badly, free that
-covariate only (`ordinal::clm` with a `nominal =` term).
+Read the `group` column: each covariate has five AMEs, one per category, and
+the five sum to zero because the probabilities sum to one. This is the
+standard way to report an ordered logit: category probabilities at chosen
+values, and the AMEs by category, rather than the cutpoints.
 
 # Count outcomes
 
@@ -443,7 +442,11 @@ n <- nrow(gss); k <- length(coef(m_pois))
 phi <- sum((gss$childs - fitted(m_pois))^2 / fitted(m_pois)) / (n - k)
 c(phi = phi)
 
-## formal test, using only the Poisson fit
+## formal test, using only the Poisson fit. trafo says what shape the extra
+## variance takes: trafo = 1 tests Var = theta + alpha * theta (a constant
+## multiple of the mean, the quasi-Poisson shape); trafo = 2 tests
+## Var = theta + alpha * theta^2 (the negative-binomial shape). Either way
+## H0 is alpha = 0 and the printed alpha is the estimated excess
 dispersiontest(m_pois, trafo = 1)
 ```
 
@@ -456,6 +459,10 @@ different one:
 m_qp <- glm(f_c, data = gss, family = quasipoisson)   # Var = phi * theta
 m_nb <- glm.nb(f_c, data = gss)                       # Var = theta + theta^2 / alpha
 
+## the coefficients barely move across the three likelihoods ...
+round(cbind(poisson = coef(m_pois), quasi = coef(m_qp), negbin = coef(m_nb)), 3)
+
+## ... the standard errors do
 round(cbind(
   poisson = sqrt(diag(vcov(m_pois))),
   quasi   = sqrt(diag(vcov(m_qp))),
@@ -468,16 +475,11 @@ c(by_hand = sqrt(diag(vcov(m_pois)))["evermar"] * sqrt(phi),
   quasi   = sqrt(diag(vcov(m_qp)))["evermar"])
 ```
 
-The coefficients barely move (check `coef(m_nb)` against `coef(m_pois)`); the
-standard errors do. The robust SE for `evermar` is much larger than the other
-two because the excess scatter is not uniform: it sits among the never
-married, exactly the group this dummy compares.
-
-```{r}
-#| label: nb-theta
-## the negative binomial's alpha (theta in MASS): large means close to Poisson
-c(alpha = m_nb$theta, se_alpha = m_nb$SE.theta)
-```
+Quasi-Poisson keeps the Poisson coefficients exactly, since it changes only
+the variance; the negative binomial refits and lands within a hundredth of
+them. The standard errors are what move. The robust SE for `evermar` is much
+larger than the other two because the excess scatter is not uniform: it sits
+among the never married, exactly the group this dummy compares.
 
 ## Excess zeros, and the hurdle model
 
@@ -507,12 +509,36 @@ Marriage multiplies the odds of *any* child by about 9 but the count among
 parents by about 1.35; women are likelier to have any child and have slightly
 fewer. One Poisson averaged these two processes.
 
+The zero-inflated model tells the other story: a share of people are
+"structural zeros" who will never have a child, and everyone else follows a
+Poisson that can also produce zeros. Same syntax, different meaning of the
+zero part.
+
+```{r}
+#| label: zip
+m_zip <- zeroinfl(f_c, data = gss, dist = "poisson")
+## zero part: a logit for being a STRUCTURAL zero (not for having any child, as
+## in the hurdle), so the signs flip relative to the hurdle's zero part
+round(cbind(structural_zero = exp(coef(m_zip, model = "zero")),
+            count_part      = exp(coef(m_zip, model = "count"))), 2)
+## two kinds of zero: the structural share, and the total share the model implies
+c(structural = mean(predict(m_zip, type = "zero")),
+  total      = mean(predict(m_zip, type = "prob")[, 1]),
+  observed   = mean(gss$childs == 0))
+```
+
+Read the zero part with care: an odds ratio of 0.003 for `evermar` says the
+ever-married are almost never structural zeros; the structural zeros are the
+never-married, and the more educated. About 16% of respondents are estimated
+to be structural zeros; the rest of the 30% childless are "zeros for now" from
+the count part. Unlike the hurdle, the zero share is not matched exactly.
+
 ## Comparing the count models by AIC and BIC
 
 Poisson and negative binomial are nested (the Poisson is the negative binomial
-with $\alpha \to \infty$), so an LR test applies. The hurdle is not nested in
-either, so use AIC and BIC, which need only a log-likelihood and a parameter
-count.
+with $\alpha \to \infty$), so an LR test applies. The hurdle and the
+zero-inflated model are not nested in either, or in each other, so use AIC and
+BIC, which need only a log-likelihood and a parameter count.
 
 ```{r}
 #| label: count-compare
@@ -520,7 +546,7 @@ count.
 2 * (as.numeric(logLik(m_nb)) - as.numeric(logLik(m_pois)))
 
 ## AIC = -2 loglik + 2k;  BIC = -2 loglik + k log n
-mods <- list(Poisson = m_pois, `Neg. binomial` = m_nb, Hurdle = m_hur)
+mods <- list(Poisson = m_pois, `Neg. binomial` = m_nb, Hurdle = m_hur, `Zero-inflated` = m_zip)
 tab <- t(sapply(mods, function(m) {
   ll <- logLik(m)
   c(logLik = as.numeric(ll), k = attr(ll, "df"),
@@ -537,18 +563,16 @@ parameters (a second intercept and five more coefficients). BIC charges
 $6 \log 3509 = 49$ for them, AIC charges $12$; the log-likelihood rises by
 about $155$, so $-2\,\ell$ falls by about $310$. Both criteria prefer the
 hurdle by a wide margin, and BIC's heavier penalty does not change the verdict.
-The negative binomial is the interesting line: one extra parameter, a gain of
+The zero-inflated model, with the same twelve parameters, fits better still, by
+about 56 on either criterion. Fit alone would pick it; whether a permanently
+childless class is the right story is a substantive question the criteria
+cannot answer, and the hurdle's "any child, then how many" reading is the one
+demographers usually defend. The negative binomial is the interesting line: one extra parameter, a gain of
 $2.4$ in log-likelihood. AIC prefers it to the Poisson by about $3$; BIC
 prefers the Poisson by about $3$. That is Week 3's disagreement in the wild:
 the evidence for $\alpha$ is real (the LR is $4.8$) but not strong enough to
 pay BIC's $\log 3509 = 8.2$ per parameter. Both criteria agree that the
 zeros, not the variance, are where the Poisson is wrong.
-
-::: callout-note
-AIC and BIC compare models fitted to the *same rows* with the *same outcome*.
-They say nothing about whether either model is right; the predictive check
-below does.
-:::
 
 ## Does the model reproduce the data?
 
@@ -590,34 +614,6 @@ zeros are a different *kind* of person. The two are not nested; AIC or BIC
 between them.
 :::
 
-# Model fit
-
-```{r}
-#| label: fit-compare
-AIC(m_np, m_int)
-BIC(m_np, m_int)
-
-## McFadden's pseudo-R2
-m_null <- glm(ba ~ 1, data = gss, family = binomial)
-1 - as.numeric(logLik(m_logit)) / as.numeric(logLik(m_null))
-```
-
-```{r}
-#| label: fig-roc
-#| fig-cap: "ROC curve for the logit model of holding a bachelor's degree."
-roc_obj <- roc(gss$ba, fitted(m_logit), quiet = TRUE)
-plot(roc_obj, col = "navy", lwd = 2, legacy.axes = TRUE)
-text(0.6, 0.2, paste("AUC =", round(auc(roc_obj), 3)))
-```
-
-```{r}
-#| label: accuracy
-## classification accuracy against the null rule of "always predict the majority"
-pred <- as.integer(fitted(m_logit) > 0.5)
-c(model = mean(pred == gss$ba),
-  always_majority = max(mean(gss$ba), 1 - mean(gss$ba)))
-```
-
 # Multilevel models
 
 The GSS extract has no natural grouping, so this section uses the High School
@@ -634,13 +630,54 @@ c(students = nrow(hsb), schools = length(unique(hsb$School)))
 range(table(hsb$School))
 ```
 
+## Reading the `lmer` formula
+
+The random-intercept model is
+
+$$
+\text{MathAch}_{ij} = \beta_0 + \beta_1 \text{SES}_{ij} + \beta_2 \text{Catholic}_j
+  + u_j + e_{ij}, \qquad u_j \sim N(0, \tau^2),\; e_{ij} \sim N(0, \sigma^2).
+$$
+
+In `lmer` the formula is `MathAch ~ SES + Sector + (1 | School)`. The part
+outside the parentheses is the fixed part, an ordinary regression formula for
+the $\beta$s. The part in parentheses is the random part, and it has two sides.
+Right of the bar is the grouping variable: which rows share a $u_j$. Left of
+the bar is the design of the random part: which columns get a coefficient
+that varies by group. `1` is the intercept column, so `(1 | School)` gives
+every school its own intercept shift, the $u_j$ that multiplies the column of
+ones; the model estimates its variance $\tau^2$, not the 160 shifts.
+
+```{r}
+#| label: formula-syntax
+#| eval: false
+(1 | School)          # random intercept: u_j, one variance tau^2
+(1 + SES | School)    # random intercept AND a random slope on SES:
+                      #   u_j + v_j * SES_ij, two variances and their covariance
+(0 + SES | School)    # random slope only, common intercept
+(1 | School) + (1 | District)   # two grouping levels, one u for each
+```
+
+A random slope says the SES gradient itself differs across schools; exercise
+7 fits it. Everything in this lab keeps `(1 | School)`.
+
 ## Predictors at both levels
 
 ```{r}
 #| label: two-levels
 m_ols <- lm(MathAch ~ SES + Sector, data = hsb)
+## REML = FALSE: plain maximum likelihood, so logLik() is the likelihood from
+## Week 3 and models with different fixed effects can be compared by LR, AIC,
+## BIC. The default REML = TRUE corrects the variances for the degrees of
+## freedom spent on the betas (like RSS/(n - k) in OLS) but its likelihood is
+## not comparable across fixed effects. On HSB the two differ in the third decimal
 m_re  <- lmer(MathAch ~ SES + Sector + (1 | School), data = hsb, REML = FALSE)
-m_fe  <- lm(MathAch ~ SES + Sector + School, data = hsb)
+## fixed effects: school dummies first. Sector is constant within school, so
+## it is collinear with the dummies; lm() drops the LAST collinear column, and
+## with Sector listed before School it would keep Sector and drop a school
+## dummy instead, printing a sector "effect" measured against whichever school
+## was dropped. Listing School first makes lm() report the honest NA.
+m_fe  <- lm(MathAch ~ School + SES + Sector, data = hsb)
 
 round(cbind(
   pooled      = coef(m_ols)[c("SES", "SectorCatholic")],
@@ -673,46 +710,69 @@ Of the variation SES and sector leave unexplained, 9% is between schools and
 91% within. The LR statistic is enormous; schools still differ after the
 controls.
 
-## Is u_j uncorrelated with SES?
-
-The random-intercept model assumes the school shocks are uncorrelated with
-the covariates. Check it, then fix it.
-
-```{r}
-#| label: within-between
-## do high-SES schools have higher shocks? u_hat: the model's predicted u_j
-hsb$meanSES <- ave(hsb$SES, hsb$School)
-u_hat <- ranef(m_re)$School[, 1]
-school_meanSES <- tapply(hsb$meanSES, hsb$School, mean)[rownames(ranef(m_re)$School)]
-round(cor(school_meanSES, u_hat), 2)
-
-## the fix: add the school mean of SES as a regressor (Mundlak 1978)
-m_wb <- lmer(MathAch ~ SES + meanSES + Sector + (1 | School), data = hsb, REML = FALSE)
-round(summary(m_wb)$coefficients, 3)
-c(SES_fixed_effects = coef(m_fe)["SES"])
-```
-
-The SES coefficient is now the fixed-effects slope exactly: within a school, a
-unit of SES adds 2.19 points. The school-mean coefficient is the between-school
-part: a school whose students average one unit higher SES scores 3.14 points
-higher still, a contextual effect. Sector remains estimable. This is the
-random-intercept model with the fixed-effects assumption dropped.
-
 ## A random-intercept logit
 
 ```{r}
 #| label: glmer
+#| warning: false
 hsb$top <- as.integer(hsb$MathAch > quantile(hsb$MathAch, 0.75))
 g1 <- glmer(top ~ SES + Sector + (1 | School), data = hsb,
             family = binomial, nAGQ = 10)   # nAGQ: accuracy of the integral over u_j
 round(summary(g1)$coefficients, 3)
-as.data.frame(VarCorr(g1))$vcov
+
+## observed-value predictions: set every student's SES to each value, keep their
+## own sector and their own school's predicted u_j (the default, re.form = NULL),
+## average the 7,185 probabilities. re.form = NA would set every u_j to zero.
+## The standard error carries the uncertainty in the coefficients only
+avg_predictions(g1, variables = list(SES = seq(-2, 2, by = 0.5)))
 ```
 
 The same logit as this morning, with a school shift on the log-odds scale
 whose variance is estimated. A coefficient is the log-odds change holding the
-school's `u_j` fixed; for a population-average probability, average
-predictions over the distribution of `u_j`.
+school's `u_j` fixed. The predictions put the coefficient on the probability
+scale: moving every student from SES $-1$ to SES $+1$ (the SD of SES is
+0.78) raises the share in the top quartile from 0.14 to 0.37.
+
+The figure from the slides shows what the school shift does to the curve.
+For a public school, the S-curve depends on which school: $u_j = 0$ is the
+typical school, $\pm\hat\tau$ are schools one SD above and below. The
+population-average curve integrates the probability over $u_j \sim
+N(0, \hat\tau^2)$; averaging S-curves with different intercepts spreads the
+transition out, so it is flatter than the $u_j = 0$ curve, only slightly here
+because $\hat\tau = 0.58$ is small.
+
+```{r}
+#| label: fig-glmer
+#| fig-cap: "Pr(top quartile in math) by SES, public schools: the curve for a typical school, for schools one SD above and below, and the average over the fitted distribution of school shifts."
+b <- fixef(g1)
+tau <- sqrt(as.data.frame(VarCorr(g1))$vcov[1])   # SD of the school shifts
+ses <- seq(-2, 2, by = 0.05)
+eta <- b["(Intercept)"] + b["SES"] * ses            # public school: Sector dummy = 0
+
+## population average: integrate plogis(eta + u) over u ~ N(0, tau^2) on a grid
+u <- seq(-4 * tau, 4 * tau, length.out = 401)
+w <- dnorm(u, 0, tau); w <- w / sum(w)
+p_avg <- sapply(eta, function(e) sum(plogis(e + u) * w))
+
+curves <- data.frame(
+  SES = rep(ses, 4),
+  p = c(plogis(eta + tau), plogis(eta), plogis(eta - tau), p_avg),
+  school = rep(c("u_j = +tau", "u_j = 0", "u_j = -tau", "average over schools"),
+               each = length(ses)))
+curves$school <- factor(curves$school, levels = unique(curves$school))
+ggplot(curves, aes(SES, p, colour = school, linetype = school)) +
+  geom_line(linewidth = 0.8) +
+  scale_colour_manual(values = c("#00539B", "#00539B", "#00539B", "#C84E00")) +
+  scale_linetype_manual(values = c("dashed", "solid", "dotted", "solid")) +
+  labs(x = "Student SES", y = "Pr(top quartile in math)",
+       colour = NULL, linetype = NULL) +
+  theme_minimal(base_size = 10) + theme(legend.position = "top")
+```
+
+The table above averages over the students as they are, in both sectors and
+in their own schools; the orange curve averages over the school distribution
+for public schools only. Both are population-average quantities; the
+coefficient $0.674$ describes the blue curves, one school at a time.
 
 # Exercises
 

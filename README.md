@@ -241,7 +241,7 @@ still applies, but interpretation becomes the hard part.
 
 ### Reading
 *Required*: ISL Ch. 4; Hanmer and Kalkan (2013). &nbsp;·&nbsp; *Additional*:
-Berry, DeMeritt, and Esarey (2010); Zorn (2005); Mood (2010); Raudenbush and
+Berry, DeMeritt, and Esarey (2010); Mood (2010); Raudenbush and
 Bryk (2002), *Hierarchical Linear Models*, Ch. 1–2 and 4.
 
 ---

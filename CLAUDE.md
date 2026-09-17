@@ -67,6 +67,12 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
 ## Gotchas
+- Proportional odds is tested against the cumulative logit with cut-specific slopes
+  (generalized ordered logit), NOT against the multinomial (different family, not nested).
+  Tools: `brant::brant(polr_fit)` (Wald) and `VGAM::vglm(..., cumulative(parallel = FALSE ~ x))`
+  (LR, one covariate at a time; freeing all slopes gives non-monotone probabilities and NaN).
+  `brant` was installed to the user library on 2026-09-16. The lab's proportional-odds
+  check was dropped 2026-09-16 (user not confident presenting it); the slide frame keeps it.
 - Quarto renders can fail on this machine for two reasons unrelated to the lab: the sandbox
   blocks the launcher's `sysctl` call, and `~/Library/TinyTeX` has tcolorbox 6.9 on a 2025-06
   kernel (fix: `tlmgr update --self --all`). Workarounds are in the napkin.
