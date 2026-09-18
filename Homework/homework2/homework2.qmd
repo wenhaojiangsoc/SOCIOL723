@@ -14,11 +14,11 @@ format:
         \usepackage[T1]{fontenc}
         \usepackage{lmodern}
         \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
         \DeclareMathOperator{\Cov}{Cov}
         \DeclareMathOperator{\Var}{Var}
         \newcommand{\E}{E}
         \newcommand{\loglik}{\ell}
-        \newcommand{\adv}{\,\textcolor{orange}{$\bigstar$}}
         \usepackage{setspace}
         \setstretch{1.15}
         \setlength{\parindent}{0pt}
@@ -41,35 +41,37 @@ execute:
 editor: visual
 ---
 
-**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about doing what you will do in research: reading published results, fitting the same kinds of models on real data, and writing up what they say. No question asks for a derivation. Everything can be done with the functions from Labs 3 and 4 (`glm`, `marginaleffects`, `MASS`, `pscl`, `lme4`). Where a question asks for sentences, write them as you would in a paper; a table with no reading is not an answer. You may use AI assistance, but you are responsible for understanding and being able to explain every line you submit.
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about what you will do in research: reading a published table, fitting the same kind of model on real data, and writing up what it says. No question asks for a derivation, and every computation uses the functions from Labs 3 and 4 (`glm`, `marginaleffects`, `MASS`, `pscl`, `lme4`). Where a question asks for sentences, write them as you would in a paper. You may use AI assistance, but you are responsible for understanding and being able to explain every line you submit.
 
 Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_earnings.rds`; the school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4.
 
 \hrulefill
 
-# Reading Published Results (25 points)
+# Reading a Published Logit: Killewald (2016) (30 points)
 
-1.  **Killewald (2016, *ASR*), "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce."** Download the article through the Duke library. Killewald follows more than 6,300 different-sex couples in the Panel Study of Income Dynamics year by year and fits logits on person-years in which the outcome is whether the couple divorced in that year, separately for marriages begun before 1975 and in 1975 or later.
+Killewald, Alexandra. 2016. "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce." *American Sociological Review* 81(4): 696--719. The article is on Sakai. Couples in the Panel Study of Income Dynamics are followed year by year; each row of the data is one couple in one year, and the outcome is whether the couple divorced in that year. Table 3 reports logits fitted separately to marriages begun in 1974 or earlier and in 1975 or later. The rows below are copied from it; the full table has about forty rows of controls.
 
-    (a) Find the table that reports the logit coefficients for the 1975-or-later cohort and the figure that reports predicted probabilities of divorce. Include an image of each in your PDF. From the table, report the coefficient and standard error on the husband's not being employed full-time, and the number of person-years and of couples behind it.
+| Variable (Table 3, excerpt) | Married 1974 or earlier | Married 1975 or later |
+|:--|:--:|:--:|
+| Wife employed full-time | .267 (.153), OR = 1.306 | .069 (.088), OR = 1.071 |
+| Husband employed full-time | $-$.097 (.208), OR = .908 | $-$.293$^{**}$ (.106), OR = .746 |
+| Wife's proportion of housework | $-$1.117$^{*}$ (.463), OR = .327 | .050 (.233), OR = 1.051 |
+| Constant | $-$7.476$^{***}$ (.884) | $-$3.525$^{***}$ (.393) |
+| Observations (couple-years) | 32,853 | 33,470 |
 
-    (b) From the figure or text, the predicted annual probability of divorce is 3.3% when the husband is not employed full-time and 2.5% when he is. Express that contrast two ways: as a percentage-point difference, and as an odds ratio computed from the two probabilities. Then compare your odds ratio with $e^{\hat\beta}$ from the coefficient in part (a). Are they close? One or two sentences on why they need not be identical (think about where on the curve each is computed).
+*Note:* Logit coefficients, standard errors in parentheses, odds ratios as printed in the article. $^{*}p<.05$, $^{**}p<.01$, $^{***}p<.001$. Controls include marital duration, religion, race, home ownership, children, education of both spouses, region, and marriage year.
 
-    (c) Killewald reports predicted probabilities, not the coefficient, in the text and abstract. Two sentences on why, using the three scales from lecture.
+![Killewald (2016), Figure 1, reproduced for classroom use.](figs/killewald2016_fig1.png){width=88%}
 
-    (d) One row of these data is a couple-year, so a couple married for twenty years contributes twenty rows. In two sentences: what is the outcome in each row, and why does a couple that never divorces still contribute rows?
+1.  **The data.** In two or three sentences: what is one row, what does the outcome equal in that row, why does a couple that stays married for twenty years contribute twenty rows, and what would be lost by collapsing the data to one row per couple with the outcome "ever divorced"?
 
-    (e) In the same table, find the coefficient on the wife's full-time employment for the 1975-or-later cohort. Write the one sentence about it that belongs in a results section, on the probability scale if the paper gives you enough to compute it, and otherwise on the odds scale with a statement of what is missing.
+2.  **One coefficient, three scales.** Take the husband's full-time employment in the 1975-or-later cohort, $-.293$. Write one sentence on each scale: log-odds, odds (use the printed odds ratio), and probability (use Figure 1: 2.5% when he is employed full-time, 3.3% when he is not). Then compute the odds ratio implied by those two probabilities and compare it with the printed .746. Explain in one or two sentences why they agree so closely here, using the note under Figure 1 about how the probabilities were computed.
 
-2.  **Find one yourself.** Choose an article published in *ASR*, *AJS*, *Demography*, or *Social Forces* between 2018 and 2025 that reports a logit, probit, multinomial, ordered, Poisson, negative binomial, or multilevel model. Include an image of the main table in your PDF and answer:
+3.  **A coefficient that is not significant.** The wife's full-time employment in the later cohort is $.069$ with standard error $.088$; Figure 1 shows 2.5% against 2.6%. Write the sentence that belongs in a results section. Then look at the same variable in the earlier cohort, $.267$ with standard error $.153$, and Figure 1's 1.0% against 1.3%. Killewald writes that the association "declined" across cohorts but that the change is not statistically significant. In two sentences, say what evidence supports each half of that claim.
 
-    (a) What is the outcome, what is one row of the data, and what is $N$?
+4.  **Units matter.** The wife's proportion of housework runs from 0 to 1, and its coefficient in the earlier cohort is $-1.117$, printed odds ratio .327. What change in housework does that odds ratio describe? Compute the odds ratio for the change Figure 1 actually plots, from 50% to 75% of the housework, and check it against the figure's 1.5% and 1.1%. One sentence: why is a coefficient's size meaningless until you know the units of its variable?
 
-    (b) On what scale are the numbers reported: coefficients, odds ratios, $e^{\hat\beta}$ for a count, average marginal effects, or predicted probabilities? Does the paper anywhere translate to the probability or count scale, in a figure or the text?
-
-    (c) Pick one coefficient and write the sentence about it that you would want to read on the probability or count scale. If the table does not give you enough to compute it exactly, say what is missing and make a stated assumption.
-
-    (d) Does the paper compare nested or non-nested models, and with what: likelihood-ratio tests, AIC, BIC, or nothing? One sentence on whether the choice fits what you learned in Week 3.
+5.  **Why a figure of probabilities.** Killewald puts predicted probabilities in Figure 1 and in the abstract, and leaves the coefficients in Table 3. In three or four sentences: what does the constant $-3.525$ give you if you convert it to a probability, for whom is that probability, and why is Figure 1's "otherwise typical couple" a better anchor? Finally, Figure 1 holds every other covariate at its cohort mean. What would the observed-value approach from lecture do instead, and would you expect the numbers to change much when the probabilities are this small?
 
 # Your Own Logit, Reported Like a Paper (25 points)
 
@@ -80,17 +82,15 @@ Fit the logit from lecture on the GSS extract:
 m1 <- glm(ba ~ pareduc + wordsum + female + black, data = gss, family = binomial)
 ```
 
-1.  Report the coefficient table with $e^{\hat\beta}$ added. Interpret the `wordsum` coefficient on all three scales, one sentence each, and say why the probability sentence needs a baseline that the other two do not.
+1.  Report the coefficient table with odds ratios added, in the format of Killewald's Table 3. Interpret the `wordsum` coefficient on all three scales, one sentence each, and say why the probability sentence needs a baseline that the other two do not.
 
-2.  **Predicted probabilities first.** With `avg_predictions`, report the average predicted probability of a degree when everyone's parents have 8, 12, 16, and 20 years of education, with 95% intervals, and plot the curve over the observed range of `pareduc`. Two sentences: why is the gain from 12 to 16 years not the same as the gain from 16 to 20, even though the coefficient is one number?
+2.  **Your own Figure 1.** With `avg_predictions`, compute the average predicted probability of a degree when everyone's parents have 8, 12, 16, and 20 years of education, with 95% intervals, and plot the four bars with error bars in the style of Killewald's figure. Two sentences: why is the gain from 12 to 16 years not the same as the gain from 16 to 20, even though the coefficient is one number?
 
-3.  **Average marginal effects.** Report `avg_slopes(m1)`. Compare the AME of `female` with the coefficient on `female` from the linear probability model with the same regressors. Two sentences: why are they close, and which would you put in a paper?
+3.  **An interaction, read correctly.** Does parents' education matter more for women? Fit `ba ~ pareduc * female + wordsum + black`. Report the product coefficient with its $z$, then the AME of `pareduc` separately for men and women and the difference with its standard error. Answer the question in a short paragraph and say why the product coefficient alone could not have answered it.
 
-4.  **An interaction, read correctly.** Does parents' education matter more for women? Fit `ba ~ pareduc * female + wordsum + black`. Report the product coefficient with its $z$, then the AME of `pareduc` separately for men and women and the difference with its standard error. Answer the question in a short paragraph and say why the product coefficient alone could not have answered it.
+4.  **A block of controls.** Add the region dummies (`region`) to `m1`. Report the likelihood-ratio test, AIC, and BIC for the two models. In a short paragraph, say what each is measuring, why with $n = 3{,}509$ the LR test rejects almost any block, and which model you would report and why.
 
 5.  **The results paragraph.** Write the paragraph (120 to 180 words) that would appear in the Results section of a paper reporting this model. Use predicted probabilities or AMEs, not odds ratios; give the reader magnitudes and uncertainty; do not mention the log-odds scale.
-
-6.  **A block of controls.** Add the region dummies (`region`) to `m1`. Report the likelihood-ratio test, AIC, and BIC for the two models. In a short paragraph, say what each is measuring, why with $n = 3{,}509$ the LR test rejects almost any block, and which model you would report and why.
 
 # Counts (20 points)
 
@@ -103,13 +103,11 @@ m_pois <- glm(childs ~ educ + female + black + exper + evermar, data = gss, fami
 
 1.  Interpret $e^{\hat\beta}$ for `educ` and for `evermar`, one sentence each, in the form you would use in a paper.
 
-2.  **Which standard errors.** Run `AER::dispersiontest(m_pois)`. Then report the standard error of `evermar` from the Poisson fit, from a quasi-Poisson fit, and with `sandwich::vcovHC`. Two sentences: what does the test tell you about the Poisson's variance assumption, and which standard error would you report as your default and why?
+2.  **Which standard errors.** Run `AER::dispersiontest(m_pois)`. Then report the standard error of `evermar` from the Poisson fit, from a quasi-Poisson fit, and from `sandwich::vcovHC`. Two sentences: what does the test say about the Poisson's variance assumption, and which standard error would you report as your default and why?
 
 3.  **Zeros, and a model with two parts.** Report the observed share of childless respondents and the share the Poisson predicts (average `dpois(0, fitted(m_pois))`). Fit the hurdle model with `pscl::hurdle(..., dist = "poisson")` and the same covariates in both parts. Make one table with the log-likelihood, number of parameters, AIC, and BIC of the Poisson and the hurdle. Then, in a paragraph written for a reader, say what `evermar` does to the chance of *any* child, what it does to the number of children *among parents*, and what the single Poisson coefficient was averaging over.
 
-4.  A coauthor writes: "Just use the negative binomial; it handles overdispersion, so it handles everything." Respond in two or three sentences: which problem does the negative binomial fix, and which one in these data does it not?
-
-# Observations in Groups (30 points)
+# Observations in Groups (25 points)
 
 Merge `nlme::MathAchieve` with `nlme::MathAchSchool` as in Lab 4: 7,185 students in 160 schools, math achievement, student SES, and school sector.
 
@@ -119,9 +117,7 @@ Merge `nlme::MathAchieve` with `nlme::MathAchSchool` as in Lab 4: 7,185 students
 
 3.  **Three estimates of one slope.** Fit the fixed-effects regression `lm(MathAch ~ SES + Sector + School)`. Why is the `Sector` coefficient `NA`? Make a three-column comparison of the SES slope under pooled OLS, the random intercept, and fixed effects, and explain in a paragraph why the random-intercept slope sits between the other two: what kind of variation does each use?
 
-4.  **A published variance share.** Tomaskovic-Devey et al. (2020, *PNAS*) split earnings inequality in 14 countries into a between-workplace and a within-workplace part and report that the between-workplace share rose in 12 of 14 countries and fell in none. In three or four sentences: what quantity from question 2 is "the share of inequality that is between workplaces," what plays the role of the school, and why neither fixed effects nor OLS with clustered standard errors could have produced that number.
-
-5.  **Three questions, three tools.** For each research question below, say which of *OLS with clustered standard errors*, *fixed effects*, or a *random intercept* you would use, in two sentences each, naming the feature of the question that decides it.
+4.  **Three questions, three tools.** For each research question below, say which of *OLS with clustered standard errors*, *fixed effects*, or a *random intercept* you would use, in two sentences each, naming the feature of the question that decides it.
 
     (a) How much of earnings inequality in a country is between workplaces rather than within them, and is that share rising?
 
