@@ -49,27 +49,23 @@ Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_e
 
 # Reading Published Results (25 points)
 
-1.  **Pager (2003, *AJS*), "The Mark of a Criminal Record."** Matched testers applied for 350 entry-level jobs; the outcome is whether the employer called back. Appendix Table B1 reports a logit with coefficients $-0.99$ for having a criminal record, $-1.25$ for being Black, and $-0.29$ for their product. The callback rate for white applicants without a record was 34%.
+1.  **Killewald (2016, *ASR*), "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce."** Download the article through the Duke library. Killewald follows more than 6,300 different-sex couples in the Panel Study of Income Dynamics year by year and fits logits on person-years in which the outcome is whether the couple divorced in that year, separately for marriages begun before 1975 and in 1975 or later.
 
-    (a) Treat the white, no-record cell as the baseline. Convert 34% to a log-odds intercept, then compute the predicted callback probability for the other three cells (white with record; Black without; Black with). Compare with the rates Pager reports: 17%, 14%, and 5%.
+    (a) Find the table that reports the logit coefficients for the 1975-or-later cohort and the figure that reports predicted probabilities of divorce. Include an image of each in your PDF. From the table, report the coefficient and standard error on the husband's not being employed full-time, and the number of person-years and of couples behind it.
 
-    (b) Pager's abstract says a record reduces callbacks "by half" for whites and "by nearly two thirds" for Black applicants. A reader objects: "the coefficient on record is one number, $-0.99$, so the effect cannot differ by race." In three or four sentences, explain what scale the reader is on, what scale the abstract is on, and why an effect that is one number on the log-odds scale is two different numbers on the probability scale.
+    (b) From the figure or text, the predicted annual probability of divorce is 3.3% when the husband is not employed full-time and 2.5% when he is. Express that contrast two ways: as a percentage-point difference, and as an odds ratio computed from the two probabilities. Then compare your odds ratio with $e^{\hat\beta}$ from the coefficient in part (a). Are they close? One or two sentences on why they need not be identical (think about where on the curve each is computed).
 
-    (c) Write two sentences a newspaper could print that state the finding correctly on the probability scale.
+    (c) Killewald reports predicted probabilities, not the coefficient, in the text and abstract. Two sentences on why, using the three scales from lecture.
 
-2.  **Killewald (2016, *ASR*), "Money, Work, and Marital Stability."** Using PSID couples followed year by year, Killewald fits logits on person-years in which the outcome is divorce in that year. For marriages begun after 1975, the predicted probability of divorce in the following year is 3.3% when the husband is not employed full-time and 2.5% when he is.
+    (d) One row of these data is a couple-year, so a couple married for twenty years contributes twenty rows. In two sentences: what is the outcome in each row, and why does a couple that never divorces still contribute rows?
 
-    (a) Express this contrast three ways: a percentage-point difference, a risk ratio, and an odds ratio. Which one belongs in the abstract, and why?
+    (e) In the same table, find the coefficient on the wife's full-time employment for the 1975-or-later cohort. Write the one sentence about it that belongs in a results section, on the probability scale if the paper gives you enough to compute it, and otherwise on the odds scale with a statement of what is missing.
 
-    (b) Why does Killewald report predicted probabilities rather than the logit coefficient itself? Two sentences, using what you know about the three scales.
-
-    (c) The data are person-years: a couple married for twenty years contributes twenty rows. In two sentences, what does each row's outcome mean, and why does a couple that never divorces still contribute rows?
-
-3.  **Find one yourself.** Choose an article published in *ASR*, *AJS*, *Demography*, or *Social Forces* between 2018 and 2025 that reports a logit, probit, multinomial, ordered, Poisson, negative binomial, or multilevel model. Include an image of the main table in your PDF and answer:
+2.  **Find one yourself.** Choose an article published in *ASR*, *AJS*, *Demography*, or *Social Forces* between 2018 and 2025 that reports a logit, probit, multinomial, ordered, Poisson, negative binomial, or multilevel model. Include an image of the main table in your PDF and answer:
 
     (a) What is the outcome, what is one row of the data, and what is $N$?
 
-    (b) On what scale are the numbers reported: coefficients, odds ratios, incidence-rate ratios, average marginal effects, or predicted probabilities? Does the paper anywhere translate to the probability or count scale, in a figure or the text?
+    (b) On what scale are the numbers reported: coefficients, odds ratios, $e^{\hat\beta}$ for a count, average marginal effects, or predicted probabilities? Does the paper anywhere translate to the probability or count scale, in a figure or the text?
 
     (c) Pick one coefficient and write the sentence about it that you would want to read on the probability or count scale. If the table does not give you enough to compute it exactly, say what is missing and make a stated assumption.
 

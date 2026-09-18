@@ -92,6 +92,12 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   Week 4 Looking Ahead block updated. Paywalled PDFs (Pager, Killewald, PMC author
   manuscripts) cannot be fetched from the sandbox; Europe PMC fullTextXML works only for OA
   papers (Tomaskovic-Devey 2020 = PMC7196797).
+- 2026-09-18 (user): Pager item dropped from PS2; Part 1 is now Killewald 2016 only, and
+  students fetch the article themselves (table of post-1975 logit coefficients + predicted
+  probability figure; 3.3% vs 2.5% verified via the OOW "Work in Progress" post and the ASA
+  press release, >6,300 couples). NEVER use "risk ratio" or "incidence-rate ratio" in course
+  materials: the user flagged them as untaught. The taught scales are log-odds, odds
+  (ratio), probability (difference); for counts, "exp(beta) multiplies the expected count".
 - **Week 5 rebuilt 2026-09-17 (user: "too SOCIOL690S-alike", "drop do unless standard",
   "fix figures")**: body rewritten, preamble untouched (16:9, 11pt, its own headline).
   CausalML-textbook leftovers removed: 401(k) example -> college and earnings (D, Y, X family
