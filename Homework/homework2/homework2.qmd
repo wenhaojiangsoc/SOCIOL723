@@ -49,15 +49,15 @@ Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_e
 
 # The Likelihood as a Way of Thinking (20 points)
 
-Let $\theta$ be the share of adults with a bachelor's degree. In the GSS extract, `ba` is 1 for such respondents.
+Let $\theta$ be the share of adults with a bachelor's degree. In the GSS extract, `ba` is 1 for such respondents, and `k <- sum(gss$ba)` of the `n <- nrow(gss)` respondents hold one.
 
-1.  Write the log-likelihood of $\theta$ for $n$ Bernoulli observations with $k$ successes in one line (no derivation, just the expression), then plot it over $\theta \in (0.2, 0.5)$ using the GSS counts. Mark the peak and report where it is. Confirm it equals `mean(gss$ba)`. One sentence: what does it mean to say this value is the *maximum likelihood* estimate?
+1.  **One curve.** For a grid of values `theta <- seq(0.2, 0.5, by = 0.001)`, compute `dbinom(k, n, theta, log = TRUE)` and plot it against `theta`. This is the log-likelihood: the same `dbinom()` you would use to compute a probability, now read with the data fixed and $\theta$ moving. Mark the highest point and report the $\theta$ where it occurs. Confirm it equals `mean(gss$ba)`. One sentence, in your own words: what does "maximum likelihood estimate" mean?
 
-2.  Draw a random subsample of $n = 60$ respondents and plot its log-likelihood on the same axes as the full-sample curve, each shifted so its peak sits at zero. Compute the standard error from the curvature formula, $\sqrt{\hat\theta(1-\hat\theta)/n}$, for both. Two sentences: what does the *shape* of each curve tell you, and what course concept links shape to standard error?
+2.  **Two curves.** Draw a random subsample of 60 respondents (`set.seed(723)`) and compute its log-likelihood curve the same way. Plot both curves on one set of axes after subtracting each curve's own maximum, so both peaks sit at zero. One or two sentences: which curve is narrower, and what does the width of the peak tell you about how sure the data are about $\theta$?
 
-3.  A classmate summarises Question 1 as "the MLE is the most probable value of $\theta$ given the data." In two sentences, explain why that is not what the likelihood says, and state correctly what it does say.
+3.  **From shape to standard error.** For each sample, plug into $\sqrt{\hat\theta(1-\hat\theta)/n}$ and report the standard error, then the 95% interval $\hat\theta \pm 1.96\,\text{SE}$. Does the full-sample estimate fall inside the 60-person interval? One sentence connecting the two intervals to the two curves in part 2: what made one interval shorter?
 
-4.  **Where the $z$-test fails.** In a subgroup of $n = 30$ respondents, $2$ hold a degree. Test $H_0\!: \theta = 0.20$ two ways: the Wald $z$ using $\sqrt{\hat\theta(1-\hat\theta)/n}$, and the likelihood-ratio statistic $2[\loglik(\hat\theta) - \loglik(0.20)]$ compared with $\chi^2_1$. Report both $p$-values. Two or three sentences: why do they disagree, which one do you trust here, and what about the shape of the log-likelihood near $\hat\theta$ makes the $z$-test misleading?
+4.  **A sentence to fix.** A classmate writes: "The MLE is the most probable value of $\theta$ given the data." In two sentences, say why the likelihood does not support that reading, and state what it does say. (Hint: which is fixed and which is varying, the data or $\theta$?)
 
 # Reading a Logit (30 points)
 

@@ -80,6 +80,10 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (Homework/homeworkN/homeworkN.qmd, eval:false code stubs, points per section, sentences
   demanded). Render with the patched quarto + TEXINPUTS; no R packages needed since nothing
   executes.
+- 2026-09-18 (user): PS2 Part 1 was "still a bit hard": replaced the Wald-vs-LR boundary
+  question with plug-in items (dbinom curve, two curves shifted to zero, SE + 95% interval
+  from sqrt(p(1-p)/n), fix the "most probable value" sentence). Rule for this course's
+  problem sets: every likelihood item is a picture or a plug-in, never a test derivation.
 - **Week 5 rebuilt 2026-09-17 (user: "too SOCIOL690S-alike", "drop do unless standard",
   "fix figures")**: body rewritten, preamble untouched (16:9, 11pt, its own headline).
   CausalML-textbook leftovers removed: 401(k) example -> college and earnings (D, Y, X family
