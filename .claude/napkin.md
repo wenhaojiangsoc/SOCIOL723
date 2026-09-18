@@ -368,6 +368,15 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   numbers via inline R). It is committed but NOT linked from README; pushing makes it public.
   Quarto gotcha: never `rm -rf <name>_files` between renders of the same qmd in one session;
   the next render then fails with "figure-pdf/...pdf not found". Quarto cleans up itself.
+- 2026-09-18 (user): PS2 now OPENS with "Maximum Likelihood, in Practice": three REAL outputs
+  generated in the qmd itself (summary() tail + logLik; glm trace of the healthy logit, 4
+  Fisher-scoring steps; glm trace of `ba ~ pareduc + perfect` = separation, 17 steps,
+  coefficient 19.3 with SE 272, converged: TRUE) and three questions (likelihood curve, read
+  the likelihood lines, converged or not). Rule: outputs go OUTSIDE the numbered list;
+  code chunks inside list items turn the following (a)(b)(c) into verbatim. glm's trace goes
+  to STDOUT: capture with `capture.output(m <- glm(...))` (assign inside, or the model
+  auto-prints too); `type = "message"` captures nothing. `\Needspace{}` (needspace.sty is
+  installed) keeps an output label with its block.
 - `logistf` is NOT installed; use `brglm2` (`glm(..., method = "brglmFit")`) for Firth.
 - Quarto renders take 2-10 min when a lab has simulations — run them backgrounded.
 - **Weeks 5-7, 9-10 done.** Week 5 (Potential Outcomes + DAGs). DAGs drawn in raw TikZ (`every node/.style=

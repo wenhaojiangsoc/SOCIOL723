@@ -16,6 +16,7 @@ format:
         \usepackage{amsmath,amssymb,bm}
         \usepackage{booktabs}
         \usepackage{float}
+        \usepackage{needspace}
         \renewcommand{\topfraction}{0.95}
         \renewcommand{\textfraction}{0.05}
         \setcounter{topnumber}{2}
@@ -45,9 +46,58 @@ execute:
 editor: visual
 ---
 
-**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about what you will do in research: reading a published table, fitting the same kind of model on real data, and writing up what it says. No question asks for a derivation; every computation uses the functions from Labs 3 and 4. Where a question asks for sentences, write them as you would in a paper. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_earnings.rds`; the school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4.
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about what you will do in research: reading a published table, fitting the same kind of model on real data, and writing up what it says. No question asks for a derivation; every computation uses the functions from Labs 3 and 4, and the outputs reproduced in the first section are read, not re-run. Where a question asks for sentences, write them as you would in a paper. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_earnings.rds`; the school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4.
 
 \hrulefill
+
+```{r}
+#| include: false
+gss <- readRDS("../../Data/gss_earnings.rds")
+m1 <- glm(ba ~ pareduc + wordsum + female + black, data = gss, family = binomial)
+traceA <- capture.output(mA <- glm(ba ~ pareduc + wordsum + female + black, data = gss,
+                             family = binomial, control = glm.control(trace = TRUE)))
+gss$perfect <- as.integer(gss$educ >= 18 & gss$ba == 1)
+traceB <- capture.output(mB <- glm(ba ~ pareduc + perfect, data = gss, family = binomial,
+                                   control = glm.control(trace = TRUE, maxit = 30)))
+```
+
+# Maximum Likelihood, in Practice
+
+The three outputs below come from the GSS extract. Output 1 shows the last lines of `summary()` for the logit `ba ~ pareduc + wordsum + female + black`, followed by `logLik()` of the same model. Outputs A and B show what `glm()` prints when asked to trace its iterations, `control = glm.control(trace = TRUE)`: the deviance after each step. Output A is the same model as Output 1. Output B fits `ba ~ pareduc + perfect`, where `perfect` is 1 for respondents with at least 18 years of schooling who hold a degree and 0 otherwise, and shows its coefficient table.
+
+*Output 1*
+
+```{r}
+#| echo: false
+cat(tail(capture.output(summary(m1)), 6), sep = "\n")
+print(logLik(m1))
+```
+
+*Output A*
+
+```{r}
+#| echo: false
+cat(traceA, sep = "\n")
+```
+
+```{=latex}
+\Needspace{10\baselineskip}
+```
+
+*Output B*
+
+```{r}
+#| echo: false
+cat(traceB, sep = "\n")
+print(round(coef(summary(mB)), 3))
+cat("converged:", mB$converged, "\n")
+```
+
+1.  **The idea, in one curve.** Let $\theta$ be the share of adults with a bachelor's degree, `k <- sum(gss$ba)` successes in `n <- nrow(gss)` draws. For `theta <- seq(0.2, 0.5, by = 0.001)`, compute `dbinom(k, n, theta, log = TRUE)` and plot it against `theta`. This is the log-likelihood: the same `dbinom()` you would use for a probability, read with the data fixed and $\theta$ moving. Mark the highest point and confirm it is `mean(gss$ba)`. Two sentences: what does "maximum likelihood estimate" mean, and what does the width of the peak tell you?
+
+2.  **Reading the likelihood lines (Output 1).** The model has five parameters. (a) Show how the AIC line follows from the log-likelihood line. (b) "Number of Fisher Scoring iterations: 4": what happened four times, and why did it stop? (c) The null deviance is for the intercept-only model and the residual deviance for this one. What quantity from Week 3 is their difference, what does it test, and on how many degrees of freedom?
+
+3.  **Converged, or not? (Outputs A and B).** (a) In which output has the search settled? Say what in the trace tells you, one sentence each. (b) R reports `converged: TRUE` for Output B as well. Look at the coefficient on `perfect` and its standard error. Would you report that row? What value is the coefficient trying to reach, and why can no finite number satisfy the likelihood here? (c) Which coefficients in Output B did the algorithm pin down, and which did it not? In two sentences, say what you would do before reporting anything from this model.
 
 # Reading a Published Logit: Killewald (2016)
 
