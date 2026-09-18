@@ -238,7 +238,7 @@ still applies, but interpretation becomes the hard part.
 ### Materials
 - [Slides: Week 4 — Maximum Likelihood: Applications](./Week%204%20Maximum%20Likelihood%20Applications/slides.pdf)
 - [Lab 4: Limited Dependent Variable Models](./Week%204%20Maximum%20Likelihood%20Applications/lab4.pdf)
-- [Problem Set 2](./Homework/homework2/homework2.pdf) — assigned Sep 15, due Mon Sep 28
+- [Problem Set 2](./Homework/homework2/homework2.pdf) — assigned Fri Sep 18, due Fri Oct 2
 
 ### Reading
 *Required*: ISL Ch. 4; Hanmer and Kalkan (2013). &nbsp;·&nbsp; *Additional*:

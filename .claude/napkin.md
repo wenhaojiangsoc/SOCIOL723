@@ -84,6 +84,14 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   question with plug-in items (dbinom curve, two curves shifted to zero, SE + 95% interval
   from sqrt(p(1-p)/n), fix the "most probable value" sentence). Rule for this course's
   problem sets: every likelihood item is a picture or a plug-in, never a test derivation.
+- 2026-09-18 (user, second revision): "focus on application in actual research". PS2 now
+  opens with READING PUBLISHED RESULTS (Pager 2003 Table B1 numbers -0.99/-1.25/-0.29 and
+  34/17/14/5; Killewald 2016 3.3% vs 2.5%; find-your-own ASR/AJS table) and asks for a
+  paper-style results paragraph; by-hand Pearson phi, the Mundlak check, and likelihood
+  curves were cut. Dates: assigned Fri Sep 18, due Fri Oct 2 (14 days); README and the
+  Week 4 Looking Ahead block updated. Paywalled PDFs (Pager, Killewald, PMC author
+  manuscripts) cannot be fetched from the sandbox; Europe PMC fullTextXML works only for OA
+  papers (Tomaskovic-Devey 2020 = PMC7196797).
 - **Week 5 rebuilt 2026-09-17 (user: "too SOCIOL690S-alike", "drop do unless standard",
   "fix figures")**: body rewritten, preamble untouched (16:9, 11pt, its own headline).
   CausalML-textbook leftovers removed: 401(k) example -> college and earnings (D, Y, X family
