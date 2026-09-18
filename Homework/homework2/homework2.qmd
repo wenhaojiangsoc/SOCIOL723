@@ -1,0 +1,122 @@
+---
+title: "\\textbf{SOCIOL 723: Problem Set 2}"
+subtitle: "\\textit{Assigned}: September 15 \\quad\\textbullet\\quad \\textit{Due}: Monday, September 28, 11:59PM"
+author: "Your name:"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1.1in, bottom=1.1in, left=1.1in, right=1.1in"
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \newcommand{\loglik}{\ell}
+        \newcommand{\adv}{\,\textcolor{orange}{$\bigstar$}}
+        \usepackage{setspace}
+        \setstretch{1.15}
+        \setlength{\parindent}{0pt}
+        \setlength{\parskip}{6pt}
+        \makeatletter
+        \renewcommand{\maketitle}{%
+          \begin{center}
+            {\LARGE \bfseries \@title \par}
+            \vspace{0.7em}%
+            {\large \itshape \@date \par}
+            \vspace{0.7em}%
+            {\large \@author \par}
+          \end{center}\par\vspace{1em}
+        }
+        \makeatother
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about *reading* likelihood-based models, not deriving them: no question asks for a derivation, and every computation can be done with the functions from Labs 3 and 4 (`glm`, `marginaleffects`, `MASS`, `pscl`, `lme4`). Where a question asks for sentences, write them; a table with no reading is not an answer. You may use AI assistance, but you are responsible for understanding and being able to explain every line you submit.
+
+Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_earnings.rds`; the school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4.
+
+\hrulefill
+
+# The Likelihood as a Way of Thinking (20 points)
+
+Let $\theta$ be the share of adults with a bachelor's degree. In the GSS extract, `ba` is 1 for such respondents.
+
+1.  Write the log-likelihood of $\theta$ for $n$ Bernoulli observations with $k$ successes in one line (no derivation, just the expression), then plot it over $\theta \in (0.2, 0.5)$ using the GSS counts. Mark the peak and report where it is. Confirm it equals `mean(gss$ba)`. One sentence: what does it mean to say this value is the *maximum likelihood* estimate?
+
+2.  Draw a random subsample of $n = 60$ respondents and plot its log-likelihood on the same axes as the full-sample curve, each shifted so its peak sits at zero. Compute the standard error from the curvature formula, $\sqrt{\hat\theta(1-\hat\theta)/n}$, for both. Two sentences: what does the *shape* of each curve tell you, and what course concept links shape to standard error?
+
+3.  A classmate summarises Question 1 as "the MLE is the most probable value of $\theta$ given the data." In two sentences, explain why that is not what the likelihood says, and state correctly what it does say.
+
+4.  **Where the $z$-test fails.** In a subgroup of $n = 30$ respondents, $2$ hold a degree. Test $H_0\!: \theta = 0.20$ two ways: the Wald $z$ using $\sqrt{\hat\theta(1-\hat\theta)/n}$, and the likelihood-ratio statistic $2[\loglik(\hat\theta) - \loglik(0.20)]$ compared with $\chi^2_1$. Report both $p$-values. Two or three sentences: why do they disagree, which one do you trust here, and what about the shape of the log-likelihood near $\hat\theta$ makes the $z$-test misleading?
+
+# Reading a Logit (30 points)
+
+Fit the logit from lecture,
+
+```{r}
+#| eval: false
+m1 <- glm(ba ~ pareduc + wordsum + female + black, data = gss, family = binomial)
+```
+
+1.  Report the coefficient table and $e^{\hat\beta}$. Interpret the `wordsum` coefficient on all three scales, one sentence each: log-odds, odds, probability. Say explicitly why the third sentence needs a baseline that the first two do not.
+
+2.  **Predicted probabilities first.** Using the observed-value approach (`avg_predictions`), report the average predicted probability of a degree when everyone's parents have 8, 12, 16, and 20 years of education, with 95% intervals, and plot the curve over the observed range of `pareduc`. In two sentences, use the plot to explain why the gain from 12 to 16 years is not the same as the gain from 16 to 20, even though the coefficient is one number.
+
+3.  **Average marginal effects.** Report `avg_slopes(m1)`. Compare the AME of `female` with the coefficient on `female` from the linear probability model `lm(ba ~ ...)` with the same regressors. Two sentences: why are they close, and which of the two would you put in a paper?
+
+4.  **An interaction, read correctly.** Does parents' education matter more for women? Fit `ba ~ pareduc * female + wordsum + black`. Report (a) the product coefficient with its $z$; (b) the AME of `pareduc` separately for men and for women, from *both* the model with the product and the model without it; (c) the difference in AMEs with its standard error. Then answer the question in a short paragraph, and explain why the product coefficient alone could not have answered it.
+
+5.  **A referee.** "Your odds ratio for `wordsum` is 1.48, so each additional word makes a degree 48% more likely." Correct this in two sentences, using two of the predicted probabilities you computed in part 2 to show what the actual change in probability looks like.
+
+6.  **Nested models, three rulers.** Add the eight region dummies (`region`) to `m1`. Test the block with the likelihood-ratio test, then compare the two models by AIC and by BIC. If the three disagree, explain in a short paragraph what each is measuring, why large $n$ makes the LR test reject almost any block, and which model you would report and why.
+
+# Counts and Their Variance (20 points)
+
+Fit the Poisson regression for the number of children,
+
+```{r}
+#| eval: false
+m_pois <- glm(childs ~ educ + female + black + exper + evermar, data = gss, family = poisson)
+```
+
+1.  Interpret $e^{\hat\beta}$ for `educ` and for `evermar`, one sentence each. Why is "multiplies the expected count" the right verb, rather than "adds"?
+
+2.  **Overdispersion by hand.** Compute the Pearson dispersion $\hat\phi = \frac{1}{n-k}\sum_i (y_i - \hat\theta_i)^2/\hat\theta_i$. Then report the standard error of `evermar` three ways: Poisson, quasi-Poisson, and robust (`sandwich::vcovHC`). Two sentences: what does $\hat\phi > 1$ mean about the Poisson's one strong claim, and why is the robust SE so much larger than the quasi-Poisson one for this particular variable?
+
+3.  **Zeros.** Report the observed share of childless respondents and the share the Poisson predicts (average `dpois(0, fitted(m_pois))`). Fit the hurdle model with `pscl::hurdle(..., dist = "poisson")` and the same covariates in both parts. Make one table with the log-likelihood, number of parameters, AIC, and BIC of the Poisson and the hurdle. Then, in a paragraph, read the hurdle's two parts substantively: what does `evermar` do to the odds of *any* child, what does it do to the count *among parents*, and what did the single Poisson coefficient average over?
+
+4.  A coauthor writes: "Just use the negative binomial; it handles overdispersion, so it handles everything." Respond in two or three sentences. Which problem does the negative binomial fix, and which one in these data does it not?
+
+# Observations in Groups (30 points)
+
+Merge `nlme::MathAchieve` with `nlme::MathAchSchool` as in Lab 4: 7,185 students in 160 schools, math achievement, student SES, and school sector.
+
+1.  **What clustering repairs.** Fit `lm(MathAch ~ SES + Sector)` and report the coefficient on `Sector` with its plain standard error and its standard error clustered on `School`. In a short paragraph, explain to a first-year student why the plain standard error is wrong for this variable. Use the fact that `Sector` takes 160 values, not 7,185.
+
+2.  **The random-intercept model.** Fit `lmer(MathAch ~ SES + Sector + (1 | School), REML = FALSE)`. Report the two coefficients with standard errors, $\hat\tau^2$, and $\hat\sigma^2$. Then write one sentence for each variance saying what it measures in words, and compute the intraclass correlation from them. One more sentence: what does that number mean?
+
+3.  **Fixed effects.** Fit `lm(MathAch ~ SES + Sector + School)`. Why is the `Sector` coefficient `NA`? Make a three-column comparison of the SES slope under pooled OLS, the random intercept, and fixed effects, and explain in a paragraph why the random-intercept slope sits between the other two. What kind of variation does each estimate use?
+
+4.  **The assumption that matters.** The random-intercept model assumes the school shock $u_j$ is uncorrelated with SES. Check it: add the school mean of SES (`ave(SES, School)`) as a regressor to the random-intercept model. Report the coefficients on SES and on the school mean. Two or three sentences: what happened to the SES slope, what does the coefficient on the school mean measure, and what does the comparison tell you about the assumption?
+
+5.  **Three questions, three tools.** For each research question below, say which of *OLS with clustered standard errors*, *fixed effects*, or a *random intercept* you would use, in two sentences each, naming the feature of the question that decides it.
+
+    (a) How much of earnings inequality in a country is between workplaces rather than within them, and is that share rising?
+
+    (b) Does a worker's wage rise after their own firm signs a union contract, using several years of data on the same workers and firms?
+
+    (c) Does a state minimum-wage increase reduce teen employment, using data from 12 states?
+
+\hrulefill
+
+*Total: 100 points.*

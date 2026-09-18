@@ -75,6 +75,11 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
 - Syllabus lives in `syllabus/` (`main.tex` + `schedule.tex`).
 
 ## Patterns That Work
+- **Problem sets (user, 2026-09-18)**: "intuition and how to interpret results, not nitty gritty
+  of likelihood solving"; cover the most important things. PS2 mirrors PS1's YAML/format
+  (Homework/homeworkN/homeworkN.qmd, eval:false code stubs, points per section, sentences
+  demanded). Render with the patched quarto + TEXINPUTS; no R packages needed since nothing
+  executes.
 - **Week 5 rebuilt 2026-09-17 (user: "too SOCIOL690S-alike", "drop do unless standard",
   "fix figures")**: body rewritten, preamble untouched (16:9, 11pt, its own headline).
   CausalML-textbook leftovers removed: 401(k) example -> college and earnings (D, Y, X family

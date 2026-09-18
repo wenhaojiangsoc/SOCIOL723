@@ -72,7 +72,14 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   uses the shared `dag` tikz style; no frame spills to a "(cont.)" page.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
-- Remaining to build: Weeks 11-14 slides+labs, Problem Sets 2-5, midterm review, final packet.
+- Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Sep 15, due Mon Sep 28): four
+  parts, 100 points, interpretation not derivation: Bernoulli likelihood curves and curvature,
+  Wald vs LR at a boundary; reading a logit (three scales, predicted probabilities first, AME
+  vs LPM, interaction via AME difference, odds-ratio referee, LR/AIC/BIC on the region block);
+  counts (exp(beta), Pearson phi, three SEs, zeros and the hurdle with AIC/BIC, NB coauthor);
+  groups (clustered SE for Sector, RI variances and ICC, FE vs RI vs pooled SES, school-mean
+  SES check, three-questions-three-tools). No answer key yet.
+- Remaining to build: Weeks 11-14 slides+labs, Problem Sets 3-5, midterm review, final packet.
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
 ## Gotchas
