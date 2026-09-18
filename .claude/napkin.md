@@ -345,6 +345,25 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   is NA" — the default `empinf` regression estimate returns NA. Fix:
   `boot.ci(bo, type="bca", L = empinf(bo, type="jack"))`. Also make the statistic
   function return an `unname()`d scalar.
+- **Codex CLI is broken on wj93 (2026-09-18)**: `codex exec` fails with ENOENT for the native
+  binary `/opt/homebrew/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/
+  vendor/aarch64-apple-darwin/codex/codex`; a `codex exec` call hangs >10 min before that
+  error surfaces. Fix is the user's: `npm i -g @openai/codex` (sandbox cannot write
+  /opt/homebrew). Use a fresh general-purpose Agent for second opinions instead.
+- Killewald 2016 numbers for teaching (from the PDF in ~/Downloads, Table 3 + Figure 1): later
+  cohort husband FT -.293 (.106) OR .746, Fig 1 3.3% vs 2.5% -> implied OR .751 (= exp(beta) up
+  to rounding, since both bars are the same typical couple); early-cohort housework -1.117
+  (.463) OR .327 per 0->1; 50%->75% gives exp(-.279)=.756 vs Fig 1 1.5%->1.1% implied .73;
+  constants -7.476/-3.525; N 32,853/33,470 couple-years. No replication code; only an online
+  supplement at asr.sagepub.com/supplemental.
+- 2026-09-18 independent review of PS2 (fresh opus Agent, since Codex is broken) found real
+  bugs, all verified: (1) `lm(MathAch ~ SES + Sector + School)` on the raw nlme data dies
+  (School is an ordered factor) and, once converted, R aliases a SCHOOL dummy and prints
+  Sector = 2.835; only `School + SES + Sector` makes Sector the NA term (the user's own
+  commit 8d848c4 already has this order in lab4); (2) "Sector takes 160 values" is wrong,
+  it takes 2 values and varies across 160 schools; (3) a 12-state minimum-wage scenario points
+  at few-clusters inference, which was not taught. PS2 is now 12 items with bracketed points
+  (25/30/20/25). Lesson: always run the exact formulas a problem set asks students to run.
 - `logistf` is NOT installed; use `brglm2` (`glm(..., method = "brglmFit")`) for Firth.
 - Quarto renders take 2-10 min when a lab has simulations — run them backgrounded.
 - **Weeks 5-7, 9-10 done.** Week 5 (Potential Outcomes + DAGs). DAGs drawn in raw TikZ (`every node/.style=
