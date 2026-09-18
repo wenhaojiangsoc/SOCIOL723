@@ -15,6 +15,10 @@ format:
         \usepackage{lmodern}
         \usepackage{amsmath,amssymb,bm}
         \usepackage{booktabs}
+        \usepackage{float}
+        \renewcommand{\topfraction}{0.95}
+        \renewcommand{\textfraction}{0.05}
+        \setcounter{topnumber}{2}
         \DeclareMathOperator{\Cov}{Cov}
         \DeclareMathOperator{\Var}{Var}
         \newcommand{\E}{E}
@@ -41,18 +45,18 @@ execute:
 editor: visual
 ---
 
-**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about what you will do in research: reading a published table, fitting the same kind of model on real data, and writing up what it says. No question asks for a derivation, and every computation uses the functions from Labs 3 and 4 (`glm`, `marginaleffects`, `sandwich`, `AER`, `MASS`, `pscl`, `lme4`, `nlme`). Where a question asks for sentences, write them as you would in a paper. You may use AI assistance, but you are responsible for understanding and being able to explain every line you submit.
-
-Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_earnings.rds`; the school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4.
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about what you will do in research: reading a published table, fitting the same kind of model on real data, and writing up what it says. No question asks for a derivation; every computation uses the functions from Labs 3 and 4. Where a question asks for sentences, write them as you would in a paper. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_earnings.rds`; the school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4.
 
 \hrulefill
 
 # Reading a Published Logit: Killewald (2016)
 
-Killewald, Alexandra. 2016. "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce." *American Sociological Review* 81(4): 696--719. Killewald follows couples in the Panel Study of Income Dynamics year by year. One row of her data is one couple in one year, and the outcome is whether the couple divorced in that year. Table 3 fits a logit separately to marriages begun in 1974 or earlier and to marriages begun in 1975 or later. The excerpt below keeps the rows the questions use; the full table has about forty rows of controls.
+Does a marriage's economic situation predict whether it ends? Killewald weighs four answers sociologists have given: wives who could support themselves after a divorce are freer to leave; financial strain wears a marriage down; marriages are more stable when spouses follow traditional roles; or they are more stable when only one spouse works full-time, whoever that is. She follows more than 6,300 couples in the Panel Study of Income Dynamics from 1968 to 2013. One row of her data is one couple in one year, and the outcome is 1 in the year a couple divorces and 0 in every earlier year. Because the meaning of a wife's paycheck has changed, she fits the model separately to marriages begun in 1974 or earlier and in 1975 or later. Table 3 reports the logits; Figure 1 turns the key coefficients into predicted probabilities of divorce in the next year. Her headline finding: in recent marriages a husband who is not employed full-time raises the risk of divorce, while the wife's employment and share of housework no longer matter.
+
+*Reference:* Killewald, Alexandra. 2016. "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce." *American Sociological Review* 81(4): 696--719. The excerpt of Table 3 and Figure 1 are reproduced on the next page; the full table has about forty rows of controls.
 
 ```{=latex}
-\begin{table}[h]
+\begin{figure}[t]
 \centering
 \small
 \renewcommand{\arraystretch}{1.15}
@@ -71,18 +75,17 @@ Couple-years                   & \multicolumn{3}{c}{32,853} & \multicolumn{3}{c}
 \bottomrule
 \end{tabular}
 \caption*{Killewald (2016), Table 3, excerpt. Logit coefficients, standard errors, and odds ratios as printed. $^{*}p<.05$; $^{**}p<.01$; $^{***}p<.001$. Controls include marital duration, religion, race, home ownership, children, both spouses' education, region, and year of marriage.}
-\end{table}
+\vspace{10pt}
+\includegraphics[width=0.82\linewidth]{figs/killewald2016_fig1.pdf}
+\caption*{Killewald (2016), Figure 1, reproduced for classroom use.}
+\end{figure}
 ```
 
-![Killewald (2016), Figure 1, reproduced for classroom use.](figs/killewald2016_fig1.pdf){width=85%}
+1.  **One coefficient, three scales.** Take the husband's full-time employment in the later cohort, $-.293$. Write one sentence on each scale: log-odds, odds (use the printed odds ratio), and probability (from Figure 1: 2.5% when he is employed full-time, 3.3% when he is not). Then compute the odds ratio implied by those two probabilities and compare it with the printed .746. Should the two agree exactly? Answer in one or two sentences, using the note under Figure 1 on how the probabilities were computed.
 
-1.  **The data.** In two or three sentences: what does the outcome equal in a given row, why does a couple that stays married for twenty years contribute twenty rows, and what would be lost by collapsing the data to one row per couple with the outcome "ever divorced"?
+2.  **A coefficient that is not significant.** In the later cohort, the wife's full-time employment has coefficient $.069$ and standard error $.088$; Figure 1 shows 2.6% when she is employed full-time and 2.5% when she is not. Write the sentence that belongs in a results section. In the earlier cohort the same coefficient is $.267$ with standard error $.153$, and Figure 1 shows 1.3% against 1.0%. Killewald writes that the association declined across cohorts but that the decline is not statistically significant. Compute the difference between the two coefficients and its standard error, $\sqrt{.153^2 + .088^2}$, and use them to explain in two sentences what supports each half of her claim.
 
-2.  **One coefficient, three scales.** Take the husband's full-time employment in the later cohort, $-.293$. Write one sentence on each scale: log-odds, odds (use the printed odds ratio), and probability (from Figure 1: 2.5% when he is employed full-time, 3.3% when he is not). Then compute the odds ratio implied by those two probabilities and compare it with the printed .746. Should the two agree exactly? Answer in one or two sentences, using the note under Figure 1 on how the probabilities were computed.
-
-3.  **A coefficient that is not significant.** In the later cohort, the wife's full-time employment has coefficient $.069$ and standard error $.088$; Figure 1 shows 2.6% when she is employed full-time and 2.5% when she is not. Write the sentence that belongs in a results section. In the earlier cohort the same coefficient is $.267$ with standard error $.153$, and Figure 1 shows 1.3% against 1.0%. Killewald writes that the association declined across cohorts but that the decline is not statistically significant. Compute the difference between the two coefficients and its standard error, $\sqrt{.153^2 + .088^2}$, and use them to explain in two sentences what supports each half of her claim.
-
-4.  **Units matter.** The wife's proportion of housework runs from 0 to 1, and its coefficient in the earlier cohort is $-1.117$, printed odds ratio .327. What change in housework does that odds ratio describe? Figure 1 plots a smaller change, from 50% to 75%. Start from the figure's 1.5% at 50%, multiply the odds by $e^{-1.117 \times .25}$, and convert back to a probability; you should land on the figure's 1.1%. Then one sentence on why you cannot recover the odds ratio precisely by working backwards from the printed 1.5% and 1.1%, and one sentence on why a coefficient's size means nothing until you know the units of its variable.
+3.  **Units matter.** The wife's proportion of housework runs from 0 to 1, and its coefficient in the earlier cohort is $-1.117$, printed odds ratio .327. What change in housework does that odds ratio describe? Figure 1 plots a smaller change, from 50% to 75%. Start from the figure's 1.5% at 50%, multiply the odds by $e^{-1.117 \times .25}$, and convert back to a probability; you should land on the figure's 1.1%. Then one sentence on why you cannot recover the odds ratio precisely by working backwards from the printed 1.5% and 1.1%, and one sentence on why a coefficient's size means nothing until you know the units of its variable.
 
 # Your Own Logit, Reported Like a Paper
 
