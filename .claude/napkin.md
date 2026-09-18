@@ -364,6 +364,10 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   it takes 2 values and varies across 160 schools; (3) a 12-state minimum-wage scenario points
   at few-clusters inference, which was not taught. PS2 is now 12 items with bracketed points
   (25/30/20/25). Lesson: always run the exact formulas a problem set asks students to run.
+- PS2 answer key: `Homework/homework2/homework2_answers.qmd` (10 pp, all code executed, prose
+  numbers via inline R). It is committed but NOT linked from README; pushing makes it public.
+  Quarto gotcha: never `rm -rf <name>_files` between renders of the same qmd in one session;
+  the next render then fails with "figure-pdf/...pdf not found". Quarto cleans up itself.
 - `logistf` is NOT installed; use `brglm2` (`glm(..., method = "brglmFit")`) for Firth.
 - Quarto renders take 2-10 min when a lab has simulations — run them backgrounded.
 - **Weeks 5-7, 9-10 done.** Week 5 (Potential Outcomes + DAGs). DAGs drawn in raw TikZ (`every node/.style=
