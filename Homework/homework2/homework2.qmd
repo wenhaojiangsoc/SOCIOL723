@@ -51,17 +51,17 @@ Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_e
 
 Killewald, Alexandra. 2016. "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce." *American Sociological Review* 81(4): 696--719. The article is on Sakai. Couples in the Panel Study of Income Dynamics are followed year by year; each row of the data is one couple in one year, and the outcome is whether the couple divorced in that year. Table 3 reports logits fitted separately to marriages begun in 1974 or earlier and in 1975 or later. The rows below are copied from it; the full table has about forty rows of controls.
 
-| Variable (Table 3, excerpt) | Married 1974 or earlier | Married 1975 or later |
+| Table 3 (excerpt) | Married 1974 or earlier | Married 1975 or later |
 |:--|:--:|:--:|
-| Wife employed full-time | .267 (.153), OR = 1.306 | .069 (.088), OR = 1.071 |
-| Husband employed full-time | $-$.097 (.208), OR = .908 | $-$.293$^{**}$ (.106), OR = .746 |
-| Wife's proportion of housework | $-$1.117$^{*}$ (.463), OR = .327 | .050 (.233), OR = 1.051 |
-| Constant | $-$7.476$^{***}$ (.884) | $-$3.525$^{***}$ (.393) |
+| Wife employed full-time | $.267$ ($.153$), OR = 1.306 | $.069$ ($.088$), OR = 1.071 |
+| Husband employed full-time | $-.097$ ($.208$), OR = .908 | $-.293^{**}$ ($.106$), OR = .746 |
+| Wife's proportion of housework | $-1.117^{*}$ ($.463$), OR = .327 | $.050$ ($.233$), OR = 1.051 |
+| Constant | $-7.476^{***}$ ($.884$) | $-3.525^{***}$ ($.393$) |
 | Observations (couple-years) | 32,853 | 33,470 |
 
 *Note:* Logit coefficients, standard errors in parentheses, odds ratios as printed in the article. $^{*}p<.05$, $^{**}p<.01$, $^{***}p<.001$. Controls include marital duration, religion, race, home ownership, children, education of both spouses, region, and marriage year.
 
-![Killewald (2016), Figure 1, reproduced for classroom use.](figs/killewald2016_fig1.png){width=88%}
+![Killewald (2016), Figure 1, reproduced for classroom use.](figs/killewald2016_fig1.pdf){width=85%}
 
 1.  **The data.** In two or three sentences: what is one row, what does the outcome equal in that row, why does a couple that stays married for twenty years contribute twenty rows, and what would be lost by collapsing the data to one row per couple with the outcome "ever divorced"?
 
