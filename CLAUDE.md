@@ -70,6 +70,9 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   two three-panel DAG frames from 690S) -> front
   door (formula, APC via Winship & Harding 2008, critiques) -> estimands (Lundberg). Every DAG
   uses the shared `dag` tikz style; no frame spills to a "(cont.)" page.
+- Week 5 (PO + DAGs, 63 pp): PO section expanded 2026-09-21 (Brand & Xie 2010, regression =
+  naive comparison, Neyman/HC2, multi-valued treatments, CIA proof, simulation figure from
+  `figs/w5_po_sims.R`, Manski bounds on GSS). DAG half untouched. Lab 5 is DAG-only so far.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Sep 15, due Mon Sep 28): four

@@ -122,6 +122,18 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   (control M bad; control Z<-M bad; control Z->M neutral). The earlier two-panel "Predictors
   of Treatment" frame in the DAG section was removed to avoid duplication. Deck = 55 pages.
   Source: ../SOCIOL690S/Week 5 Causal Inference through DAG/slides.tex lines 818-975.
+- 2026-09-22 (user: "why is E[T|A,C] = Cov(T,C-A)/Var(C-A)*(C-A)?"): the collider-algebra
+  frame now shows the two hidden moves as align* lines with reasons: (A,C) -> (A,W) with
+  W = C - A = T + eps_C; A drops out (independent of T and W); jointly normal so E[T|W] is the
+  regression line; slope 1/2. Lesson: never write "projection of T on C - A" as if obvious;
+  the reparametrization and the normality step must be on the slide.
+- 2026-09-22 (user: "go back, it's now even more confusing"): the four-step collider algebra
+  was REVERTED to the committed two-line version. Also: blue star on "Estimands, With
+  Numbers"; "several versions" bullet cut from "Beyond a Binary Treatment"; SUTVA given a
+  one-line gloss in the four conditions; "Watch It Happen" and the Manski bounds frames
+  DROPPED (figs/po_sims.pdf and w5_po_sims.R are now unused but kept); "the assumptions are
+  the missing arrows" bullet cut. Deck = 61 pages. Lesson: when the user asks "why is X",
+  answer in chat; only touch the slide if asked.
 - Week 5 DAG style rule: use the `dag` tikz style; shrink with
   `[dag,scale=0.8,every node/.append style={transform shape}]`, never by reducing node size.
 - lm() aliasing gotcha: with a group-constant regressor and group dummies, lm() drops the
@@ -1054,3 +1066,4 @@ Course is serif Latin Modern everywhere, full stop.
 - 2026-09-16 lab 4: dropped the Mundlak within-between subsection (u_hat, meanSES, m_wb) at the user's request; glmer chunk now ends with `avg_predictions(g1, variables = list(SES = c(-1, 0, 1)))` (observed-value, own-school u_j kept by default, re.form = NA sets u_j = 0; 0.137/0.232/0.365) instead of printing tau2. marginaleffects warns that SEs cover fixed effects only; chunk has `warning: false`.
 - 2026-09-16 lab 4 (final pass): dropped 'Checking proportional odds' (Brant + VGAM partial PO; restorable from git, `library(brant)` removed); dropped the AIC/BIC callout at the end of 'Comparing the count models'; RI-logit subsection now shows avg_predictions at SES -2..2 by 0.5 and reproduces the slide figure (u_j = +/-tau, 0, population average; tau = 0.58) in ggplot.
 - 2026-09-16 lab 4: new subsection 'Reading the lmer formula' (model equation, (1 | School) = random intercept, (1 + SES | School) / (0 + SES | School) / two grouping levels in an eval=false chunk) before 'Predictors at both levels'; ## note on REML = FALSE vs the REML default (ML vs REML differ in the third decimal on HSB).
+- 2026-09-21 Week 5 PO section expanded from 10 to 17 frames (deck 55 -> 63 pp): In the Literature Brand & Xie 2010 (negative selection, ATU > ATT), Regression on D = naive comparison (error = baseline + excess gain), Neyman estimator + conservative variance = HC2 (Samii & Aronow 2012), Beyond a binary treatment, The proof line by line (CIA identification), Watch it happen (figs/w5_po_sims.R -> figs/po_sims.pdf: naive under selection 4.76, randomized 4.03, within-X 4.03), Manski bounds on GSS (ba -> above-median earnings: ATE in [-0.32, 0.68]). Estimands frame pointer fixed Week 1 -> Week 6. Lab 5 not yet aligned.

@@ -272,11 +272,11 @@ Unit & $D_i$ & $Y_i(0)$ & $Y_i(1)$ & $\tau_i$ & $Y_i$ (observed) \\
   \item ``Should we expand this program?'' asks about the ATU. ``Was it
         worth running?'' asks about the ATT.
   \item Later we meet estimands nobody chose: the LATE (Week 7), the effect
-        at a cutoff (Week 9), OLS's own variance-weighted average (Week 1).
+        at a cutoff (Week 9), OLS's own variance-weighted average (Week 6).
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Estimands, With Numbers}
+\begin{frame}{Estimands, With Numbers\core}
 Four units, effects that differ, and treatment related to the effect:
 \begin{center}\small
 \renewcommand{\arraystretch}{1.15}
@@ -344,6 +344,49 @@ $\text{ATT} = \tau + (1 - \pi)\big(\text{ATT} - \text{ATU}\big)$,
 \end{itemize}
 \end{frame}
 
+\begin{frame}{In the Literature: Negative Selection \srcp{Brand and Xie 2010}}
+Treatment: completing a four-year degree. Outcome: log hourly wage. Data:
+NLSY79 ($n = 2{,}474$) and the Wisconsin Longitudinal Study ($n = 7{,}905$).
+\begin{itemize}\itemsep3pt
+  \item Estimate each person's propensity to finish college from pre-college
+        covariates (family background, measured ability, grades, aspirations);
+        group people into balanced propensity strata; estimate the college
+        effect within each stratum.
+  \item The effect \emph{falls} with the propensity. NLSY men at ages 29--32:
+        about $30\%$ higher wages in the lowest stratum, $10\%$ in the
+        highest, $5$ points less per stratum. NLSY women at 37--40: $35\%$
+        to $20\%$. Same sign in the Wisconsin cohort.
+  \item In today's notation: $\tau_i$ is largest where $\Pr(D_i = 1 \mid X_i)$
+        is smallest, so $\text{ATU} > \text{ATT}$. The comparative-advantage
+        story from economics predicts the opposite ordering.
+  \item Consequence: the treated are the wrong people to learn the ATE from,
+        and a policy that expands college reaches the ATU population.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Regression on $D$ Is the Naive Comparison\core}
+Write the switching equation as a regression, with $\tau = \text{ATE}$ and
+$\alpha = \E[Y_i(0)]$:
+\begin{align*}
+  Y_i &= Y_i(0) + \tau_i D_i && \text{\footnotesize switching equation} \\
+      &= \alpha + \tau D_i
+         + \underbrace{\big(Y_i(0) - \alpha\big) + (\tau_i - \tau)\,D_i}_{\varepsilon_i}
+         && \text{\footnotesize add and subtract } \alpha \text{ and } \tau D_i
+\end{align*}
+The error holds the unit's baseline and its excess gain. OLS of $Y$ on $D$
+returns $\bar Y_1 - \bar Y_0$, the naive comparison, and
+{\small
+\begin{align*}
+  \E[\varepsilon_i \mid D_i = 1] - \E[\varepsilon_i \mid D_i = 0]
+  &= \underbrace{\E[Y_i(0) \mid D_i=1] - \E[Y_i(0)\mid D_i=0]}_{\text{baseline selection}}
+  + \underbrace{(1-\pi)(\text{ATT}-\text{ATU})}_{\text{selection on the effect}}
+\end{align*}}
+using $\E[\tau_i - \tau \mid D_i = 1] = \text{ATT} - \tau = (1-\pi)(\text{ATT} - \text{ATU})$.
+Weeks 1--4 treated $\E[\varepsilon_i \mid D_i] = 0$ as a modelling
+assumption. Today it is a claim about the world: who gets treated is
+unrelated to what would have happened to them either way.
+\end{frame}
+
 \begin{frame}{Randomization Solves It\core}
 If $D_i$ is assigned by a coin flip, it is independent of everything about
 the unit, including its potential outcomes:
@@ -363,6 +406,30 @@ is zero, and
         of the treatment taken up (Week 7).
   \item Every observational design tries to buy some version of this
         independence with an argument instead of a coin.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Estimating the ATE in an Experiment \srcp{Neyman 1923}}
+$n_1$ treated, $n_0$ controls, $D_i$ by coin flip. Estimator
+$\hat\tau = \bar Y_1 - \bar Y_0$.
+\begin{align*}
+  \E[\bar Y_1] &= \E[Y_i(1) \mid D_i = 1] = \E[Y_i(1)]
+      && \text{\footnotesize consistency, then } D_i \indep Y_i(1) \\
+  \E[\hat\tau] &= \E[Y_i(1)] - \E[Y_i(0)] = \text{ATE}
+      && \text{\footnotesize same for } \bar Y_0 \\
+  \widehat{\Var}(\hat\tau) &= \frac{s_1^2}{n_1} + \frac{s_0^2}{n_0}
+      && \text{\footnotesize } s_d^2 = \text{sample variance of } Y \text{ in arm } d
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Conservative: the true variance has a third term, $-\Var(\tau_i)/n$,
+        which no data can estimate because no unit shows both outcomes.
+        Exact when effects are constant.
+  \item It equals the HC2 robust variance from OLS of $Y$ on $D$ (Week 2),
+        so \texttt{lm} plus a robust SE is Neyman's estimator
+        \srcp{Samii and Aronow 2012}.
+  \item Simulated experiment, $n = 2{,}000$, ATE $= 4.03$: $\hat\tau = 4.08$,
+        SE $= 0.116$. Over $2{,}000$ re-randomizations the estimates have SD
+        $0.102$ and the SE averages $0.115$: conservative, as promised.
 \end{itemize}
 \end{frame}
 
@@ -391,17 +458,33 @@ versions, and under anticipation.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Beyond a Binary Treatment}
+Nothing above needs two arms. For a treatment $d$ in a set $\mathcal{D}$,
+unit $i$ has $Y_i(d)$ for every $d$ and reveals $Y_i = Y_i(D_i)$.
+\begin{itemize}\itemsep3pt
+  \item Years of schooling: $Y_i(12), Y_i(16), \ldots$ ``The effect of
+        college'' is $\E[Y_i(16) - Y_i(12)]$, one contrast among many. A
+        regression slope on years averages all the contrasts with weights
+        nobody chose.
+  \item Continuous dose: $d \mapsto \E[Y_i(d)]$ is the dose-response curve.
+        Positivity now asks for every dose inside every covariate cell.
+  \item The estimands and the selection-bias decomposition go through one
+        contrast at a time, so the course stays with $D_i \in \{0,1\}$.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Identification Under Selection on Observables\core}
 Without randomization, assume it holds \emph{within cells of observed
 covariates}.
 \begin{block}{The four conditions}
-\begin{enumerate}\itemsep1pt
+\begin{enumerate}\itemsep0pt
   \item \textbf{Conditional independence} (ignorability, unconfoundedness):
         $\big(Y_i(0),Y_i(1)\big) \indep D_i \mid X_i$.
   \item \textbf{Positivity} (overlap): $0 < \Pr(D_i = 1\mid X_i = x) < 1$
         wherever $x$ occurs.
   \item \textbf{Consistency}: $Y_i = Y_i(D_i)$.
-  \item \textbf{SUTVA}.
+  \item \textbf{SUTVA}: one unit's outcome does not depend on others'
+        treatments, and ``treated'' means one thing for everyone.
 \end{enumerate}
 \end{block}
 Then the ATE is identified:
@@ -409,8 +492,33 @@ Then the ATE is identified:
   \text{ATE} = \E\Big[\, \underbrace{\E[Y_i\mid D_i=1, X_i] - \E[Y_i\mid D_i=0, X_i]}_{\text{estimable from data}} \Big] .
 \end{align*}
 The left side is causal and unobservable; the right side is a function of the
-observed joint distribution. Conditions 1--4 are the bridge, and
-\alert{none of them is testable}.
+observed data. Conditions 1--4 are the bridge, and \alert{none is testable}.
+\end{frame}
+
+\begin{frame}{The Proof, Line by Line\core}
+Fix a covariate value $x$ and work inside the cell $X_i = x$:
+{\footnotesize
+\begin{align*}
+  \E[Y_i \mid D_i = 1, X_i = x] &= \E[Y_i(1) \mid D_i = 1, X_i = x]
+      && \text{\footnotesize consistency} \\
+  &= \E[Y_i(1) \mid X_i = x]
+      && \text{\footnotesize conditional independence} \\
+  \E[Y_i \mid D_i = 0, X_i = x] &= \E[Y_i(0) \mid X_i = x]
+      && \text{\footnotesize same two steps} \\
+  \text{CATE}(x) &= \E[Y_i \mid D_i = 1, X_i = x] - \E[Y_i \mid D_i = 0, X_i = x]
+      && \text{\footnotesize subtract} \\
+  \text{ATE} &= \textstyle\sum_x \text{CATE}(x)\,\Pr(X_i = x)
+      && \text{\footnotesize iterated expectations}
+\end{align*}}
+\begin{itemize}\itemsep3pt
+  \item Positivity enters in line 1: $\E[Y_i \mid D_i = 1, X_i = x]$ exists
+        only if someone with $X_i = x$ is treated.
+  \item Line 5 weights cells by how common they are; the ATT weights them by
+        $\Pr(X_i = x \mid D_i = 1)$ instead.
+  \item In missing-data language: the unobserved potential outcome is
+        missing at random given $X_i$. Week 6 is line 4 when $X$ has too
+        many cells to take means.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{What Positivity Is Saying\core}
@@ -516,7 +624,6 @@ right of $B$'s equation.
   \item \textbf{Acyclic}: no variable causes itself through a loop.
   \item The graph keeps which arrows exist and drops $f_D, f_Y$. Everything
         below holds for \emph{any} functional form.
-  \item \alert{The assumptions are the missing arrows}, not the drawn ones.
 \end{itemize}
 \end{column}
 \end{columns}
@@ -1268,6 +1375,9 @@ vol.\ 3A, edited by O. Ashenfelter and D. Card. Elsevier.
 \textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 2]
 \item Blau, Peter M. and Otis Dudley Duncan. 1967. \textit{The American
 Occupational Structure}. New York: Wiley.
+\item Brand, Jennie E. and Yu Xie. 2010. ``Who Benefits Most from College?
+Evidence for Negative Selection in Heterogeneous Economic Returns to Higher
+Education.'' \textit{American Sociological Review} 75(2): 273--302.
 \item Cinelli, Carlos, Andrew Forney, and Judea Pearl. 2024. ``A Crash Course
 in Good and Bad Controls.'' \textit{Sociological Methods \& Research} 53(3):
 1071--1104.
@@ -1289,6 +1399,9 @@ Sciences}. Harvard University Press.
 \item Morgan, Stephen L. and Christopher Winship. 2015.
 \textit{Counterfactuals and Causal Inference}, 2nd ed. Cambridge University
 Press. [Ch.\ 1--3]
+\item Neyman, Jerzy. 1923 [1990]. ``On the Application of Probability Theory
+to Agricultural Experiments. Essay on Principles. Section 9.''
+\textit{Statistical Science} 5(4): 465--472.
 \item Pearl, Judea. 1995. ``Causal Diagrams for Empirical Research.''
 \textit{Biometrika} 82(4): 669--688.
 \item Pearl, Judea. 2009. \textit{Causality: Models, Reasoning, and
@@ -1296,6 +1409,9 @@ Inference}, 2nd ed. Cambridge University Press.
 \item Rubin, Donald B. 1974. ``Estimating Causal Effects of Treatments in
 Randomized and Nonrandomized Studies.'' \textit{Journal of Educational
 Psychology} 66(5): 688--701.
+\item Samii, Cyrus and Peter M. Aronow. 2012. ``On Equivalencies Between
+Design-Based and Regression-Based Variance Estimators for Randomized
+Experiments.'' \textit{Statistics \& Probability Letters} 82(2): 365--370.
 \item Samii, Cyrus. 2026. \textit{Quantitative Political Analysis II}, lecture
 notes, New York University. \texttt{cyrussamii.com/?page\_id=4190}.
 [Lectures 1--2: this deck's framing of identification and of the intervention graph]
