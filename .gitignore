@@ -15,3 +15,6 @@ syllabus/main.pdf
 *.fls
 *.fdb_latexmk
 syllabus/main.pdf
+
+# answer keys for problem sets stay local
+Homework/*/*_answers.*
