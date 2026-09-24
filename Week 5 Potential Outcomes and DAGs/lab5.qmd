@@ -1,5 +1,5 @@
 ---
-title: "\\textbf{Lab 5: Simulating Confounding, Colliders, and DAGs}"
+title: "\\textbf{Lab 5: Potential Outcomes, Confounding, Colliders, and DAGs}"
 subtitle: "SOCIOL 723, Social Statistics II, Thursday, September 24"
 author: "Wenhao Jiang"
 format:
@@ -12,17 +12,33 @@ format:
     toc: true
     toc-depth: 2
     colorlinks: true
+    toccolor: blue
     include-in-header:
       text: |
         \usepackage[T1]{fontenc}
         \usepackage{lmodern}
         \usepackage{amsmath,amssymb,bm}
         \usepackage{booktabs}
+        \usepackage{xcolor}
+        \usepackage{tikz}
+        \usetikzlibrary{arrows.meta,positioning}
         \DeclareMathOperator{\Var}{Var}
         \newcommand{\E}{E}
         \newcommand{\indep}{\perp\!\!\!\perp}
         \usepackage{setspace}
         \setstretch{1.12}
+        %% the DAG style from the lecture slides, verbatim
+        \definecolor{dukeblue}{RGB}{1,33,105}
+        \definecolor{accent}{RGB}{200,78,0}
+        \tikzset{
+          dag/.style={>=Stealth,thick,
+            every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,
+                               minimum size=9mm,font=\small}},
+          unobs/.style={draw=gray,dashed},
+          cond/.style={draw=accent,fill=accent!12},
+          lab/.style={draw=none,fill=none,rectangle,inner sep=2pt,font=\footnotesize},
+          arr/.style={->,dukeblue,thick},
+          uarr/.style={->,gray,thick}}
 execute:
   echo: true
   warning: false
@@ -41,15 +57,15 @@ options(digits = 4, scipen = 999)
 # Goals
 
 The point of this lab is that **you already know the right answer**. We build
-worlds where the causal effect is a number we chose, then see which analyses
-recover it and which do not. That is the only way to develop reliable intuition
-about identification.
+worlds where every unit has both potential outcomes, so the ATE is a number we
+chose, then see which analyses recover it and which do not.
 
-1.  Simulate confounding and watch adjustment fix it.
-2.  Simulate a collider and watch adjustment *break* a correct answer.
-3.  Simulate post-treatment (mediator) control.
-4.  See selection bias as collider bias.
-5.  Draw and query DAGs in `R` with `dagitty`.
+1.  Build a population with both potential outcomes; compute the ATE, ATT,
+    ATU; verify the selection-bias decomposition.
+2.  Randomize, then apply the adjustment formula by hand, and watch both work.
+3.  Simulate confounding, colliders, mediators, bias amplification, and
+    selection; run Baron and Kenny's mechanism test on the GSS and break it.
+4.  Draw and query DAGs: `dagitty` for the logic, TikZ for the picture.
 
 ```{r}
 #| label: packages
@@ -57,20 +73,150 @@ library(dplyr)
 library(ggplot2)
 library(dagitty)
 library(ggdag)
+library(mediation)  # mediate, medsens
 set.seed(723)
+```
+
+# Potential outcomes on a population you built
+
+## Both columns, then the switching equation
+
+Two thousand people. $X_i = 1$ if the parents went to college. The untreated
+outcome is higher for $X_i = 1$, and the treatment effect is *lower* for
+$X_i = 1$: the negative-selection pattern of Brand and Xie (2010) from lecture, built in.
+
+```{r}
+#| label: population
+n <- 2000
+X   <- rbinom(n, 1, 0.5)
+Y0  <- 10 + 4 * X + rnorm(n, 0, 2)            ## baseline: 4 higher if X = 1
+tau <- 6 - 4 * X + rnorm(n, 0, 1)             ## effect: 6 if X = 0, 2 if X = 1
+Y1  <- Y0 + tau
+pop <- data.frame(X, Y0, Y1, tau)
+head(pop, 4)
+
+## the estimands are averages of a column nobody ever sees in full
+ATE <- mean(pop$tau)
+ATE
+```
+
+Now assign treatment with selection: $X_i = 1$ is treated with probability
+$0.7$, $X_i = 0$ with probability $0.3$. The switching equation reveals one
+column per person.
+
+```{r}
+#| label: switching
+pop$D <- rbinom(n, 1, ifelse(pop$X == 1, 0.7, 0.3))
+pop$Y <- pop$D * pop$Y1 + (1 - pop$D) * pop$Y0     ## the switching equation
+
+## ATT and ATU exist because WE still see both columns; a researcher does not
+ATT <- mean(pop$tau[pop$D == 1]); ATU <- mean(pop$tau[pop$D == 0])
+pi  <- mean(pop$D)
+c(ATE = ATE, ATT = ATT, ATU = ATU, check = pi * ATT + (1 - pi) * ATU)
+```
+
+The naive comparison and its decomposition from lecture, term by term:
+
+```{r}
+#| label: decomposition
+naive    <- mean(pop$Y[pop$D == 1]) - mean(pop$Y[pop$D == 0])
+baseline <- mean(pop$Y0[pop$D == 1]) - mean(pop$Y0[pop$D == 0])   ## E[Y0|D=1] - E[Y0|D=0]
+c(naive = naive, ATT_plus_baseline = ATT + baseline,
+  ATE_plus_both = ATE + baseline + (1 - pi) * (ATT - ATU))
+```
+
+Both identities hold to the last decimal. The treated have a higher baseline
+(they are mostly $X_i = 1$) and a smaller effect, and the naive comparison
+adds the first error to the ATT.
+
+```{r}
+#| label: naive-is-ols
+## regression of Y on D returns the naive comparison exactly; next week opens
+## with why (the error term holds the baseline and the excess gain)
+coef(lm(Y ~ D, data = pop))["D"]
+```
+
+## Randomization
+
+Same population, treatment by coin flip. Now $D$ is independent of both
+columns, the baseline term is zero on average, and the difference in means
+is centred on the ATE.
+
+```{r}
+#| label: randomize
+pop$Dr <- rbinom(n, 1, 0.5)
+pop$Yr <- pop$Dr * pop$Y1 + (1 - pop$Dr) * pop$Y0
+c(estimate = mean(pop$Yr[pop$Dr == 1]) - mean(pop$Yr[pop$Dr == 0]), ATE = ATE,
+  baseline_gap = mean(pop$Y0[pop$Dr == 1]) - mean(pop$Y0[pop$Dr == 0]))
+```
+
+The estimate misses the ATE by sampling noise only; the baseline gap is
+close to zero because a coin does not read $Y_i(0)$. The figure at the end of
+this section repeats the draw 1,000 times.
+
+## Selection on observables: the adjustment formula by hand
+
+Back to the selected treatment `D`. Within each value of $X$, treatment was a
+coin flip (probability $0.7$ or $0.3$, unrelated to the potential outcomes),
+so conditional independence holds by construction. The lecture's formula:
+difference within each stratum, then weight by the share of the stratum.
+
+```{r}
+#| label: adjustment-formula
+cell <- pop |>
+  group_by(X) |>
+  summarise(share = n() / nrow(pop),
+            diff  = mean(Y[D == 1]) - mean(Y[D == 0]),   ## CATE(x), estimable
+            true_cate = mean(tau), .groups = "drop")
+cell
+c(adjusted = sum(cell$diff * cell$share), ATE = ATE)
+
+## the regression version. It agrees with the formula up to sampling noise
+## because Var(D | X) is the same in both strata (0.7 * 0.3 = 0.3 * 0.7), so
+## OLS weights the two CATEs by the stratum shares. Week 6 shows what happens
+## when the variances differ (exercise 3)
+coef(lm(Y ~ D + X, data = pop))["D"]
+```
+
+Repeat the whole thing 1,000 times with fresh treatment draws, for all three
+designs.
+
+```{r}
+#| label: fig-three-designs
+#| fig-cap: "One population, treatment redrawn 1,000 times. The naive comparison under selection is centred on the wrong number; randomization and the adjustment formula are centred on the ATE (dashed). All three have about the same spread: bias is not imprecision."
+#| fig-height: 2.6
+three <- t(replicate(1000, {
+  D <- rbinom(n, 1, ifelse(pop$X == 1, 0.7, 0.3)); Y <- D * pop$Y1 + (1 - D) * pop$Y0
+  Dr <- rbinom(n, 1, 0.5); Yr <- Dr * pop$Y1 + (1 - Dr) * pop$Y0
+  cell <- sapply(0:1, function(x) mean(Y[D == 1 & pop$X == x]) - mean(Y[D == 0 & pop$X == x]))
+  c(`selection, naive` = mean(Y[D == 1]) - mean(Y[D == 0]),
+    `randomized, naive` = mean(Yr[Dr == 1]) - mean(Yr[Dr == 0]),
+    `selection, adjusted` = sum(cell * table(pop$X) / n))
+}))
+as.data.frame(three) |>
+  tidyr::pivot_longer(everything(), names_to = "design") |>
+  mutate(design = factor(design, levels = colnames(three))) |>
+  ggplot(aes(value)) +
+  geom_histogram(bins = 40, fill = "grey75") +
+  geom_vline(xintercept = ATE, linetype = 2) +
+  facet_wrap(~ design) +
+  labs(x = "estimate of the ATE", y = NULL) +
+  theme_minimal(base_size = 10)
+round(rbind(mean = colMeans(three), sd = apply(three, 2, sd)), 3)
 ```
 
 # Confounding
 
 The world: $X$ causes both $D$ and $Y$; the true effect of $D$ on $Y$ is
-$\tau = 2$.
+$\tau = 2$. This is the fork of the lecture's three building blocks, and the
+back-door path $D \leftarrow X \to Y$ is the only one.
 
 ```{r}
 #| label: confound-dgp
 sim_confound <- function(n = 2000, tau = 2) {
-  x <- rnorm(n)                       # confounder
-  d <- 1.2 * x + rnorm(n)             # treatment
-  y <- tau * d + 1.5 * x + rnorm(n)   # outcome
+  x <- rnorm(n)                       ## confounder
+  d <- 1.2 * x + rnorm(n)             ## treatment
+  y <- tau * d + 1.5 * x + rnorm(n)   ## outcome
   data.frame(y, d, x)
 }
 dat <- sim_confound()
@@ -80,36 +226,15 @@ c(naive    = coef(lm(y ~ d, data = dat))["d"],
   truth    = 2)
 ```
 
-The naive estimate is badly biased upward. Check the omitted variable bias
-formula from Week 1:
+The naive estimate is biased upward. Check the omitted variable bias formula
+from Week 1:
 
 ```{r}
 #| label: confound-ovb
-b_x   <- coef(lm(y ~ d + x, data = dat))["x"]   # effect of the omitted variable
-delta <- coef(lm(x ~ d, data = dat))["d"]       # omitted on included
+b_x   <- coef(lm(y ~ d + x, data = dat))["x"]   ## effect of the omitted variable
+delta <- coef(lm(x ~ d, data = dat))["d"]       ## omitted on included
 c(predicted_bias = b_x * delta,
   actual_bias = coef(lm(y ~ d, data = dat))["d"] - coef(lm(y ~ d + x, data = dat))["d"])
-```
-
-Exactly as predicted. Over many replications the adjusted estimator is centred
-on the truth and the naive one is not:
-
-```{r}
-#| label: fig-confound
-#| fig-cap: "1,000 replications. Adjustment recovers the true effect of 2; the naive estimator does not."
-reps <- t(replicate(1000, {
-  d0 <- sim_confound()
-  c(naive = coef(lm(y ~ d, d0))["d"], adjusted = coef(lm(y ~ d + x, d0))["d"])
-}))
-
-as.data.frame(reps) |>
-  tidyr::pivot_longer(everything()) |>
-  ggplot(aes(value, fill = name)) +
-  geom_histogram(bins = 60, alpha = .7, position = "identity") +
-  geom_vline(xintercept = 2, colour = "black", linetype = 2) +
-  scale_fill_manual(values = c("naive.d" = "firebrick", "adjusted.d" = "navy")) +
-  labs(x = expression(hat(tau)), y = "count", fill = NULL) +
-  theme_minimal(base_size = 10)
 ```
 
 # Colliders
@@ -122,14 +247,14 @@ But both cause $C$.
 sim_collider <- function(n = 2000, tau = 2) {
   d <- rnorm(n)
   y <- tau * d + rnorm(n)
-  c_ <- 1.0 * d + 1.0 * y + rnorm(n)     # collider: caused by BOTH
+  c_ <- 1.0 * d + 1.0 * y + rnorm(n)     ## collider: caused by BOTH
   data.frame(y, d, c = c_)
 }
 dat2 <- sim_collider()
 
-c(correct   = coef(lm(y ~ d, data = dat2))["d"],
+c(correct    = coef(lm(y ~ d, data = dat2))["d"],
   controlled = coef(lm(y ~ d + c, data = dat2))["d"],
-  truth     = 2)
+  truth      = 2)
 ```
 
 ::: callout-important
@@ -158,13 +283,13 @@ as.data.frame(reps2) |>
 ## Berkson's paradox, directly
 
 Two genuinely independent traits become correlated once you condition on their
-common effect.
+common effect. This is the admissions example from lecture.
 
 ```{r}
 #| label: berkson
-n <- 5000
-test <- rnorm(n); athl <- rnorm(n)
-admit <- (test + athl) > 1.5          # admitted if either is high enough
+n_b <- 5000
+test <- rnorm(n_b); athl <- rnorm(n_b)
+admit <- (test + athl) > 1.5          ## admitted if either is high enough
 
 c(all_applicants = cor(test, athl),
   admitted_only  = cor(test[admit], athl[admit]))
@@ -191,8 +316,8 @@ answers a different question.
 #| label: mediator
 sim_med <- function(n = 2000) {
   d <- rnorm(n)
-  m <- 0.8 * d + rnorm(n)              # mediator
-  y <- 1.0 * d + 1.5 * m + rnorm(n)    # total effect = 1.0 + 0.8*1.5 = 2.2
+  m <- 0.8 * d + rnorm(n)              ## mediator
+  y <- 1.0 * d + 1.5 * m + rnorm(n)    ## total effect = 1.0 + 0.8*1.5 = 2.2
   data.frame(y, d, m)
 }
 dat3 <- sim_med()
@@ -213,6 +338,134 @@ income when studying the effect of education on health, controlling for marriage
 when studying the effect of a policy on fertility.
 :::
 
+# The mechanism test: Baron and Kenny (1986)
+
+The lecture's three regressions, on the mediator world above. The truth is
+$a = 0.8$, $b = 1.5$, $c' = 1$, so the indirect effect is $ab = 1.2$ and the
+total effect is $c = 2.2$.
+
+```{r}
+#| label: baron-kenny
+bk <- function(dat) {
+  m1 <- lm(y ~ d, data = dat)          ## step 1: total effect c
+  m2 <- lm(m ~ d, data = dat)          ## step 2: D moves M, coefficient a
+  m3 <- lm(y ~ d + m, data = dat)      ## step 3: b for M, c' for D
+  a <- coef(m2)["d"]; b <- coef(m3)["m"]
+  ## Sobel SE for ab: delta method, a and b from different regressions so
+  ## their covariance is taken as zero
+  se_ab <- sqrt(b^2 * vcov(m2)["d", "d"] + a^2 * vcov(m3)["m", "m"])
+  c(c = coef(m1)["d"], a = a, b = b, c_prime = coef(m3)["d"],
+    ab = a * b, se_ab = se_ab, share = a * b / coef(m1)["d"])
+}
+round(bk(dat3), 3)
+## the identity c = c' + ab holds exactly for OLS: it is the omitted-variable
+## formula with M as the omitted variable
+with(as.list(bk(dat3)), c(c = c.d, c_prime_plus_ab = c_prime.d + ab.d))
+```
+
+Now the same test on real data: parents' education, own education, log
+earnings, with sex, race, and age as covariates in every equation.
+
+```{r}
+#| label: bk-gss
+gss <- readRDS("../Data/gss_earnings.rds")
+c_tot <- coef(lm(lnearn ~ pareduc + female + black + age, data = gss))["pareduc"]
+a     <- coef(lm(educ   ~ pareduc + female + black + age, data = gss))["pareduc"]
+f     <- coef(lm(lnearn ~ pareduc + educ + female + black + age, data = gss))
+round(c(c = c_tot, a = a, b = f["educ"], c_prime = f["pareduc"],
+        ab = a * f["educ"], share = a * f["educ"] / c_tot), 4)
+```
+
+A paper would write: "63 percent of the effect of parents' education on
+earnings runs through the respondent's own schooling." Step 3 is a regression
+of earnings on schooling, and the lecture's back-door question applies to it:
+is there an unmeasured cause of both own education and earnings? Ability is
+one. Nothing in the three regressions can detect it. Build it in and watch:
+
+```{r}
+#| label: bk-broken
+sim_med_u <- function(n = 20000) {
+  d <- rnorm(n); u <- rnorm(n)             ## u: unmeasured, into M and Y
+  m <- 0.8 * d + u + rnorm(n)
+  y <- 1.0 * d + 1.5 * m + u + rnorm(n)    ## same a, b, c' as before
+  data.frame(y, d, m)
+}
+round(rbind(truth = c(c = 2.2, a = 0.8, b = 1.5, c_prime = 1, ab = 1.2, se_ab = NA, share = 1.2 / 2.2),
+            baron_kenny = bk(sim_med_u())), 3)
+```
+
+The total effect $c$ and the first-stage $a$ survive, because $D$ has no back
+door. The mediator coefficient $b$ absorbs $U$, so the indirect effect is
+overstated, the direct effect understated, and the "share mediated" moves
+from 55 to 73 percent. The identity $c = c' + ab$ still holds; only the split
+is wrong, and the split was the point. Modern mediation analysis names the
+assumption sequential ignorability (Imai, Keele, and Tingley 2010) and pairs
+the estimate with a sensitivity analysis for $U$.
+
+## The same test in a package, plus the sensitivity analysis
+
+The `mediation` package takes the mediator model and the outcome model and
+returns the indirect effect (it calls it the ACME, average causal mediation
+effect), the direct effect (ADE), and the share mediated, with simulation
+intervals. With linear models and no interaction the ACME *is* $ab$ and the
+ADE *is* $c'$, so this is Baron and Kenny with better intervals. What the
+package adds is `medsens()`: how strong would the unmeasured $U$ have to be
+to erase the indirect effect?
+
+```{r}
+#| label: mediation-pkg
+m_med <- lm(educ   ~ pareduc + female + black + age, data = gss)          ## step 2
+m_out <- lm(lnearn ~ pareduc + educ + female + black + age, data = gss)   ## step 3
+## sims: draws of the coefficients for the intervals (Week 3's parametric bootstrap)
+med <- mediate(m_med, m_out, treat = "pareduc", mediator = "educ", sims = 500)
+summary(med)
+
+## sensitivity: rho is the correlation between the errors of the mediator and
+## outcome equations that an unmeasured U would induce. At what rho is ACME 0?
+sens <- medsens(med, rho.by = 0.1, sims = 200)
+summary(sens)
+```
+
+The ACME of $0.039$ and ADE of $0.023$ are the $ab$ and $c'$ computed by
+hand. The sensitivity table says the indirect effect reaches zero when the
+error correlation is $0.3$, or when an unmeasured $U$ explains about 9
+percent of the variance in both schooling and earnings. Whether ability is
+that strong is the substantive question; the package puts a number on it
+where Baron and Kenny said nothing.
+
+```{r}
+#| label: fig-medsens
+#| fig-cap: "Sensitivity of the indirect effect to an unmeasured confounder of schooling and earnings."
+#| fig-height: 3
+plot(sens, main = "", ylim = c(-0.02, 0.06))
+```
+
+# Bias amplification
+
+The lecture's third single-cause case: $Z$ causes $D$ only, and an unmeasured
+$U$ confounds $D$ and $Y$. $Z$ is not on any back-door path, so controlling
+for it cannot remove bias. It makes the bias worse.
+
+```{r}
+#| label: amplification
+sim_amp <- function(n = 5000, tau = 1) {
+  z <- rnorm(n); u <- rnorm(n)              ## z: cause of D only; u: unmeasured confounder
+  d <- 1.5 * z + u + rnorm(n)
+  y <- tau * d + 2 * u + rnorm(n)
+  data.frame(y, d, z)
+}
+dat5 <- sim_amp()
+c(without_z = coef(lm(y ~ d, data = dat5))["d"],
+  with_z    = coef(lm(y ~ d + z, data = dat5))["d"],
+  truth     = 1)
+```
+
+Why: by FWL (Week 1), controlling for $Z$ regresses $Y$ on the part of $D$
+that $Z$ does not explain. That residual is $U + \epsilon_D$, in which $U$ is
+a *larger* share than it was in $D$. The clean variation from $Z$ was the
+part of $D$ that was safe to use, and the control threw it away. Variables
+like $Z$ are instruments (Week 7).
+
 # Selection bias
 
 Now the sample itself is selected on a collider. Only people who are employed
@@ -223,7 +476,7 @@ unobserved determinants of wages.
 #| label: selection
 sim_select <- function(n = 5000, tau = 1) {
   educ <- rnorm(n)
-  u    <- rnorm(n)                        # unobserved ability
+  u    <- rnorm(n)                        ## unobserved ability
   wage <- tau * educ + u + rnorm(n)
   employed <- (0.8 * educ + 1.2 * u + rnorm(n)) > 0.5
   data.frame(wage, educ, employed)
@@ -235,29 +488,36 @@ c(full_population = coef(lm(wage ~ educ, data = d4))["educ"],
   truth = 1)
 ```
 
-The regression on the observed (employed) sample is biased **downward**, even
-though the specification is exactly the one that was unbiased in the full
-population. Restricting to the employed opens a path through the collider, so
-unobserved ability becomes correlated with education *within the sample*. The
-sample restriction *is* the conditioning.
+The regression on the employed is biased **downward**, even though the
+specification is the one that was unbiased in the full population. Restricting
+to the employed conditions on a collider, so unobserved ability becomes
+correlated with education *within the sample*. The sample restriction *is* the
+conditioning.
+
+::: callout-important
+`gss_earnings.rds` is built this way: `build_gss_extract.R` keeps respondents
+working full time with positive earnings. Every earnings regression in this
+course runs on a sample selected on a descendant of schooling and of the
+unobserved determinants of earnings. Say so when you report one.
+:::
 
 # DAGs in `R`
 
-`dagitty` lets you state a graph and ask it what to condition on.
+`dagitty` lets you state a graph and ask it what to condition on. This is the
+lecture's worked example: degree $D$, earnings $Y$, family background $X$, a
+measured test score $A$, unmeasured school quality $U$, and occupation $M$ as
+one channel from degree to earnings.
 
 ```{r}
 #| label: dagitty-basic
 g <- dagitty('dag {
   U [unobserved]
-  X -> D
-  X -> Y
-  U -> X
-  U -> C
-  D -> M
-  M -> Y
-  Y -> C
-  D [exposure]
-  Y [outcome]
+  X -> D   X -> Y
+  A -> D   A -> Y
+  U -> A   U -> Y
+  D -> M   M -> Y
+  D -> Y
+  D [exposure]  Y [outcome]
 }')
 
 adjustmentSets(g, exposure = "D", outcome = "Y", effect = "total")
@@ -265,85 +525,189 @@ adjustmentSets(g, exposure = "D", outcome = "Y", effect = "total")
 
 ```{r}
 #| label: fig-dag
-#| fig-cap: "The DAG from lecture."
+#| fig-cap: "The lecture's college-and-earnings DAG, drawn by ggdag."
 #| fig-height: 3.2
-ggdag(tidy_dagitty(g, layout = "sugiyama"), text_size = 3,
-      node_size = 12) +
+ggdag(tidy_dagitty(g, layout = "sugiyama"), text_size = 3, node_size = 12) +
   theme_dag_blank()
 ```
 
-Ask it directly whether a candidate adjustment set works:
+Ask it directly whether a candidate adjustment set works, and why not:
 
 ```{r}
 #| label: dagitty-queries
-isAdjustmentSet(g, "X", exposure = "D", outcome = "Y")
-isAdjustmentSet(g, c("X", "C"), exposure = "D", outcome = "Y")   # collider!
-isAdjustmentSet(g, c("X", "M"), exposure = "D", outcome = "Y")   # mediator!
+isAdjustmentSet(g, c("X", "A"), exposure = "D", outcome = "Y")
+isAdjustmentSet(g, "X", exposure = "D", outcome = "Y")             ## A's back door open
+isAdjustmentSet(g, c("X", "A", "M"), exposure = "D", outcome = "Y") ## mediator
 ```
 
-And which paths exist, open or blocked:
+Every path, and which of them $\{X, A\}$ leaves open:
 
 ```{r}
 #| label: paths
-paths(g, from = "D", to = "Y")$paths |> head(6)
-paths(g, from = "D", to = "Y", Z = "X")$open |> head(6)
+paths(g, from = "D", to = "Y")$paths
+paths(g, from = "D", to = "Y", Z = c("X", "A"))$open   ## TRUE = still open
 ```
+
+Only the two causal paths, $D \to Y$ and $D \to M \to Y$, stay open under
+$\{X, A\}$: the back-door criterion, checked by machine. `U` needed no
+adjustment because every path through it passes through `A`, a chain node
+that `A` blocks.
 
 ## Testable implications
 
-A DAG implies conditional independencies. Those *are* testable, and they are the
-only part of a DAG that data can speak to.
+A DAG implies conditional independencies among the *observed* variables.
+Those are testable, and they are the only part of a DAG that data can speak
+to.
 
 ```{r}
 #| label: implications
-impliedConditionalIndependencies(g) |> head(5)
+impliedConditionalIndependencies(g)
 ```
 
 ```{r}
 #| label: test-implications
 ## simulate from the DAG and check
 sim <- simulateSEM(g, N = 5000)
-localTests(g, sim, type = "cis.loess", R = 50) |> round(3) |> head(5)
+localTests(g, sim, type = "cis.loess", R = 50) |> round(3)
 ```
 
 ::: callout-note
-A DAG that passes its testable implications is not thereby "correct", many
-different DAGs imply the same independencies. But a DAG that *fails* them is
-wrong, and that is worth knowing.
+A DAG that passes its testable implications is not thereby "correct": many
+different DAGs imply the same independencies. A DAG that *fails* them is wrong,
+and that is worth knowing. Note what is absent from the list: nothing about
+$Y(d)$. Identification assumptions are not among the testable implications.
 :::
+
+# Drawing DAGs
+
+`ggdag` is fine for a quick look. For a paper or a slide you want control over
+placement, and the standard tool is TikZ. Every DAG in this week's slides is
+drawn with one style block and a handful of commands, and the same code works
+in a Quarto PDF document. The style, placed once in the preamble (here, in the
+YAML `include-in-header`), defines the node shape, the arrow, and three
+variants:
+
+```latex
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\tikzset{
+  dag/.style={>=Stealth,thick,
+    every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,
+                       minimum size=9mm,font=\small}},
+  unobs/.style={draw=gray,dashed},       % unmeasured variable
+  cond/.style={draw=accent,fill=accent!12}, % a variable conditioned on
+  lab/.style={draw=none,fill=none,rectangle,inner sep=2pt,font=\footnotesize},
+  arr/.style={->,dukeblue,thick},
+  uarr/.style={->,gray,thick}}            % arrow from an unmeasured variable
+```
+
+A picture is then a list of nodes at coordinates, and a list of arrows
+between them. This is the college-and-earnings DAG, exactly as it appears in
+the slides:
+
+```latex
+\begin{tikzpicture}[dag]
+  \node (D) at (0,0)      {$D$};
+  \node (M) at (2.6,0.9)  {$M$};
+  \node (Y) at (5.2,0)    {$Y$};
+  \node (X) at (1.0,-2.0) {$X$};
+  \node (A) at (4.2,-2.0) {$A$};
+  \node[unobs] (U) at (6.2,-3.4) {$U$};
+  \draw[arr] (D)--(M);  \draw[arr] (M)--(Y);  \draw[arr] (D)--(Y);
+  \draw[arr] (X)--(D);  \draw[arr] (X)--(Y);
+  \draw[arr] (A)--(D);  \draw[arr] (A)--(Y);
+  \draw[uarr] (U)--(A); \draw[uarr] (U)--(Y);
+\end{tikzpicture}
+```
+
+In a Quarto document, put that code inside a raw LaTeX block, which starts
+with ```` ```{=latex} ```` and is passed straight to the PDF engine. The
+result:
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[dag]
+  \node (D) at (0,0)      {$D$};
+  \node (M) at (2.6,0.9)  {$M$};
+  \node (Y) at (5.2,0)    {$Y$};
+  \node (X) at (1.0,-2.0) {$X$};
+  \node (A) at (4.2,-2.0) {$A$};
+  \node[unobs] (U) at (6.2,-3.4) {$U$};
+  \draw[arr] (D)--(M);  \draw[arr] (M)--(Y);  \draw[arr] (D)--(Y);
+  \draw[arr] (X)--(D);  \draw[arr] (X)--(Y);
+  \draw[arr] (A)--(D);  \draw[arr] (A)--(Y);
+  \draw[uarr] (U)--(A); \draw[uarr] (U)--(Y);
+\end{tikzpicture}
+\end{center}
+```
+
+Three more things you will want. A conditioned node uses `\node[cond]`; a
+curved arrow uses `to[bend left=30]` in place of `--`; a text label uses
+`\node[lab]`. The collider example from lecture uses all three:
+
+```latex
+\begin{tikzpicture}[dag]
+  \node (T) at (0,0)   {$T$};   \node (A) at (3.2,0) {$A$};
+  \node[cond] (C) at (1.6,-1.8) {$C$};
+  \draw[arr] (T)--(C); \draw[arr] (A)--(C);
+  \draw[<->,accent,dashed,thick] (T) to[bend left=30] (A);
+  \node[lab] at (0,0.8) {test score};  \node[lab] at (3.2,0.8) {athletic talent};
+  \node[lab] at (1.6,-2.6) {admitted};
+\end{tikzpicture}
+```
+
+```{=latex}
+\begin{center}
+\begin{tikzpicture}[dag]
+  \node (T) at (0,0)   {$T$};   \node (A) at (3.2,0) {$A$};
+  \node[cond] (C) at (1.6,-1.8) {$C$};
+  \draw[arr] (T)--(C); \draw[arr] (A)--(C);
+  \draw[<->,accent,dashed,thick] (T) to[bend left=30] (A);
+  \node[lab] at (0,0.8) {test score};  \node[lab] at (3.2,0.8) {athletic talent};
+  \node[lab] at (1.6,-2.6) {admitted};
+\end{tikzpicture}
+\end{center}
+```
+
+The same code goes into a beamer frame unchanged; add
+`scale=0.85, every node/.append style={transform shape}` to the options to
+shrink a large graph. The complete style is in the YAML header of this file
+and in `slides.tex`.
 
 # Exercises
 
-1.  **Bad control that predicts treatment.** Simulate $Z \to D \to Y$ with $Z$
-    having no effect on $Y$, plus an unobserved confounder $U \to D$, $U \to Y$.
-    Compare the bias in $\hat\tau$ with and without controlling for $Z$. You
-    should find that controlling for $Z$ makes the bias *worse*; this is
-    **bias amplification**. Explain why using the FWL logic from Week 1.
+1.  **A precision variable.** Simulate $Z \to Y$ with no arrow into $D$, plus
+    $D \to Y$. Compare the estimate and its standard error with and without
+    $Z$ over 500 replications. Which case of the lecture's single-cause frame
+    is this, and does the DAG say to include $Z$?
 
 2.  **Positivity.** Modify `sim_confound()` so that everyone with $x > 1$ is
     treated with probability $0.99$. Estimate the ATE with and without those
     observations. What does regression do in the region with no comparison
     cases?
 
-3.  **Heterogeneous effects.** Make $\tau_i$ depend on $x$: $\tau_i = 1 + x_i$.
-    Compute the true ATE and the true ATT by simulation, then see what
-    `lm(y ~ d + x)` reports. Connect your answer to the variance-weighting
-    result from Week 1.
+3.  **Heterogeneous effects.** In Section 2, change the treatment
+    probabilities to $0.9$ for $X_i = 1$ and $0.3$ for $X_i = 0$, so that
+    $\Var(D_i \mid X_i)$ differs across strata. Recompute the adjustment
+    formula and `lm(Y ~ D + X)`. They now disagree; say which one is the ATE
+    and what the other one is. Week 6 derives the weights.
 
-4.  **Your own DAG.** Draw the DAG for a causal question in your own research in
-    `dagitty`. Mark unobserved variables. Ask for `adjustmentSets()`. Is there
-    any set you can actually measure? If not, that is a finding, and it points
-    you toward Weeks 7--11.
+4.  **Your own DAG.** Draw the DAG for a causal question in your own research,
+    first in `dagitty` and then in TikZ. Mark unobserved variables. Ask for
+    `adjustmentSets()`. Is there any set you can actually measure? If not,
+    that is a finding, and it points you toward Weeks 7 to 11.
 
 5.  **The birth-weight paradox.** Simulate: smoking $\to$ birth weight, an
     unobserved severe condition $\to$ birth weight and $\to$ infant mortality,
     smoking $\to$ mortality (a genuine harmful effect). Show that among
-    low-birth-weight infants, smoking appears protective.
+    low-birth-weight infants, smoking appears protective. Then draw the DAG
+    with birth weight as a conditioned node.
 
-6.  **State an estimand.** For the GSS earnings data, write one sentence in the
-    Lundberg--Johnson--Stewart form: a unit-specific quantity and a target
-    population. Then say what would have to be true for
-    `lm(lnearn ~ educ + ...)` to estimate it.
+6.  **State an estimand.** For the GSS earnings data, write one sentence in
+    the Lundberg, Johnson, and Stewart (2021) form: a unit-specific quantity
+    and a target population. Then say what would have to be true for
+    `lm(lnearn ~ ba + ...)` to estimate it. Remember that the extract keeps
+    only full-time workers (Section 8).
 
 # Session information
 

@@ -364,29 +364,6 @@ NLSY79 ($n = 2{,}474$) and the Wisconsin Longitudinal Study ($n = 7{,}905$).
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Regression on $D$ Is the Naive Comparison\core}
-Write the switching equation as a regression, with $\tau = \text{ATE}$ and
-$\alpha = \E[Y_i(0)]$:
-\begin{align*}
-  Y_i &= Y_i(0) + \tau_i D_i && \text{\footnotesize switching equation} \\
-      &= \alpha + \tau D_i
-         + \underbrace{\big(Y_i(0) - \alpha\big) + (\tau_i - \tau)\,D_i}_{\varepsilon_i}
-         && \text{\footnotesize add and subtract } \alpha \text{ and } \tau D_i
-\end{align*}
-The error holds the unit's baseline and its excess gain. OLS of $Y$ on $D$
-returns $\bar Y_1 - \bar Y_0$, the naive comparison, and
-{\small
-\begin{align*}
-  \E[\varepsilon_i \mid D_i = 1] - \E[\varepsilon_i \mid D_i = 0]
-  &= \underbrace{\E[Y_i(0) \mid D_i=1] - \E[Y_i(0)\mid D_i=0]}_{\text{baseline selection}}
-  + \underbrace{(1-\pi)(\text{ATT}-\text{ATU})}_{\text{selection on the effect}}
-\end{align*}}
-using $\E[\tau_i - \tau \mid D_i = 1] = \text{ATT} - \tau = (1-\pi)(\text{ATT} - \text{ATU})$.
-Weeks 1--4 treated $\E[\varepsilon_i \mid D_i] = 0$ as a modelling
-assumption. Today it is a claim about the world: who gets treated is
-unrelated to what would have happened to them either way.
-\end{frame}
-
 \begin{frame}{Randomization Solves It\core}
 If $D_i$ is assigned by a coin flip, it is independent of everything about
 the unit, including its potential outcomes:
@@ -690,31 +667,105 @@ the damage done by ``controlling for everything.''
 \end{frame}
 
 \begin{frame}{$d$-Separation\core}
+A \emph{path} is any sequence of arrows joining two nodes, arrows pointing
+either way. Given a conditioning set $Z$, each path is open or blocked.
 \begin{block}{Blocking}
-A path between $D$ and $Y$ is \alert{blocked} by a set $Z$ if either
+A path is \alert{blocked} by $Z$ if it contains
 \begin{enumerate}\itemsep1pt
-  \item it contains a chain or fork whose middle node is \emph{in} $Z$, or
-  \item it contains a collider that is \emph{not} in $Z$, and none of whose
-        descendants is in $Z$.
+  \item a chain $\cdot \to B \to \cdot$ or a fork $\cdot \leftarrow B \to \cdot$
+        with $B \in Z$, or
+  \item a collider $\cdot \to B \leftarrow \cdot$ with $B \notin Z$ and no
+        descendant of $B$ in $Z$.
 \end{enumerate}
-$D$ and $Y$ are \alert{$d$-separated} by $Z$ if $Z$ blocks every path between
-them.
+$A$ and $C$ are \alert{$d$-separated} by $Z$ if every path between them is
+blocked.
 \end{block}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item $d$-separation is purely graphical; check it with a pencil.
-  \item Its content is probabilistic: $d$-separation by $Z$ implies
-        $D \indep Y \mid Z$ in \emph{every} distribution compatible with the
-        graph.
-  \item Clause 2's tail: conditioning on a \emph{descendant} of a collider also
-        opens the path, partially. A proxy for a collider is still a collider.
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item What it buys: $d$-separation by $Z$ implies $A \indep C \mid Z$ in
+        every distribution the graph can generate. Within each stratum of
+        $Z$, knowing $A$ says nothing about $C$.
+  \item This is a statement about the \emph{observed} variables $A$, $C$,
+        $Z$. No potential outcome appears; the connection to
+        $Y(d) \indep D \mid Z$ comes with the back-door criterion.
+  \item Clause 2's tail: a descendant of a collider is a partial record of
+        it. Conditioning on the descendant opens the path too.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Intervention Graph, and the $do$-Operator}
-The target is what would happen if we \emph{set} $D$, written
-$\Pr(Y \mid do(D = d))$: the distribution of $Y(d)$. Setting $D$ cuts every
-arrow \emph{into} $D$:
+\begin{frame}{$d$-Separation, Worked on One Graph}
+$X$: family background. $D$: degree. $Y$: earnings. $C$: employed at 40,
+caused by both degree and earnings.
+\begin{columns}[c]
+\begin{column}{0.30\textwidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.7,every node/.append style={transform shape}]
+  \node (X) at (0,0) {$X$};
+  \node (D) at (-1.5,-1.7) {$D$}; \node (Y) at (1.5,-1.7) {$Y$};
+  \node (C) at (0,-3.4) {$C$};
+  \draw[arr] (X)--(D); \draw[arr] (X)--(Y); \draw[arr] (D)--(Y);
+  \draw[arr] (D)--(C); \draw[arr] (Y)--(C);
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.68\textwidth}
+Three paths from $D$ to $Y$:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lccc}
+\toprule
+Path & $Z = \emptyset$ & $Z = \{X\}$ & $Z = \{X, C\}$ \\
+\midrule
+1: $D \to Y$ & open & open & open \\
+2: $D \leftarrow X \to Y$ & open & blocked & blocked \\
+3: $D \to C \leftarrow Y$ & blocked & blocked & \alert{open} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\end{columns}
+\vskip2pt
+\begin{itemize}\itemsep1pt
+  \item Path 2, a fork at $X$: open until $X$ is conditioned on. Path 3, a
+        collider at $C$: blocked until $C$ is conditioned on.
+  \item $D$ and $Y$ are never $d$-separated: path 1 has no middle node.
+        Right, since $D$ causes $Y$.
+  \item Identification does not ask for $D \indep Y \mid Z$. It asks for
+        paths 2 and 3 blocked with path 1 open: the back-door criterion,
+        once $do$ is defined.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Seeing Versus Doing\adv}
+Two different distributions of $Y$, one symbol apart:
+\begin{itemize}\itemsep2pt
+  \item $\Pr(Y \mid D = 1)$: $Y$ among the units that \emph{happened} to
+        have $D = 1$. Seeing.
+  \item $\Pr(Y \mid do(D = 1))$: $Y$ if \emph{every} unit were set to
+        $D = 1$. Doing.
+\end{itemize}
+In the structural equations, $do(D = 1)$ replaces $D$'s equation and touches
+nothing else:
+\begin{align*}
+  D &:= f_D(X, \epsilon_D) \;\longrightarrow\; D := 1
+      && \text{\footnotesize the intervention} \\
+  Y &:= f_Y(D, X, \epsilon_Y) \;\longrightarrow\; Y := f_Y(1, X, \epsilon_Y) = Y(1)
+      && \text{\footnotesize $Y$'s equation unchanged}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item The result is the potential outcome: $\Pr(Y \mid do(D = d)) = \Pr(Y(d))$,
+        so $\E[Y \mid do(D = 1)] - \E[Y \mid do(D = 0)] = \text{ATE}$.
+  \item Randomization: $D := \epsilon_D$, so the units with $D = 1$ are a
+        random sample and $\Pr(Y \mid D = 1) = \Pr(Y(1))$. Seeing equals
+        doing.
+  \item Otherwise the units with $D = 1$ differ in $X$, and
+        $\Pr(Y \mid D = 1) \ne \Pr(Y(1))$: the selection bias of the first
+        section, in the new notation.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Intervention Graph\adv}
+Setting $D$ deletes $D$'s equation, so it deletes every arrow \emph{into}
+$D$. Arrows out of $D$ stay.
 \begin{center}
 \begin{tikzpicture}[dag,scale=0.85,every node/.append style={transform shape}]
   \node (X) at (0,0) {$X$}; \node[unobs] (U) at (3.0,0) {$U$};
@@ -724,16 +775,43 @@ arrow \emph{into} $D$:
   \node (X2) at (8.0,0) {$X$}; \node[unobs] (U2) at (11.0,0) {$U$};
   \node[cond] (D2) at (6.5,-1.6) {$D$}; \node (Y2) at (9.5,-1.6) {$Y$};
   \draw[arr] (X2)--(Y2); \draw[arr] (D2)--(Y2); \draw[uarr] (U2)--(Y2);
-  \node[lab] at (8.4,-2.4) {the intervention $do(D = d)$};
+  \node[lab] at (8.4,-2.4) {after $do(D = d)$};
 \end{tikzpicture}
 \end{center}
-\begin{itemize}\itemsep0pt
-  \item Observing $D = d$ tells you about the left graph; the effect is a
-        contrast in the right one. Confusing the two is the problem.
-  \item Randomization erases the arrows into $D$ by design: the graphs
-        coincide and $\Pr(Y \mid do(D=d)) = \Pr(Y \mid D = d)$.
-  \item Otherwise: condition on enough of $D$'s causes that within strata
-        the graphs coincide, then average over strata.
+\begin{itemize}\itemsep2pt
+  \item The data come from the left graph. The effect is a contrast in the
+        right graph, where $D$ has no causes and so no back-door path.
+  \item In the right graph $D$ and $X$ are $d$-separated: setting $D$ does
+        not change anyone's background, $\Pr(X \mid do(D = d)) = \Pr(X)$.
+  \item Randomization makes the data come from the right graph. Otherwise,
+        the next frame: find strata of $X$ inside which the two graphs
+        agree, and average.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{From the Intervention Graph to a Formula\adv}
+Previous graph, $X$ observed. Goal: write $\Pr(Y \mid do(D = d))$ using
+only quantities from the left graph.
+{\footnotesize
+\begin{align*}
+  \Pr(Y \mid do(D{=}d))
+  &= \textstyle\sum_x \Pr(Y \mid do(D{=}d), X{=}x)\,\Pr(X{=}x \mid do(D{=}d))
+     && \text{total probability} \\
+  &= \textstyle\sum_x \Pr(Y \mid do(D{=}d), X{=}x)\,\Pr(X{=}x)
+     && \text{$D$ does not cause $X$} \\
+  &= \textstyle\sum_x \Pr(Y \mid D{=}d, X{=}x)\,\Pr(X{=}x)
+     && \text{given $X$, seeing $=$ doing}
+\end{align*}}
+\begin{itemize}\itemsep2pt
+  \item Line 3 needs the graph. $Y$'s equation is the same in both graphs;
+        given $X$, the only difference between seeing $D = d$ and setting it
+        is the back door $D \leftarrow X \to Y$, and $X$ blocks it. Inside a
+        stratum, a unit seen with $D = d$ is as good as one set to $d$.
+  \item Means, then subtract:
+        $\E[Y \mid do(D{=}1)] - \E[Y \mid do(D{=}0)]
+        = \sum_x \big(\E[Y \mid D{=}1, x] - \E[Y \mid D{=}0, x]\big)\Pr(X{=}x)$,
+        the formula of ``The Proof, Line by Line,'' now from the graph.
+  \item $U$ points only into $Y$, so it opens no path from $D$: harmless.
 \end{itemize}
 \end{frame}
 
@@ -743,23 +821,21 @@ $Z$ satisfies the back-door criterion for the effect of $D$ on $Y$ if
 \begin{enumerate}\itemsep1pt
   \item no node in $Z$ is a descendant of $D$, and
   \item $Z$ blocks every path between $D$ and $Y$ that starts with an arrow
-        \emph{into} $D$.
+        \emph{into} $D$ (a \emph{back door}).
 \end{enumerate}
 \end{block}
-\vskip2pt
-Such paths are \emph{back doors}: association flowing into $D$ from a common
-cause rather than out of $D$ to $Y$. If $Z$ closes all of them,
-\begin{align*}
-  \Pr\big(Y \mid do(D = d)\big) = \sum_z \Pr(Y \mid D = d, Z = z)\,\Pr(Z = z),
-  \qquad
-  Y(d) \indep D \mid Z .
-\end{align*}
-\begin{itemize}\itemsep0pt
-  \item Left: the \alert{adjustment formula}, the observed distribution of
-        $Y$ among units with $D = d$, averaged across strata of $Z$ with the
-        population's weights.
-  \item Right: conditional ignorability from the previous section. One
-        theory, two notations; the criterion says \emph{which} $Z$ works.
+\begin{itemize}\itemsep1pt
+  \item In $d$-separation terms: delete every arrow \emph{out of} $D$; in
+        what is left, $Z$ must $d$-separate $D$ from $Y$. The deletion
+        removes causal and collider paths; only back doors remain.
+        Condition 1 keeps mediators and colliders out of $Z$.
+  \item The previous derivation then holds with $Z$ for $X$, the
+        \alert{adjustment formula}:
+        $\Pr(Y \mid do(D{=}d)) = \sum_z \Pr(Y \mid D{=}d, Z{=}z)\,\Pr(Z{=}z)$.
+  \item Potential-outcome reading: the causes of $Y(d) = f_Y(d, \ldots)$
+        are the arrows into $Y$ other than $D$; $Y(d) \indep D \mid Z$
+        holds when $Z$ blocks every path from $D$ to them, condition 2.
+        The criterion is the graphical test of conditional independence.
 \end{itemize}
 \end{frame}
 
@@ -1117,6 +1193,72 @@ depends on the rest of the graph; do not assume it is conservative.}
 The distinction is causal, and it must come from the DAG.
 \end{frame}
 
+\begin{frame}{The Mechanism Test: Baron and Kenny (1986)\core}
+The standard way sociology ``tests a mechanism'': show that the effect of
+$D$ on $Y$ shrinks once the mediator $M$ is controlled. Three regressions:
+\begin{align*}
+  Y &= c\,D + e_1 && \text{\footnotesize total effect } c \\
+  M &= a\,D + e_2 && \text{\footnotesize $D$ moves the mediator} \\
+  Y &= c'\,D + b\,M + e_3 && \text{\footnotesize direct effect } c' \text{, mediator effect } b
+\end{align*}
+\begin{itemize}\itemsep1pt
+  \item With OLS and no interaction, $c = c' + ab$ holds \emph{exactly}:
+        Week 1's omitted-variable formula with $M$ omitted. $ab$ is the
+        \alert{indirect effect}, $ab/c$ the ``share mediated.'' Sobel's
+        SE for $ab$, $\sqrt{b^2 \SE(a)^2 + a^2 \SE(b)^2}$, is Week 3's
+        delta method.
+  \item GSS, parents' education $\to$ own education $\to$ log earnings
+        (sex, race, age held): $c = 0.063$, $a = 0.355$, $b = 0.111$,
+        $c' = 0.023$, so $ab = 0.039$: ``63 percent mediated.''
+  \item Simulation with $a = 0.8$, $b = 1.5$, $c' = 1$ returns
+        $2.2, 0.8, 1.5, 1.0$. The method works when its assumption holds.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What the Mechanism Test Assumes\core}
+Step 3 regresses $Y$ on $M$: a causal claim about $M \to Y$ that needs
+its own back door closed, \alert{no unmeasured cause of both $M$ and $Y$}.
+Randomizing $D$ does not deliver it.
+\begin{columns}[c]
+\begin{column}{0.36\textwidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.65,every node/.append style={transform shape}]
+  \node (D) at (0,0) {$D$}; \node[cond] (M) at (2.4,0) {$M$};
+  \node (Y) at (4.8,0) {$Y$};
+  \node[unobs] (U) at (3.6,-1.7) {$U$};
+  \draw[arr] (D)--(M); \draw[arr] (M)--(Y);
+  \draw[arr] (D) to[bend left=40] (Y);
+  \draw[uarr] (U)--(M); \draw[uarr] (U)--(Y);
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.62\textwidth}
+Same simulation with $U \to M$, $U \to Y$ added, $U$ unmeasured:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lcccccc}
+\toprule
+ & $c$ & $a$ & $b$ & $c'$ & $ab$ & share \\
+\midrule
+truth & 2.2 & 0.8 & 1.5 & 1.0 & 1.2 & 0.55 \\
+Baron--Kenny & 2.19 & 0.79 & \alert{2.00} & \alert{0.60} & \alert{1.58} & \alert{0.72} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\end{columns}
+\begin{itemize}\itemsep1pt
+  \item $c$ and $a$ survive: $D$ has no back door. $b$ absorbs $U$; the
+        indirect effect is overstated, the direct understated. The sum is
+        still $c$; the split is wrong.
+  \item GSS: ability points into own education and into earnings; ``63
+        percent mediated'' rests on an assumption the data cannot check.
+  \item Modern name: \emph{sequential ignorability} \srcp{Imai, Keele, and
+        Tingley 2010}. State it; add a sensitivity analysis
+        (\texttt{mediation::medsens}: GSS indirect effect is zero once $U$
+        explains $9\%$ of the variance of both $M$ and $Y$).
+\end{itemize}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Front Door]{The Front-Door Criterion}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1373,11 +1515,15 @@ Labor Economics.'' Pp.\ 1277--1366 in \textit{Handbook of Labor Economics},
 vol.\ 3A, edited by O. Ashenfelter and D. Card. Elsevier.
 \item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.
 \textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 2]
-\item Blau, Peter M. and Otis Dudley Duncan. 1967. \textit{The American
-Occupational Structure}. New York: Wiley.
+\item Baron, Reuben M. and David A. Kenny. 1986. ``The Moderator--Mediator
+Variable Distinction in Social Psychological Research: Conceptual, Strategic,
+and Statistical Considerations.'' \textit{Journal of Personality and Social
+Psychology} 51(6): 1173--1182.
 \item Brand, Jennie E. and Yu Xie. 2010. ``Who Benefits Most from College?
 Evidence for Negative Selection in Heterogeneous Economic Returns to Higher
 Education.'' \textit{American Sociological Review} 75(2): 273--302.
+\item Blau, Peter M. and Otis Dudley Duncan. 1967. \textit{The American
+Occupational Structure}. New York: Wiley.
 \item Cinelli, Carlos, Andrew Forney, and Judea Pearl. 2024. ``A Crash Course
 in Good and Bad Controls.'' \textit{Sociological Methods \& Research} 53(3):
 1071--1104.
@@ -1391,6 +1537,8 @@ Journal of Epidemiology} 164(11): 1115--1120.
 \textit{Journal of the American Statistical Association} 81(396): 945--960.
 \item Huntington-Klein, Nick. 2022. \textit{The Effect: An Introduction to
 Research Design and Causality}. CRC Press. [Ch.\ 6, 8]
+\item Imai, Kosuke, Luke Keele, and Dustin Tingley. 2010. ``A General Approach
+to Causal Mediation Analysis.'' \textit{Psychological Methods} 15(4): 309--334.
 \item Lundberg, Ian, Rebecca Johnson, and Brandon M. Stewart. 2021. ``What Is
 Your Estimand? Defining the Target Quantity Connects Statistical Evidence to
 Theory.'' \textit{American Sociological Review} 86(3): 532--565.
