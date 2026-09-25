@@ -70,18 +70,31 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   two three-panel DAG frames from 690S) -> front
   door (formula, APC via Winship & Harding 2008, critiques) -> estimands (Lundberg). Every DAG
   uses the shared `dag` tikz style; no frame spills to a "(cont.)" page.
-- Week 5 (PO + DAGs, 63 pp): PO section expanded 2026-09-21 (Brand & Xie 2010, regression =
-  naive comparison, Neyman/HC2, multi-valued treatments, CIA proof, simulation figure from
-  `figs/w5_po_sims.R`, Manski bounds on GSS). DAG half untouched. Lab 5 is DAG-only so far.
+- Week 5 (PO + DAGs, 64 pp): PO section expanded 2026-09-21 (Brand & Xie 2010, regression =
+  naive comparison, Neyman/HC2, multi-valued treatments, CIA proof; user dropped the simulation
+  and bounds frames). d-separation and do-operator slowed 2026-09-23 (worked paths table,
+  seeing vs doing, adjustment formula derived from the intervention graph). Lab 5 rebuilt
+  2026-09-23: PO simulations, Baron-Kenny mechanism test on GSS, Blau & Duncan replication from the
+  correlation matrix, dagitty, and a TikZ-in-Quarto section using the slides' tikzset.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
-- Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Sep 15, due Mon Sep 28): four
-  parts, 100 points, interpretation not derivation: Bernoulli likelihood curves and curvature,
-  Wald vs LR at a boundary; reading a logit (three scales, predicted probabilities first, AME
-  vs LPM, interaction via AME difference, odds-ratio referee, LR/AIC/BIC on the region block);
-  counts (exp(beta), Pearson phi, three SEs, zeros and the hurdle with AIC/BIC, NB coauthor);
-  groups (clustered SE for Sector, RI variances and ICC, FE vs RI vs pooled SES, school-mean
-  SES check, three-questions-three-tools). No answer key yet.
+- Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
+  reworked 2026-09-24): four parts ("Part N:" headings, each on a new page; question titles on their own line, (a)(b)(c) as lettered lists) with an overview table on page 1; NO points anywhere (user:
+  "not needed for us"). Part 1 ML in practice: ONE real glm output
+  (trace + summary + logLik) in a fancyvrb frame, a note defining deviance and Fisher scoring at
+  slide level, two items (likelihood curve; read the lines: deviance = -2 loglik, AIC, LR, why the
+  trace stops). The separation example (Output B) was cut 2026-09-24: "fine for general research". Part 2 Killewald 2016 ASR, written for average students: paper
+  reference + Duke Libraries DOI, "The question / The data / Reading Table 3 / Reading Figure 1 /
+  Two formulas" walkthrough, Table 3 excerpt typed as a `[H]` table (with couples/divorces from
+  Table 2 and the cross-cohort star on housework); Figure 1 is NOT reproduced as an image; its twelve bars are
+  transcribed in a `[H]` table right after "Reading Figure 1" (user 2026-09-24; item 1(c) "copy the bars" cut). Seven items that build the reading from
+  scratch (user 2026-09-24: "logical and slow ... for an entry level student"): the data
+  (couple-years, per-year rates); the model written as an equation with the
+  printed numbers; odds defined and computed; odds ratio DERIVED by subtracting two couples'
+  log-odds and exponentiating; OR -> probabilities from 3.3% and from an imaginary 30%; z, stars,
+  results sentence, cross-cohort difference with sqrt(se1^2+se2^2); units (0-1 housework). Part 3 "own logit reported like a paper" CUT 2026-09-24 (user); Parts 3-4 now:
+  counts (Poisson vs vcovHC SE, then dispersion test; hurdle), groups (clustered SE -> RI only; the FE / three-slopes / three-questions item was cut 2026-09-24). Answer key
+  `homework2_answers.qmd` is gitignored, fully executed, mirrors the numbering.
 - Remaining to build: Weeks 11-14 slides+labs, Problem Sets 3-5, midterm review, final packet.
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 

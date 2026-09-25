@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{SOCIOL 723: Problem Set 2}"
-subtitle: "\\textit{Assigned}: Friday, September 18 \\quad\\textbullet\\quad \\textit{Due}: Friday, October 2, 11:59PM"
+subtitle: "\\textit{Assigned}: Thursday, September 24 \\quad\\textbullet\\quad \\textit{Due}: Thursday, October 8, 11:59PM"
 author: "Your name:"
 format:
   pdf:
@@ -16,12 +16,13 @@ format:
         \usepackage{amsmath,amssymb,bm}
         \usepackage{booktabs}
         \usepackage{float}
+        \usepackage{caption}
+        \usepackage{fancyvrb}
         \usepackage{needspace}
-        \renewcommand{\topfraction}{0.95}
-        \renewcommand{\textfraction}{0.05}
-        \setcounter{topnumber}{2}
+        \usepackage{xcolor}
         \DeclareMathOperator{\Cov}{Cov}
         \DeclareMathOperator{\Var}{Var}
+        \DeclareMathOperator{\odds}{odds}
         \newcommand{\E}{E}
         \newcommand{\loglik}{\ell}
         \usepackage{setspace}
@@ -46,67 +47,85 @@ execute:
 editor: visual
 ---
 
-**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about what you will do in research: reading a published table, fitting the same kind of model on real data, and writing up what it says. No question asks for a derivation; every computation uses the functions from Labs 3 and 4, and the outputs reproduced in the first section are read, not re-run. Where a question asks for sentences, write them as you would in a paper. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` wherever there is randomness. The GSS extract is `Data/gss_earnings.rds`; the school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4.
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. This problem set is about what you will do in research: reading a published table, fitting models on real data, and writing up what they say. No question asks for a derivation. Every computation uses functions from Labs 3 and 4, and the output printed in Part 1 is read, not re-run. Where a question asks for sentences, write them as you would in a paper. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` wherever there is randomness.
+
+**Data.** The GSS extract is `Data/gss_earnings.rds`. The school data are `nlme::MathAchieve` and `nlme::MathAchSchool`, merged as in Lab 4. Part 2 uses one published article, which you obtain through the Duke Libraries.
+
+```{=latex}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{c l l}
+\toprule
+Part & Topic & Material \\
+\midrule
+1 & Maximum likelihood, in practice & Output printed below \\
+2 & Reading a published logit & Killewald (2016), \textit{ASR} \\
+3 & Counts & GSS extract \\
+4 & Observations in groups & High School and Beyond (\texttt{nlme}) \\
+\bottomrule
+\end{tabular}
+\end{center}
+```
 
 \hrulefill
 
 ```{r}
 #| include: false
 gss <- readRDS("../../Data/gss_earnings.rds")
-m1 <- glm(ba ~ pareduc + wordsum + female + black, data = gss, family = binomial)
 traceA <- capture.output(mA <- glm(ba ~ pareduc + wordsum + female + black, data = gss,
                              family = binomial, control = glm.control(trace = TRUE)))
-gss$perfect <- as.integer(gss$educ >= 18 & gss$ba == 1)
-traceB <- capture.output(mB <- glm(ba ~ pareduc + perfect, data = gss, family = binomial,
-                                   control = glm.control(trace = TRUE, maxit = 30)))
 ```
 
-# Maximum Likelihood, in Practice
+\newpage
 
-The three outputs below come from the GSS extract. Output 1 shows the last lines of `summary()` for the logit `ba ~ pareduc + wordsum + female + black`, followed by `logLik()` of the same model. Outputs A and B show what `glm()` prints when asked to trace its iterations, `control = glm.control(trace = TRUE)`: the deviance after each step. Output A is the same model as Output 1. Output B fits `ba ~ pareduc + perfect`, where `perfect` is 1 for respondents with at least 18 years of schooling who hold a degree and 0 otherwise, and shows its coefficient table.
+# Part 1: Maximum Likelihood, in Practice
 
-*Output 1*
+The output below comes from the GSS extract. It fits the logit from lecture, `ba ~ pareduc + wordsum + female + black`, with `control = glm.control(trace = TRUE)`, so that `glm()` prints one line per iteration before the usual `summary()`; `logLik()` of the same model follows.
+
+*Two words R uses that the slides did not.* *Deviance* is R's name for $-2$ times the log-likelihood. With a 0/1 outcome nothing else enters, so the residual deviance is exactly $-2\loglik$ at the estimate, and the null deviance is the same thing for the model with only an intercept; a smaller deviance is a higher likelihood. *Fisher scoring* is R's name for the Newton steps of Weeks 3 and 4 (for a logit the two are the same thing). "Number of Fisher Scoring iterations: 4" means the estimate moved four times, and the trace prints the deviance after each move.
 
 ```{r}
 #| echo: false
-cat(tail(capture.output(summary(m1)), 6), sep = "\n")
-print(logLik(m1))
+#| results: asis
+trim <- function(x) { x <- x[cumsum(nzchar(trimws(x))) > 0]; x[rev(cumsum(rev(nzchar(trimws(x))))) > 0] }
+vb <- function(lines, label) c("\\noindent\\begin{minipage}{\\textwidth}",
+  sprintf("\\begin{Verbatim}[frame=single, fontsize=\\footnotesize, label=\\textit{%s}, labelposition=topline, framesep=1.5mm]", label),
+  trim(lines), "\\end{Verbatim}", "\\end{minipage}")
+outA <- c(traceA, "", capture.output(print(summary(mA))), capture.output(print(logLik(mA))))
+outA <- outA[!grepl("^Signif. codes|^\\(Dispersion|^---$", outA)]
+outA <- outA[!(nzchar(trimws(outA)) == FALSE & c(FALSE, !nzchar(trimws(head(outA, -1)))))]
+cat("```{=latex}", vb(outA, "Output"), "", "\\medskip\\Needspace{6\\baselineskip}", "```", sep = "\n")
 ```
 
-*Output A*
+1.  **The idea, in one curve.**
 
-```{r}
-#| echo: false
-cat(traceA, sep = "\n")
-```
+    Let $\theta$ be the share of adults with a bachelor's degree, `k <- sum(gss$ba)` successes in `n <- nrow(gss)` draws. For `theta <- seq(0.2, 0.5, by = 0.001)`, compute `dbinom(k, n, theta, log = TRUE)` and plot it against `theta`. This is the log-likelihood: the same `dbinom()` you would use for a probability, read with the data fixed and $\theta$ moving. Mark the highest point and confirm it is `mean(gss$ba)`. Two sentences: what does "maximum likelihood estimate" mean, and what does the width of the peak tell you, intuitively, about the uncertainty of the estimate?
+
+2.  **Reading the likelihood lines.**
+
+    The model has five parameters.
+
+    (a) Confirm that the residual deviance is $-2$ times the log-likelihood line.
+
+    (b) Using the AIC formula from Week 3, compute AIC from the log-likelihood line and the five parameters, and check it against R's AIC line.
+
+    (c) The null deviance belongs to the model with only an intercept. What quantity from Week 3 is the difference between the two deviances, and what question does it answer?
+
+    (d) The trace shows the deviance after each of the four steps, and it stops changing after the third. In two sentences, what was the algorithm doing at each step, and why is stopping there right?
+
+\newpage
+
+# Part 2: Reading a Published Logit: Killewald (2016)
+
+Killewald, Alexandra. 2016. "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce." *American Sociological Review* 81(4): 696--719. \newline Get the PDF through the Duke Libraries (doi: 10.1177/0003122416655340). Read the abstract, the *Data and Methods* section, and the results around Table 3 and Figure 1 (pp. 708--714); skim the rest.
+
+**The question.** Two accounts of money and divorce had competed in the literature. In the first, marriage is an economic arrangement: couples with more resources are more stable (*financial strain*), and a wife who could support herself after a divorce is freer to leave (*economic independence*). In the second, marriage is a *gendered institution*: what matters is not the dollars but whether the couple conforms to the expectation that the husband earns and the wife keeps the home. Killewald tests the three ideas side by side and asks whether their weight changed between marriages begun in 1974 or earlier and marriages begun in 1975 or later.
+
+**The data.** The Panel Study of Income Dynamics has followed the same families since 1968. The analysis file is a stack of *couple-years*: one row for each year a couple is observed married, recording the couple's circumstances that year and whether they divorced by the following year. A couple contributes a row every year until it divorces or leaves the study. The earlier cohort has 1,908 couples, 381 divorces, and 32,853 couple-years; the later cohort 4,401 couples, 1,303 divorces, and 33,470 couple-years. The outcome in every row is 0 or 1, so the model is a logit.
 
 ```{=latex}
-\Needspace{10\baselineskip}
-```
-
-*Output B*
-
-```{r}
-#| echo: false
-cat(traceB, sep = "\n")
-print(round(coef(summary(mB)), 3))
-cat("converged:", mB$converged, "\n")
-```
-
-1.  **The idea, in one curve.** Let $\theta$ be the share of adults with a bachelor's degree, `k <- sum(gss$ba)` successes in `n <- nrow(gss)` draws. For `theta <- seq(0.2, 0.5, by = 0.001)`, compute `dbinom(k, n, theta, log = TRUE)` and plot it against `theta`. This is the log-likelihood: the same `dbinom()` you would use for a probability, read with the data fixed and $\theta$ moving. Mark the highest point and confirm it is `mean(gss$ba)`. Two sentences: what does "maximum likelihood estimate" mean, and what does the width of the peak tell you?
-
-2.  **Reading the likelihood lines (Output 1).** The model has five parameters. (a) Show how the AIC line follows from the log-likelihood line. (b) "Number of Fisher Scoring iterations: 4": what happened four times, and why did it stop? (c) The null deviance is for the intercept-only model and the residual deviance for this one. What quantity from Week 3 is their difference, what does it test, and on how many degrees of freedom?
-
-3.  **Converged, or not? (Outputs A and B).** (a) In which output has the search settled? Say what in the trace tells you, one sentence each. (b) R reports `converged: TRUE` for Output B as well. Look at the coefficient on `perfect` and its standard error. Would you report that row? What value is the coefficient trying to reach, and why can no finite number satisfy the likelihood here? (c) Which coefficients in Output B did the algorithm pin down, and which did it not? In two sentences, say what you would do before reporting anything from this model.
-
-# Reading a Published Logit: Killewald (2016)
-
-Killewald (2016) asks whether a couple's economic circumstances predict divorce and whether the answer has changed across marriage cohorts. The data are couple-years from the Panel Study of Income Dynamics, 1968 to 2013: one row per couple per year, with the outcome equal to 1 in the year a couple divorces. Table 3 fits a logit separately to marriages begun in 1974 or earlier and in 1975 or later; Figure 1 converts the main coefficients into predicted probabilities of divorce in the next year. The rows of Table 3 used below, and Figure 1, are reproduced on the next page.
-
-*Reference:* Killewald, Alexandra. 2016. "Money, Work, and Marital Stability: Assessing Change in the Gendered Determinants of Divorce." *American Sociological Review* 81(4): 696--719.
-
-```{=latex}
-\begin{figure}[t]
+\begin{table}[H]
 \centering
 \small
 \renewcommand{\arraystretch}{1.15}
@@ -116,47 +135,121 @@ Killewald (2016) asks whether a couple's economic circumstances predict divorce 
 \cmidrule(lr){2-4} \cmidrule(l){5-7}
  & $\hat\beta$ & (SE) & OR & $\hat\beta$ & (SE) & OR \\
 \midrule
-Wife employed full-time        & $.267$    & (.153) & 1.306 & $.069$          & (.088) & 1.071 \\
-Husband employed full-time     & $-.097$   & (.208) & .908  & $-.293^{**}$    & (.106) & .746 \\
-Wife's proportion of housework & $-1.117^{*}$ & (.463) & .327 & $.050$        & (.233) & 1.051 \\
-Constant                       & $-7.476^{***}$ & (.884) & & $-3.525^{***}$ & (.393) & \\
+Wife employed full-time            & $.267$         & (.153) & 1.306 & $.069$         & (.088) & 1.071 \\
+Husband employed full-time         & $-.097$        & (.208) & .908  & $-.293^{**}$   & (.106) & .746 \\
+Wife's proportion of housework$^{*}$ & $-1.117^{*}$ & (.463) & .327  & $.050$         & (.233) & 1.051 \\
+Constant                           & $-7.476^{***}$ & (.884) &       & $-3.525^{***}$ & (.393) & \\
 \midrule
-Couple-years                   & \multicolumn{3}{c}{32,853} & \multicolumn{3}{c}{33,470} \\
+Couples                            & \multicolumn{3}{c}{1,908}  & \multicolumn{3}{c}{4,401} \\
+Divorces                           & \multicolumn{3}{c}{381}    & \multicolumn{3}{c}{1,303} \\
+Couple-years                       & \multicolumn{3}{c}{32,853} & \multicolumn{3}{c}{33,470} \\
 \bottomrule
 \end{tabular}
-\caption*{Killewald (2016), Table 3, excerpt. Logit coefficients, standard errors, and odds ratios as printed. $^{*}p<.05$; $^{**}p<.01$; $^{***}p<.001$. Controls include marital duration, religion, race, home ownership, children, both spouses' education, region, and year of marriage.}
-\vspace{4pt}
-\includegraphics[width=0.72\linewidth]{figs/killewald2016_fig1.pdf}
-\caption*{Killewald (2016), Figure 1, reproduced for classroom use.}
-\end{figure}
+\caption*{\small Killewald (2016), Table 3, excerpt; couples and divorces from Table 2. Logit coefficients, standard errors, and odds ratios as printed. Stars on a coefficient: $^{*}p<.05$, $^{**}p<.01$, $^{***}p<.001$, within the cohort. The star on the variable name marks a coefficient that differs significantly between cohorts. Controls include marital duration, religion, race, home ownership, children, premarital cohabitation and birth, age at marriage, both spouses' education and health, the wife's occupation and industry, region, and year of marriage.}
+\end{table}
 ```
 
-1.  **One coefficient, three scales.** Take the husband's full-time employment in the later cohort, $-.293$. Write one sentence on each scale: log-odds, odds (use the printed odds ratio), and probability (from Figure 1: 2.5% when he is employed full-time, 3.3% when he is not). Then compute the odds ratio implied by those two probabilities and compare it with the printed .746. Should the two agree exactly? Answer in one or two sentences, using the note under Figure 1 on how the probabilities were computed.
+**Reading Table 3.** Each cell prints three numbers: the logit coefficient, a change in the log-odds of divorce; its standard error in parentheses; and the odds ratio $e^{\hat\beta}$. Stars next to a coefficient test whether it differs from zero within its cohort. A star next to a *variable name* is a different test: whether the coefficient differs between the two cohorts. The excerpt above keeps the three variables the questions use; the full table has a long list of controls and a third column that pools the cohorts.
 
-2.  **A coefficient that is not significant.** In the later cohort, the wife's full-time employment has coefficient $.069$ and standard error $.088$; Figure 1 shows 2.6% when she is employed full-time and 2.5% when she is not. Write the sentence that belongs in a results section. In the earlier cohort the same coefficient is $.267$ with standard error $.153$, and Figure 1 shows 1.3% against 1.0%. Killewald writes that the association declined across cohorts but that the decline is not statistically significant. Compute the difference between the two coefficients and its standard error, $\sqrt{.153^2 + .088^2}$, and use them to explain in two sentences what supports each half of her claim.
 
-3.  **Units matter.** The wife's proportion of housework runs from 0 to 1, and its coefficient in the earlier cohort is $-1.117$, printed odds ratio .327. What change in housework does that odds ratio describe? Figure 1 plots a smaller change, from 50% to 75%. Start from the figure's 1.5% at 50%, multiply the odds by $e^{-1.117 \times .25}$, and convert back to a probability; you should land on the figure's 1.1%. Then one sentence on why you cannot recover the odds ratio precisely by working backwards from the printed 1.5% and 1.1%, and one sentence on why a coefficient's size means nothing until you know the units of its variable.
+**Reading Figure 1.** A logit coefficient does not tell a reader how much the risk of divorce changes. Figure 1 (p. 713) does. For each cohort it draws the predicted probability of divorce in the next year for a couple with every other variable held at its cohort mean, switching one variable at a time: the husband employed full-time or not, the wife employed full-time or not, the wife doing 50% or 75% of the housework. Because only one variable moves between the two bars of a pair, each pair is one coefficient of Table 3 translated to the probability scale. The table below transcribes its twelve bars.
+
+```{=latex}
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{l rr}
+\toprule
+ & Married 1974 or earlier & Married 1975 or later \\
+\midrule
+Husband not employed full-time & 1.1\% & 3.3\% \\
+Husband employed full-time     & 1.0\% & 2.5\% \\
+\addlinespace
+Wife not employed full-time    & 1.0\% & 2.5\% \\
+Wife employed full-time        & 1.3\% & 2.6\% \\
+\addlinespace
+Wife does 50\% of housework    & 1.5\% & 2.5\% \\
+Wife does 75\% of housework    & 1.1\% & 2.6\% \\
+\bottomrule
+\end{tabular}
+\caption*{\small Killewald (2016), Figure 1, transcribed. Predicted probability of divorce in the next year for a couple with all other variables at the cohort mean; each pair of rows changes one variable.}
+\end{table}
+```
+
+## Questions
+
+The items below build the reading of Table 3 from scratch, one step at a time: the equation, the odds, the odds ratio, the probabilities, and only then the stars. Write every number down; the arithmetic is the point.
+
+1.  **The data.**
+
+    (a) In two sentences, say what one row of Killewald's data is and what its outcome variable records.
+
+    (b) Compute $381/32{,}853$ and $1{,}303/33{,}470$. What is each ratio? Use it to explain why every bar in Figure 1 sits between 1% and 4%, when you may have had lifetime divorce rates of 30% to 50% in mind.
+
+2.  **The model, written down.**
+
+    Let $p_i$ be the probability that couple-year $i$ ends in divorce. Killewald's model for the later cohort is
+    $$\log\frac{p_i}{1-p_i} = \beta_0 + \beta_1\,\text{HusbandFT}_i + \beta_2\,\text{WifeFT}_i + \beta_3\,\text{Housework}_i + (\text{controls}),$$
+    where $\text{HusbandFT}_i$ and $\text{WifeFT}_i$ are 1 if that spouse is employed full-time and 0 otherwise, and $\text{Housework}_i$ is the wife's share of the housework, from 0 to 1.
+
+    (a) Rewrite the equation with the four printed numbers from the later-cohort column in place of $\beta_0$ to $\beta_3$.
+
+    (b) The left-hand side is the *log-odds*. In one sentence, what range of values can it take, and why does the model put it there rather than $p_i$ itself?
+
+    (c) Read one coefficient from your equation in a sentence of the form "holding everything else fixed, ... changes the log-odds of divorce by ...".
+
+3.  **Odds.**
+
+    The *odds* of an event are $\text{odds}(p) = p/(1-p)$: the probability it happens divided by the probability it does not.
+
+    (a) Compute the odds for $p = .025$, $.033$, $.5$, and $.9$.
+
+    (b) The inverse is $p = \text{odds}/(1+\text{odds})$; check it on one of your four numbers.
+
+4.  **From the equation to the odds ratio.**
+
+    Take two later-cohort couples that are identical in every variable except that the husband is employed full-time in one ($\text{HusbandFT} = 1$) and not in the other ($\text{HusbandFT} = 0$).
+
+    (a) Write the log-odds of each couple from your equation in item 2 and subtract the second from the first. Everything but one term cancels: which term?
+
+    (b) Exponentiate both sides of that difference. The left-hand side becomes the ratio of the two couples' odds, the *odds ratio*, and the right-hand side becomes $e^{\hat\beta_1}$. Compute it and confirm it is the printed $.746$.
+
+    (c) One sentence on each scale: what $-.293$ says about the log-odds, and what $.746$ says about the odds (as a percentage change).
+
+5.  **From the odds ratio to probabilities.**
+
+    This item stays with one variable: the husband's full-time employment in the later cohort, odds ratio $.746$ from item 4. That odds ratio says the husband's full-time employment multiplies the odds of divorce by $.746$; it does not say how many percentage points the probability of divorce falls. That depends on the probability the couple starts from.
+
+    (a) Figure 1 gives 3.3% for a typical later-cohort couple whose husband is not employed full-time. Convert 3.3% to odds, multiply by $.746$, and convert back to a probability. You should land on the bar for a husband employed full-time, 2.5%.
+
+    (b) Now start from an imaginary high-risk couple whose husband is not employed full-time, with a 30% probability, and apply the same $.746$ for the husband's full-time employment. What probability do you get, and by how many percentage points did it fall?
+
+    (c) Two sentences: why is the odds ratio the same for both couples while the change in probability is not, and which of the two scales would you give a reader who asks how much a husband's employment matters?
+
+6.  **Significance, and a comparison across cohorts.**
+
+    Each coefficient comes with a standard error, and $z = \hat\beta/\text{SE}$ is the Wald statistic from Week 3.
+
+    (a) Compute $z$ for the husband's full-time employment in the later cohort and say what the two stars mean.
+
+    (b) In the later cohort, the wife's full-time employment has coefficient $.069$ and standard error $.088$; Figure 1 shows 2.6% when she is employed full-time and 2.5% when she is not. Compute $z$ and write the sentence that belongs in a results section.
+
+    (c) In the earlier cohort the same coefficient is $.267$ with standard error $.153$, and Figure 1 shows 1.3% against 1.0%. Killewald writes that the association declined across cohorts but that the decline is not statistically significant. The two cohorts are separate samples, so the difference between the two coefficients has standard error $\sqrt{.153^2 + .088^2}$. Compute the difference, its standard error, and their ratio, and use them to explain in two sentences what supports each half of her claim.
+
+7.  **Units matter.**
+
+    The wife's proportion of housework runs from 0 to 1, and its coefficient in the earlier cohort is $-1.117$, printed odds ratio $.327$.
+
+    (a) The odds ratio $.746$ for the husband's employment compared two couples whose $\text{HusbandFT}$ differed by one unit, 0 against 1. The odds ratio $.327$ likewise compares two couples whose housework share differs by one unit. On a scale from 0 to 1, what change in housework is that?
+
+    (b) Figure 1 plots a smaller change, from 50% to 75%, so $\Delta = .25$ and the odds are multiplied by $e^{-1.117 \times .25}$. Start from the figure's 1.5% at 50%, convert to odds, multiply, and convert back; you should land on the figure's 1.1%.
+
+    (c) One sentence: why does a coefficient's size mean nothing until you know the units of its variable?
 
 \newpage
 
-# Your Own Logit, Reported Like a Paper
-
-Fit the logit from lecture on the GSS extract:
-
-```{r}
-#| eval: false
-m1 <- glm(ba ~ pareduc + wordsum + female + black, data = gss, family = binomial)
-```
-
-1.  **Table and figure.** Report the coefficient table with odds ratios added, laid out like Killewald's Table 3. Then make your own Figure 1: with `avg_predictions`, compute the average predicted probability of a degree when everyone's parents have 8, 12, 16, and 20 years of education, with 95% intervals, and plot the four bars with error bars. Two sentences: why is the gain from 12 to 16 years not the same as the gain from 16 to 20, when the coefficient is one number?
-
-2.  **An interaction, read correctly.** Does parents' education matter more for women? Fit `ba ~ pareduc * female + wordsum + black`. Report the product coefficient with its $z$, then the AME of `pareduc` separately for men and women and the difference with its standard error. Answer the question in a short paragraph and say why the product coefficient alone could not have answered it.
-
-3.  **A block of controls.** Add the region dummies (`region`) to `m1`. Report the likelihood-ratio test, AIC, and BIC for the two models. In a short paragraph, say what each is measuring, why with $n = 3{,}509$ the LR test rejects almost any block, and which model you would report and why.
-
-4.  **The results paragraph.** Write the paragraph (120 to 180 words) that would appear in the Results section of a paper reporting this model. Use predicted probabilities or AMEs, not odds ratios; give the reader magnitudes and uncertainty; do not mention the log-odds scale.
-
-# Counts
+# Part 3: Counts
 
 Fit the Poisson regression for the number of children:
 
@@ -165,21 +258,34 @@ Fit the Poisson regression for the number of children:
 m_pois <- glm(childs ~ educ + female + black + exper + evermar, data = gss, family = poisson)
 ```
 
-1.  **Reading it, and which standard errors.** Interpret $e^{\hat\beta}$ for `educ` and for `evermar`, one sentence each, in the form you would use in a paper. Then run `AER::dispersiontest(m_pois)` and report the standard error of `evermar` from the Poisson fit, from a quasi-Poisson fit, and from `sandwich::vcovHC`. Two sentences: what does the test say about the Poisson's variance assumption, and which standard error would you report as your default and why?
+1.  **Reading it, and which standard errors.**
 
-2.  **Zeros, and a model with two parts.** Report the observed share of childless respondents and the share the Poisson predicts (average `dpois(0, fitted(m_pois))`). Fit the hurdle model with `pscl::hurdle(..., dist = "poisson")` and the same covariates in both parts. Make one table with the log-likelihood, number of parameters, AIC, and BIC of the Poisson and the hurdle. Then, in a paragraph written for a reader, say what `evermar` does to the chance of *any* child, what it does to the number of children *among parents*, and what the single Poisson coefficient was averaging over.
+    (a) Interpret $e^{\hat\beta}$ for `educ` and for `evermar`, one sentence each, in the form you would use in a paper.
 
-# Observations in Groups
+    (b) Report the standard error of `evermar` from the Poisson fit and from `sandwich::vcovHC(m_pois)`. The Poisson standard error assumes the variance of the count equals its mean; the `vcovHC` standard error does not. Which is larger, and by what percentage?
+
+    (c) Run `AER::dispersiontest(m_pois)`. Two sentences: what does the test say about the Poisson's assumption that the variance equals the mean, and which of the two standard errors in (b) would you report as your default, and why?
+
+2.  **Zeros, and a model with two parts.**
+
+    Report the observed share of childless respondents and the share the Poisson predicts (average `dpois(0, fitted(m_pois))`).
+
+    Fit the hurdle model with `pscl::hurdle(..., dist = "poisson")` and the same covariates in both parts. Make one table with the log-likelihood, number of parameters, AIC, and BIC of the Poisson and the hurdle.
+
+    Then read the `evermar` coefficients from the hurdle model's two parts. In a paragraph written for a reader, say what `evermar` does to the chance of *any* child (the zero part), what it does to the number of children *among parents* (the count part), and what the single Poisson coefficient was averaging over.
+
+\newpage
+
+# Part 4: Observations in Groups
 
 Merge `nlme::MathAchieve` with `nlme::MathAchSchool` as in Lab 4, and convert `School` to a plain factor with `factor(as.character(School))`, as the lab does: 7,185 students in 160 schools, math achievement, student SES, and school sector.
 
-1.  **From clustered standard errors to a random intercept.** Fit `lm(MathAch ~ SES + Sector)` and report the coefficient on `Sector` with its plain standard error and with its standard error clustered on `School`. In a short paragraph, explain to a first-year student why the plain standard error is wrong for this variable: sector is a property of the school, so it varies across 160 schools, not across 7,185 students. Then fit `lmer(MathAch ~ SES + Sector + (1 | School), REML = FALSE)` and report the two coefficients with standard errors, $\hat\tau^2$, and $\hat\sigma^2$. Say in one sentence each what the two variances measure, compute the intraclass correlation, and close with two sentences on what the random-intercept model gives you that the clustered standard error did not.
+1.  **From clustered standard errors to a random intercept.**
 
-2.  **Three estimates of one slope, and three questions.** Fit the fixed-effects regression `lm(MathAch ~ School + SES + Sector)`, with the school dummies listed *before* `Sector`. One coefficient comes back `NA`: which one, and why? What would you have concluded had you listed `Sector` before `School` and read off the number R printed? Then compare the SES slope under pooled OLS, the random intercept, and fixed effects in one three-column table, and explain in a paragraph where the random-intercept slope sits relative to the other two and why, in terms of the variation each estimate uses. Finally, for each research question below, say in two sentences which of *OLS with clustered standard errors*, *fixed effects*, or a *random intercept* you would use, naming the feature of the question that decides it.
+    Fit `lm(MathAch ~ SES + Sector)` and report the coefficient on `Sector` with its plain standard error and with its standard error clustered on `School`.
 
-    (a) How much of earnings inequality in a country is between workplaces rather than within them, and is that share rising?
+    In a short paragraph, explain to a first-year student why the plain standard error is wrong for this variable: sector is a property of the school, so it varies across 160 schools, not across 7,185 students.
 
-    (b) Does a worker's wage rise after their own firm signs a union contract, using several years of data on the same workers and firms?
+    Then fit `lmer(MathAch ~ SES + Sector + (1 | School), REML = FALSE)` and report the two coefficients with standard errors, $\hat\tau^2$, and $\hat\sigma^2$.
 
-    (c) Do students learn more in Catholic schools, using these 160 schools, where sector is a property of the school?
-
+    Say in one sentence each what the two variances measure, compute the intraclass correlation, and close with two sentences on what the random-intercept model gives you that the clustered standard error did not.

@@ -340,6 +340,55 @@ Learning" (Duke Sociology, Fall 2026). Second course in the grad stats sequence;
   the closing summary, AND the References frame. figs rulers_large/parabola_n/parabola_reg
   are now unused but kept.
 
+- **PS2 rework (2026-09-24, user: "for average students to understand the literature", "standard
+  and beautiful", "the figure is annoying, direct students to the figure in the paper")**:
+  dropped `figs/killewald2016_fig1.pdf` (deleted); the Killewald part now opens with a reading
+  guide (question, data as couple-years, how to read Table 3 incl. cross-cohort stars, what Figure
+  1 does, the two odds formulas) and a warm-up item. Then (user, same day): "Don't assign any points. That's not needed for us" -> NO points on
+  problem sets, ever; dates assigned Thu Sep 24 / due Thu Oct 8 (two weeks). Layout patterns that
+  worked: overview table (Part / Topic / Material) on page 1; R outputs
+  emitted with `results: asis` as a ```{=latex} block of two `[t]` minipages (0.505/0.475
+  \textwidth) each holding a fancyvrb `Verbatim[frame=single, fontsize=\scriptsize,
+  label=\textit{Output 1}, labelposition=topline]`; \footnotesize (9pt at 11pt body) overflowed,
+  \scriptsize (8pt) fits once R's double spaces in "on 3508  degrees" are collapsed. A `[H]`
+  table placed right after "The data" paragraph avoided the half-empty page that `[!htb]` and a
+  later `[H]` both produced. Killewald page numbers: Table 3 pp. 709-712, Figure 1 p. 713, Figure
+  1 note says all other covariates at cohort-specific means (so bar pairs = exp(beta) exactly up
+  to rounding). Text of the paper extractable with `gs -sDEVICE=txtwrite` from ~/Downloads.
+- 2026-09-24 (user, PS2 Part 1 round 2): show the FULL glm output (trace + summary + logLik) as
+  Output A, one full-width fancyvrb box each, wrapped in `\begin{minipage}{\textwidth}` so a box
+  never splits across pages; blank line + `\medskip` between boxes (a bare `\vspace` between two
+  minipages did nothing); `\Needspace{6\baselineskip}` after the last box stops the first list
+  item from orphaning. Terms the slides never defined (deviance = -2 loglik, Fisher scoring =
+  R's name for the Newton steps) get a short italic-led note in the problem set at slide level;
+  no degrees-of-freedom talk; the separation example (`perfect`) is shown, not explained: the
+  student is asked to guess from the trace still falling and SE 272 (no `converged:` line, no
+  `maxit` fudge; R gives no warning for this case).
+- 2026-09-24 (user, PS2 Part 1 round 3): "the trace has converged; make it obvious convergence
+  cannot be reached." Done with four refits of the separated logit from `start = c(-4, 0.2, s)`,
+  s = 0/10/20/30: estimates 18.6/19.6/23.6/33.6, SE 193 to 625,812, deviance identical to four
+  decimals, all `converged = TRUE`, plus R's "fitted probabilities numerically 0 or 1" warning.
+  A `maxit` sweep (5/10/15 -> 7.3/12.3/17.3) also works but the start-value table is clearer.
+  Both output boxes at `\scriptsize` fit on one page together. The key's render failed twice with
+  "figure-pdf/fig-curve-1.pdf not found" and Quarto then tried to reach a CTAN mirror (blocked):
+  cause was DROPBOX, which renamed the freshly written figure to a "conflicted copy" mid-render.
+  Not a parallel-render collision. Fix: delete the conflicted copy, remove the leftover
+  .aux/.log/.tex, rerun; second try succeeds.
+- 2026-09-24 (user, round 4): Output B (separation, four starts) CUT entirely, "to make it
+  simpler ... fine for general research". Part 1 = one output + two items. Lesson: the user
+  prefers fewer, plainer items over a clever diagnostic; offer the cut before building round 3.
+- 2026-09-24 (user, round 5, Killewald part): "more logical and slow ... start from specifying an
+  equation, let them define odds, and odds ratio ... systematically from scratch, as for an entry
+  level student." Rebuilt as a 7-step chain (data -> equation with numbers -> odds -> OR derived
+  from two couples' log-odds -> OR to probabilities incl. a 30% baseline to show the same OR moves
+  probabilities differently -> z/stars/cross-cohort -> units). Pattern for this user's problem
+  sets: one concept per item, each item uses the previous item's result, every formula appears in
+  the item that first needs it (the separate "Two formulas" block was dropped).
+- Render recipe this session: patched launcher at `$TMPDIR/quarto` (line 131 `FULLARCH="Apple"`,
+  all `SCRIPT_PATH=` lines hard-coded to the RStudio quarto bin), `TEXINPUTS="$TMPDIR/tex//:"`,
+  and for the key `R_LIBS=$TMPDIR` after `install.packages(c("AER","pscl"), lib=$TMPDIR)` with
+  allowed_domains cloud.r-project.org (the `$TMPDIR/pscl` left by an earlier session was broken).
+
 ## Patterns That Don't Work
 - (accumulate)
 
@@ -1067,3 +1116,8 @@ Course is serif Latin Modern everywhere, full stop.
 - 2026-09-16 lab 4 (final pass): dropped 'Checking proportional odds' (Brant + VGAM partial PO; restorable from git, `library(brant)` removed); dropped the AIC/BIC callout at the end of 'Comparing the count models'; RI-logit subsection now shows avg_predictions at SES -2..2 by 0.5 and reproduces the slide figure (u_j = +/-tau, 0, population average; tau = 0.58) in ggplot.
 - 2026-09-16 lab 4: new subsection 'Reading the lmer formula' (model equation, (1 | School) = random intercept, (1 + SES | School) / (0 + SES | School) / two grouping levels in an eval=false chunk) before 'Predictors at both levels'; ## note on REML = FALSE vs the REML default (ML vs REML differ in the third decimal on HSB).
 - 2026-09-21 Week 5 PO section expanded from 10 to 17 frames (deck 55 -> 63 pp): In the Literature Brand & Xie 2010 (negative selection, ATU > ATT), Regression on D = naive comparison (error = baseline + excess gain), Neyman estimator + conservative variance = HC2 (Samii & Aronow 2012), Beyond a binary treatment, The proof line by line (CIA identification), Watch it happen (figs/w5_po_sims.R -> figs/po_sims.pdf: naive under selection 4.76, randomized 4.03, within-X 4.03), Manski bounds on GSS (ba -> above-median earnings: ATE in [-0.32, 0.68]). Estimands frame pointer fixed Week 1 -> Week 6. Lab 5 not yet aligned.
+- 2026-09-23 Week 5 slides (64 pp): d-separation split into definition + 'Worked on One Graph' (paths table, D and Y never d-separated, identification wants back doors blocked not D indep Y); do-operator slowed to three frames: 'Seeing Versus Doing' (do(D=d) replaces D's equation, Y(d) = f_Y(d, X, eps) so Pr(Y|do) = Pr(Y(d))), 'The Intervention Graph', 'From the Intervention Graph to a Formula' (adjustment formula derived in three annotated lines); back-door frame restated as d-separation after deleting arrows out of D, with the Y(d) indep D | Z reading. Lab 5 rebuilt: PO section (population with both columns, ATE/ATT/ATU, decomposition, Neyman SE = HC2 via sandwich, adjustment formula by hand, three-design figure), Brand & Xie 2010 design replicated on GSS (effect rises 0.43 -> 0.61, four reasons the GSS cannot answer it), bias amplification section, GSS-extract-is-selected callout, Blau & Duncan 1967 replicated from the correlation matrix (all path coefficients match; total U->Y 0.518 = back-door regression on X; dagitty gives {X}), dagitty on the college-earnings DAG, 'Drawing DAGs' section with the slides' tikzset in the YAML header and raw ```{=latex} blocks. dagitty/ggdag installed to R 4.5 library. Blau-Duncan matrix verified by reproducing the published .310/.279/.440/.224/.281/.394/.115 and R2 26/33/43%.
+- 2026-09-23 Week 5: Baron & Kenny (1986) added as two frames after 'Two Sharper Cases' (three regressions, c = c' + ab exactly, Sobel SE = delta method, GSS pareduc -> educ -> lnearn 63% mediated; then the M-Y confounding caveat with a U -> M, U -> Y simulation: b 2.0 instead of 1.5, share 0.72 vs 0.55; sequential ignorability, Imai-Keele-Tingley 2010). Numbers from figs/w5_mediation.R. Lab 5 section 'The mechanism test' mirrors it (bk() function with Sobel SE, GSS run, sim_med_u break).
+- 2026-09-23 Week 5: do-operator frames (Seeing Versus Doing, The Intervention Graph, From the Intervention Graph to a Formula) starred orange; 'Regression on D Is the Naive Comparison' moved to Week 6 as 'Why Not Just Regress Y on D?' right after 'Where We Are' (motivates regression adjustment).
+- 2026-09-23 lab 5 trimmed at user request: Neyman by-hand SE and re-randomization check dropped (randomization now one chunk: estimate, ATE, baseline gap ~ 0); Brand & Xie GSS replication dropped entirely (gss now loaded in the Baron-Kenny GSS chunk); sandwich no longer loaded; exercise 7 (Neyman third term) dropped. Sections: PO, confounding, colliders, post-treatment, Baron-Kenny, bias amplification, selection, Blau-Duncan, dagitty, drawing DAGs.
+- 2026-09-23 lab 5: 'The same test in a package' subsection under Baron-Kenny: mediation::mediate() (ACME 0.039 = ab, ADE 0.023 = c', prop 0.63) and medsens() (ACME = 0 at rho 0.3, R2 0.09) with the sensitivity plot; mediation package installed to R 4.5 library. Slide 'What the Mechanism Test Assumes' cites medsens with the 9% number.
