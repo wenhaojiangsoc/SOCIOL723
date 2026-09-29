@@ -15,6 +15,7 @@
 
 %% ---- packages --------------------------------------------------------------
 \usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{dsfont}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tikz}
@@ -206,7 +207,7 @@ effect.
 A \alert{running variable} (or forcing variable) $X_i$ determines treatment
 deterministically:
 \begin{align*}
-  D_i = \mathbf{1}\{X_i \geq c\} .
+  D_i = \mathds{1}\{X_i \geq c\} .
 \end{align*}
 \vskip2pt
 \begin{block}{Continuity assumption \srcp{Hahn, Todd, and van der Klaauw 2001}}

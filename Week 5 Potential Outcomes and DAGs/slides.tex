@@ -329,7 +329,7 @@ Write $\tau = \text{ATE}$ and $\pi = \Pr(D_i = 1)$. Since
 $\text{ATT} = \tau + (1 - \pi)\big(\text{ATT} - \text{ATU}\big)$,
 \begin{align*}
   \E[Y_i \mid D_i = 1] - \E[Y_i\mid D_i=0]
-  = \tau
+ = \tau
   &+ \underbrace{\E[Y_i(0)\mid D_i=1] - \E[Y_i(0)\mid D_i=0]}_{\text{selection on the baseline } Y_i(0)} \\
   &+ \underbrace{(1-\pi)\big(\text{ATT} - \text{ATU}\big)}_{\text{selection on the effect } \tau_i} .
 \end{align*}
@@ -794,12 +794,12 @@ Previous graph, $X$ observed. Goal: write $\Pr(Y \mid do(D = d))$ using
 only quantities from the left graph.
 {\footnotesize
 \begin{align*}
-  \Pr(Y \mid do(D{=}d))
-  &= \textstyle\sum_x \Pr(Y \mid do(D{=}d), X{=}x)\,\Pr(X{=}x \mid do(D{=}d))
+  \Pr(Y \mid do(D = d))
+  &= \textstyle\sum_x \Pr(Y \mid do(D = d), X = x)\,\Pr(X = x \mid do(D = d))
      && \text{total probability} \\
-  &= \textstyle\sum_x \Pr(Y \mid do(D{=}d), X{=}x)\,\Pr(X{=}x)
+  &= \textstyle\sum_x \Pr(Y \mid do(D = d), X = x)\,\Pr(X = x)
      && \text{$D$ does not cause $X$} \\
-  &= \textstyle\sum_x \Pr(Y \mid D{=}d, X{=}x)\,\Pr(X{=}x)
+  &= \textstyle\sum_x \Pr(Y \mid D = d, X = x)\,\Pr(X = x)
      && \text{given $X$, seeing $=$ doing}
 \end{align*}}
 \begin{itemize}\itemsep2pt
@@ -808,8 +808,8 @@ only quantities from the left graph.
         is the back door $D \leftarrow X \to Y$, and $X$ blocks it. Inside a
         stratum, a unit seen with $D = d$ is as good as one set to $d$.
   \item Means, then subtract:
-        $\E[Y \mid do(D{=}1)] - \E[Y \mid do(D{=}0)]
-        = \sum_x \big(\E[Y \mid D{=}1, x] - \E[Y \mid D{=}0, x]\big)\Pr(X{=}x)$,
+        $\E[Y \mid do(D = 1)] - \E[Y \mid do(D = 0)]
+       = \sum_x \big(\E[Y \mid D = 1, x] - \E[Y \mid D = 0, x]\big)\Pr(X = x)$,
         the formula of ``The Proof, Line by Line,'' now from the graph.
   \item $U$ points only into $Y$, so it opens no path from $D$: harmless.
 \end{itemize}
@@ -831,7 +831,7 @@ $Z$ satisfies the back-door criterion for the effect of $D$ on $Y$ if
         Condition 1 keeps mediators and colliders out of $Z$.
   \item The previous derivation then holds with $Z$ for $X$, the
         \alert{adjustment formula}:
-        $\Pr(Y \mid do(D{=}d)) = \sum_z \Pr(Y \mid D{=}d, Z{=}z)\,\Pr(Z{=}z)$.
+        $\Pr(Y \mid do(D = d)) = \sum_z \Pr(Y \mid D = d, Z = z)\,\Pr(Z = z)$.
   \item Potential-outcome reading: the causes of $Y(d) = f_Y(d, \ldots)$
         are the arrows into $Y$ other than $D$; $Y(d) \indep D \mid Z$
         holds when $Z$ blocks every path from $D$ to them, condition 2.
@@ -920,7 +920,7 @@ every $a$. Now condition on $C$. Since $T = (C - A) - \epsilon_C$,
   &= \frac{\Cov(T,\ C - A)}{\Var(C - A)}\,(C - A)
   && \text{\footnotesize projection of $T$ on $C - A = T + \epsilon_C$} \\
   &= \frac{\Var(T)}{\Var(T) + \Var(\epsilon_C)}\,(C - A)
-   = \tfrac12\,C - \tfrac12\,A
+  = \tfrac12\,C - \tfrac12\,A
   && \text{\footnotesize $\Cov(T, T + \epsilon_C) = \Var(T) = 1$}
 \end{align*}
 \vskip2pt
@@ -1348,7 +1348,7 @@ cannot answer. Because cohort is period minus age, the three regressors are
 perfectly collinear, and for any $\delta$
 \begin{align*}
   (\beta_A + \delta) A + (\beta_P - \delta) P + (\beta_C + \delta)(P - A)
-  = \beta_A A + \beta_P P + \beta_C (P - A)
+ = \beta_A A + \beta_P P + \beta_C (P - A)
 \end{align*}
 fits exactly as well. A one-parameter family of ``effects'' explains the data
 identically.

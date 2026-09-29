@@ -312,7 +312,7 @@ substituted:
 \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
 \begin{align*}
   \loglik(\bm\beta) = \sum_{i=1}^{n}\Big[\, y_i \log p_i + (1-y_i)\log(1-p_i)\Big]
-  = \sum_{i=1}^{n}\Big[\, y_i\, X_i'\bm\beta - \log\big(1+e^{X_i'\bm\beta}\big)\Big]
+ = \sum_{i=1}^{n}\Big[\, y_i\, X_i'\bm\beta - \log\big(1+e^{X_i'\bm\beta}\big)\Big]
 \end{align*}
 \endgroup
 {\footnotesize (second form: $\log\frac{p_i}{1-p_i} = X_i'\bm\beta$,
@@ -374,8 +374,8 @@ step $t$ & $\beta_0$ & $\beta_1$ & $\loglik$ & score $S = (S_0, S_1)$ \\
 Differentiate, using $\partial\Lambda(z)/\partial z = \Lambda(z)(1-\Lambda(z))$:
 \begin{align*}
   \frac{\partial\loglik}{\partial\bm\beta}
-  = \sum_{i=1}^n \Big[ y_i X_i - \frac{e^{X_i'\bm\beta}}{1+e^{X_i'\bm\beta}}X_i\Big]
-  = \sum_{i=1}^n \big(y_i - p_i\big)X_i \ \overset{!}{=}\ \zero .
+ = \sum_{i=1}^n \Big[ y_i X_i - \frac{e^{X_i'\bm\beta}}{1+e^{X_i'\bm\beta}}X_i\Big]
+ = \sum_{i=1}^n \big(y_i - p_i\big)X_i \ \overset{!} = \ \zero .
 \end{align*}
 \vskip4pt
 \begin{alertblock}{Read it}
@@ -1261,7 +1261,7 @@ Student $i$ in school $j$, the last frame's equation with distributions:
         within-school variance}: how much students spread around their own
         school's line. Total: $\Var(\text{math}_{ij}) = \tau^2 + \sigma^2$.
   \item Classmates share $u_j$, so $\Cov(\text{math}_{ij}, \text{math}_{i'j})
-        = \tau^2$: the model \emph{is} the correlation clustering corrects for.
+       = \tau^2$: the model \emph{is} the correlation clustering corrects for.
 \end{itemize}
 \vskip2pt
 \textbf{Estimation.} $u_j$ is never observed, so each school's likelihood
@@ -1279,7 +1279,7 @@ distribution, and the same one for every school.
         into $\beta_0$); normal makes the average a normal, so each
         school's likelihood has a closed form with one parameter, $\tau^2$.
   \item \textbf{$u_j$ uncorrelated with SES and Catholic}: $E[u_j \mid X]
-        = 0$. The same $\mathcal N(0, \tau^2)$ is used for high-SES and
+       = 0$. The same $\mathcal N(0, \tau^2)$ is used for high-SES and
         low-SES schools. If high-SES schools tended to have higher $u_j$,
         the model would credit that height to SES and $\hat\beta_1$ would
         be too large: an omitted variable, since $u_j$ is part of the
@@ -1319,7 +1319,7 @@ within schools $\hat\sigma^2$ & $37.0$ & \\
 \vskip2pt
 \begin{itemize}\itemsep1pt
   \item $\text{ICC} = \hat\tau^2/(\hat\tau^2 + \hat\sigma^2) = 3.62/40.6
-        = 0.09$: of the variation SES and sector leave unexplained, $9\%$
+       = 0.09$: of the variation SES and sector leave unexplained, $9\%$
         is between schools, $91\%$ within. Is $\tau^2$ zero? LR against
         OLS with the same $x$: $332$.
 \end{itemize}

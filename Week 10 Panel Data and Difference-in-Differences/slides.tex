@@ -15,6 +15,7 @@
 
 %% ---- packages --------------------------------------------------------------
 \usepackage{amsmath,amsfonts,amssymb,bm}
+\usepackage{dsfont}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tikz}
@@ -449,7 +450,7 @@ Generalize to many periods by estimating an effect for each period relative to
 treatment:
 \begin{align*}
   Y_{it} = \alpha_i + \lambda_t
-  + \sum_{k \neq -1} \tau_k \cdot \mathbf{1}\{t - g_i = k\} + \epsilon_{it} ,
+  + \sum_{k \neq -1} \tau_k \cdot \mathds{1}\{t - g_i = k\} + \epsilon_{it} ,
 \end{align*}
 where $g_i$ is unit $i$'s treatment date and $k = -1$ is the omitted reference.
 \vskip3pt
@@ -490,7 +491,7 @@ Units adopt the policy at \emph{different times}: states pass a law in 1995,
 2001, 2008. The standard specification is
 \begin{align*}
   Y_{it} = \alpha_i + \lambda_t + \beta\, D_{it} + \epsilon_{it},
-  \qquad D_{it} = \mathbf{1}\{t \geq g_i\} .
+  \qquad D_{it} = \mathds{1}\{t \geq g_i\} .
 \end{align*}
 \vskip3pt
 For thirty years this was assumed to estimate ``the'' treatment effect. It does
