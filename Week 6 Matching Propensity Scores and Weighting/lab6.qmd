@@ -109,6 +109,107 @@ The `Diff.Un` column is the standardized mean difference. Values well above
 $0.1$, here `pareduc` and `wordsum` especially, mean the two groups are not
 comparable as they stand.
 
+# Exact matching on cells
+
+The lecture's matching section began with the cleanest estimator there is:
+coarsen the covariates into cells, take the difference in means inside every
+cell that holds both graduates and non-graduates, and average the cell
+differences with the weights of the estimand you named. This section
+reproduces the lecture's numbers by hand, then checks them against `MatchIt`.
+
+## Building the cells
+
+```{r}
+#| label: exact-cells
+## coarsen the three continuous covariates at rough terciles; keep the binaries as they are
+gss <- gss |>
+  mutate(pareduc_b = cut(pareduc, c(-Inf, 11, 13, Inf), labels = c("<12", "12-13", "14+")),
+         wordsum_b = cut(wordsum, c(-Inf, 5, 7, Inf),   labels = c("0-5", "6-7", "8-10")),
+         exper_b   = cut(exper,   c(-Inf, 16, 29, Inf), labels = c("0-16", "17-29", "30+")),
+         cell = interaction(female, black, pareduc_b, wordsum_b, exper_b))
+## one row per cell: how many treated and untreated, and their mean outcomes
+cells <- gss |>
+  group_by(cell) |>
+  summarise(n1 = sum(D), n0 = sum(1 - D),
+            m1 = mean(Y[D == 1]), m0 = mean(Y[D == 0]), .groups = "drop") |>
+  mutate(n = n1 + n0, tau = m1 - m0, both = n1 > 0 & n0 > 0)
+c(possible = nlevels(gss$cell), occupied = nrow(cells), both_arms = sum(cells$both),
+  treated_only = sum(cells$n1 > 0 & cells$n0 == 0), untreated_only = sum(cells$n0 > 0 & cells$n1 == 0))
+## coverage: who is lost when the one-armed cells are dropped
+c(treated_dropped = sum(cells$n1[!cells$both]), untreated_dropped = sum(cells$n0[!cells$both]))
+```
+
+## The three estimands, and what OLS returns
+
+```{r}
+#| label: exact-estimates
+m <- filter(cells, both)
+## ATE: cell shares among matched units; ATT: shares among matched treated; ATU: among matched untreated
+c(naive = mean(gss$Y[gss$D == 1]) - mean(gss$Y[gss$D == 0]),
+  ATE = sum(m$tau * m$n)  / sum(m$n),
+  ATT = sum(m$tau * m$n1) / sum(m$n1),
+  ATU = sum(m$tau * m$n0) / sum(m$n0),
+  ## OLS saturated in the cells: the variance-weighted average from the lecture
+  OLS_cells = coef(lm(Y ~ D + cell, data = gss))["D"])
+```
+
+The four adjusted numbers are the same 92 cell differences under four sets of
+weights. Bootstrap the whole procedure for standard errors; resampling units is
+valid here because nothing is nearest-neighbour.
+
+```{r}
+#| label: exact-boot
+boot_exact <- function(d) {
+  b <- d[sample(nrow(d), replace = TRUE), ]
+  t <- b |> group_by(cell) |>
+    summarise(n1 = sum(D), n0 = sum(1 - D), y1 = sum(Y * D), y0 = sum(Y * (1 - D)), .groups = "drop") |>
+    filter(n1 > 0, n0 > 0) |> mutate(tau = y1 / n1 - y0 / n0)
+  c(ATE = sum(t$tau * (t$n1 + t$n0)) / sum(t$n1 + t$n0), ATT = sum(t$tau * t$n1) / sum(t$n1))
+}
+set.seed(723)
+apply(replicate(200, boot_exact(gss)), 1, sd)
+```
+
+## The checks: coverage and balance
+
+```{r}
+#| label: exact-balance
+## standardized mean difference: (weighted mean treated - weighted mean untreated) / pooled SD
+covs <- c("pareduc", "wordsum", "exper", "female", "black", "otherace")
+sd_pool <- sapply(covs, function(v) sqrt((var(gss[gss$D == 1, v]) + var(gss[gss$D == 0, v])) / 2))
+smd <- function(w1, w0) sapply(covs, function(v)
+  (weighted.mean(gss[[v]], w1) - weighted.mean(gss[[v]], w0)) / sd_pool[v])
+## weights that reproduce the matched estimators: each unit gets (target share of its cell) / (units of its arm in the cell)
+cw <- as.character(gss$cell)
+share <- setNames(m$n / sum(m$n), as.character(m$cell))        # ATE target: matched-population cell shares
+share1 <- setNames(m$n1 / sum(m$n1), as.character(m$cell))     # ATT target: treated cell shares
+n1c <- setNames(m$n1, as.character(m$cell)); n0c <- setNames(m$n0, as.character(m$cell))
+get <- function(v, k) ifelse(is.na(v[k]), 0, v[k])
+w1_ate <- gss$D * get(share, cw) / pmax(get(n1c, cw), 1)
+w0_ate <- (1 - gss$D) * get(share, cw) / pmax(get(n0c, cw), 1)
+w1_att <- gss$D * get(share1, cw) / pmax(get(n1c, cw), 1)
+w0_att <- (1 - gss$D) * get(share1, cw) / pmax(get(n0c, cw), 1)
+round(rbind(raw = smd(gss$D, 1 - gss$D), ATE_matched = smd(w1_ate, w0_ate), ATT_matched = smd(w1_att, w0_att)), 3)
+```
+
+Exactly matched variables balance by construction; the coarsened ones keep the
+within-band imbalance the bands allow; `otherace`, which we did not match on,
+moves on its own. None of these numbers is a test.
+
+## The same thing in `MatchIt`
+
+```{r}
+#| label: exact-matchit
+## method = "exact" builds the same cells; estimand chooses the weights
+for (est in c("ATE", "ATT")) {
+  mm <- matchit(D ~ female + black + pareduc_b + wordsum_b + exper_b,
+                data = gss, method = "exact", estimand = est)
+  md <- match.data(mm)
+  cat(est, ":", round(coef(lm(Y ~ D, data = md, weights = weights))["D"], 3),
+      " matched n =", nrow(md), "\n")
+}
+```
+
 # The propensity score
 
 ```{r}
@@ -397,6 +498,126 @@ estimate to zero. Compare it to the benchmark: if a confounder three times as
 strong as measured verbal ability would be needed, the finding is reasonably
 robust; if half of one would do it, it is not.
 
+# Selection on unobservables: the Heckman correction
+
+Everything above conditioned on $X$. The last section of the lecture asked what
+can be done when units select on something we did *not* measure. Heckman's
+answer is to write down the selection rule and the joint distribution of the two
+errors, and then compute the gap $\E[\epsilon_i \mid D_i = 1] -
+\E[\epsilon_i \mid D_i = 0]$ instead of assuming it away.
+
+::: callout-note
+The GSS offers no credible *excluded variable*, a variable that moves college
+completion but has no direct effect on earnings. Without one, the lecture showed
+that the correction rests on the curvature of $\phi/\Phi$ alone. So this section
+works on simulated data where the true effect is known, exactly as the lecture's
+table did (`figs/w6_heckman.R`).
+:::
+
+## The world
+
+```{r}
+#| label: heck-sim
+set.seed(723)
+n <- 2000
+rho <- 0.5; sigma <- 1; tau <- 1
+X <- rnorm(n)      ## the observed control, in both equations
+Z <- rnorm(n)      ## the excluded variable: shifts selection, not the outcome
+u <- rnorm(n)      ## selection-equation error, variance 1
+## outcome error correlated rho with u: that correlation IS selection on unobservables
+eps <- sigma * (rho * u + sqrt(1 - rho^2) * rnorm(n))
+D <- as.integer(0.5 * X + Z + u > 0)   ## the selection rule
+Y <- 1 + 0.5 * X + tau * D + eps       ## the outcome, one constant effect tau = 1
+dat <- data.frame(Y, D, X, Z)
+## OLS with X in the regression: biased upward, because X is not the confounder
+coef(lm(Y ~ X + D, data = dat))["D"]
+```
+
+## The two steps by hand
+
+```{r}
+#| label: heck-2step
+## step 1: probit of D on the selection regressors, X and the excluded Z
+step1 <- glm(D ~ X + Z, family = binomial(link = "probit"), data = dat)
+c_hat <- predict(step1, type = "link")     ## Z_i' gamma-hat
+## step 2: the correction term, one expression for both groups
+dat$lambda <- ifelse(dat$D == 1,  dnorm(c_hat) / pnorm(c_hat),
+                                 -dnorm(c_hat) / (1 - pnorm(c_hat)))
+step2 <- lm(Y ~ X + D + lambda, data = dat)
+## D recovers tau; the coefficient on lambda estimates rho * sigma = 0.5
+coef(summary(step2))[, c("Estimate", "Std. Error", "t value")]
+```
+
+The $t$-test on `lambda` is the test of selection on unobservables. But the
+standard errors printed above are wrong: `lambda` was estimated in step 1, and
+$\epsilon_i$ is heteroskedastic given $D_i$. Bootstrap both steps together.
+
+```{r}
+#| label: heck-boot
+two_step <- function(d, selection = D ~ X + Z) {
+  s1 <- glm(selection, family = binomial(link = "probit"), data = d)
+  ch <- predict(s1, type = "link")
+  d$lambda <- ifelse(d$D == 1, dnorm(ch) / pnorm(ch), -dnorm(ch) / (1 - pnorm(ch)))
+  coef(lm(Y ~ X + D + lambda, data = d))[c("D", "lambda")]
+}
+B <- 200
+boot <- replicate(B, two_step(dat[sample(n, replace = TRUE), ]))
+apply(boot, 1, sd)    ## compare with the step-2 OLS standard errors above
+```
+
+## Both equations by maximum likelihood
+
+The two-step estimator is the Week 3 idea of "estimate, then plug in." Fitting
+the probit and the outcome equation jointly by maximum likelihood (FIML) uses the
+bivariate normal likelihood directly, returns $\rho$ and $\sigma$ separately, and
+gives standard errors that need no bootstrap.
+
+```{r}
+#| label: heck-fiml
+library(sampleSelection)
+## treatReg: selection equation first, then the outcome equation with D in it
+fiml <- treatReg(D ~ X + Z, Y ~ X + D, data = dat)
+summary(fiml)
+```
+
+The wage version, where $Y$ is observed only for the $D_i = 1$ rows, is
+`heckit(selection = D ~ X + Z, outcome = Y ~ X, data = ...)` in the same package.
+
+## Without an excluded variable
+
+```{r}
+#| label: heck-noZ
+## the selection equation now has only X: lambda is a smooth function of X and D
+s1 <- glm(D ~ X, family = binomial(link = "probit"), data = dat)
+ch <- predict(s1, type = "link")
+dat$lambda_noZ <- ifelse(dat$D == 1, dnorm(ch) / pnorm(ch), -dnorm(ch) / (1 - pnorm(ch)))
+## how much of the correction term do X and D already explain linearly?
+summary(lm(lambda_noZ ~ X + D, data = dat))$r.squared
+## what is left identifies tau: the curvature of phi/Phi, and nothing else
+coef(summary(lm(Y ~ X + D + lambda_noZ, data = dat)))[c("D", "lambda_noZ"), ]
+```
+
+Compare the standard error on `D` with the one from the two-step with `Z`.
+The excluded variable must move treatment and have no direct effect on $Y$.
+That is next week's instrument.
+
+## When the errors are not normal
+
+```{r}
+#| label: heck-skew
+## the common shock is a centred, unit-variance, right-skewed chi-square(1)
+v <- (rchisq(n, 1) - 1) / sqrt(2)
+eps_s <- sigma * (rho * v + sqrt(1 - rho^2) * rnorm(n))
+D_s <- as.integer(0.5 * X + Z + v > 0)
+Y_s <- 1 + 0.5 * X + tau * D_s + eps_s
+dat_s <- data.frame(Y = Y_s, D = D_s, X, Z)
+two_step(dat_s)                          ## with the excluded variable
+two_step(dat_s, selection = D ~ X)       ## without it
+```
+
+With an excluded variable the normal formula for the gap is only slightly off.
+Without one, the estimator *is* the normal formula, and it can land anywhere.
+
 # Exercises
 
 1.  **Estimand discipline.** Redo the analysis targeting the **ATT** throughout
@@ -427,6 +648,12 @@ robust; if half of one would do it, it is not.
 6.  **Effective sample size.** Plot the IPW weights against $\hat e$. Identify the
     ten most heavily weighted observations. Refit without them, how much does
     the estimate move relative to its standard error?
+
+7.  **An excluded variable for college.** Propose a variable in the GSS, or one
+    you would collect, that shifts completing a bachelor's degree but has no
+    direct effect on earnings. Write the argument for "no direct effect" in
+    three sentences, then list what would break it. Explain, using the last
+    section, why the correction is worth little without such a variable.
 
 # Session information
 

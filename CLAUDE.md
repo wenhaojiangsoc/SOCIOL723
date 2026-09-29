@@ -26,6 +26,9 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - `\core` blue star = examinable; `\adv` orange star = for understanding only. The user decides stars.
 - `mathtools` is not installed; use amsmath/amsfonts/amssymb/bm only.
 - Column vectors, prime for transpose, `X_i'\beta` for the linear predictor.
+- Causal weeks: one effect letter, `\tau`; `\tau(x)` = CATE(x), `\tau_R` = regression
+  estimand, `\tau_{\text{AIPW}}`; `\text{ATE}`/`\text{ATT}` spelled out; `\pi = \Pr(D_i=1)`;
+  `e(x)` propensity score, `m_d(x)` outcome model; plain `\epsilon`, indicator `\mathds{1}`.
 - Never add `Co-Authored-By` lines to commits. Push only when the user says so.
 
 ## How the user wants slides written
@@ -76,6 +79,17 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   seeing vs doing, adjustment formula derived from the intervention graph). Lab 5 rebuilt
   2026-09-23: PO simulations, Baron-Kenny mechanism test on GSS, Blau & Duncan replication from the
   correlation matrix, dagitty, and a TikZ-in-Quarto section using the slides' tikzset.
+- Week 6 (98 pp, restructured 2026-09-28; Cheng et al. 2021 in 7 frames; Wodtke et al. 2011 in 6 frames (weighting); Lundberg 2024 in 5 frames (DR) with the paper's Figures 1-4 as PNGs in figs/; Mazrekaj et al. 2020 in 6 frames from `figs/w6_mazrekaj.R`; anatomy has a covariance frame and a continuous-X simulation `figs/w6_fuzzy.R`): opening (slide 4 regression = CEF + gap;
+  slide 5 ATE/ATT/ATU as weighted tau(x); slide 6 OLS returns tau_R, "take the weights back")
+  -> Matching FIRST (exact matching for the ATE, unmatched cells, checks, ATT, GSS worked
+  example from `figs/w6_matching_gss.R`, lit = Mazrekaj et al. 2020 CEM) -> Propensity Score
+  (closes with SIX frames on Cheng, Brand, Zhou, Xie & Hout 2021 Science Advances) ->
+  Weighting (why after matching; ATT, ATE, weighted regression, ATU + table, why it works,
+  HIR, lit; Stabilized and HT-vs-Hajek frames dropped) -> Doubly Robust (opens with
+  g-computation) -> Anatomy (moved to the END,
+  goal-and-plan opener, Angrist 1998) -> Heckman (5 frames \adv, `figs/w6_heckman.R`) ->
+  Looking Ahead. All literature frames web-verified. Lab 6 mirrors: exact matching on cells
+  by hand + MatchIt, then PS, NN/CEM, weighting, AIPW, sensitivity, Heckman (treatReg).
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
