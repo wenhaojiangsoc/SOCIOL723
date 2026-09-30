@@ -1050,9 +1050,9 @@ stabilized & treated             & 1.09 & 41.2  & 373   & \multirow{2}{*}{0.601}
         $100$ and now carries $41$, still $41$ times its neighbours.
   \item \textbf{Means near $1$}: the logit is not badly off. The raw means
         are the stabilized ones divided by $\pi = 0.41$ and $1-\pi$.
-  \item \textbf{Where stabilizing matters:} weights not normalized inside a
-        ratio, because they are multiplied over periods or enter a regression
-        with fewer parameters than treatment histories.
+  \item \textbf{Where it matters:} weights multiplied over periods or put in
+        a regression with fewer parameters than treatment histories (marginal
+        structural models, later). With one treatment it is a convention.
 \end{itemize}
 \end{frame}
 
@@ -1128,77 +1128,51 @@ $e(x) = n_{1x}/n_x$. Then in every cell
 \end{itemize}
 \end{frame}
 
-\begin{frame}{In the Literature: Sharkey and Elwert (2011)}
-\textbf{The question.} Does a poor neighbourhood lower a child's cognitive
-ability, and does the \emph{parent's} childhood neighbourhood add to it? One
-binary treatment per generation: $N_P = 1$ if the parent's census tract
-at ages 15--17 had a poverty rate of at least 20\%; $N_O = 1$ if the child's
-tract in 1997--2001 did. Outcome $A$: Woodcock--Johnson Broad Reading and
-Applied Problems, normed by age (SD 15).
+\begin{frame}{In the Literature: Stritzel and Crosnoe (2023)}
+\textbf{The question.} Does living with a single rather than a married
+mother raise an adolescent's drinking and depressive symptoms at 14? One
+binary treatment at a time: $D_a = 1$ if the mother was single when the child
+was age $a$, for $a = 0, 2, \dots, 14$; each age is its own analysis.
 \vskip3pt
-\textbf{The data.} PSID families since 1968 and their grandchildren in the
-Child Development Supplement: 1,556 parent--child pairs.
+\textbf{The data.} NLSY79 Children and Young Adults, $n = 5{,}597$.
+Unweighted: 27.5\% of youth who ever lived with a single mother drank by 14,
+against 22.8\% of those with always-married mothers; CES-D 4.51 against 4.02
+on a 0--21 scale.
 \vskip3pt
-\textbf{Why not regression.} The child generation's confounders $C_O$
-(income, education, marriage) are caused by $N_P$ and confound $N_O$. For
-$N_O$'s effect one must control $C_O$; for $N_P$'s one must not, since $C_O$
-is on its path to $A$. ``Regression models cannot simultaneously control and
-not control for the same variable.''
+\textbf{The weights: this section's table.} $\hat e$ from a logit of $D_a$
+on the mother's background and her own childhood, the child's sex and birth
+year, and household size, poverty, and employment at age $a$ and before. ATE: ``we stabilized the weights by
+replacing the numerator with the unconditional probability of treatment'',
+trimmed at the 99th percentile. ATT: treated $1$, untreated
+$\hat e/(1-\hat e)$. ATU: the mirror.
 \vskip3pt
-\textbf{The plan.} Reweight so that each treatment is independent of its
-confounders, then regress $A$ on $N_P$ and $N_O$ with no controls: a
-\emph{marginal structural model} \srcp{Robins, Hern\'an, and Brumback 2000}.
+\textbf{The outcome model.} A weighted regression of the outcome on $D_a$
+alone, logit for drinking and OLS for CES-D: ``IPW Is a Weighted Regression''.
 \end{frame}
 
-\begin{frame}{Sharkey and Elwert: the Weights and the Results}
-\small
-\vskip-2pt
-\begin{align*}
-  w_i = \frac{\Pr(N_P)}{\Pr(N_P\mid C_P)} \times
-        \frac{\Pr(N_O\mid N_P)}{\Pr(N_O\mid N_P, C_P, C_O)} ,
-  \qquad \E_w[A\mid N_P, N_O] = \alpha + \beta_1 N_P + \beta_2 N_O .
-\end{align*}
-\vskip-2pt
-\begin{columns}[T]
-\begin{column}{0.42\textwidth}
-\centering\footnotesize
-\textbf{Their Table 3}, the weights\\[2pt]
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{lrrr}
-\toprule
- & gen.\ 1 & gen.\ 2 & product \\
-\midrule
-mean & 1.02 & 1.00 & 0.98 \\
-max  & 49.8 & 7.7  & 41.0 \\
-\bottomrule
-\end{tabular}
-\end{column}
-\begin{column}{0.56\textwidth}
-\centering\footnotesize
-\textbf{Their Table 4}, points (SE)\\[2pt]
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{lrr}
-\toprule
- & Reading & Appl.\ Problems \\
-\midrule
-parent only, $\beta_1$ & $-5.07\ (2.38)$ & $-5.97\ (1.85)$ \\
-child only, $\beta_2$  & $-4.20\ (2.00)$ & $-2.39\ (1.79)$ \\
-both, $\beta_1+\beta_2$ & $-9.27\ (1.68)$ & $-8.36\ (1.69)$ \\
-\bottomrule
-\end{tabular}
-\end{column}
-\end{columns}
-\vskip2pt
+\begin{frame}{Stritzel and Crosnoe: Reading the Three Estimands}
+Single versus married mother; outcomes at 14, by the age at which the
+mother's status is measured.
 \begin{itemize}\itemsep0pt
-  \item \textbf{Weights.} Denominators: logits on each generation's
-        confounders. Means of $1$: the last frame's check. Nine children with
-        product weights above $14$ dropped.
-  \item \textbf{Results.} Two generations of poverty cost more than half an
-        SD; the parent's generation carries at least half.
-  \item \textbf{Why stabilized.} A product explodes when either denominator
-        is small; the numerators hold its mean at $1$, target unchanged.
+  \item \textbf{ATE} (both arms reweighted to the population). Drinking: odds
+        ratio $1.80$ for status at age 10, $1.57$ at 14. Depressive symptoms:
+        $+1.2$ points for status at age 6, null elsewhere.
+  \item \textbf{ATU} (treated reweighted to resemble married-mother
+        households). Drinking: $1.51$ at birth, $1.88$ at 10. Depressive
+        symptoms: $+0.5$, $+1.0$, $+0.8$ for status at birth, 6, and 14.
+  \item \textbf{ATT} (untreated reweighted to resemble single-mother
+        households). Drinking: $1.55$ at age 8, else null; depressive
+        symptoms: null throughout.
 \end{itemize}
+\vskip3pt
+\textbf{Read it with slide 5.} $\text{ATU} > \text{ATE} > \text{ATT}$: $\tau(x)$
+is largest where $e(x)$ is small, among youth who look like married-mother
+households; a divorce is ``particularly disruptive'' for them, and youth long
+used to a single mother show no effect.
+\textbf{Why stabilize here?} One treatment, a H\'ajek regression: it moves no
+estimate; it is the convention.
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Doubly Robust]{Doubly Robust Estimation}
@@ -1448,6 +1422,79 @@ unobserved confounder have to be to overturn my conclusion?}
 \vskip3pt
 \alert{Report one.} It converts an untestable assumption into a quantitative
 claim your reader can argue with.
+\end{frame}
+
+\begin{frame}{Oster (2019): Coefficient Stability, Scaled by $R^2$}
+\small
+Two regressions of $Y$ on $D$: without controls, $\mathring\beta$ and
+$\mathring R^2$; with them, $\tilde\beta$ and $\tilde R^2$. The old habit reads
+a small move $\mathring\beta - \tilde\beta$ as ``unobservables cannot matter
+much''; that holds only if the controls explained a lot of $Y$.
+\textbf{Assumption:} selection on unobservables is $\delta$ times selection
+on observables ($\delta = 1$: equal); $R_{\max}$ is the $R^2$ with the
+unobservables in. The move per unit of $R^2$ gained is extrapolated to the
+$R^2$ still to gain:
+\begin{align*}
+  \beta^{*} = \tilde\beta - \delta\,(\mathring\beta - \tilde\beta)\,
+  \frac{R_{\max} - \tilde R^2}{\tilde R^2 - \mathring R^2},
+  \qquad
+  \delta^{*} = \frac{\tilde\beta\,(\tilde R^2 - \mathring R^2)}
+  {(\mathring\beta - \tilde\beta)(R_{\max} - \tilde R^2)}
+  && \text{\footnotesize $\delta^*$: the $\delta$ at which $\beta^* = 0$}
+\end{align*}
+\vskip-4pt
+Her rule, from randomized studies: $R_{\max} = 1.3\,\tilde R^2$; robust if
+$[\tilde\beta, \beta^*(\delta = 1)]$ excludes $0$ and $\delta^* > 1$.
+\par
+GSS {\footnotesize(\texttt{figs/w6\_sensitivity.R})}: $\mathring\beta = 0.683$,
+$\mathring R^2 = 0.130$; $\tilde\beta = 0.629$, $\tilde R^2 = 0.243$.
+\vskip-4pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lrrr}
+\toprule
+$R_{\max}$ & $1.3\tilde R^2 = 0.316$ & $2\tilde R^2 = 0.487$ & $1$ \\
+\midrule
+$\beta^*(\delta = 1)$ & $0.595$ & $0.514$ & $0.271$ \\
+$\delta^*$ & $18.2$ & $5.5$ & $1.8$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-6pt
+Controls moved $\beta$ by $0.054$ while adding $0.113$ of $R^2$. Mazrekaj's
+$3.19$ was this $\delta^*$. Exact form: \texttt{robomit}, \texttt{psacalc}.
+\end{frame}
+
+\begin{frame}{Cinelli and Hazlett (2020): Bias in Units of Partial $R^2$}
+\small
+\begin{columns}[T]
+\begin{column}{0.56\textwidth}
+Omit a confounder $Z$. The bias in $\hat\tau$ depends on two numbers, the
+shares of the residual variance of $D$ and of $Y$ that $Z$ explains:
+\begin{align*}
+  |\text{bias}| = \text{se}(\hat\tau)\sqrt{\text{df}}\;
+  \sqrt{\frac{R^2_{Y\sim Z\mid D,X}\; R^2_{D\sim Z\mid X}}
+             {1 - R^2_{D\sim Z\mid X}}}
+\end{align*}
+\vskip-4pt
+\textbf{Robustness value.} If both partial $R^2$ equal $\text{RV}_q$, the
+estimate shrinks by the fraction $q$:
+\begin{align*}
+  \text{RV}_q = \tfrac12\Big(\sqrt{f^4 + 4f^2} - f^2\Big),
+  \quad f = q\,|t|/\sqrt{\text{df}}
+\end{align*}
+\vskip-4pt
+\textbf{Benchmark:} $k$ times wordsum in both.
+\end{column}
+\begin{column}{0.44\textwidth}
+\centering
+\includegraphics[width=0.82\linewidth]{figs/sensemakr_contours.pdf}
+\end{column}
+\end{columns}
+\vskip2pt
+GSS: $t = 20.0$, $\text{df} = 3{,}500$, so $\text{RV}_1 = 0.285$: to erase the
+effect, $Z$ must explain 28\% of what is left of both $D$ and $Y$. A confounder
+like wordsum ($0.096$ and $0.011$) biases by $0.064$; three of them leave $0.408$.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Choosing Among the Methods}
@@ -2026,17 +2073,14 @@ Theory and Evidence.'' \textit{Journal of Business \& Economic Statistics}
 37(2): 187--204.
 \item Puhani, Patrick A. 2000. ``The Heckman Correction for Sample Selection and
 Its Critique.'' \textit{Journal of Economic Surveys} 14(1): 53--68.
-\item Robins, James M., Miguel A. Hern\'an, and Babette Brumback. 2000. ``Marginal
-Structural Models and Causal Inference in Epidemiology.'' \textit{Epidemiology}
-11(5): 550--560.
 \item Rosenbaum, Paul R. and Donald B. Rubin. 1983. ``The Central Role of the
 Propensity Score in Observational Studies for Causal Effects.''
 \textit{Biometrika} 70(1): 41--55.
 \item Sekhon, Jasjeet S. 2009. ``Opiates for the Matches: Matching Methods for
 Causal Inference.'' \textit{Annual Review of Political Science} 12: 487--508.
-\item Sharkey, Patrick and Felix Elwert. 2011. ``The Legacy of Disadvantage:
-Multigenerational Neighborhood Effects on Cognitive Ability.'' \textit{American
-Journal of Sociology} 116(6): 1934--1981.
+\item Stritzel, Haley and Robert Crosnoe. 2023. ``Unpacking the Linkages between
+Single Parent Households and Early Adolescent Adjustment.'' \textit{Social Science
+Research} 110: 102841.
 \item Stolzenberg, Ross M. and Daniel A. Relles. 1997. ``Tools for Intuition about
 Sample Selection Bias and Its Correction.'' \textit{American Sociological Review}
 62(3): 494--507.

@@ -476,7 +476,47 @@ formula is doing its job.
 # Sensitivity analysis
 
 All of the above assumed we measured every confounder. We did not. So ask
-instead: **how strong would an unobserved confounder have to be?**
+instead: **how strong would an unobserved confounder have to be?** Two
+answers, both computed from the long regression `reg` and both on the slides.
+
+## Oster's coefficient-stability bound
+
+Oster (2019) compares the coefficient *without* controls (short regression)
+to the coefficient *with* them (long regression), and scales the movement by
+how much $R^2$ the controls added. If controls moved the coefficient little
+but also explained little, that is no comfort.
+
+```{r}
+#| label: oster
+## the short regression: Y on D alone; the long one is `reg` from above
+short <- lm(Y ~ D, data = gss)
+b_dot <- unname(coef(short)["D"]); r_dot <- summary(short)$r.squared   ## uncontrolled
+b_til <- unname(coef(reg)["D"]);   r_til <- summary(reg)$r.squared     ## controlled
+c(beta_short = b_dot, r2_short = r_dot, beta_long = b_til, r2_long = r_til)
+
+## Oster's assumption: selection on unobservables = delta x selection on observables,
+## and Rmax = the R^2 we would reach with the unobservables in.
+## The movement per unit of R^2 gained is extrapolated to the R^2 still to gain:
+oster_beta  <- function(delta, rmax) b_til - delta * (b_dot - b_til) * (rmax - r_til) / (r_til - r_dot)
+## delta*: the delta at which beta* hits zero
+oster_delta <- function(rmax) b_til * (r_til - r_dot) / ((b_dot - b_til) * (rmax - r_til))
+
+## Oster's rule of thumb is Rmax = 1.3 x R^2 of the long regression; show two harsher choices too
+rmax <- c(rmax_1.3 = 1.3 * r_til, rmax_2 = 2 * r_til, rmax_1 = 1)
+rbind(beta_star_delta1 = sapply(rmax, oster_beta, delta = 1),
+      delta_star       = sapply(rmax, oster_delta))
+```
+
+Read the two rows. `beta_star_delta1` is the estimate if unobservables were
+exactly as important as the observables ($\delta = 1$); the finding is called
+robust if the interval from the controlled estimate to this number excludes
+zero. `delta_star` is how many times stronger than the observables the
+unobservables would have to be to erase the effect; Oster's standard is
+$\delta^* > 1$. Here even $R_{\max} = 1$ leaves $\delta^* = 1.8$. This is the
+simplified formula from the paper; the `robomit` package computes the exact
+one.
+
+## Partial $R^2$ and the robustness value
 
 ```{r}
 #| label: sensemakr
@@ -497,6 +537,15 @@ treatment and the outcome that a confounder would need to explain to reduce the
 estimate to zero. Compare it to the benchmark: if a confounder three times as
 strong as measured verbal ability would be needed, the finding is reasonably
 robust; if half of one would do it, it is not.
+
+```{r}
+#| label: rv-by-hand
+## the robustness value from the t statistic alone: RV = (sqrt(f^4 + 4 f^2) - f^2) / 2, f = |t| / sqrt(df)
+tt <- coef(summary(reg))["D", "t value"]; df <- reg$df.residual
+f  <- abs(tt) / sqrt(df)
+c(t = tt, df = df, RV_by_hand = (sqrt(f^4 + 4 * f^2) - f^2) / 2,
+  RV_sensemakr = sens$sensitivity_stats$rv_q)
+```
 
 # Selection on unobservables: the Heckman correction
 
