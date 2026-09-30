@@ -452,6 +452,73 @@ much your final model has to do.
 \end{enumerate}
 \end{frame}
 
+\begin{frame}{The Standard Error of a Matching Estimate: Cells}
+The estimate is a weighted sum of cell differences with weights fixed by the
+target, so its variance is the weighted sum of the cells' variances:
+\begin{align*}
+  \widehat{\text{ATE}} &= \sum_x \frac{n_x}{n}\,\hat\tau(x)
+  && \text{\footnotesize each } \hat\tau(x) \text{ a difference of two means} \\
+  \Var\big(\widehat{\text{ATE}}\big)
+  &= \sum_x \Big(\frac{n_x}{n}\Big)^2
+    \Big(\frac{s^2_{1x}}{n_{1x}} + \frac{s^2_{0x}}{n_{0x}}\Big)
+  && \text{\footnotesize ATT: weights } n_{1x}/n_1
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item \textbf{Bootstrap.} Resample units, rebuild the cells, recompute.
+        Valid here, since the estimate is a smooth function of cell means.
+        GSS: formula $0.035$ (ATE), $0.039$ (ATT); bootstrap $0.035$, $0.040$.
+  \item \textbf{The regression route.} Weighted regression of $Y$ on $D$ with
+        the matching weights gives the same estimate; its default standard
+        error ignores the weights (GSS $0.030$, too small), a sandwich
+        clustered by cell gives $0.036$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Standard Error: Nearest-Neighbour Matching}
+Treated unit $i$ takes its $M$ closest controls, with replacement; $K_j$
+counts how many times control $j$ was used.
+\begin{align*}
+  \widehat{\text{ATT}}
+  &= \tfrac{1}{n_1}\textstyle\sum_{\text{treated}}\big(Y_i - \tfrac{1}{M}\sum_{j \in \text{match}(i)} Y_j\big)
+  && \text{\footnotesize unit minus its matches' mean} \\
+  &= \tfrac{1}{n_1}\big[\textstyle\sum_{\text{treated}} Y_i - \sum_{\text{controls}} \tfrac{K_j}{M}\,Y_j\big]
+  && \text{\footnotesize regroup by control} \\
+  \Var\big(\widehat{\text{ATT}}\big)
+  &= \tfrac{1}{n_1^2}\big[\textstyle\sum_{\text{treated}} \sigma_1^2(X_i)
+     + \sum_{\text{controls}} \big(\tfrac{K_j}{M}\big)^{2} \sigma_0^2(X_j)\big]
+\end{align*}
+with matches held fixed and outcomes independent, $\sigma_d^2(x) = \Var(Y\mid D = d, X = x)$.
+\begin{itemize}\itemsep1pt
+  \item \textbf{The square is the point.} A control used 20 times enters 20
+        differences with the same sign; its noise adds up rather than
+        averaging out, so it contributes $400\,\sigma_0^2$, not $20$. Reuse
+        buys the best match every time and pays in variance.
+  \item $\sigma_d^2(x)$ is estimated locally, as half the squared difference
+        between a unit and its nearest neighbour in the \emph{same} arm; this
+        is the variance \texttt{MatchIt} reports \srcp{Abadie and Imbens 2006}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Standard Error: Why Not Just Bootstrap It?}
+\begin{itemize}\itemsep3pt
+  \item The bootstrap resamples units with replacement and reruns the whole
+        procedure. It works when the estimator moves smoothly as the data
+        move. Matching does not: a small change in the sample changes
+        \emph{which} control is nearest, and the $K_j$ jump by whole units.
+  \item In a bootstrap sample a control appears two or three times, and its
+        copies are each other's nearest neighbours; the distribution of the
+        $K_j$ in bootstrap samples is not their distribution across real
+        samples. Abadie and Imbens (2008) prove the bootstrap variance does
+        not converge to the true one, in either direction.
+  \item So: for cells or coarsened cells, bootstrap freely; for nearest
+        neighbour with replacement, use the analytic formula on the previous
+        frame (with an extra term if the score was estimated).
+  \item The weighting section's trade, seen from the other side: weighting
+        hides thin overlap in large $1/\hat e$, nearest-neighbour matching in
+        large $K_j$. Report the largest of either.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{In the Literature: Mazrekaj, De Witte, and Cabus (2020)}
 \textbf{The question.} Do children raised by same-sex parents do worse in
 school? Census-based studies found a negative association or none, and could
@@ -1017,84 +1084,180 @@ the chance of finishing high school? Earlier studies measured the neighbourhood
 once, so a recent arrival counted like a lifelong resident, and controlled for
 family income, marital status, and employment, which the neighbourhood itself
 changes. Both understate a lifetime of exposure.
-\vskip3pt
+\vskip4pt
 \textbf{The data.} PSID children aged 1 in 1968--1978 ($n = 4{,}154$); 2,093
-followed every year to 17 and seen at 20 (834 Black, 1,259 non-Black).
-Neighbourhood $=$ the tract's disadvantage score (poverty, unemployment,
-welfare, female-headed households, education, professional jobs) in national
-quintiles: the treatment is a sequence $A_2,\dots,A_{17}$, each in
-$\{1,\dots,5\}$. Outcome: graduation by 20.
-\vskip3pt
-\textbf{The estimand.} $5^{16}$ possible histories, so a \emph{marginal
-structural model} on the potential outcomes:
-$\text{logit}\,\Pr(Y_{\bar a} = 1) = \theta_0 + \theta_1\,\frac{1}{16}\sum_k a_k$.
-$\theta_1$ is the effect of one quintile more disadvantage, on average, over
-childhood.
+followed every year to 17 and seen at 20 (834 Black, 1,259 non-Black). A
+census tract's disadvantage score (poverty, unemployment, welfare,
+female-headed households, education, professional jobs) is cut into national
+quintiles, 1 the least and 5 the most disadvantaged.
+\vskip4pt
+\textbf{The plan.} Define the treatment as a whole childhood; state the
+estimand; see in their DAG why regression cannot estimate it; build the
+weights in three steps; read the results.
 \end{frame}
 
-\begin{frame}{Wodtke et al.: Why Regression Fails (their Figure 1)}
+\begin{frame}{Wodtke et al.: the Notation}
+Everything below uses it. Waves $k = 1,\dots,16$ are ages 2 to 17; wave 0 is
+age 1, the baseline.
+\begin{itemize}\itemsep5pt
+  \item $A_k \in \{1,\dots,5\}$: the quintile the child lives in at wave $k$.
+        \emph{The treatment is a sequence}, not one number.
+  \item $\bar a = (a_1,\dots,a_{16})$: one whole childhood, e.g.\
+        $(1,1,\dots,1)$ or $(5,5,\dots,5)$. There are $5^{16}$ of them.
+  \item $L_k$: the family variables at wave $k$ (marital status, employment,
+        hours, family size, homeownership, AFDC, income, moves); $L_0$ the
+        baseline covariates; $\bar L_k = (L_0,\dots,L_k)$ the history so far.
+  \item $Y$: graduated by age 20, 1 or 0.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Wodtke et al.: the Estimand, and What ``MSM'' Means}
+\textbf{Potential outcomes for sequences.} $Y_{\bar a}$: whether the child
+\emph{would} graduate had she lived the childhood $\bar a$. Week 5's two
+potential outcomes become $5^{16}$; each child reveals one. The effect of one
+childhood against another:
+\begin{align*}
+  \Pr(Y_{\bar a} = 1) - \Pr(Y_{\bar a'} = 1),
+  && \text{\footnotesize e.g.\ } \bar a = (5,\dots,5),\ \bar a' = (1,\dots,1)
+\end{align*}
+\textbf{Too many contrasts}, so summarize a childhood by its average
+quintile and posit
+\begin{align*}
+  \text{logit}\,\Pr(Y_{\bar a} = 1) = \theta_0 + \theta_1\,\tfrac{1}{16}\textstyle\sum_{k=1}^{16} a_k .
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item \emph{Structural}: a model for potential outcomes, hence causal, not
+        for the observed $Y$. \emph{Marginal}: for the population average,
+        with no covariates conditioned on. Hence marginal structural model.
+  \item $\theta_1$: the change in the log odds of graduating from one more
+        quintile of disadvantage, on average, over childhood.
+\end{itemize}
+Estimating it needs the weights. First, why regression cannot.
+\end{frame}
+
+\begin{frame}{Wodtke et al.: their Figure 1}
 \begin{center}
-\includegraphics[width=0.55\linewidth]{figs/wodtke2011_fig1.jpg}
+\includegraphics[width=0.76\linewidth]{figs/wodtke2011_fig1.jpg}
 \end{center}
-\vskip-6pt
-{\small $A_1, A_2$: neighbourhood at two waves. $L_2$: family income, marital
-and employment status at wave 2. $U$: unobserved. $Y$: graduation.
-\textbf{B.} $L_2$ confounds $A_2$: it must be adjusted for.
-\textbf{C.} $L_2$ lies on $A_1 \to L_2 \to Y$: adjusting removes the early
-effect that runs through the family (post-treatment control, Week 5).
-\textbf{D.} $L_2$ is a collider of $U$ and $A_1$: adjusting opens
-$A_1 \leftrightarrow U \to Y$, though nothing unobserved affects $A$. So
-regression is biased whether it adjusts for $L_2$ or not: the confounder is
-also a mediator and a collider. \srcp{their Fig.\ 1}}
+\vskip-4pt
+{\small Two waves. $A_1, A_2$: neighbourhood quintile. $L_1, L_2$: family
+variables. $U$: unobserved, affecting family and outcome but not the
+neighbourhood. $Y$: graduation. Thick arrows mark each panel's paths.}
 \end{frame}
 
-\begin{frame}{Wodtke et al.: the Weights}
-Weight each child by the inverse probability of the neighbourhood sequence she
-actually had, one wave at a time, stabilized:
+\begin{frame}{Wodtke et al.: Reading Figure 1}
+\begin{itemize}\itemsep2pt
+  \item \textbf{A. The structure.} Family circumstances shape where the
+        family lives ($L_1 \to A_1$); the neighbourhood shapes next year's
+        income, marriage, and employment ($A_1 \to L_2$); those shape the next
+        move ($L_2 \to A_2$); both affect graduation.
+  \item \textbf{B. Confounding.} $L_2$ causes $A_2$ and $Y$: a back-door path
+        into $A_2$. Leave $L_2$ out and the effect of $A_2$ is confounded.
+        Week 5 says: adjust.
+  \item \textbf{C. Over-control.} $L_2$ also sits on $A_1 \to L_2 \to Y$.
+        Adjust for it and the part of the early neighbourhood's effect that
+        works \emph{through} the family is removed. Week 5's post-treatment
+        control.
+  \item \textbf{D. Collider.} $L_2$ is caused by both $A_1$ and $U$. Adjust
+        for it and a spurious $A_1 \leftrightarrow U \to Y$ path opens. Week
+        5's collider bias, with no unobserved confounding of $A$ anywhere.
+\end{itemize}
+\vskip3pt
+\alert{So a regression is wrong with $L_2$ in it and wrong without it.} The
+escape: balance $A_2$ on $L_2$ by \emph{weighting}, and keep $L_2$ out of the
+outcome model.
+\end{frame}
+
+\begin{frame}{Wodtke et al.: the Weights, Step 1: One Wave}
+Recall today's ATE weight: with a binary $D$ and covariates $X$, each unit
+is weighted by one over the probability of the treatment it received:
+\begin{align*}
+  w_i = \frac{1}{\Pr(D_i = d_i \mid X_i)}
+  = \begin{cases} 1/e(X_i) & d_i = 1 \\ 1/(1-e(X_i)) & d_i = 0 \end{cases}
+  && \text{\footnotesize rare given } X\text{: large weight}
+\end{align*}
+Now one wave of Wodtke et al. The treatment is the quintile $A_1 \in
+\{1,\dots,5\}$, the covariates are $L_0$ and $L_1$:
+\begin{align*}
+  w_i = \frac{1}{\Pr(A_1 = a_{1i} \mid L_0, L_1)}
+  && \text{\footnotesize five values, not two: an ordered logit, Week 4}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item A child whose family, given its income and marital status, was
+        unlikely to land in quintile 3 but did, carries a large weight: she
+        stands in for the many like her who did not.
+  \item After weighting, $A_1$ is balanced on $L_0, L_1$, as $D$ was on $X$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Wodtke et al.: the Weights, Step 2: Two Waves}
+The treatment is now the pair $(a_1, a_2)$. Its probability, using at each
+move only what was known at the time, and the weight, one factor per wave:
+\begin{align*}
+  &\Pr(A_1 = a_1, A_2 = a_2 \mid \text{history}) \\
+  &\quad = \Pr(A_1 = a_1 \mid L_0, L_1)\;
+     \Pr(A_2 = a_2 \mid A_1 = a_1,\ L_0, L_1, L_2)
+  && \text{\footnotesize chain rule} \\
+  w_i &= \frac{1}{\Pr(A_1 = a_{1i}\mid \bar L_1)}\times
+        \frac{1}{\Pr(A_2 = a_{2i}\mid A_1 = a_{1i}, \bar L_2)}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item The second factor is where $L_2$ does its work: it balances $A_2$ on
+        $L_2$, its confounder role in panel B.
+  \item $L_2$ never enters the outcome model, so nothing on
+        $A_1 \to L_2 \to Y$ is controlled away (C) and no collider is
+        conditioned on (D). \alert{Weighting adjusts for $L_2$ without
+        conditioning on it.} That is the whole trick.
+  \item Sixteen waves: sixteen such factors, each an ordered logit of $A_k$
+        on $A_{k-1}$, $L_0$, $L_k$, $L_{k-1}$.
+\end{itemize}
+\vspace{-3pt}
+\end{frame}
+
+\begin{frame}{Wodtke et al.: the Weights, Step 3: Stabilizing}
+A product of sixteen probabilities is tiny, so $w_i$ is huge and wildly
+variable. Multiply by the probability of the same sequence computed
+\emph{without} the family variables:
 \begin{align*}
   sw_i = \prod_{k=1}^{16}
   \frac{\Pr(A_k = a_{ki}\mid \bar A_{k-1} = \bar a_{(k-1)i},\ L_0)}
        {\Pr(A_k = a_{ki}\mid \bar A_{k-1} = \bar a_{(k-1)i},\ \bar L_k = \bar l_{ki})}
+  && \text{\footnotesize their Equation 5}
 \end{align*}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Denominator:} the probability of this year's quintile given
-        last year's, the baseline covariates, and the family's history up to
-        now. An ordinal logit per race of $A_k$ on $A_{k-1}$, baseline
-        covariates, the family variables at $k$ and $k-1$, and divorce and
-        job-loss interactions.
-  \item \textbf{Numerator:} the same model without the family variables. It
-        cancels nothing that matters and keeps the weights near one (their
-        stabilization).
-  \item \textbf{Sixteen factors.} Our one-shot weight $1/e(x)$ becomes a
-        product over years: the same idea, applied every year given the past.
+\begin{itemize}\itemsep2pt
+  \item Each factor is near $1$ when the family variables add little to
+        predicting that year's move, and far from $1$ only when they add a
+        lot: the weight measures how much $L$ explains the child's path.
+  \item Why it is allowed: the numerator depends only on the treatment history
+        and $L_0$, both of which the outcome model conditions on. It changes
+        the variance of $\hat\theta_1$, not its target.
+  \item \textbf{Their Table 4.} Black children: mean $1.03$, SD $0.58$, 1st and
+        99th percentiles $0.27$ and $4.62$. Non-Black: $1.00$, $0.31$, $0.32$
+        and $2.54$. Centred at one, no monsters; truncated at the 1st and 99th
+        percentiles anyway.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Wodtke et al.: the Pseudo-Population (their Figure 2)}
 \begin{center}
-\includegraphics[width=0.8\linewidth]{figs/wodtke2011_fig2.jpg}
+\includegraphics[width=0.78\linewidth]{figs/wodtke2011_fig2.jpg}
 \end{center}
-\vskip-2pt
-\begin{itemize}\itemsep3pt
+\vskip-4pt
+\begin{itemize}\itemsep2pt
   \item In the weighted pseudo-population the arrows from $L_k$ into $A_k$ are
         gone: exposure behaves as if re-randomized each year given the past.
-  \item So the outcome model is an \emph{unadjusted} logit of $Y$ on average
-        exposure, plus baseline covariates only. No $L_k$ in it, so nothing is
-        controlled away and no collider is opened.
+  \item So the outcome model is a logit of $Y$ on average exposure and
+        $L_0$ only, fitted with the weights. No $L_k$ in it: nothing is
+        controlled away, no collider is opened. Its coefficient is $\hat\theta_1$.
   \item \textbf{Assumptions:} no unmeasured confounder of $A_k$ given the
-        history, positivity at every wave, a correct treatment model.
-        Regression needs all three \emph{and} that $L$ be unaffected by past
-        $A$, which the DAG denies.
+        history (the DAG's $U$ does not point at $A$), positivity at every wave,
+        a correct treatment model. Regression needs all three \emph{and} that
+        $L$ be unaffected by past $A$, which the DAG denies.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Wodtke et al.: Checking the Weights, and the Results}
-\textbf{Their Table 4.} Stabilized weights: Black children mean $1.03$, SD
-$0.58$, 1st and 99th percentiles $0.27$ and $4.62$; non-Black $1.00$, $0.31$,
-$0.32$ and $2.54$. Centred at one, no monsters; truncated at the 1st and 99th
-percentiles anyway.
-\vskip3pt
-\textbf{Their Table 5.} Log odds of graduation per quintile of average exposure:
+\begin{frame}{Wodtke et al.: the Results (their Table 5)}
+Log odds of graduation per quintile of average exposure, $\hat\theta_1$:
 \begin{center}\small
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{lcc}
@@ -1107,11 +1270,13 @@ IPT-weighted & $-.525$ (.190) & $-.274$ (.128) \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip2pt
 \begin{itemize}\itemsep2pt
-  \item Regression with the family variables as controls halves the effect:
-        it controls away the part that runs through the family. Weighting
-        keeps it. The difference between the rows is the mediated share.
+  \item \textbf{Unadjusted:} confounded, panel B. Families that end up in poor
+        neighbourhoods differ in ways that also lower graduation.
+  \item \textbf{Regression with $L$ as controls:} panels C and D. It halves
+        the effect by controlling away the part that runs through the family.
+  \item \textbf{Weighted:} in between, and the only one that is unbiased under
+        the DAG. The gap to the regression row is the mediated share.
   \item Fourteen alternative treatment models (more interactions, squares,
         fewer covariates): $-.507$ to $-.588$ and $-.268$ to $-.294$.
 \end{itemize}

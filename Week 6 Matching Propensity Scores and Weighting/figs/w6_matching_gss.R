@@ -87,3 +87,35 @@ for (est in c("ATE", "ATT")) {
   fit <- lm(Y ~ D, data = md, weights = weights)
   cat("MatchIt exact", est, ":", round(coef(fit)["D"], 3), "; matched n =", nrow(md), "\n")
 }
+
+## ---- 6. regression on the matched sample, and standard errors -------------
+## the weights w1_ate/w0_ate reproduce the matched ATE (checked above); combine them
+g$w_ate <- w1_ate + w0_ate
+g$w_att <- w1_att + w0_att
+m_ate <- g[g$w_ate > 0, ]; m_att <- g[g$w_att > 0, ]
+## (a) weighted regression on D alone = the weighted difference in means
+wls_d  <- lm(Y ~ D, data = m_ate, weights = w_ate)
+## (b) add the coarsened covariates as continuous controls: bias correction for
+##     the within-band imbalance the cells left behind
+wls_dx <- lm(Y ~ D + pareduc + wordsum + exper, data = m_ate, weights = w_ate)
+cat(sprintf("\nWLS Y ~ D with ATE weights: %.3f | + continuous pareduc, wordsum, exper: %.3f\n",
+            coef(wls_d)["D"], coef(wls_dx)["D"]))
+wls_att_d  <- lm(Y ~ D, data = m_att, weights = w_att)
+wls_att_dx <- lm(Y ~ D + pareduc + wordsum + exper, data = m_att, weights = w_att)
+cat(sprintf("WLS Y ~ D with ATT weights: %.3f | + continuous controls: %.3f\n",
+            coef(wls_att_d)["D"], coef(wls_att_dx)["D"]))
+## (c) analytic SE of the stratified estimator: sum over cells of weight^2 * (s1^2/n1 + s0^2/n0)
+cellv <- aggregate(cbind(v1 = Y * D, v0 = Y * (1 - D)) ~ cell, g, function(v) var(v[v != 0]))  # placeholder
+v1 <- tapply(g$Y[g$D == 1], g$cell[g$D == 1], var); v0 <- tapply(g$Y[g$D == 0], g$cell[g$D == 0], var)
+mm <- m; mm$v1 <- v1[as.character(mm$cell)]; mm$v0 <- v0[as.character(mm$cell)]
+mm$v1[is.na(mm$v1)] <- 0; mm$v0[is.na(mm$v0)] <- 0
+se_ate <- sqrt(sum((mm$n / sum(mm$n))^2 * (mm$v1 / mm$n1 + mm$v0 / mm$n0)))
+se_att <- sqrt(sum((mm$n1 / sum(mm$n1))^2 * (mm$v1 / mm$n1 + mm$v0 / mm$n0)))
+cat(sprintf("analytic stratified SE: ATE %.3f, ATT %.3f (bootstrap above: %.3f, %.3f)\n",
+            se_ate, se_att, sd(bs["ate", ]), sd(bs["att", ])))
+## (d) the practical route: sandwich SE on the weighted regression, clustered by cell
+suppressMessages(library(sandwich))
+se_cl <- sqrt(vcovCL(wls_d, cluster = m_ate$cell)["D", "D"])
+se_hc <- sqrt(vcovHC(wls_d, type = "HC1")["D", "D"])
+cat(sprintf("WLS Y ~ D: naive SE %.3f, HC1 %.3f, clustered by cell %.3f\n",
+            sqrt(vcov(wls_d)["D", "D"]), se_hc, se_cl))

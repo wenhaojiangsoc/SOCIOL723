@@ -79,7 +79,7 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   seeing vs doing, adjustment formula derived from the intervention graph). Lab 5 rebuilt
   2026-09-23: PO simulations, Baron-Kenny mechanism test on GSS, Blau & Duncan replication from the
   correlation matrix, dagitty, and a TikZ-in-Quarto section using the slides' tikzset.
-- Week 6 (98 pp, restructured 2026-09-28; Cheng et al. 2021 in 7 frames; Wodtke et al. 2011 in 6 frames (weighting); Lundberg 2024 in 5 frames (DR) with the paper's Figures 1-4 as PNGs in figs/; Mazrekaj et al. 2020 in 6 frames from `figs/w6_mazrekaj.R`; anatomy has a covariance frame and a continuous-X simulation `figs/w6_fuzzy.R`): opening (slide 4 regression = CEF + gap;
+- Week 6 (106 pp, restructured 2026-09-28; matching section has three unstarred SE frames (cells, NN with replacement, why not bootstrap); Cheng et al. 2021 in 7 frames; Wodtke et al. 2011 in 11 slow frames (weighting; notation, MSM, DAG, weights in 3 steps); Lundberg 2024 in 5 frames (DR) with the paper's Figures 1-4 as PNGs in figs/; Mazrekaj et al. 2020 in 6 frames from `figs/w6_mazrekaj.R`; anatomy has a covariance frame and a continuous-X simulation `figs/w6_fuzzy.R`): opening (slide 4 regression = CEF + gap;
   slide 5 ATE/ATT/ATU as weighted tau(x); slide 6 OLS returns tau_R, "take the weights back")
   -> Matching FIRST (exact matching for the ATE, unmatched cells, checks, ATT, GSS worked
   example from `figs/w6_matching_gss.R`, lit = Mazrekaj et al. 2020 CEM) -> Propensity Score
