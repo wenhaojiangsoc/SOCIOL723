@@ -23,6 +23,9 @@ format:
         \newcommand{\indep}{\perp\!\!\!\perp}
         \usepackage{setspace}
         \setstretch{1.12}
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},breaklines,breakanywhere,breaksymbolleft={},breaksymbolright={}}
+        \RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines,breakanywhere,breaksymbolleft={},breaksymbolright={}}
 execute:
   echo: true
   warning: false
@@ -35,7 +38,7 @@ editor: visual
 #| include: false
 knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
                       fig.height = 3.3, fig.align = "center", dpi = 200)
-options(digits = 4, scipen = 999)
+options(digits = 4, scipen = 999, width = 76)
 ```
 
 # The question
@@ -275,7 +278,7 @@ md_nn <- match.data(m_nn)
 fit_nn <- lm(Y ~ D + pareduc + wordsum + female + black + otherace +
                exper + I(exper^2),
              data = md_nn, weights = weights)
-coeftest(fit_nn, vcov = vcovCL, cluster = ~ subclass)["D", ]
+round(coeftest(fit_nn, vcov = vcovCL, cluster = ~ subclass)["D", ], 4)
 ```
 
 Two things to notice. First, we still run a regression on the matched data, 
@@ -708,5 +711,6 @@ Without one, the estimator *is* the normal formula, and it can land anywhere.
 
 ```{r}
 #| label: session
-sessionInfo()
+## R version and the packages this lab loaded
+c(R = R.version.string, sapply(sessionInfo()$otherPkgs, \(p) as.character(p$Version)))
 ```

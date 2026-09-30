@@ -41,6 +41,9 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   framework per section; delete over hedge.
 - The user edits `slides.tex` between turns: always re-grep exact text before replacing.
 - Lab code chunks carry `##` explanatory notes on every step.
+- Labs must not run off the right margin (user 2026-09-30): every lab YAML carries the
+  `fvextra` header from lab6.qmd (breaklines for `Highlighting` and `verbatim`), `options(width = 76)`
+  in setup, and long outputs are `round()`ed; check `Overfull \\hbox` in the kept .tex's log.
 
 ## State of the course (as of 2026-09-16)
 - Weeks 1-2: done. Week 3 (MLE theory): testing section rebuilt; score test dropped from the
