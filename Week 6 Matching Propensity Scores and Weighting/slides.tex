@@ -18,6 +18,7 @@
 \usepackage{dsfont}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \usepackage[english]{babel}
@@ -1006,6 +1007,55 @@ rather than the raw average that divides by $n$.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Stabilized Weights}
+The ATE weights $1/e$ and $1/(1-e)$ make each arm stand in for everyone, so
+each arm's weights sum to about $n$. Multiply by the size of the unit's own
+arm, with $\pi = \Pr(D_i = 1)$:
+\begin{align*}
+  w_i^{S} = \frac{\Pr(D_i = d)}{\Pr(D_i = d\mid X_i)}
+  = \begin{cases} \pi/e(X_i), & D_i = 1 \\ (1-\pi)/(1-e(X_i)), & D_i = 0 . \end{cases}
+\end{align*}
+Each arm's weights now sum to about $n_1$ and $n_0$ and average $1$; a mean
+far from $1$ says the model for $e$ is off. Within an arm the multiplier is a
+constant, so the H\'ajek estimate does not move:
+\begin{align*}
+  \frac{\sum_i w_i^{S} D_i Y_i}{\sum_i w_i^{S} D_i}
+  = \frac{\pi\sum_i D_iY_i/\hat e_i}{\pi\sum_i D_i/\hat e_i}
+  = \frac{\sum_i D_iY_i/\hat e_i}{\sum_i D_i/\hat e_i}
+  && \text{\footnotesize $\pi$ cancels; $1-\pi$ likewise in the control arm}
+\end{align*}
+The Horvitz--Thompson form, which divides by $n$, is not available: it needs
+weights that sum to $n$ in each arm, and these sum to $n_d$.
+\end{frame}
+
+\begin{frame}{Stabilized Weights on the GSS}
+BA on log earnings, $\hat e$ from the five-covariate logit
+{\footnotesize(\texttt{figs/w6\_sipw\_gss.R})}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{llrrrr}
+\toprule
+weights & arm & mean & max & ESS & H\'ajek ATE \\
+\midrule
+raw        & treated $(n_1 = 1{,}441)$ & 2.65 & 100.3 & 373   & \multirow{2}{*}{0.601} \\
+           & control $(n_0 = 2{,}068)$ & 1.67 & 13.4  & 1{,}634 & \\
+stabilized & treated             & 1.09 & 41.2  & 373   & \multirow{2}{*}{0.601} \\
+           & control             & 0.98 & 7.9   & 1{,}634 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep1pt
+  \item \textbf{Same estimate, same ESS.} Stabilizing rescales; it does not
+        repair positivity. The treated unit with $\hat e = 0.01$ carried
+        $100$ and now carries $41$, still $41$ times its neighbours.
+  \item \textbf{Means near $1$}: the logit is not badly off. The raw means
+        are the stabilized ones divided by $\pi = 0.41$ and $1-\pi$.
+  \item \textbf{Where stabilizing matters:} weights not normalized inside a
+        ratio, because they are multiplied over periods or enter a regression
+        with fewer parameters than treatment histories.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Recovering the ATU, and the Whole Table\core}
 The ATU mirrors the ATT: the untreated are the target, so they keep weight
 $1$, and the treated are reweighted to look like them with the inverse odds
@@ -1075,6 +1125,78 @@ $e(x) = n_{1x}/n_x$. Then in every cell
         it. Where matching dropped a cell, weighting inflates it. Diagnose with
         the largest weights and the effective sample size,
         $(\sum_i w_i)^2/\sum_i w_i^2$; then trim, or change the estimand.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Sharkey and Elwert (2011)}
+\textbf{The question.} Does a poor neighbourhood lower a child's cognitive
+ability, and does the \emph{parent's} childhood neighbourhood add to it? One
+binary treatment per generation: $N_P = 1$ if the parent's census tract
+at ages 15--17 had a poverty rate of at least 20\%; $N_O = 1$ if the child's
+tract in 1997--2001 did. Outcome $A$: Woodcock--Johnson Broad Reading and
+Applied Problems, normed by age (SD 15).
+\vskip3pt
+\textbf{The data.} PSID families since 1968 and their grandchildren in the
+Child Development Supplement: 1,556 parent--child pairs.
+\vskip3pt
+\textbf{Why not regression.} The child generation's confounders $C_O$
+(income, education, marriage) are caused by $N_P$ and confound $N_O$. For
+$N_O$'s effect one must control $C_O$; for $N_P$'s one must not, since $C_O$
+is on its path to $A$. ``Regression models cannot simultaneously control and
+not control for the same variable.''
+\vskip3pt
+\textbf{The plan.} Reweight so that each treatment is independent of its
+confounders, then regress $A$ on $N_P$ and $N_O$ with no controls: a
+\emph{marginal structural model} \srcp{Robins, Hern\'an, and Brumback 2000}.
+\end{frame}
+
+\begin{frame}{Sharkey and Elwert: the Weights and the Results}
+\small
+\vskip-2pt
+\begin{align*}
+  w_i = \frac{\Pr(N_P)}{\Pr(N_P\mid C_P)} \times
+        \frac{\Pr(N_O\mid N_P)}{\Pr(N_O\mid N_P, C_P, C_O)} ,
+  \qquad \E_w[A\mid N_P, N_O] = \alpha + \beta_1 N_P + \beta_2 N_O .
+\end{align*}
+\vskip-2pt
+\begin{columns}[T]
+\begin{column}{0.42\textwidth}
+\centering\footnotesize
+\textbf{Their Table 3}, the weights\\[2pt]
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lrrr}
+\toprule
+ & gen.\ 1 & gen.\ 2 & product \\
+\midrule
+mean & 1.02 & 1.00 & 0.98 \\
+max  & 49.8 & 7.7  & 41.0 \\
+\bottomrule
+\end{tabular}
+\end{column}
+\begin{column}{0.56\textwidth}
+\centering\footnotesize
+\textbf{Their Table 4}, points (SE)\\[2pt]
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lrr}
+\toprule
+ & Reading & Appl.\ Problems \\
+\midrule
+parent only, $\beta_1$ & $-5.07\ (2.38)$ & $-5.97\ (1.85)$ \\
+child only, $\beta_2$  & $-4.20\ (2.00)$ & $-2.39\ (1.79)$ \\
+both, $\beta_1+\beta_2$ & $-9.27\ (1.68)$ & $-8.36\ (1.69)$ \\
+\bottomrule
+\end{tabular}
+\end{column}
+\end{columns}
+\vskip2pt
+\begin{itemize}\itemsep0pt
+  \item \textbf{Weights.} Denominators: logits on each generation's
+        confounders. Means of $1$: the last frame's check. Nine children with
+        product weights above $14$ dropped.
+  \item \textbf{Results.} Two generations of poverty cost more than half an
+        SD; the parent's generation carries at least half.
+  \item \textbf{Why stabilized.} A product explodes when either denominator
+        is small; the numerators hold its mean at $1$, target unchanged.
 \end{itemize}
 \end{frame}
 
@@ -1904,11 +2026,17 @@ Theory and Evidence.'' \textit{Journal of Business \& Economic Statistics}
 37(2): 187--204.
 \item Puhani, Patrick A. 2000. ``The Heckman Correction for Sample Selection and
 Its Critique.'' \textit{Journal of Economic Surveys} 14(1): 53--68.
+\item Robins, James M., Miguel A. Hern\'an, and Babette Brumback. 2000. ``Marginal
+Structural Models and Causal Inference in Epidemiology.'' \textit{Epidemiology}
+11(5): 550--560.
 \item Rosenbaum, Paul R. and Donald B. Rubin. 1983. ``The Central Role of the
 Propensity Score in Observational Studies for Causal Effects.''
 \textit{Biometrika} 70(1): 41--55.
 \item Sekhon, Jasjeet S. 2009. ``Opiates for the Matches: Matching Methods for
 Causal Inference.'' \textit{Annual Review of Political Science} 12: 487--508.
+\item Sharkey, Patrick and Felix Elwert. 2011. ``The Legacy of Disadvantage:
+Multigenerational Neighborhood Effects on Cognitive Ability.'' \textit{American
+Journal of Sociology} 116(6): 1934--1981.
 \item Stolzenberg, Ross M. and Daniel A. Relles. 1997. ``Tools for Intuition about
 Sample Selection Bias and Its Correction.'' \textit{American Sociological Review}
 62(3): 494--507.

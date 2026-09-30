@@ -79,13 +79,13 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   seeing vs doing, adjustment formula derived from the intervention graph). Lab 5 rebuilt
   2026-09-23: PO simulations, Baron-Kenny mechanism test on GSS, Blau & Duncan replication from the
   correlation matrix, dagitty, and a TikZ-in-Quarto section using the slides' tikzset.
-- Week 6 (94 pp, restructured 2026-09-28; matching section has three unstarred SE frames (cells, NN with replacement, why not bootstrap); Cheng et al. 2021 in 7 frames; Wodtke et al. 2011 CUT 2026-09-30 (user: "too abstract", saved for an end-of-course synthesis; eleven-frame version in commit 99462f6, its three JPGs stay in figs/); Lundberg 2024 in 5 frames (DR) with the paper's Figures 1-4 as PNGs in figs/; Mazrekaj et al. 2020 in 6 frames from `figs/w6_mazrekaj.R`; anatomy has a covariance frame and a continuous-X simulation `figs/w6_fuzzy.R`): opening (slide 4 regression = CEF + gap;
+- Week 6 (99 pp, restructured 2026-09-28; stabilized IPW restored 2026-09-30 as two frames (definition + GSS table from `figs/w6_sipw_gss.R`: Hajek ATE 0.601 either way, ESS unchanged) and a two-frame Sharkey & Elwert 2011 AJS literature example (two-generation MSM, Tables 3-4 web-verified from PMC3286027); matching section has three unstarred SE frames (cells, NN with replacement, why not bootstrap); Cheng et al. 2021 in 7 frames; Wodtke et al. 2011 CUT 2026-09-30 (user: "too abstract", saved for an end-of-course synthesis; eleven-frame version in commit 99462f6, its three JPGs stay in figs/); Lundberg 2024 in 5 frames (DR) with the paper's Figures 1-4 as PNGs in figs/; Mazrekaj et al. 2020 in 6 frames from `figs/w6_mazrekaj.R`; anatomy has a covariance frame and a continuous-X simulation `figs/w6_fuzzy.R`): opening (slide 4 regression = CEF + gap;
   slide 5 ATE/ATT/ATU as weighted tau(x); slide 6 OLS returns tau_R, "take the weights back")
   -> Matching FIRST (exact matching for the ATE, unmatched cells, checks, ATT, GSS worked
   example from `figs/w6_matching_gss.R`, lit = Mazrekaj et al. 2020 CEM) -> Propensity Score
   (closes with SIX frames on Cheng, Brand, Zhou, Xie & Hout 2021 Science Advances) ->
   Weighting (why after matching; ATT, ATE, weighted regression, ATU + table, why it works,
-  HIR; no literature frame; Stabilized and HT-vs-Hajek frames dropped) -> Doubly Robust (opens with
+  HIR, stabilized x2, lit = Sharkey & Elwert 2011; HT-vs-Hajek frame dropped) -> Doubly Robust (opens with
   g-computation) -> Anatomy (moved to the END,
   goal-and-plan opener, Angrist 1998) -> Heckman (5 frames \adv, `figs/w6_heckman.R`) ->
   Looking Ahead. All literature frames web-verified. Lab 6 mirrors: exact matching on cells
