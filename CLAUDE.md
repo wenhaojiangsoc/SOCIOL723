@@ -82,17 +82,21 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   seeing vs doing, adjustment formula derived from the intervention graph). Lab 5 rebuilt
   2026-09-23: PO simulations, Baron-Kenny mechanism test on GSS, Blau & Duncan replication from the
   correlation matrix, dagitty, and a TikZ-in-Quarto section using the slides' tikzset.
-- Week 6 (100 pp, restructured 2026-09-28; stabilized IPW restored 2026-09-30 as two frames (definition + GSS table from `figs/w6_sipw_gss.R`: Hajek ATE 0.601 either way, ESS unchanged) and a two-frame Stritzel & Crosnoe 2023 Soc Sci Res literature example (single binary treatment, stabilized ATE + ATT/ATU weights, weighted regression on D alone; numbers from PMC9936081; Sharkey & Elwert 2011 tried and dropped as still-MSM, in commit 78f121d); sensitivity now has Oster 2019 (formula + GSS table) and Cinelli & Hazlett 2020 (bias formula, RV, contour figure) frames from `figs/w6_sensitivity.R`; matching section has three unstarred SE frames (cells, NN with replacement, why not bootstrap); Cheng et al. 2021 in 7 frames; Wodtke et al. 2011 CUT 2026-09-30 (user: "too abstract", saved for an end-of-course synthesis; eleven-frame version in commit 99462f6, its three JPGs stay in figs/); Lundberg 2024 in 5 frames (DR) with the paper's Figures 1-4 as PNGs in figs/; Mazrekaj et al. 2020 in 6 frames from `figs/w6_mazrekaj.R`; anatomy has a covariance frame and a continuous-X simulation `figs/w6_fuzzy.R`): opening (slide 4 regression = CEF + gap;
-  slide 5 ATE/ATT/ATU as weighted tau(x); slide 6 OLS returns tau_R, "take the weights back")
-  -> Matching FIRST (exact matching for the ATE, unmatched cells, checks, ATT, GSS worked
-  example from `figs/w6_matching_gss.R`, lit = Mazrekaj et al. 2020 CEM) -> Propensity Score
-  (closes with SIX frames on Cheng, Brand, Zhou, Xie & Hout 2021 Science Advances) ->
-  Weighting (why after matching; ATT, ATE, weighted regression, ATU + table, why it works,
-  HIR, stabilized x2, lit = Stritzel & Crosnoe 2023; HT-vs-Hajek frame dropped) -> Doubly Robust (opens with
-  g-computation) -> Anatomy (moved to the END,
-  goal-and-plan opener, Angrist 1998) -> Heckman (5 frames \adv, `figs/w6_heckman.R`) ->
-  Looking Ahead. All literature frames web-verified. Lab 6 mirrors: exact matching on cells
-  by hand + MatchIt, then PS, NN/CEM, weighting, AIPW, sensitivity (Oster by hand, then sensemakr + RV by hand), Heckman (treatReg).
+- Week 6 (82 pp, restructured 2026-09-28/30): opening (slide 4 regression = CEF + gap;
+  slide 5 ATE/ATT/ATU as weighted tau(x); slide 6 OLS returns tau_R) -> Matching FIRST (exact
+  matching for the ATE, unmatched cells, checks, ATT, GSS worked example from
+  `figs/w6_matching_gss.R`, three SE frames, Mazrekaj et al. 2020 CEM in 6 frames with the
+  paper's figures) -> Propensity Score (Cheng et al. 2021 Science Advances in 7 frames with the
+  paper's Figures 1-4) -> Weighting (why after matching; ATT, ATE, weighted regression, ATU +
+  table, overlap weights cell by cell, why it works)
+  -> Doubly Robust (g-computation = matching written as a regression, continuous X fills the cells,
+  extrapolation simulation, AIPW, two cases,
+  honest warning, sensitivity + Cinelli-Hazlett then Oster frames (user-written), choosing, workflow)
+  -> Anatomy at the END (goal-and-plan opener, covariance frame, 'Continuous X: What OLS Does
+  Instead' + 'Reading It: Two Implicit Models' from `figs/w6_fuzzy.R`, Angrist 1998) -> Looking
+  Ahead. 'G-Computation Extrapolates' (same simulation, one panel) sits in the DR section. HECKMAN DROPPED 2026-09-30 (lecture and
+  lab). All literature frames web-verified; paper figures live in `figs/` as PNG/JPG.
+  Lab 6: exact matching on cells by hand + MatchIt, PS, NN/CEM, weighting, AIPW, sensitivity.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
@@ -128,5 +132,7 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - Dropbox sometimes drops `slides.pdf` mid-session; just recompile. Delete any
   "conflicted copy" build artifacts (.aux/.out/figure pdfs); they are junk.
 - `glmer(..., nAGQ = 10)` in lab 4 takes about a minute.
+- `gss_earnings.rds` has a column `wt` (survey weight): never write `lm(..., weights = wt)` with a
+  local vector called `wt`; model.frame takes the data column first. Use another name.
 - `degree` in the GSS extract is an ordered factor: use `factor(as.character(...))` before
   `lm()` with it as a dummy set, or `contr.poly` errors appear.

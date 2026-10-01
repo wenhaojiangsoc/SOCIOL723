@@ -11,15 +11,27 @@ b_dot <- coef(short)["D"]; r_dot <- summary(short)$r.squared        # uncontroll
 b_til <- coef(long)["D"];  r_til <- summary(long)$r.squared         # controlled
 cat(sprintf("short: beta %.3f R2 %.3f | long: beta %.3f R2 %.3f\n", b_dot, r_dot, b_til, r_til))
 
-## ---- 2. Oster (2019): coefficient movement scaled by R2 movement --------------
-## beta*(delta, Rmax) = b_til - delta * (b_dot - b_til) * (Rmax - r_til) / (r_til - r_dot)
-## delta* = value of delta that drives beta* to zero
+## ---- 2. Oster (2019) via robomit (exact solution of her Proposition 2) ------
+## Rmax = R2 of the long regression x 1.3 (Oster's rule from randomized studies)
+library(robomit)
+con <- "pareduc + wordsum + female + black + otherace + exper + I(exper^2)"
+for (mult in c(1.3, 2)) {
+  rmax <- min(1, mult * r_til)
+  ob <- o_beta(y = "Y", x = "D", con = con, delta = 1, R2max = rmax, type = "lm", data = g)
+  od <- o_delta(y = "Y", x = "D", con = con, beta = 0, R2max = rmax, type = "lm", data = g)
+  cat(sprintf("Rmax = %.3f (%.1f x R2_long): beta*(delta = 1) = %.3f ; delta* = %.2f\n",
+              rmax, mult, ob$Value[ob$Name == "beta*"], od$Value[od$Name == "delta*"]))
+}
+rmax <- 1
+ob <- o_beta(y = "Y", x = "D", con = con, delta = 1, R2max = rmax, type = "lm", data = g)
+od <- o_delta(y = "Y", x = "D", con = con, beta = 0, R2max = rmax, type = "lm", data = g)
+cat(sprintf("Rmax = 1: beta*(delta = 1) = %.3f ; delta* = %.2f\n",
+            ob$Value[ob$Name == "beta*"], od$Value[od$Name == "delta*"]))
+## the simplified textbook formula, for comparison
 oster_beta  <- function(delta, rmax) b_til - delta * (b_dot - b_til) * (rmax - r_til) / (r_til - r_dot)
 oster_delta <- function(rmax) b_til * (r_til - r_dot) / ((b_dot - b_til) * (rmax - r_til))
-for (rmax in c(1.3 * r_til, 2 * r_til, 1)) {
-  cat(sprintf("Rmax = %.3f: beta*(delta = 1) = %.3f ; delta* = %.2f\n",
-              rmax, oster_beta(1, rmax), oster_delta(rmax)))
-}
+cat(sprintf("simplified formula at Rmax = 1.3 R2_long: beta* %.3f, delta* %.2f\n",
+            oster_beta(1, 1.3 * r_til), oster_delta(1.3 * r_til)))
 
 ## ---- 3. Cinelli & Hazlett (2020): partial R2 and the robustness value -----------
 library(sensemakr)

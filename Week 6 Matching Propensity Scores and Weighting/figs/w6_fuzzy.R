@@ -82,3 +82,40 @@ lines(xs, ex / max(ex), lwd = 2, col = "#C84E00", lty = 2)
 legend("topleft", bty = "n", cex = 0.75, lwd = 2, lty = c(1, 2, 1), col = c("#C84E00", "#C84E00", "#012169"),
        legend = c("ATE: f(x)", "ATT: e(x) f(x)", "regression: e(x)(1-e(x)) f(x)"))
 dev.off()
+
+## ---- 7. what OLS does with a continuous x: the two implicit models ---------
+## OLS of Y on D and x residualizes D on the LINEAR projection of D on x,
+## i.e. an implicit linear probability model for e(x). Check the decomposition
+##   tau_OLS = { E[e(x)(1 - e_lin(x)) tau(x)] + E[(e(x) - e_lin(x)) m0(x)] } / E[(D - e_lin(x))^2]
+## Sample version, exact: with D-check = D - e_lin(x) and Y = m0(x) + tau(x) D + eps,
+##   tau_OLS = mean(D-check * Y) / mean(D-check^2)
+##           = [ mean(D-check * D * tau(x)) + mean(D-check * m0(x)) + mean(D-check * eps) ] / mean(D-check^2)
+eps <- Y - m0(X) - tauf(X) * D
+decomp <- function(e_hat, label) {
+  dch <- D - e_hat; den <- mean(dch^2)
+  parts <- c(weighted_tau = mean(dch * D * tauf(X)) / den,
+             form_bias    = mean(dch * m0(X)) / den,
+             noise        = mean(dch * eps) / den)
+  cat(sprintf("%s: coefficient %.3f = weighted tau %.3f + functional-form bias %.3f + noise %.3f\n",
+              label, sum(parts), parts[1], parts[2], parts[3]))
+  invisible(parts)
+}
+e_lin <- fitted(lm(D ~ X, dat))                       # implicit propensity: linear in x
+decomp(e_lin, "OLS linear in x")
+cat(sprintf("implicit linear propensity ranges [%.2f, %.2f]; share of weight D(1 - e_lin) on x in [0.45, 0.75]: %.2f\n",
+            min(e_lin), max(e_lin), sum((D * (1 - e_lin))[X >= .45 & X <= .75]) / sum(D * (1 - e_lin))))
+e_q <- fitted(lm(D ~ X + I(X^2), dat))                # implicit propensity: quadratic
+decomp(e_q, "OLS with x and x^2")                     # m0 = 3x^2 is in the span, so the bias term vanishes
+
+## single-panel figure for the g-computation frame: data, truth, and the linear control fit
+pdf("figs/fuzzy_gcomp.pdf", width = 4.6, height = 2.7)
+par(mar = c(3.2, 3.2, 0.6, 0.6), mgp = c(1.9, 0.6, 0), cex = 0.8)
+plot(X, Y, col = ifelse(D == 1, adjustcolor("#C84E00", 0.25), adjustcolor("#012169", 0.25)),
+     pch = 16, cex = 0.4, xlab = "x", ylab = "y")
+curve(m0(x), add = TRUE, col = "#012169", lwd = 2)
+curve(m0(x) + tauf(x), add = TRUE, col = "#C84E00", lwd = 2)
+abline(f0_lin, col = "#012169", lwd = 2, lty = 2)
+abline(v = 0.9, lty = 3, col = "gray50")
+legend("topleft", bty = "n", cex = 0.8, lwd = 2, lty = c(1, 1, 2), col = c("#C84E00", "#012169", "#012169"),
+       legend = c("treated: true mean", "controls: true mean", "controls: linear fit, extended"))
+dev.off()

@@ -120,6 +120,7 @@
   \vskip4pt\usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}%
   \insertframetitle\par\vskip2pt}
 \setbeamersize{text margin left=0.75cm, text margin right=0.75cm}
+\hypersetup{pdfpagelayout=OneColumn, pdfpagemode=UseNone}  % pages stacked vertically in the viewer
 
 %% ---- title -----------------------------------------------------------------
 %% ---- title page: same face as the body (Latin Modern), larger and bold
@@ -469,55 +470,61 @@ target, so its variance is the weighted sum of the cells' variances:
         Valid here, since the estimate is a smooth function of cell means.
         GSS: formula $0.035$ (ATE), $0.039$ (ATT); bootstrap $0.035$, $0.040$.
   \item \textbf{The regression route.} Weighted regression of $Y$ on $D$ with
-        the matching weights gives the same estimate; its default standard
-        error ignores the weights (GSS $0.030$, too small), a sandwich
-        clustered by cell gives $0.036$.
+        the matching weights gives the same estimate; its default SE ignores
+        the weights ($0.030$); a robust sandwich gives $0.039$, slightly above
+        the formula. Do not cluster by cell: cells are strata, not dependence.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{The Standard Error: Nearest-Neighbour Matching}
-Treated unit $i$ takes its $M$ closest controls, with replacement; $K_j$
-counts how many times control $j$ was used.
+\textbf{The intuition.} With replacement a good control is matched again and
+again: in the GSS, 708 controls serve 1,441 treated units, one of them 23
+times. Its one noisy outcome enters 23 differences with the same sign, so the
+noise adds up instead of averaging out. With $K_j$ uses of control $j$,
 \begin{align*}
-  \widehat{\text{ATT}}
-  &= \tfrac{1}{n_1}\textstyle\sum_{\text{treated}}\big(Y_i - \tfrac{1}{M}\sum_{j \in \text{match}(i)} Y_j\big)
-  && \text{\footnotesize unit minus its matches' mean} \\
-  &= \tfrac{1}{n_1}\big[\textstyle\sum_{\text{treated}} Y_i - \sum_{\text{controls}} \tfrac{K_j}{M}\,Y_j\big]
-  && \text{\footnotesize regroup by control} \\
   \Var\big(\widehat{\text{ATT}}\big)
-  &= \tfrac{1}{n_1^2}\big[\textstyle\sum_{\text{treated}} \sigma_1^2(X_i)
-     + \sum_{\text{controls}} \big(\tfrac{K_j}{M}\big)^{2} \sigma_0^2(X_j)\big]
+  = \tfrac{1}{n_1^2}\Big[\textstyle\sum_{\text{treated}} \sigma_1^2(X_i)
+  + \sum_{\text{controls}} K_j^{2}\,\sigma_0^2(X_j)\Big] .
 \end{align*}
-with matches held fixed and outcomes independent, $\sigma_d^2(x) = \Var(Y\mid D = d, X = x)$.
-\begin{itemize}\itemsep1pt
-  \item \textbf{The square is the point.} A control used 20 times enters 20
-        differences with the same sign; its noise adds up rather than
-        averaging out, so it contributes $400\,\sigma_0^2$, not $20$. Reuse
-        buys the best match every time and pays in variance.
-  \item $\sigma_d^2(x)$ is estimated locally, as half the squared difference
-        between a unit and its nearest neighbour in the \emph{same} arm; this
-        is the variance \texttt{MatchIt} reports \srcp{Abadie and Imbens 2006}.
-\end{itemize}
+A control used 23 times counts $529$ times its variance, not $23$.
+\vskip2pt
+\textbf{Why the ordinary bootstrap fails.} The variance depends on the reuse
+counts $K_j$. A bootstrap sample draws people with replacement, so the same
+person appears two or three times and controls are reused in a pattern a
+fresh sample never shows: wrong $K_j$, wrong variance, in either direction
+\srcp{Abadie and Imbens 2008}.
+\vskip2pt
+\textbf{Who reports what.} \texttt{MatchIt} reports no SE: it builds the
+matched sample and weights, and the effect comes from the regression you run
+on them. \texttt{Matching::Match()} prints the formula above.
 \end{frame}
 
-\begin{frame}{The Standard Error: Why Not Just Bootstrap It?}
-\begin{itemize}\itemsep3pt
-  \item The bootstrap resamples units with replacement and reruns the whole
-        procedure. It works when the estimator moves smoothly as the data
-        move. Matching does not: a small change in the sample changes
-        \emph{which} control is nearest, and the $K_j$ jump by whole units.
-  \item In a bootstrap sample a control appears two or three times, and its
-        copies are each other's nearest neighbours; the distribution of the
-        $K_j$ in bootstrap samples is not their distribution across real
-        samples. Abadie and Imbens (2008) prove the bootstrap variance does
-        not converge to the true one, in either direction.
-  \item So: for cells or coarsened cells, bootstrap freely; for nearest
-        neighbour with replacement, use the analytic formula on the previous
-        frame (with an extra term if the score was estimated).
-  \item The weighting section's trade, seen from the other side: weighting
-        hides thin overlap in large $1/\hat e$, nearest-neighbour matching in
-        large $K_j$. Report the largest of either.
-\end{itemize}
+\begin{frame}{The Standard Error: What to Actually Do}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{p{0.25\linewidth}p{0.66\linewidth}}
+\toprule
+Estimator & Standard error \\
+\midrule
+Exact or coarsened cells &
+  the cell formula, or weighted regression of $Y$ on $D$ with the matching
+  weights and a robust sandwich (\texttt{vcovHC}). Not clustered by cell. \\
+Nearest neighbour, without replacement &
+  weighted regression on \texttt{match.data()}, sandwich clustered by the
+  matched pair (\texttt{cluster = \textasciitilde subclass}). No bootstrap. \\
+Nearest neighbour, with replacement &
+  \texttt{get\_matches()}, so a reused control appears once per use; sandwich
+  clustered by pair and person (\texttt{\textasciitilde subclass + id}); or
+  \texttt{Matching::Match()} for the Abadie--Imbens variance. No bootstrap. \\
+Weighting (ATE, ATT, ATO) &
+  weighted regression with a robust sandwich, which treats $\hat e$ as known;
+  bootstrap the whole pipeline, logit included, to add its estimation. \\
+AIPW &
+  the influence function: SD of the $n$ terms over $\sqrt n$; the pipeline
+  bootstrap agrees. \\
+\bottomrule
+\end{tabular}
+\end{center}
 \end{frame}
 
 \begin{frame}{In the Literature: Mazrekaj, De Witte, and Cabus (2020)}
@@ -1008,24 +1015,54 @@ rather than the raw average that divides by $n$.
 \end{frame}
 
 \begin{frame}{Stabilized Weights}
-The ATE weights $1/e$ and $1/(1-e)$ make each arm stand in for everyone, so
-each arm's weights sum to about $n$. Multiply by the size of the unit's own
-arm, with $\pi = \Pr(D_i = 1)$:
+The ATE weights $1/e$ and $1/(1-e)$ sum to about $n$ per arm. The
+\emph{stabilized} weight multiplies by the arm's share, $\pi = \Pr(D_i = 1)$:
 \begin{align*}
   w_i^{S} = \frac{\Pr(D_i = d)}{\Pr(D_i = d\mid X_i)}
   = \begin{cases} \pi/e(X_i), & D_i = 1 \\ (1-\pi)/(1-e(X_i)), & D_i = 0 . \end{cases}
 \end{align*}
-Each arm's weights now sum to about $n_1$ and $n_0$ and average $1$; a mean
-far from $1$ says the model for $e$ is off. Within an arm the multiplier is a
-constant, so the H\'ajek estimate does not move:
+From here on $w_i$ means $w_i^S$.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{What changes: the scale.} The weights now sum to about $n_1$
+        and $n_0$ and average $1$. A mean far from $1$ says the model for $e$
+        is off.
+  \item \textbf{What does not change: everything relative.} Within an arm
+        every weight is multiplied by the same constant, so the weighted mean
+        $\sum_i w_iY_i/\sum_i w_i$ is the same, and the unit with
+        $\hat e = 0.01$ still counts $100$ times its neighbours.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Effective Sample Size}
+A weighted mean is as noisy as an \emph{unweighted} mean of
 \begin{align*}
-  \frac{\sum_i w_i^{S} D_i Y_i}{\sum_i w_i^{S} D_i}
-  = \frac{\pi\sum_i D_iY_i/\hat e_i}{\pi\sum_i D_i/\hat e_i}
-  = \frac{\sum_i D_iY_i/\hat e_i}{\sum_i D_i/\hat e_i}
-  && \text{\footnotesize $\pi$ cancels; $1-\pi$ likewise in the control arm}
+  \text{ESS} = \frac{(\sum_i w_i)^2}{\sum_i w_i^2}
 \end{align*}
-The Horvitz--Thompson form, which divides by $n$, is not available: it needs
-weights that sum to $n$ in each arm, and these sum to $n_d$.
+\vskip-4pt
+units. \textbf{The direction:} the more unequal the weights, the smaller the
+ESS, from $n$ (all equal) down to $1$ (one unit has it all). The average
+inherits the heaviest unit's noise, and the others cannot average it away.
+\vskip-2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lr}
+\toprule
+four units, weights & ESS \\
+\midrule
+$0.25,\ 0.25,\ 0.25,\ 0.25$ & $4.0$ \\
+$0.40,\ 0.20,\ 0.20,\ 0.20$ & $3.6$ \\
+$0.70,\ 0.10,\ 0.10,\ 0.10$ & $1.9$ \\
+$0.97,\ 0.01,\ 0.01,\ 0.01$ & $1.1$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep1pt
+  \item Multiplying every weight by $c$ leaves ESS alone ($c^2$ cancels):
+        stabilizing does not raise it.
+  \item Flattening the weights raises it: trim the largest, or use overlap weights.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Stabilized Weights on the GSS}
@@ -1035,7 +1072,7 @@ BA on log earnings, $\hat e$ from the five-covariate logit
 \renewcommand{\arraystretch}{1.0}
 \begin{tabular}{llrrrr}
 \toprule
-weights & arm & mean & max & ESS & H\'ajek ATE \\
+weights & arm & mean & max & ESS & weighted ATE \\
 \midrule
 raw        & treated $(n_1 = 1{,}441)$ & 2.65 & 100.3 & 373   & \multirow{2}{*}{0.601} \\
            & control $(n_0 = 2{,}068)$ & 1.67 & 13.4  & 1{,}634 & \\
@@ -1045,14 +1082,16 @@ stabilized & treated             & 1.09 & 41.2  & 373   & \multirow{2}{*}{0.601}
 \end{tabular}
 \end{center}
 \begin{itemize}\itemsep1pt
-  \item \textbf{Same estimate, same ESS.} Stabilizing rescales; it does not
-        repair positivity. The treated unit with $\hat e = 0.01$ carried
-        $100$ and now carries $41$, still $41$ times its neighbours.
-  \item \textbf{Means near $1$}: the logit is not badly off. The raw means
-        are the stabilized ones divided by $\pi = 0.41$ and $1-\pi$.
-  \item \textbf{Where it matters:} weights multiplied over periods or put in
-        a regression with fewer parameters than treatment histories (marginal
-        structural models, later). With one treatment it is a convention.
+  \item \textbf{Read the ESS.} The $1{,}441$ treated carry the noise of
+        $373$ equal units, a quarter of the arm: a few small $\hat e$
+        dominate. The controls keep $1{,}634$ of $2{,}068$.
+  \item \textbf{Same estimate, same ESS.} Stabilizing divides every treated
+        weight by $1/\pi = 2.44$: means drop to about $1$, the maximum to
+        $41$, nothing relative moves.
+  \item \textbf{What does raise the ESS:} trimming or capping the largest
+        weights, or overlap weights (bounded by $1$).
+  \item \textbf{Where stabilizing matters:} weights multiplied over periods
+        (marginal structural models). With one treatment it is a convention.
 \end{itemize}
 \end{frame}
 
@@ -1128,75 +1167,86 @@ $e(x) = n_{1x}/n_x$. Then in every cell
 \end{itemize}
 \end{frame}
 
-\begin{frame}{In the Literature: Stritzel and Crosnoe (2023)}
-\textbf{The question.} Does living with a single rather than a married
-mother raise an adolescent's drinking and depressive symptoms at 14? One
-binary treatment at a time: $D_a = 1$ if the mother was single when the child
-was age $a$, for $a = 0, 2, \dots, 14$; each age is its own analysis.
-\vskip3pt
-\textbf{The data.} NLSY79 Children and Young Adults, $n = 5{,}597$.
-Unweighted: 27.5\% of youth who ever lived with a single mother drank by 14,
-against 22.8\% of those with always-married mothers; CES-D 4.51 against 4.02
-on a 0--21 scale.
-\vskip3pt
-\textbf{The weights: this section's table.} $\hat e$ from a logit of $D_a$
-on the mother's background and her own childhood, the child's sex and birth
-year, and household size, poverty, and employment at age $a$ and before. ATE: ``we stabilized the weights by
-replacing the numerator with the unconditional probability of treatment'',
-trimmed at the 99th percentile. ATT: treated $1$, untreated
-$\hat e/(1-\hat e)$. ATU: the mirror.
-\vskip3pt
-\textbf{The outcome model.} A weighted regression of the outcome on $D_a$
-alone, logit for drinking and OLS for CES-D: ``IPW Is a Weighted Regression''.
-\end{frame}
-
-\begin{frame}{Stritzel and Crosnoe: Reading the Three Estimands}
-Single versus married mother; outcomes at 14, by the age at which the
-mother's status is measured.
-\begin{itemize}\itemsep0pt
-  \item \textbf{ATE} (both arms reweighted to the population). Drinking: odds
-        ratio $1.80$ for status at age 10, $1.57$ at 14. Depressive symptoms:
-        $+1.2$ points for status at age 6, null elsewhere.
-  \item \textbf{ATU} (treated reweighted to resemble married-mother
-        households). Drinking: $1.51$ at birth, $1.88$ at 10. Depressive
-        symptoms: $+0.5$, $+1.0$, $+0.8$ for status at birth, 6, and 14.
-  \item \textbf{ATT} (untreated reweighted to resemble single-mother
-        households). Drinking: $1.55$ at age 8, else null; depressive
-        symptoms: null throughout.
-\end{itemize}
-\vskip3pt
-\textbf{Read it with slide 5.} $\text{ATU} > \text{ATE} > \text{ATT}$: $\tau(x)$
-is largest where $e(x)$ is small, among youth who look like married-mother
-households; a divorce is ``particularly disruptive'' for them, and youth long
-used to a single mother show no effect.
-\textbf{Why stabilize here?} One treatment, a H\'ajek regression: it moves no
-estimate; it is the convention.
-\end{frame}
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Doubly Robust]{Doubly Robust Estimation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{G-Computation: the Other Half\core}
-Instead of modelling treatment, model the outcome. Under ignorability and
-common support, fit $m_d(x) = \E[Y_i \mid D_i = d, X_i = x]$ for $d = 0, 1$,
-then \emph{impute both potential outcomes for everyone} and average:
+\begin{frame}{G-Computation: Matching Written as a Regression\core}
+Back to the cells. Regress $Y$ on the cell dummies \emph{in each arm
+separately}: a saturated model's fitted value in cell $x$ is $\bar Y_{1x}$ in
+the treated arm, $\bar Y_{0x}$ in the untreated. Predict \emph{both} for every
+unit, the one it has and the one it does not, and average:
 \begin{align*}
-  \hat\tau_{\text{g-comp}} = \frac1n\sum_{i=1}^n
-  \big[\hat m_1(X_i) - \hat m_0(X_i)\big] .
+  \frac1n\sum_{i=1}^n \big[\hat m_1(X_i) - \hat m_0(X_i)\big]
+  = \sum_x \frac{n_x}{n}\,\big(\bar Y_{1x} - \bar Y_{0x}\big),
 \end{align*}
+exact matching's ATE; average over the treated only and it is the ATT. GSS:
+$0.635$, $0.625$, $0.642$ for ATE, ATT, ATU, the matching numbers to the
+fourth decimal.
 \begin{itemize}\itemsep2pt
-  \item Week 4's predicted-probability procedure. One common-slope linear
-        model returns $\tau_R$; separate models per arm average $\tau(x)$ with
-        the ATE weights $\Pr(X_i=x)$, and slide 6's variance weighting is gone.
-  \item Uses the whole sample; efficient when the outcome model is right;
-        \alert{extrapolates silently} when it is not, since $\hat m_1(x)$ is
-        computed even where nobody was treated (the anatomy shows how badly).
-  \item The symmetry: IPW models $\Pr(D\mid X)$ and never touches $Y$;
-        g-computation models $\E[Y\mid D,X]$ and never touches assignment.
+  \item \textbf{So g-computation is:} model the outcome in each arm, impute
+        the missing potential outcome for everyone, average with the target's
+        weights. With a saturated model nothing is modelled: it is matching.
+  \item \textbf{One coefficient instead}, $Y$ on $D$ and the same dummies,
+        gives $0.631$: the anatomy's $\tau_R$ with its variance weights.
+        Separate models per arm restore the target's weights. A one-armed
+        cell has no $\bar Y_{0x}$: no prediction, so no extrapolation.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Continuous $X$: the Model Fills the Cells}
+Replace the cell dummies by a function of $x$, linear say. Two things change.
+\begin{itemize}\itemsep4pt
+  \item \textbf{Every unit now gets a prediction}, including those in
+        one-armed cells. GSS, linear in the covariates per arm, all 3,509
+        units: ATE $0.648$ and ATT $0.604$, against $0.635$ and $0.625$ on
+        the 92 two-armed cells. The model filled 14 cells the data could not.
+  \item \textbf{Where the prediction comes from.} Where neighbours exist the
+        model interpolates between them. Where an arm is absent it
+        \emph{extrapolates}, and only the functional form decides what it says
+        there; the data cannot object, since no one is there to disagree.
+  \item \textbf{The trade.} Uses the whole sample and is efficient when the
+        outcome model is right; silently wrong when it is not. Matching
+        dropped the one-armed cells and said so; g-computation fills them and
+        says nothing.
+\end{itemize}
+\vskip2pt
+Next: a simulation with the truth known, so the extrapolation error is visible.
+\end{frame}
+
+\begin{frame}{G-Computation Extrapolates: a Simulation}
+\begin{columns}[T]
+\begin{column}{0.42\textwidth}
+\includegraphics[width=\linewidth]{figs/fuzzy_gcomp.pdf}
+\vskip0pt
+{\footnotesize $x$ uniform, $e(x)$ a steep probit around $0.6$, controls'
+mean $3x^2$, effect $2x$; ATE $1.00$, ATT $1.57$. One control has $x > 0.9$.
+\srcp{figs/w6\_fuzzy.R}}
+\end{column}
+\begin{column}{0.56\textwidth}
+\small
+At $x = 0.95$ there is no control, so $\hat m_0(0.95)$ is read off the line:
+\begin{center}
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lccc}
+\toprule
+control model & $\hat m_0(0.95)$ & ATE & ATT \\
+\midrule
+truth     & 2.71 & 1.00 & 1.57 \\
+linear    & 1.69 & 0.90 & 2.13 \\
+quadratic & 2.66 & 1.08 & 1.60 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The linear line runs under the true curve where the treated live, so every
+treated unit above $0.85$ is credited with too large a gain. The quadratic
+happens to be right and recovers everything; the gap between the rows is a
+modelling choice made where the data are silent.
+\end{column}
+\end{columns}
+IPW models $\Pr(D\mid X)$ and never touches $Y$; g-computation models
+$\E[Y\mid D,X]$ and never touches assignment. Each fails differently: next.
 \end{frame}
 
 \begin{frame}{Why Not Both?\core}
@@ -1286,105 +1336,6 @@ error.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{In the Literature: Lundberg (2024)}
-\textbf{The question.} People whose fathers held professional jobs earn more.
-How much of that gap would remain if we \emph{intervened} on the respondent's
-own occupation? The category (father's class) is never the treatment; the
-treatment is something we could assign. That is the \emph{gap-closing
-estimand}: the disparity across categories that would persist under a
-counterfactual assignment of the treatment to a sample from the population.
-\vskip3pt
-\textbf{The data.} General Social Survey 1975--2018, $n = 12{,}328$.
-Category $X$: father in a professional occupation (EGP class I), 10.2\%.
-Treatment $T$: respondent in a professional occupation, 9.6\%. Outcome: log
-annual income in 1986 dollars. Covariates $L$: race, sex, age, highest
-degree. Survey weights throughout.
-\vskip3pt
-\textbf{The descriptive gap} is $0.32$ log points. A natural story: 24\% of
-professional-origin respondents reach professional jobs themselves, against
-8\% of working-class-origin respondents. Would equalizing destinations close
-the gap?
-\end{frame}
-
-\begin{frame}{Lundberg: Identification (their Figure 3)}
-\begin{columns}[T]
-\begin{column}{0.44\textwidth}
-\includegraphics[width=\linewidth]{figs/lundberg2024_fig3.jpg}
-\end{column}
-\begin{column}{0.54\textwidth}
-\small
-The blue arrow $T \to Y$ is the only effect that must be identified.
-\vskip3pt
-\textbf{A, B, C.} Whether $X$ causes things, causes nothing, or is caused by
-the covariates makes no difference: every back-door path into $T$ runs
-through $X$ or $L$, both observed, so conditioning on them identifies
-$T \to Y$ (Week 5). The effect of $X$ itself is not identified and never
-needed.
-\vskip3pt
-\textbf{D, E.} An unobserved $V$ into $T$ and $Y$ breaks it, as ordinary
-confounding or through the $M$ structure. This is the week's conditional
-ignorability, stated for $T$ within levels of $X$ and $L$.
-\vskip3pt
-\srcp{Lundberg 2024, Fig.\ 3}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Lundberg: the Estimator (their Equation 8)}
-\begin{center}
-\includegraphics[width=0.5\linewidth]{figs/lundberg2024_eq8.jpg}
-\end{center}
-\vskip-4pt
-Exactly our AIPW, one category $x$ at a time:
-\begin{itemize}\itemsep1pt
-  \item $\hat g$: the outcome model, OLS of log income on $T$, $X$, $L$.
-        $\hat m$: the treatment model, a logit. $\hat w_i$: the inverse
-        probability of the treatment received, times the survey weight.
-  \item Start from g-computation (predict everyone's income under $T = 1$,
-        average within the category), then subtract the weighted average
-        residual among units observed under $T = 1$: what the outcome model
-        gets wrong, reweighted to the target.
-  \item Consistent if either $\hat g$ or $\hat m$ is right: our Cases 1 and 2.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Lundberg: Does It Work? (their Figure 4)}
-\begin{center}
-\includegraphics[width=0.92\linewidth]{figs/lundberg2024_fig4.jpg}
-\end{center}
-\vskip2pt
-His simulation, 1,000 draws of $n = 500$, the truth marked by the vertical
-line. Row 2: the outcome model lacks an interaction, so g-computation (left)
-is off. Row 3: the treatment model lacks a quadratic, so weighting (middle) is
-off. The doubly robust estimate (right) stays centred on the truth in every
-row. It is wider than g-computation when both models are right: the price of
-insurance.
-\end{frame}
-
-\begin{frame}{Lundberg: the Results (their Figure 6)}
-\begin{columns}[T]
-\begin{column}{0.44\textwidth}
-\includegraphics[width=\linewidth]{figs/lundberg2024_fig6.jpg}
-\end{column}
-\begin{column}{0.54\textwidth}
-\small
-\textbf{Panel A.} Assign everyone a professional occupation: both groups'
-mean log income rises by about the same amount, so the gap moves only from
-$0.32$ $(0.25, 0.39)$ to $0.27$ $(0.11, 0.43)$, 84\% of its size.
-\vskip3pt
-\textbf{B, C, D.} A working-class job: $0.23$. A random class in population
-proportions: $0.24$. A random class within covariate groups: $0.28$.
-\vskip3pt
-No intervention on one's own class closes the gap by one's father's class.
-The status-attainment story, in which one's own achievement overwrites
-origins, does not survive.
-\vskip3pt
-Doubly robust with parametric $\hat g$ and $\hat m$; intervals by balanced
-repeated replication; machine-learning versions in his appendix agree.
-\end{column}
-\end{columns}
-\end{frame}
-
 \begin{frame}{An Honest Warning\core}
 Double robustness is often oversold.
 \vskip3pt
@@ -1424,47 +1375,6 @@ unobserved confounder have to be to overturn my conclusion?}
 claim your reader can argue with.
 \end{frame}
 
-\begin{frame}{Oster (2019): Coefficient Stability, Scaled by $R^2$}
-\small
-Two regressions of $Y$ on $D$: without controls, $\mathring\beta$ and
-$\mathring R^2$; with them, $\tilde\beta$ and $\tilde R^2$. The old habit reads
-a small move $\mathring\beta - \tilde\beta$ as ``unobservables cannot matter
-much''; that holds only if the controls explained a lot of $Y$.
-\textbf{Assumption:} selection on unobservables is $\delta$ times selection
-on observables ($\delta = 1$: equal); $R_{\max}$ is the $R^2$ with the
-unobservables in. The move per unit of $R^2$ gained is extrapolated to the
-$R^2$ still to gain:
-\begin{align*}
-  \beta^{*} = \tilde\beta - \delta\,(\mathring\beta - \tilde\beta)\,
-  \frac{R_{\max} - \tilde R^2}{\tilde R^2 - \mathring R^2},
-  \qquad
-  \delta^{*} = \frac{\tilde\beta\,(\tilde R^2 - \mathring R^2)}
-  {(\mathring\beta - \tilde\beta)(R_{\max} - \tilde R^2)}
-  && \text{\footnotesize $\delta^*$: the $\delta$ at which $\beta^* = 0$}
-\end{align*}
-\vskip-4pt
-Her rule, from randomized studies: $R_{\max} = 1.3\,\tilde R^2$; robust if
-$[\tilde\beta, \beta^*(\delta = 1)]$ excludes $0$ and $\delta^* > 1$.
-\par
-GSS {\footnotesize(\texttt{figs/w6\_sensitivity.R})}: $\mathring\beta = 0.683$,
-$\mathring R^2 = 0.130$; $\tilde\beta = 0.629$, $\tilde R^2 = 0.243$.
-\vskip-4pt
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{lrrr}
-\toprule
-$R_{\max}$ & $1.3\tilde R^2 = 0.316$ & $2\tilde R^2 = 0.487$ & $1$ \\
-\midrule
-$\beta^*(\delta = 1)$ & $0.595$ & $0.514$ & $0.271$ \\
-$\delta^*$ & $18.2$ & $5.5$ & $1.8$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip-6pt
-Controls moved $\beta$ by $0.054$ while adding $0.113$ of $R^2$. Mazrekaj's
-$3.19$ was this $\delta^*$. Exact form: \texttt{robomit}, \texttt{psacalc}.
-\end{frame}
-
 \begin{frame}{Cinelli and Hazlett (2020): Bias in Units of Partial $R^2$}
 \small
 \begin{columns}[T]
@@ -1495,6 +1405,43 @@ estimate shrinks by the fraction $q$:
 GSS: $t = 20.0$, $\text{df} = 3{,}500$, so $\text{RV}_1 = 0.285$: to erase the
 effect, $Z$ must explain 28\% of what is left of both $D$ and $Y$. A confounder
 like wordsum ($0.096$ and $0.011$) biases by $0.064$; three of them leave $0.408$.
+\end{frame}
+
+\begin{frame}{Oster (2019): Coefficient Stability, Read Properly}
+\small
+Oster scales the move in $\hat\beta$ when controls enter by the gain in
+$R^2$, and extrapolates to the confounders still missing.
+\textbf{Two inputs.}
+\begin{itemize}\itemsep0pt
+  \item $R_{\max}$: the $R^2$ if every confounder were in. Her rule:
+        $1.3$ times the $R^2$ you have.
+  \item $\delta$: how important the unobservables are relative to the
+        controls. $\delta = 1$: equally important.
+\end{itemize}
+\textbf{Two outputs.}
+\begin{itemize}\itemsep0pt
+  \item $\beta^*$: the effect if $\delta = 1$. Robust if $[\hat\beta, \beta^*]$
+        excludes $0$.
+  \item $\delta^*$: the $\delta$ that drives the effect to $0$. Robust if
+        $\delta^* > 1$.
+\end{itemize}
+GSS {\footnotesize(\texttt{figs/w6\_sensitivity.R}, \texttt{robomit})}:
+controls move $\hat\beta$ from $0.683$ to $0.629$, $R^2$ from $0.13$ to $0.24$.
+\vskip-4pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lrr}
+\toprule
+$R_{\max}$ & $1.3 \times 0.24 = 0.32$ & $2 \times 0.24 = 0.49$ \\
+\midrule
+$\beta^*$ & $0.577$ & $0.313$ \\
+$\delta^*$ & $2.6$ & $1.3$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-6pt
+Unobservables must matter $2.6$ times as much as the controls to erase the
+premium. Mazrekaj's $3.19$ was this $\delta^*$.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Choosing Among the Methods}
@@ -1698,94 +1645,37 @@ behaves differently at the top end, which is the next slide.
         simply not identified; the estimator has nothing to average, and the
         honest response is to say which cells you dropped.
 \end{itemize}
-\vskip4pt
-\begin{block}{With continuous covariates}
-The anatomy still holds, as an integral:
-\begin{align*}
-  \tau_R = \frac{\int \tau(x)\,e(x)\big(1-e(x)\big)f(x)\,dx}
-                  {\int e(x)\big(1-e(x)\big)f(x)\,dx} .
-\end{align*}
-\end{block}
 \end{frame}
 
-\begin{frame}{Continuous $X$: the Cells Become Bins}
-With continuous $X$ no two units share a value: ``the cell $x$'' becomes a
-bin $(x-h,x+h)$, and positivity becomes
-$\E[Y_i(d)\mid X_i = x] = \lim_{h\to0}\E[Y_i(d)\mid X_i\in(x-h,x+h)]$, both
-arms \emph{near} every $x$. A simulation \srcp{figs/w6\_fuzzy.R}:
-\begin{center}
-\includegraphics[width=0.82\linewidth]{figs/fuzzy.pdf}
-\end{center}
-\vskip-6pt
-$x$ uniform, $e(x)$ rising steeply around $0.6$, control surface $3x^2$,
-effect $\tau(x) = 2x$: ATE $1.00$, ATT $1.57$. Bins of width $0.05$ with at
-least five units per arm: 11 of 20, $x\in[0.30,0.85]$, 54\% of the sample,
-629 of 1,611 treated unmatched.
-\end{frame}
-
-\begin{frame}{Matching and Regression on the Overlap}
-\begin{center}\small
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{lcc}
-\toprule
- & ATE & ATT \\
-\midrule
-truth, whole sample                    & 1.00 & 1.57 \\
-truth, overlap population $[0.30,0.85]$ & 1.15 & \\
-binned matching, overlap only          & 1.24 & 1.50 \\
-OLS coefficient, $D$ and $x$            & 1.56 & \\
-OLS coefficient, $D$, $x$, $x^2$        & 1.19 & \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vspace{-3pt}
+\begin{frame}{Continuous $X$: What OLS Does Instead}
+With a continuous $X$ no two units share a value: no cells, no $\tau(x)$, no
+$e(x)$ to tabulate. Yet OLS of $Y$ on $D$ and $X$ returns a number. From where?
 \begin{itemize}\itemsep2pt
-  \item \textbf{Matching answers about the overlap.} Panel (b): $\hat\tau(x)$
-        exists only where both arms are dense. Averaged, it gives the overlap
-        population's effect ($1.24$ vs.\ $1.15$: within-bin imbalance, treated
-        sit higher in each bin) and the matchable treated's ($1.50$). It says
-        nothing about the 629 treated above $0.85$.
-  \item \textbf{The OLS coefficient does not extrapolate; it reweights.}
-        Panel (c): $e(x)(1-e(x))$ puts 83\% of its weight on $x\in[0.45,0.75]$,
-        so with the right curvature $\tau_R \approx 2\times0.6 = 1.19$: fuzzy
-        matching with weights it chose. With the wrong curvature, $1.56$.
+  \item \textbf{The comparison comes from a fitted line.} Nobody is paired
+        with a twin. OLS draws one line through the controls and a parallel
+        one through the treated, and compares a treated unit at $x$ with the
+        controls' line \emph{at that} $x$. Where no control lives nearby, that
+        is extrapolation.
+  \item \textbf{The propensity score comes from a second line.} Residualizing
+        $D$ on a continuous $X$ means $D$ minus a straight line through $D$: an
+        implicit linear probability model for $e(x)$, never printed or checked.
+  \item \textbf{The density of $x$ comes from the sample.} The weight at $x$
+        is that residual's variance, largest where the line calls treatment a
+        coin flip, times how many units sit there: dense, mixed regions decide.
 \end{itemize}
-\end{frame}
-
-\begin{frame}{G-Computation Extrapolates}
-Separate outcome models per arm, then $\hat m_1(X_i) - \hat m_0(X_i)$ for
-everyone. That needs $\hat m_0$ at $x = 0.95$, where exactly one control
-exists. Panel (a) shows what the fitted line does there:
-\begin{center}\small
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{lccc}
-\toprule
-control model & $\hat m_0(0.95)$ & ATE & ATT \\
-\midrule
-truth        & 2.71 & 1.00 & 1.57 \\
-linear in $x$   & 1.69 & 0.90 & 2.13 \\
-quadratic in $x$ & 2.66 & 1.08 & 1.60 \\
-\bottomrule
-\end{tabular}
-\end{center}
 \vskip2pt
-\begin{itemize}\itemsep3pt
-  \item The linear line runs under the true curve where the treated live, so
-        every treated unit above $0.85$ is credited with too large a gain: ATT
-        $2.13$ instead of $1.57$. Nothing in the data can flag it; no control
-        is there to disagree.
-  \item The quadratic happens to be right and recovers everything. The gap
-        between the rows is a modelling choice made where the data are silent.
-  \item The deepest reason to look at overlap before running anything.
-\end{itemize}
+So: a weighted average of $\tau(x)$ plus an extrapolation error, zero if either
+line happens to be right.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Does It Matter Empirically? Angrist (1998)}
-Effect of \emph{voluntary} military service on 1988--91 Social Security earnings,
-among men who applied to enter the armed forces 1979--82. Matching and regression
-both control for year of birth, education at application, and AFQT score.
-\begin{center}\small
-\renewcommand{\arraystretch}{1.25}
+\begin{frame}[t]{Does It Matter Empirically? Angrist (1998)}
+\emph{Voluntary} military service and 1988--91 earnings among men who applied
+to enlist in 1979--82; cells by birth year, education, AFQT. ``Matching'' is
+the \textbf{ATT} (cells weighted by their share of veterans); ``regression''
+is saturated OLS (overlap weights $n_x\,e(x)(1-e(x))$).
+\vskip-2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
 \begin{tabular}{lccccc}
 \toprule
  & Mean & Difference & Matching & Regression & Regression \\
@@ -1798,193 +1688,22 @@ Non-whites & 11{,}664 & 2{,}449.1 & 839.7 & 1{,}074.4 & 234.7 \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip3pt
-{\footnotesize Adapted from Angrist (1998), Tables II and V. $n = 128{,}968$ whites,
+\vskip-2pt
+{\footnotesize Angrist (1998), Tables II and V; $n = 128{,}968$ whites,
 $175{,}262$ non-whites.}
-\vskip3pt
 \begin{itemize}\itemsep1pt
-  \item Adjustment reverses the sign for whites, selection into service is
+  \item Adjustment reverses the sign for whites: selection into service is
         strongly positive on earnings potential.
-  \item Matching and regression differ by about $100$--$235$ dollars, and the
-        \emph{difference} is statistically significant. Small, but exactly the
-        magnitude the weighting anatomy predicts.
+  \item Matching and regression differ by $100$--$235$ dollars, a
+        significant \emph{difference}: small, but what the anatomy predicts.
 \end{itemize}
 \end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Heckman]{Selection on Unobservables: Heckman}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{What Today Could Not Touch\adv}
-Slide 4's gap, baseline selection plus selection on the effect, was made zero
-all day by conditioning on $X$. If units select on something unmeasured, it is
-not zero, and no diagnostic today can see it.
-Heckman (1978, 1979): instead of assuming it away, model \emph{who gets
-treated} and \emph{how their unobservables relate to $Y$}, then compute it.
-\begin{align*}
-  D_i &= \mathds{1}\big[\,Z_i'\gamma + u_i > 0\,\big]
-      && \text{\footnotesize selection rule: a probit, Week 4} \\
-  Y_i &= X_i'\beta + \tau D_i + \epsilon_i
-      && \text{\footnotesize outcome, one constant effect } \tau
-\end{align*}
-with $(u_i,\epsilon_i)$ bivariate normal, $\Var(u_i)=1$,
-$\Var(\epsilon_i)=\sigma^2$, $\Cov(u_i,\epsilon_i)=\rho\sigma$.
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item $\rho\neq0$ \emph{is} selection on unobservables: the same unmeasured
-        thing pushes a unit into treatment and moves its outcome.
-  \item $Z_i$ contains $X_i$ and, ideally, one variable that shifts selection
-        but not $Y_i$; why ``ideally'' comes in two frames.
-  \item A constant $\tau$ drops selection on the effect: Heckman's
-        simplification, not a result.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Gap Has a Formula\adv}
-\begin{columns}[T]
-\begin{column}{0.63\textwidth}
-\small
-Bivariate normality gives $\E[\epsilon_i\mid u_i]=\rho\sigma\,u_i$
-(slope $\Cov/\Var$). Write $c_i=Z_i'\gamma$, so $D_i=1$ means $u_i>-c_i$.
-\begin{align*}
-  \E[u_i\mid u_i>-c_i]
-    &= \frac{\int_{-c_i}^{\infty} u\,\phi(u)\,du}{\Pr(u_i>-c_i)}
-    && \text{\footnotesize conditional mean} \\
-    &= \frac{\phi(-c_i)}{\Phi(c_i)} = \frac{\phi(c_i)}{\Phi(c_i)}
-    && \text{\footnotesize } \phi'(u)=-u\,\phi(u)
-\end{align*}
-Below $-c_i$ the same integral gives $-\phi(c_i)/[1-\Phi(c_i)]$.
-Multiply both by $\rho\sigma$ and subtract:
-\begin{align*}
-  &\E[\epsilon_i\mid D_i = 1,Z_i]-\E[\epsilon_i\mid D_i = 0,Z_i] \\
-  &\quad= \rho\sigma\Big[\frac{\phi(c_i)}{\Phi(c_i)}+\frac{\phi(c_i)}{1-\Phi(c_i)}\Big]
-   = \rho\sigma\,\frac{\phi(c_i)}{\Phi(c_i)\,[1-\Phi(c_i)]}
-\end{align*}
-\end{column}
-\begin{column}{0.35\textwidth}
-\centering
-\includegraphics[width=\linewidth]{figs/heckman_bias.pdf}
-\vskip1pt
-{\footnotesize The gap at $\rho\sigma=.5$ by treated share: never zero,
-smallest at one half.}
-\vskip4pt
-\begin{flushleft}\small
-\textbf{Worked number.} $\rho=.5$, $\sigma=1$, $c=0$ (half treated):
-$.5\times.399/.25=0.80$. With $\tau=1$ the naive gap should be $1.80$;
-$10^6$ simulated draws give $1.797$.
-\end{flushleft}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Heckman's Two Steps\adv}
-The omitted variable in the OLS of $Y$ on $X$ and $D$ is a \emph{known
-function} of $c_i$ times one unknown constant $\rho\sigma$. Estimate the
-function, then put it into the regression.
-\begin{enumerate}\itemsep2pt
-  \item Probit of $D_i$ on $Z_i$ gives $\hat\gamma$ and $\hat c_i=Z_i'\hat\gamma$.
-  \item Build the correction term, one expression for both groups:
-        $\hat\lambda_i = D_i\,\phi(\hat c_i)/\Phi(\hat c_i)
-        -(1-D_i)\,\phi(\hat c_i)/[1-\Phi(\hat c_i)]$,
-        so that $\E[\epsilon_i\mid D_i,Z_i]=\rho\sigma\,\lambda_i$.
-  \item OLS of $Y_i$ on $X_i$, $D_i$, $\hat\lambda_i$. The coefficient on $D_i$
-        is $\hat\tau$; the coefficient on $\hat\lambda_i$ estimates $\rho\sigma$,
-        and its test against zero is a test of selection on unobservables.
-\end{enumerate}
-\vskip2pt
-Simulation, $n=2{,}000$, 1,000 replications, true $\tau=1$, $\rho\sigma=.5$:
-OLS on $X$ and $D$ averages $1.574$; the two-step averages $1.004$, with
-$0.498$ on $\hat\lambda_i$.
-\vskip2pt
-\begin{itemize}\itemsep1pt
-  \item Step-2 OLS standard errors are wrong: $\hat\lambda_i$ is estimated and
-        $\epsilon_i$ is heteroskedastic given $D_i$. Bootstrap both steps, or
-        fit both equations by maximum likelihood (\texttt{sampleSelection::treatReg}).
-  \item Wage version (Heckman 1979): $Y_i$ observed only when $D_i=1$. Same
-        recipe on the $D_i=1$ rows, where $\hat\lambda_i=\phi/\Phi$ is the
-        ``inverse Mills ratio''.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{What the Correction Costs\adv}
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{lcccc}
-\toprule
- & \multicolumn{2}{c}{normal errors} & \multicolumn{2}{c}{skewed errors} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}
-Estimator of $\tau=1$ & mean & SD & mean & SD \\
-\midrule
-OLS on $X$, $D$                          & 1.574 & .043 & 1.448 & .044 \\
-Two-step, $Z$ has an excluded variable   & 1.004 & .083 & 0.958 & .072 \\
-Two-step, $Z=X$ only                     & 0.954 & 1.907 & $-0.166$ & 1.464 \\
-\bottomrule
-\end{tabular}\\[1pt]
-{\scriptsize $n=2{,}000$, 1,000 replications; skewed $=$ centred
-$\chi^2_1$ shocks, same $\rho$. \texttt{figs/w6\_heckman.R}}
-\end{center}
-\vskip-4pt
-\begin{enumerate}\itemsep3pt
-  \item \textbf{An exclusion restriction.} With $Z=X$, $\hat\lambda_i$ is a smooth
-        function of $X_i$ and $D_i$: regressing it on them gives $R^2=.999$
-        (vs.\ $.667$ with $Z$). Only the curvature of $\phi/\Phi$ identifies
-        $\tau$, and the SD is 23 times larger. The excluded variable must move
-        treatment and have no direct effect on $Y$: \alert{an instrument},
-        next week's word.
-  \item \textbf{Bivariate normality.} The gap formula is the normal formula. With
-        an excluded variable, skewed errors cost little here ($0.96$ for $1$);
-        without one, only the normal shape identifies $\tau$, and it returns
-        $-0.17$. \srcp{Puhani 2000}
-\end{enumerate}
-\end{frame}
-
-\begin{frame}{Heckman in Sociological Research\adv}
-\textbf{Mare and Winship (1984, \emph{ASR}).} Employment among out-of-school
-young men, black and white, 1964--1981. That population is itself selected,
-by school enrollment and military enlistment, differently by race and over
-time; enrollment and enlistment become the selection equation, and part of the
-employment trend is composition.
-\vskip3pt
-\textbf{Manski, Sandefur, McLanahan, and Powers (1992, \emph{JASA}).} Family
-structure in adolescence and high school graduation: a nonintact family may
-hurt, or an unobserved process may produce both. Parametric selection-model
-estimates are reported next to nonparametric bounds (Week 5), so the reader
-sees how much of the answer the normality assumption supplies.
-\vskip3pt
-\textbf{Mulligan and Rubinstein (2008, \emph{QJE}).} The wage version, in
-economics but on our question. Selection of women into full-time work turned
-from negative in the 1970s to positive in the 1990s (exclusion restriction:
-young children by marital status); holding composition fixed, most of the
-apparent narrowing of the gender wage gap is a change in who works.
-\end{frame}
-
-\begin{frame}{Critiques, and the Bridge to Week 7\adv}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Berk (1983, \textit{ASR})} brought it to sociology: who is
-        arrested, employed, or surveyed is a social outcome, so samples are
-        selected on what we study.
-  \item \textbf{Winship and Mare (1992, \textit{Annual Review})} survey its uses
-        in labor markets, schooling, courts, and mobility: results are sensitive
-        to how selection is assumed to occur.
-  \item \textbf{Stolzenberg and Relles (1997, \textit{ASR})} decompose the bias so
-        its likely size can be judged before correcting.
-  \item \textbf{Bushway, Johnson, and Slocum (2007)} review criminology's
-        sentencing studies: the two-step run routinely with the same regressors
-        in both equations, the $R^2=.999$ row.
-\end{itemize}
-\vskip4pt
-\textbf{What survives.} The gap is real and has a shape. Fixing it needs a
-variable that moves treatment and nothing else. Next week keeps that variable,
-drops normality and the constant $\tau$, and pays with a different estimand.
-\end{frame}
-
 \begin{frame}[allowframebreaks,t]{Looking Ahead}
 \begin{itemize}\itemsep4pt
-  \item Everything today but the last section rested on \alert{conditional
-        ignorability}: the claim that we measured every confounder. Matching,
-        weighting, and AIPW make that assumption easier to implement; they do
-        not make it more likely to be true. Heckman trades it for normality and
-        an exclusion restriction.
+  \item Everything today rested on \alert{conditional ignorability}: the claim
+        that we measured every confounder. Matching, weighting, and AIPW make
+        that assumption easier to implement; they do not make it more likely
+        to be true.
   \item The anatomy results are the transferable lesson: \emph{every} adjustment
         method is a weighting of cell-level effects, and knowing the weights tells
         you what your number means.
@@ -2012,11 +1731,6 @@ Bootstrap for Matching Estimators.'' \textit{Econometrica} 76(6): 1537--1557.
 \item Angrist, Joshua D. 1998. ``Estimating the Labor Market Impact of Voluntary
 Military Service Using Social Security Data on Military Applicants.''
 \textit{Econometrica} 66(2): 249--288.
-\item Berk, Richard A. 1983. ``An Introduction to Sample Selection Bias in
-Sociological Data.'' \textit{American Sociological Review} 48(3): 386--398.
-\item Bushway, Shawn, Brian D. Johnson, and Lee Ann Slocum. 2007. ``Is the Magic
-Still There? The Use of the Heckman Two-Step Correction for Selection Bias in
-Criminology.'' \textit{Journal of Quantitative Criminology} 23(2): 151--178.
 \item Cheng, Siwei, Jennie E. Brand, Xiang Zhou, Yu Xie, and Michael Hout. 2021.
 ``Heterogeneous Returns to College over the Life Course.'' \textit{Science
 Advances} 7(51): eabg7641.
@@ -2036,10 +1750,6 @@ Analysis} 20(1): 1--24.
 \item Imai, Kosuke, Gary King, and Elizabeth A. Stuart. 2008. ``Misunderstandings
 Between Experimentalists and Observationalists About Causal Inference.''
 \textit{Journal of the Royal Statistical Society A} 171(2): 481--502.
-\item Heckman, James J. 1978. ``Dummy Endogenous Variables in a Simultaneous
-Equation System.'' \textit{Econometrica} 46(4): 931--959.
-\item Heckman, James J. 1979. ``Sample Selection Bias as a Specification Error.''
-\textit{Econometrica} 47(1): 153--161.
 \item Hirano, Keisuke, Guido W. Imbens, and Geert Ridder. 2003. ``Efficient
 Estimation of Average Treatment Effects Using the Estimated Propensity Score.''
 \textit{Econometrica} 71(4): 1161--1189.
@@ -2048,44 +1758,20 @@ Robustness.'' \textit{Statistical Science} 22(4): 523--539.
 \item Li, Fan, Kari Lock Morgan, and Alan M. Zaslavsky. 2018. ``Balancing
 Covariates via Propensity Score Weighting.'' \textit{Journal of the American
 Statistical Association} 113(521): 390--400.
-\item Lundberg, Ian. 2024. ``The Gap-Closing Estimand: A Causal Approach to
-Study Interventions That Close Disparities Across Social Categories.''
-\textit{Sociological Methods \& Research} 53(2): 507--570.
-\item Manski, Charles F., Gary D. Sandefur, Sara McLanahan, and Daniel Powers.
-1992. ``Alternative Estimates of the Effect of Family Structure During
-Adolescence on High School Graduation.'' \textit{Journal of the American
-Statistical Association} 87(417): 25--37.
-\item Mare, Robert D. and Christopher Winship. 1984. ``The Paradox of Lessening
-Racial Inequality and Joblessness among Black Youth: Enrollment, Enlistment,
-and Employment, 1964--1981.'' \textit{American Sociological Review} 49(1):
-39--55.
 \item Mazrekaj, Deni, Kristof De Witte, and Sofie Cabus. 2020. ``School Outcomes
 of Children Raised by Same-Sex Parents: Evidence from Administrative Panel
 Data.'' \textit{American Sociological Review} 85(5): 830--856.
 \item Morgan, Stephen L. and Christopher Winship. 2015.
 \textit{Counterfactuals and Causal Inference}, 2nd ed. Cambridge University
 Press. [Ch.\ 4, 5, 7, 8]
-\item Mulligan, Casey B. and Yona Rubinstein. 2008. ``Selection, Investment,
-and Women's Relative Wages over Time.'' \textit{Quarterly Journal of Economics}
-123(3): 1061--1110.
 \item Oster, Emily. 2019. ``Unobservable Selection and Coefficient Stability:
 Theory and Evidence.'' \textit{Journal of Business \& Economic Statistics}
 37(2): 187--204.
-\item Puhani, Patrick A. 2000. ``The Heckman Correction for Sample Selection and
-Its Critique.'' \textit{Journal of Economic Surveys} 14(1): 53--68.
 \item Rosenbaum, Paul R. and Donald B. Rubin. 1983. ``The Central Role of the
 Propensity Score in Observational Studies for Causal Effects.''
 \textit{Biometrika} 70(1): 41--55.
 \item Sekhon, Jasjeet S. 2009. ``Opiates for the Matches: Matching Methods for
 Causal Inference.'' \textit{Annual Review of Political Science} 12: 487--508.
-\item Stritzel, Haley and Robert Crosnoe. 2023. ``Unpacking the Linkages between
-Single Parent Households and Early Adolescent Adjustment.'' \textit{Social Science
-Research} 110: 102841.
-\item Stolzenberg, Ross M. and Daniel A. Relles. 1997. ``Tools for Intuition about
-Sample Selection Bias and Its Correction.'' \textit{American Sociological Review}
-62(3): 494--507.
-\item Winship, Christopher and Robert D. Mare. 1992. ``Models for Sample Selection
-Bias.'' \textit{Annual Review of Sociology} 18: 327--350.
 \end{itemize}
 \end{frame}
 

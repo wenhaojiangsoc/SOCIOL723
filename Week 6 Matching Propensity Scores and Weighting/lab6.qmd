@@ -148,17 +148,43 @@ c(treated_dropped = sum(cells$n1[!cells$both]), untreated_dropped = sum(cells$n0
 #| label: exact-estimates
 m <- filter(cells, both)
 ## ATE: cell shares among matched units; ATT: shares among matched treated; ATU: among matched untreated
+est_hand <- c(ATE = sum(m$tau * m$n)  / sum(m$n),
+              ATT = sum(m$tau * m$n1) / sum(m$n1),
+              ATU = sum(m$tau * m$n0) / sum(m$n0))
 c(naive = mean(gss$Y[gss$D == 1]) - mean(gss$Y[gss$D == 0]),
-  ATE = sum(m$tau * m$n)  / sum(m$n),
-  ATT = sum(m$tau * m$n1) / sum(m$n1),
-  ATU = sum(m$tau * m$n0) / sum(m$n0),
+  est_hand,
   ## OLS saturated in the cells: the variance-weighted average from the lecture
   OLS_cells = coef(lm(Y ~ D + cell, data = gss))["D"])
 ```
 
 The four adjusted numbers are the same 92 cell differences under four sets of
-weights. Bootstrap the whole procedure for standard errors; resampling units is
-valid here because nothing is nearest-neighbour.
+weights.
+
+### The standard error by hand
+
+The lecture's formula: the estimate is a weighted sum of cell differences, so
+its variance is the weighted sum of the cells' variances,
+$\Var(\widehat{\text{ATE}}) = \sum_x (n_x/n)^2\,(s^2_{1x}/n_{1x} + s^2_{0x}/n_{0x})$,
+with the ATT and ATU weights in place of $n_x/n$.
+
+```{r}
+#| label: exact-se
+## within-cell variances of Y in each arm (NA when a cell has one unit in that arm)
+v1 <- tapply(gss$Y[gss$D == 1], gss$cell[gss$D == 1], var)
+v0 <- tapply(gss$Y[gss$D == 0], gss$cell[gss$D == 0], var)
+m$v1 <- v1[as.character(m$cell)]; m$v0 <- v0[as.character(m$cell)]
+m$v1[is.na(m$v1)] <- 0; m$v0[is.na(m$v0)] <- 0
+## the variance of one cell difference, then the weighted sum with each target's weights
+cell_var <- m$v1 / m$n1 + m$v0 / m$n0
+se_hand <- c(ATE = sqrt(sum((m$n  / sum(m$n))^2  * cell_var)),
+             ATT = sqrt(sum((m$n1 / sum(m$n1))^2 * cell_var)),
+             ATU = sqrt(sum((m$n0 / sum(m$n0))^2 * cell_var)))
+round(se_hand, 4)
+```
+
+Now the bootstrap: resample units, rebuild the cells, recompute all three.
+Resampling is valid here because the estimate is a smooth function of cell
+means; nothing is nearest-neighbour.
 
 ```{r}
 #| label: exact-boot
@@ -167,59 +193,78 @@ boot_exact <- function(d) {
   t <- b |> group_by(cell) |>
     summarise(n1 = sum(D), n0 = sum(1 - D), y1 = sum(Y * D), y0 = sum(Y * (1 - D)), .groups = "drop") |>
     filter(n1 > 0, n0 > 0) |> mutate(tau = y1 / n1 - y0 / n0)
-  c(ATE = sum(t$tau * (t$n1 + t$n0)) / sum(t$n1 + t$n0), ATT = sum(t$tau * t$n1) / sum(t$n1))
+  c(ATE = sum(t$tau * (t$n1 + t$n0)) / sum(t$n1 + t$n0),
+    ATT = sum(t$tau * t$n1) / sum(t$n1),
+    ATU = sum(t$tau * t$n0) / sum(t$n0))
 }
 set.seed(723)
-apply(replicate(200, boot_exact(gss)), 1, sd)
+se_boot <- apply(replicate(200, boot_exact(gss)), 1, sd)
+round(rbind(formula = se_hand, bootstrap = se_boot), 4)
 ```
 
-## The checks: coverage and balance
+The two rows agree to within a couple of thousandths: the formula is doing
+what the bootstrap does, without the 200 refits.
 
-```{r}
-#| label: exact-balance
-## standardized mean difference: (weighted mean treated - weighted mean untreated) / pooled SD
-covs <- c("pareduc", "wordsum", "exper", "female", "black", "otherace")
-sd_pool <- sapply(covs, function(v) sqrt((var(gss[gss$D == 1, v]) + var(gss[gss$D == 0, v])) / 2))
-smd <- function(w1, w0) sapply(covs, function(v)
-  (weighted.mean(gss[[v]], w1) - weighted.mean(gss[[v]], w0)) / sd_pool[v])
-## weights that reproduce the matched estimators: each unit gets (target share of its cell) / (units of its arm in the cell)
-cw <- as.character(gss$cell)
-share <- setNames(m$n / sum(m$n), as.character(m$cell))        # ATE target: matched-population cell shares
-share1 <- setNames(m$n1 / sum(m$n1), as.character(m$cell))     # ATT target: treated cell shares
-n1c <- setNames(m$n1, as.character(m$cell)); n0c <- setNames(m$n0, as.character(m$cell))
-get <- function(v, k) ifelse(is.na(v[k]), 0, v[k])
-w1_ate <- gss$D * get(share, cw) / pmax(get(n1c, cw), 1)
-w0_ate <- (1 - gss$D) * get(share, cw) / pmax(get(n0c, cw), 1)
-w1_att <- gss$D * get(share1, cw) / pmax(get(n1c, cw), 1)
-w0_att <- (1 - gss$D) * get(share1, cw) / pmax(get(n0c, cw), 1)
-round(rbind(raw = smd(gss$D, 1 - gss$D), ATE_matched = smd(w1_ate, w0_ate), ATT_matched = smd(w1_att, w0_att)), 3)
-```
+## The same thing in `MatchIt`, with standard errors
 
-Exactly matched variables balance by construction; the coarsened ones keep the
-within-band imbalance the bands allow; `otherace`, which we did not match on,
-moves on its own. None of these numbers is a test.
-
-## The same thing in `MatchIt`
+`method = "exact"` builds the same cells; `estimand` chooses the weights
+(`"ATC"` is MatchIt's name for the ATU). `match.data()` returns the matched
+units with a `weights` column, and a weighted regression of `Y` on `D` is a
+difference of weighted means, so its coefficient reproduces the by-hand
+estimate exactly. For the standard error use a sandwich (`vcovHC`): the
+default `lm` standard error ignores the weights.
 
 ```{r}
 #| label: exact-matchit
-## method = "exact" builds the same cells; estimand chooses the weights
-for (est in c("ATE", "ATT")) {
+mi <- list()
+for (est in c("ATE", "ATT", "ATC")) {
   mm <- matchit(D ~ female + black + pareduc_b + wordsum_b + exper_b,
                 data = gss, method = "exact", estimand = est)
   md <- match.data(mm)
-  cat(est, ":", round(coef(lm(Y ~ D, data = md, weights = weights))["D"], 3),
-      " matched n =", nrow(md), "\n")
+  f  <- lm(Y ~ D, data = md, weights = weights)
+  mi[[est]] <- c(estimate = unname(coef(f)["D"]),
+                 se_HC1   = unname(sqrt(vcovHC(f, type = "HC1")["D", "D"])))
 }
+mi_tab <- do.call(rbind, mi); rownames(mi_tab) <- c("ATE", "ATT", "ATU")
+## by hand (section 3.2) next to MatchIt + WLS + sandwich
+round(cbind(hand_estimate = c(est_hand["ATE"], est_hand["ATT"], est_hand["ATU"]),
+            matchit_estimate = mi_tab[, "estimate"],
+            hand_se = se_hand, matchit_se_HC1 = mi_tab[, "se_HC1"]), 4)
+```
+
+The estimates are identical. The sandwich standard errors sit a little above
+the by-hand ones: the sandwich measures each unit's deviation from its *arm's*
+weighted mean, so it counts between-cell variation in $Y$ as noise, whereas the
+formula uses only within-cell variances. Both treat the cell weights as fixed.
+
+### The balance check
+
+`love.plot()` draws the standardized mean difference of every covariate
+before and after matching. The variables we matched on are the coarsened
+bins, which balance exactly by construction; `addl` adds the underlying
+continuous variables, where the within-band imbalance shows, and `otherace`,
+which we did not match on at all.
+
+```{r}
+#| label: fig-exact-balance
+#| fig-cap: "Covariate balance before and after exact matching on the cells (ATE weights). The bins balance exactly; the continuous variables keep the within-band imbalance the bins allow."
+mm_ate <- matchit(D ~ female + black + pareduc_b + wordsum_b + exper_b,
+                  data = gss, method = "exact", estimand = "ATE")
+love.plot(mm_ate, data = gss, addl = ~ pareduc + wordsum + exper + otherace,
+          thresholds = c(m = 0.1), binary = "std",
+          colors = c("firebrick", "navy")) +
+  theme_minimal(base_size = 9)
 ```
 
 # The propensity score
 
 ```{r}
 #| label: ps
+## a logit for Pr(D = 1 | X); family = binomial("logit") says so explicitly
+## (binomial() alone would also default to the logit link, but say what you mean)
 ps_mod <- glm(D ~ pareduc + wordsum + female + black + otherace +
                 exper + I(exper^2),
-              data = gss, family = binomial)
+              data = gss, family = binomial("logit"))
 gss$ps <- fitted(ps_mod)
 
 summary(gss$ps)
@@ -255,36 +300,91 @@ which comparison is hardest. Judge the model by **balance**, not by AUC.
 
 ## Nearest-neighbour on the propensity score
 
+Each treated unit takes the control with the closest propensity score.
+**With replacement** (`replace = TRUE`) the same control may serve several
+treated units: every treated unit gets its best match, so balance is far
+better, and the price is the reuse counts $K_j$ from lecture, which inflate the
+variance and rule out the ordinary bootstrap. Without replacement, once the
+good controls are used up the remaining treated units get poor matches.
+
 ```{r}
 #| label: match-nn
 m_nn <- matchit(D ~ pareduc + wordsum + female + black + otherace +
                   exper + I(exper^2),
                 data = gss, method = "nearest", distance = "glm",
-                estimand = "ATT", replace = FALSE)
+                estimand = "ATT", replace = TRUE)
 m_nn
 ```
 
 ```{r}
 #| label: fig-balance
-#| fig-cap: "Covariate balance before and after nearest-neighbour matching. Everything should land inside the dashed lines."
+#| fig-cap: "Covariate balance before and after nearest-neighbour matching on the propensity score, with replacement. Everything lands inside the dashed lines."
 love.plot(m_nn, thresholds = c(m = 0.1), binary = "std",
           colors = c("firebrick", "navy")) +
   theme_minimal(base_size = 9)
 ```
 
 ```{r}
+#| label: match-nn-norep
+## the same matching without replacement: 1,441 treated compete for 2,068 controls
+## and the late ones get poor matches. Compare the adjusted standardized differences.
+m_nn0 <- matchit(D ~ pareduc + wordsum + female + black + otherace +
+                   exper + I(exper^2),
+                 data = gss, method = "nearest", distance = "glm",
+                 estimand = "ATT", replace = FALSE)
+round(cbind(with_replacement = bal.tab(m_nn)$Balance$Diff.Adj,
+            without          = bal.tab(m_nn0)$Balance$Diff.Adj)[-1, ], 3)
+```
+
+```{r}
 #| label: match-est
-md_nn <- match.data(m_nn)
+## get_matches() returns one row per matched pair member, so a reused control
+## appears once per treated unit it serves; `unit` identifies the person,
+## `subclass` the matched pair. The data already have a column called id,
+## hence the id = "unit" argument.
+md_nn <- get_matches(m_nn, id = "unit")
+c(rows = nrow(md_nn), distinct_controls = length(unique(md_nn$unit[md_nn$D == 0])),
+  max_reuse = max(table(md_nn$unit[md_nn$D == 0])))
 fit_nn <- lm(Y ~ D + pareduc + wordsum + female + black + otherace +
                exper + I(exper^2),
              data = md_nn, weights = weights)
-round(coeftest(fit_nn, vcov = vcovCL, cluster = ~ subclass)["D", ], 4)
+## standard errors clustered on both the pair and the person (MatchIt's recommendation
+## for matching with replacement); the formal answer is the Abadie-Imbens variance
+## from lecture, and the ordinary bootstrap is NOT valid here
+round(coeftest(fit_nn, vcov = vcovCL, cluster = ~ subclass + unit)["D", ], 4)
 ```
 
-Two things to notice. First, we still run a regression on the matched data, 
+Two things to notice. First, we still run a regression on the matched data:
 matching is *preprocessing*, and the regression mops up residual imbalance.
-Second, the standard errors are clustered on the matched pair, because the
-matching induces dependence.
+Second, the standard errors are clustered on the matched pair and on the
+person, because a control reused $K_j$ times appears $K_j$ times.
+
+The lecture's variance formula, with the $K_j^2$ term, is what
+`Matching::Match()` reports (`install.packages("Matching")`). It matches on the
+same propensity score and prints the Abadie-Imbens standard error directly,
+with no regression afterwards.
+
+```{r}
+#| label: match-ai
+library(Matching)
+## one-to-one nearest neighbour on the propensity score, with replacement, ATT:
+## the same design as m_nn above; m_nn$distance is MatchIt's estimated propensity score.
+## Match() keeps every control tied at the closest distance, at equal weight (MatchIt picks
+## one); the GSS has many identical covariate profiles, so ties are common here
+mm <- Match(Y = gss$Y, Tr = gss$D, X = m_nn$distance, M = 1, estimand = "ATT",
+            replace = TRUE)
+summary(mm)
+## how many distinct controls were used, and the largest K_j
+c(distinct_controls = length(unique(mm$index.control)),
+  max_reuse = max(table(mm$index.control)))
+```
+
+The `AI SE` line is the Abadie-Imbens standard error: it counts a control used
+$K_j$ times $K_j^2$ times, which is why it is larger than a naive SE that treats
+the matched rows as independent. It is close to the clustered SE above. The
+matched sample is larger than MatchIt's because tied controls are all kept;
+the estimate barely moves. (With `ties = FALSE` Match() drops the
+Abadie-Imbens calculation and prints a naive SE, so leave the default.)
 
 ## Mahalanobis distance
 
@@ -324,14 +424,35 @@ plausible non-degree counterparts.
 
 ```{r}
 #| label: cem
+## MatchIt's default coarsening: each continuous variable is cut into bins by
+## Sturges' rule (about log2(n) + 1 of them), binaries as they are
 m_cem <- matchit(D ~ pareduc + wordsum + female + black + exper,
                  data = gss, method = "cem", estimand = "ATT")
 summary(m_cem)$nn
+round(bal.tab(m_cem, un = TRUE)$Balance[, c("Diff.Un", "Diff.Adj")], 3)
 ```
 
-CEM is the most transparent method: it matches exactly within coarsened bins, so
-balance is guaranteed by construction. The price is written plainly in the
-number of discarded observations.
+CEM balances the *coarsened* variables exactly, and nothing more: how much
+imbalance remains on the underlying continuous variables depends entirely on
+how wide the bins are. With MatchIt's default bins, which are narrow, the
+residual differences above are essentially zero, but look at the `Unmatched`
+row: 598 of the 1,441 treated units found no control in their bin and were
+dropped, so the estimand is now the effect on the matchable treated. Section 3
+used three wide bins per variable and lost 4 treated units, at the price of
+standardized differences near $0.1$ on the continuous variables. The same
+trade-off, chosen by the bins:
+
+```{r}
+#| label: cem-coarse
+## our section-3 bins, handed to MatchIt as cutpoints
+m_cem3 <- matchit(D ~ pareduc + wordsum + female + black + exper,
+                  data = gss, method = "cem", estimand = "ATT",
+                  cutpoints = list(pareduc = c(11.5, 13.5),
+                                   wordsum = c(5.5, 7.5),
+                                   exper   = c(16.5, 29.5)))
+summary(m_cem3)$nn
+round(bal.tab(m_cem3)$Balance[, "Diff.Adj", drop = FALSE], 3)
+```
 
 # Weighting
 
@@ -385,6 +506,29 @@ three attempts at one. The overlap-weighted estimate describes the subpopulation
 where comparison is most informative, and its weights are bounded by
 construction.
 
+## The same thing as a weighted regression
+
+The coefficient on a dummy in weighted least squares is the difference of the
+weighted means, so `lm(Y ~ D, weights = w)` must reproduce each Hájek estimate
+exactly. It also hands us a standard error: a sandwich (`HC1`), which treats
+the weights as known. Nothing here accounts for the propensity score having
+been estimated; the bootstrap in section 7 does.
+
+```{r}
+#| label: weight-wls
+w_ate <- ifelse(D == 1, 1 / e, 1 / (1 - e))
+## the argument is called wvec, not wt: gss has a survey-weight column named wt,
+## and lm() would quietly pick up that column instead of our vector
+wls <- function(wvec) {
+  f <- lm(Y ~ D, data = gss, weights = wvec)
+  c(WLS = unname(coef(f)["D"]), se_HC1 = unname(sqrt(vcovHC(f, type = "HC1")["D", "D"])))
+}
+wls_tab <- rbind(ATE = wls(w_ate), ATT = wls(att_w), ATO = wls(ato_w))
+cbind(by_hand = c(ate_sipw, wmean_diff(att_w), wmean_diff(ato_w)), wls_tab)
+```
+
+The `by_hand` and `WLS` columns agree to every printed digit, as they must.
+
 ## Does weighting actually balance the covariates?
 
 ```{r}
@@ -433,24 +577,6 @@ coincidence, `aipw_terms` is the *efficient influence function*, and this is
 the pattern that Week 13 generalizes.
 :::
 
-## Everything in one place
-
-```{r}
-#| label: compare-all
-results <- tibble::tibble(
-  method = c("Naive difference", "OLS adjustment", "NN matching (ATT)",
-             "IPW stabilized (ATE)", "ATT weights", "Overlap weights (ATO)",
-             "G-computation (ATE)", "AIPW (ATE)"),
-  estimate = c(coef(naive)["D"], coef(reg)["D"], coef(fit_nn)["D"],
-               ate_sipw, wmean_diff(att_w), wmean_diff(ato_w),
-               ate_gcomp, ate_aipw)
-)
-knitr::kable(results, digits = 4)
-```
-
-If these had disagreed sharply, that itself would be the finding: it would tell
-us the answer is coming from modelling choices rather than from comparison.
-
 ## Bootstrapping the whole procedure
 
 Standard errors must account for the fact that the propensity score was
@@ -484,40 +610,35 @@ answers, both computed from the long regression `reg` and both on the slides.
 
 ## Oster's coefficient-stability bound
 
-Oster (2019) compares the coefficient *without* controls (short regression)
-to the coefficient *with* them (long regression), and scales the movement by
-how much $R^2$ the controls added. If controls moved the coefficient little
-but also explained little, that is no comfort.
+Oster (2019) starts from the old habit of comparing the coefficient *without*
+controls to the coefficient *with* them. A small move is reassuring only if the
+controls explained a good share of the outcome; otherwise unobservables that
+explain more could still move the coefficient a long way. Her method judges the
+move relative to the gain in $R^2$ and extrapolates. The `robomit` package does
+the arithmetic (`install.packages("robomit")`).
 
 ```{r}
 #| label: oster
-## the short regression: Y on D alone; the long one is `reg` from above
-short <- lm(Y ~ D, data = gss)
-b_dot <- unname(coef(short)["D"]); r_dot <- summary(short)$r.squared   ## uncontrolled
-b_til <- unname(coef(reg)["D"]);   r_til <- summary(reg)$r.squared     ## controlled
-c(beta_short = b_dot, r2_short = r_dot, beta_long = b_til, r2_long = r_til)
+library(robomit)
+## two inputs. R2max: how much of Y all confounders together could explain; Oster's rule
+## of thumb is 1.3 x the R^2 of the regression with controls. delta: how important the
+## unobservables are relative to the controls (1 = equally important)
+r2_long <- summary(reg)$r.squared
+con <- "pareduc + wordsum + female + black + otherace + exper + I(exper^2)"  ## the controls
 
-## Oster's assumption: selection on unobservables = delta x selection on observables,
-## and Rmax = the R^2 we would reach with the unobservables in.
-## The movement per unit of R^2 gained is extrapolated to the R^2 still to gain:
-oster_beta  <- function(delta, rmax) b_til - delta * (b_dot - b_til) * (rmax - r_til) / (r_til - r_dot)
-## delta*: the delta at which beta* hits zero
-oster_delta <- function(rmax) b_til * (r_til - r_dot) / ((b_dot - b_til) * (rmax - r_til))
+## beta*: the effect if the unobservables were as important as the controls (delta = 1)
+o_beta(y = "Y", x = "D", con = con, delta = 1, R2max = 1.3 * r2_long, type = "lm", data = gss)
 
-## Oster's rule of thumb is Rmax = 1.3 x R^2 of the long regression; show two harsher choices too
-rmax <- c(rmax_1.3 = 1.3 * r_til, rmax_2 = 2 * r_til, rmax_1 = 1)
-rbind(beta_star_delta1 = sapply(rmax, oster_beta, delta = 1),
-      delta_star       = sapply(rmax, oster_delta))
+## delta*: how many times as important as the controls the unobservables would have to be
+## to drive the effect to zero
+o_delta(y = "Y", x = "D", con = con, beta = 0, R2max = 1.3 * r2_long, type = "lm", data = gss)
 ```
 
-Read the two rows. `beta_star_delta1` is the estimate if unobservables were
-exactly as important as the observables ($\delta = 1$); the finding is called
-robust if the interval from the controlled estimate to this number excludes
-zero. `delta_star` is how many times stronger than the observables the
-unobservables would have to be to erase the effect; Oster's standard is
-$\delta^* > 1$. Here even $R_{\max} = 1$ leaves $\delta^* = 1.8$. This is the
-simplified formula from the paper; the `robomit` package computes the exact
-one.
+Read the first row of each table. Oster's standard: the finding is robust if
+the interval from the controlled coefficient to `beta*` excludes zero and
+`delta*` is above one. Here `beta*` is 0.58 and `delta*` is 2.6: unobservables
+would have to matter more than twice as much as everything we controlled for to
+erase the BA premium.
 
 ## Partial $R^2$ and the robustness value
 
@@ -540,135 +661,6 @@ treatment and the outcome that a confounder would need to explain to reduce the
 estimate to zero. Compare it to the benchmark: if a confounder three times as
 strong as measured verbal ability would be needed, the finding is reasonably
 robust; if half of one would do it, it is not.
-
-```{r}
-#| label: rv-by-hand
-## the robustness value from the t statistic alone: RV = (sqrt(f^4 + 4 f^2) - f^2) / 2, f = |t| / sqrt(df)
-tt <- coef(summary(reg))["D", "t value"]; df <- reg$df.residual
-f  <- abs(tt) / sqrt(df)
-c(t = tt, df = df, RV_by_hand = (sqrt(f^4 + 4 * f^2) - f^2) / 2,
-  RV_sensemakr = sens$sensitivity_stats$rv_q)
-```
-
-# Selection on unobservables: the Heckman correction
-
-Everything above conditioned on $X$. The last section of the lecture asked what
-can be done when units select on something we did *not* measure. Heckman's
-answer is to write down the selection rule and the joint distribution of the two
-errors, and then compute the gap $\E[\epsilon_i \mid D_i = 1] -
-\E[\epsilon_i \mid D_i = 0]$ instead of assuming it away.
-
-::: callout-note
-The GSS offers no credible *excluded variable*, a variable that moves college
-completion but has no direct effect on earnings. Without one, the lecture showed
-that the correction rests on the curvature of $\phi/\Phi$ alone. So this section
-works on simulated data where the true effect is known, exactly as the lecture's
-table did (`figs/w6_heckman.R`).
-:::
-
-## The world
-
-```{r}
-#| label: heck-sim
-set.seed(723)
-n <- 2000
-rho <- 0.5; sigma <- 1; tau <- 1
-X <- rnorm(n)      ## the observed control, in both equations
-Z <- rnorm(n)      ## the excluded variable: shifts selection, not the outcome
-u <- rnorm(n)      ## selection-equation error, variance 1
-## outcome error correlated rho with u: that correlation IS selection on unobservables
-eps <- sigma * (rho * u + sqrt(1 - rho^2) * rnorm(n))
-D <- as.integer(0.5 * X + Z + u > 0)   ## the selection rule
-Y <- 1 + 0.5 * X + tau * D + eps       ## the outcome, one constant effect tau = 1
-dat <- data.frame(Y, D, X, Z)
-## OLS with X in the regression: biased upward, because X is not the confounder
-coef(lm(Y ~ X + D, data = dat))["D"]
-```
-
-## The two steps by hand
-
-```{r}
-#| label: heck-2step
-## step 1: probit of D on the selection regressors, X and the excluded Z
-step1 <- glm(D ~ X + Z, family = binomial(link = "probit"), data = dat)
-c_hat <- predict(step1, type = "link")     ## Z_i' gamma-hat
-## step 2: the correction term, one expression for both groups
-dat$lambda <- ifelse(dat$D == 1,  dnorm(c_hat) / pnorm(c_hat),
-                                 -dnorm(c_hat) / (1 - pnorm(c_hat)))
-step2 <- lm(Y ~ X + D + lambda, data = dat)
-## D recovers tau; the coefficient on lambda estimates rho * sigma = 0.5
-coef(summary(step2))[, c("Estimate", "Std. Error", "t value")]
-```
-
-The $t$-test on `lambda` is the test of selection on unobservables. But the
-standard errors printed above are wrong: `lambda` was estimated in step 1, and
-$\epsilon_i$ is heteroskedastic given $D_i$. Bootstrap both steps together.
-
-```{r}
-#| label: heck-boot
-two_step <- function(d, selection = D ~ X + Z) {
-  s1 <- glm(selection, family = binomial(link = "probit"), data = d)
-  ch <- predict(s1, type = "link")
-  d$lambda <- ifelse(d$D == 1, dnorm(ch) / pnorm(ch), -dnorm(ch) / (1 - pnorm(ch)))
-  coef(lm(Y ~ X + D + lambda, data = d))[c("D", "lambda")]
-}
-B <- 200
-boot <- replicate(B, two_step(dat[sample(n, replace = TRUE), ]))
-apply(boot, 1, sd)    ## compare with the step-2 OLS standard errors above
-```
-
-## Both equations by maximum likelihood
-
-The two-step estimator is the Week 3 idea of "estimate, then plug in." Fitting
-the probit and the outcome equation jointly by maximum likelihood (FIML) uses the
-bivariate normal likelihood directly, returns $\rho$ and $\sigma$ separately, and
-gives standard errors that need no bootstrap.
-
-```{r}
-#| label: heck-fiml
-library(sampleSelection)
-## treatReg: selection equation first, then the outcome equation with D in it
-fiml <- treatReg(D ~ X + Z, Y ~ X + D, data = dat)
-summary(fiml)
-```
-
-The wage version, where $Y$ is observed only for the $D_i = 1$ rows, is
-`heckit(selection = D ~ X + Z, outcome = Y ~ X, data = ...)` in the same package.
-
-## Without an excluded variable
-
-```{r}
-#| label: heck-noZ
-## the selection equation now has only X: lambda is a smooth function of X and D
-s1 <- glm(D ~ X, family = binomial(link = "probit"), data = dat)
-ch <- predict(s1, type = "link")
-dat$lambda_noZ <- ifelse(dat$D == 1, dnorm(ch) / pnorm(ch), -dnorm(ch) / (1 - pnorm(ch)))
-## how much of the correction term do X and D already explain linearly?
-summary(lm(lambda_noZ ~ X + D, data = dat))$r.squared
-## what is left identifies tau: the curvature of phi/Phi, and nothing else
-coef(summary(lm(Y ~ X + D + lambda_noZ, data = dat)))[c("D", "lambda_noZ"), ]
-```
-
-Compare the standard error on `D` with the one from the two-step with `Z`.
-The excluded variable must move treatment and have no direct effect on $Y$.
-That is next week's instrument.
-
-## When the errors are not normal
-
-```{r}
-#| label: heck-skew
-## the common shock is a centred, unit-variance, right-skewed chi-square(1)
-v <- (rchisq(n, 1) - 1) / sqrt(2)
-eps_s <- sigma * (rho * v + sqrt(1 - rho^2) * rnorm(n))
-D_s <- as.integer(0.5 * X + Z + v > 0)
-Y_s <- 1 + 0.5 * X + tau * D_s + eps_s
-dat_s <- data.frame(Y = Y_s, D = D_s, X, Z)
-two_step(dat_s)                          ## with the excluded variable
-two_step(dat_s, selection = D ~ X)       ## without it
-```
-
-With an excluded variable the normal formula for the gap is only slightly off.
-Without one, the estimator *is* the normal formula, and it can land anywhere.
 
 # Exercises
 
@@ -700,12 +692,6 @@ Without one, the estimator *is* the normal formula, and it can land anywhere.
 6.  **Effective sample size.** Plot the IPW weights against $\hat e$. Identify the
     ten most heavily weighted observations. Refit without them, how much does
     the estimate move relative to its standard error?
-
-7.  **An excluded variable for college.** Propose a variable in the GSS, or one
-    you would collect, that shifts completing a bachelor's degree but has no
-    direct effect on earnings. Write the argument for "no direct effect" in
-    three sentences, then list what would break it. Explain, using the last
-    section, why the correction is worth little without such a variable.
 
 # Session information
 

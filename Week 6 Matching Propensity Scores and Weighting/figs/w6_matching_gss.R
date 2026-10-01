@@ -119,3 +119,20 @@ se_cl <- sqrt(vcovCL(wls_d, cluster = m_ate$cell)["D", "D"])
 se_hc <- sqrt(vcovHC(wls_d, type = "HC1")["D", "D"])
 cat(sprintf("WLS Y ~ D: naive SE %.3f, HC1 %.3f, clustered by cell %.3f\n",
             sqrt(vcov(wls_d)["D", "D"]), se_hc, se_cl))
+
+## ---- 7. g-computation with a saturated outcome model IS exact matching --------
+## separate saturated models per arm: fitted values are cell means; predict both
+## potential outcomes for every unit in a two-armed cell, then average
+g_m <- g[g$cell %in% m$cell, ]                       # the 92 cells with both arms
+g_m$cell <- droplevels(g_m$cell)
+f1 <- lm(Y ~ cell, data = g_m[g_m$D == 1, ]); f0 <- lm(Y ~ cell, data = g_m[g_m$D == 0, ])
+d_hat <- predict(f1, newdata = g_m) - predict(f0, newdata = g_m)
+cat(sprintf("g-computation, saturated per arm: ATE %.4f (matching %.4f); ATT %.4f (matching %.4f); ATU %.4f (matching %.4f)\n",
+            mean(d_hat), ate, mean(d_hat[g_m$D == 1]), att, mean(d_hat[g_m$D == 0]), atu))
+## one coefficient with the same dummies: the anatomy's tau_R instead
+cat(sprintf("one coefficient, Y ~ D + cell dummies: %.4f\n", coef(lm(Y ~ D + cell, data = g_m))["D"]))
+## continuous controls in place of the dummies: the model now fills every cell, including the 14 one-armed ones
+f1c <- lm(Y ~ pareduc + wordsum + exper + female + black, data = g[g$D == 1, ])
+f0c <- lm(Y ~ pareduc + wordsum + exper + female + black, data = g[g$D == 0, ])
+dc <- predict(f1c, newdata = g) - predict(f0c, newdata = g)
+cat(sprintf("g-computation, linear per arm, all %d units: ATE %.4f, ATT %.4f\n", nrow(g), mean(dc), mean(dc[g$D == 1])))
