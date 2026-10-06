@@ -43,32 +43,18 @@ options(digits = 4, scipen = 999, width = 76)
 
 # The question
 
-**Estimand.** The average difference in log personal earnings between completing
-a bachelor's degree and not completing one, among the full-time workers aged
-25--64 in our GSS analytic sample, 2010--2022.
+**Estimand.** The average difference in log personal earnings between completing a bachelor's degree and not completing one, among the full-time workers aged 25--64 in our GSS analytic sample, 2010--2022.
 
 ::: callout-note
-Note the deliberately modest population. The GSS is a complex sample, and doing
-this properly for the U.S. population would require the survey weights (`wt`) and
-PSU/stratum-aware inference. We work unweighted here so that the adjustment
-methods are visible on their own; that is a simplification, and you should say so
-if you write it up.
+Note the deliberately modest population. The GSS is a complex sample, and doing this properly for the U.S. population would require the survey weights (`wt`) and PSU/stratum-aware inference. We work unweighted here so that the adjustment methods are visible on their own; that is a simplification, and you should say so if you write it up.
 :::
 
-We also exclude `hours` from the adjustment set. Hours worked is plausibly a
-*consequence* of completing college, so conditioning on it would be the
-post-treatment error from Week 5; it would answer a different question.
+We also exclude `hours` from the adjustment set. Hours worked is plausibly a *consequence* of completing college, so conditioning on it would be the post-treatment error from Week 5; it would answer a different question.
 
-This is an *observational* question with obvious confounding: people who complete
-college differ from those who do not in family background, measured ability, and
-much else. We are going to assume conditional ignorability given the covariates
-we have, do the adjustment five different ways, and then ask how much an
-unobserved confounder would have to matter to overturn the answer.
+This is an *observational* question with obvious confounding: people who complete college differ from those who do not in family background, measured ability, and much else. We are going to assume conditional ignorability given the covariates we have, do the adjustment five different ways, and then ask how much an unobserved confounder would have to matter to overturn the answer.
 
 ::: callout-warning
-Assuming conditional ignorability here is almost certainly wrong. That is the
-point of the last section. Treat today's numbers as an exercise in *method*, not
-as an estimate of the return to college.
+Assuming conditional ignorability here is almost certainly wrong. That is the point of the last section. Treat today's numbers as an exercise in *method*, not as an estimate of the return to college.
 :::
 
 ```{r}
@@ -99,8 +85,7 @@ reg   <- lm(Y ~ D + pareduc + wordsum + female + black + otherace + exper +
 c(naive = coef(naive)["D"], regression = coef(reg)["D"])
 ```
 
-Adjustment moves the estimate substantially. But regression is only one of the
-adjustment strategies available, and it makes assumptions we have not examined.
+Adjustment moves the estimate substantially. But regression is only one of the adjustment strategies available, and it makes assumptions we have not examined.
 
 ```{r}
 #| label: imbalance
@@ -108,17 +93,11 @@ bal.tab(reg_formula <- D ~ pareduc + wordsum + female + black + otherace +
           exper, data = gss, un = TRUE, thresholds = c(m = 0.1))
 ```
 
-The `Diff.Un` column is the standardized mean difference. Values well above
-$0.1$, here `pareduc` and `wordsum` especially, mean the two groups are not
-comparable as they stand.
+The `Diff.Un` column is the standardized mean difference. Values well above $0.1$, here `pareduc` and `wordsum` especially, mean the two groups are not comparable as they stand.
 
 # Exact matching on cells
 
-The lecture's matching section began with the cleanest estimator there is:
-coarsen the covariates into cells, take the difference in means inside every
-cell that holds both graduates and non-graduates, and average the cell
-differences with the weights of the estimand you named. This section
-reproduces the lecture's numbers by hand, then checks them against `MatchIt`.
+The lecture's matching section began with the cleanest estimator there is: coarsen the covariates into cells, take the difference in means inside every cell that holds both graduates and non-graduates, and average the cell differences with the weights of the estimand you named. This section reproduces the lecture's numbers by hand, then checks them against `MatchIt`.
 
 ## Building the cells
 
@@ -157,15 +136,11 @@ c(naive = mean(gss$Y[gss$D == 1]) - mean(gss$Y[gss$D == 0]),
   OLS_cells = coef(lm(Y ~ D + cell, data = gss))["D"])
 ```
 
-The four adjusted numbers are the same 92 cell differences under four sets of
-weights.
+The four adjusted numbers are the same 92 cell differences under four sets of weights.
 
 ### The standard error by hand
 
-The lecture's formula: the estimate is a weighted sum of cell differences, so
-its variance is the weighted sum of the cells' variances,
-$\Var(\widehat{\text{ATE}}) = \sum_x (n_x/n)^2\,(s^2_{1x}/n_{1x} + s^2_{0x}/n_{0x})$,
-with the ATT and ATU weights in place of $n_x/n$.
+The lecture's formula: the estimate is a weighted sum of cell differences, so its variance is the weighted sum of the cells' variances, $\Var(\widehat{\text{ATE}}) = \sum_x (n_x/n)^2\,(s^2_{1x}/n_{1x} + s^2_{0x}/n_{0x})$, with the ATT and ATU weights in place of $n_x/n$.
 
 ```{r}
 #| label: exact-se
@@ -182,9 +157,7 @@ se_hand <- c(ATE = sqrt(sum((m$n  / sum(m$n))^2  * cell_var)),
 round(se_hand, 4)
 ```
 
-Now the bootstrap: resample units, rebuild the cells, recompute all three.
-Resampling is valid here because the estimate is a smooth function of cell
-means; nothing is nearest-neighbour.
+Now the bootstrap: resample units, rebuild the cells, recompute all three. Resampling is valid here because the estimate is a smooth function of cell means; nothing is nearest-neighbour.
 
 ```{r}
 #| label: exact-boot
@@ -202,17 +175,11 @@ se_boot <- apply(replicate(200, boot_exact(gss)), 1, sd)
 round(rbind(formula = se_hand, bootstrap = se_boot), 4)
 ```
 
-The two rows agree to within a couple of thousandths: the formula is doing
-what the bootstrap does, without the 200 refits.
+The two rows agree to within a couple of thousandths: the formula is doing what the bootstrap does, without the 200 refits.
 
 ## The same thing in `MatchIt`, with standard errors
 
-`method = "exact"` builds the same cells; `estimand` chooses the weights
-(`"ATC"` is MatchIt's name for the ATU). `match.data()` returns the matched
-units with a `weights` column, and a weighted regression of `Y` on `D` is a
-difference of weighted means, so its coefficient reproduces the by-hand
-estimate exactly. For the standard error use a sandwich (`vcovHC`): the
-default `lm` standard error ignores the weights.
+`method = "exact"` builds the same cells; `estimand` chooses the weights (`"ATC"` is MatchIt's name for the ATU). `match.data()` returns the matched units with a `weights` column, and a weighted regression of `Y` on `D` is a difference of weighted means, so its coefficient reproduces the by-hand estimate exactly. For the standard error use a sandwich (`vcovHC`): the default `lm` standard error ignores the weights.
 
 ```{r}
 #| label: exact-matchit
@@ -232,18 +199,11 @@ round(cbind(hand_estimate = c(est_hand["ATE"], est_hand["ATT"], est_hand["ATU"])
             hand_se = se_hand, matchit_se_HC1 = mi_tab[, "se_HC1"]), 4)
 ```
 
-The estimates are identical. The sandwich standard errors sit a little above
-the by-hand ones: the sandwich measures each unit's deviation from its *arm's*
-weighted mean, so it counts between-cell variation in $Y$ as noise, whereas the
-formula uses only within-cell variances. Both treat the cell weights as fixed.
+The estimates are identical. The sandwich standard errors sit a little above the by-hand ones: the sandwich measures each unit's deviation from its *arm's* weighted mean, so it counts between-cell variation in $Y$ as noise, whereas the formula uses only within-cell variances. Both treat the cell weights as fixed.
 
 ### The balance check
 
-`love.plot()` draws the standardized mean difference of every covariate
-before and after matching. The variables we matched on are the coarsened
-bins, which balance exactly by construction; `addl` adds the underlying
-continuous variables, where the within-band imbalance shows, and `otherace`,
-which we did not match on at all.
+`love.plot()` draws the standardized mean difference of every covariate before and after matching. The variables we matched on are the coarsened bins, which balance exactly by construction; `addl` adds the underlying continuous variables, where the within-band imbalance shows, and `otherace`, which we did not match on at all.
 
 ```{r}
 #| label: fig-exact-balance
@@ -291,21 +251,14 @@ c(treated_above_0.9 = sum(gss$D == 1 & gss$ps > 0.9),
 ```
 
 ::: callout-note
-Note the trade-off from lecture: a propensity model that predicts treatment
-*well* is a model that separates the groups, which is exactly the situation in
-which comparison is hardest. Judge the model by **balance**, not by AUC.
+Note the trade-off from lecture: a propensity model that predicts treatment *well* is a model that separates the groups, which is exactly the situation in which comparison is hardest. Judge the model by **balance**, not by AUC.
 :::
 
 # Matching
 
 ## Nearest-neighbour on the propensity score
 
-Each treated unit takes the control with the closest propensity score.
-**With replacement** (`replace = TRUE`) the same control may serve several
-treated units: every treated unit gets its best match, so balance is far
-better, and the price is the reuse counts $K_j$ from lecture, which inflate the
-variance and rule out the ordinary bootstrap. Without replacement, once the
-good controls are used up the remaining treated units get poor matches.
+Each treated unit takes the control with the closest propensity score. **With replacement** (`replace = TRUE`) the same control may serve several treated units: every treated unit gets its best match, so balance is far better, and the price is the reuse counts $K_j$ from lecture, which inflate the variance and rule out the ordinary bootstrap. Without replacement, once the good controls are used up the remaining treated units get poor matches.
 
 ```{r}
 #| label: match-nn
@@ -354,15 +307,9 @@ fit_nn <- lm(Y ~ D + pareduc + wordsum + female + black + otherace +
 round(coeftest(fit_nn, vcov = vcovCL, cluster = ~ subclass + unit)["D", ], 4)
 ```
 
-Two things to notice. First, we still run a regression on the matched data:
-matching is *preprocessing*, and the regression mops up residual imbalance.
-Second, the standard errors are clustered on the matched pair and on the
-person, because a control reused $K_j$ times appears $K_j$ times.
+Two things to notice. First, we still run a regression on the matched data: matching is *preprocessing*, and the regression mops up residual imbalance. Second, the standard errors are clustered on the matched pair and on the person, because a control reused $K_j$ times appears $K_j$ times.
 
-The lecture's variance formula, with the $K_j^2$ term, is what
-`Matching::Match()` reports (`install.packages("Matching")`). It matches on the
-same propensity score and prints the Abadie-Imbens standard error directly,
-with no regression afterwards.
+The lecture's variance formula, with the $K_j^2$ term, is what `Matching::Match()` reports (`install.packages("Matching")`). It matches on the same propensity score and prints the Abadie-Imbens standard error directly, with no regression afterwards.
 
 ```{r}
 #| label: match-ai
@@ -379,18 +326,11 @@ c(distinct_controls = length(unique(mm$index.control)),
   max_reuse = max(table(mm$index.control)))
 ```
 
-The `AI SE` line is the Abadie-Imbens standard error: it counts a control used
-$K_j$ times $K_j^2$ times, which is why it is larger than a naive SE that treats
-the matched rows as independent. It is close to the clustered SE above. The
-matched sample is larger than MatchIt's because tied controls are all kept;
-the estimate barely moves. (With `ties = FALSE` Match() drops the
-Abadie-Imbens calculation and prints a naive SE, so leave the default.)
+The `AI SE` line is the Abadie-Imbens standard error: it counts a control used $K_j$ times $K_j^2$ times, which is why it is larger than a naive SE that treats the matched rows as independent. It is close to the clustered SE above. The matched sample is larger than MatchIt's because tied controls are all kept; the estimate barely moves. (With `ties = FALSE` Match() drops the Abadie-Imbens calculation and prints a naive SE, so leave the default.)
 
 ## Mahalanobis distance
 
-Instead of collapsing the covariates to a propensity score, match on the
-covariates directly, scaling by their covariance so that no variable dominates
-through its units.
+Instead of collapsing the covariates to a propensity score, match on the covariates directly, scaling by their covariance so that no variable dominates through its units.
 
 ```{r}
 #| label: match-mahal
@@ -403,8 +343,7 @@ summary(m_mah)$nn
 
 ## A caliper
 
-A caliper refuses matches beyond a set distance on the propensity score,
-measured in standard deviations of the linear predictor.
+A caliper refuses matches beyond a set distance on the propensity score, measured in standard deviations of the linear predictor.
 
 ```{r}
 #| label: match-caliper
@@ -415,10 +354,7 @@ m_cal <- matchit(D ~ pareduc + wordsum + female + black + otherace +
 summary(m_cal)$nn
 ```
 
-Look at the **Unmatched** row for the treated. Those respondents have no
-comparable counterpart in the data, and dropping them silently redefines the
-estimand; you are now describing the subpopulation of degree-holders who have
-plausible non-degree counterparts.
+Look at the **Unmatched** row for the treated. Those respondents have no comparable counterpart in the data, and dropping them silently redefines the estimand; you are now describing the subpopulation of degree-holders who have plausible non-degree counterparts.
 
 ## Coarsened exact matching
 
@@ -432,15 +368,7 @@ summary(m_cem)$nn
 round(bal.tab(m_cem, un = TRUE)$Balance[, c("Diff.Un", "Diff.Adj")], 3)
 ```
 
-CEM balances the *coarsened* variables exactly, and nothing more: how much
-imbalance remains on the underlying continuous variables depends entirely on
-how wide the bins are. With MatchIt's default bins, which are narrow, the
-residual differences above are essentially zero, but look at the `Unmatched`
-row: 598 of the 1,441 treated units found no control in their bin and were
-dropped, so the estimand is now the effect on the matchable treated. Section 3
-used three wide bins per variable and lost 4 treated units, at the price of
-standardized differences near $0.1$ on the continuous variables. The same
-trade-off, chosen by the bins:
+CEM balances the *coarsened* variables exactly, and nothing more: how much imbalance remains on the underlying continuous variables depends entirely on how wide the bins are. With MatchIt's default bins, which are narrow, the residual differences above are essentially zero, but look at the `Unmatched` row: 598 of the 1,441 treated units found no control in their bin and were dropped, so the estimand is now the effect on the matchable treated. Section 3 used three wide bins per variable and lost 4 treated units, at the price of standardized differences near $0.1$ on the continuous variables. The same trade-off, chosen by the bins:
 
 ```{r}
 #| label: cem-coarse
@@ -482,9 +410,7 @@ ess <- sum(w)^2 / sum(w^2)
 c(max_weight = max(w), ess = ess, n = length(w), ess_share = ess / length(w))
 ```
 
-The **effective sample size** is what your standard errors should reflect. If a
-handful of observations carry most of the weight, you have far less information
-than $n$ suggests.
+The **effective sample size** is what your standard errors should reflect. If a handful of observations carry most of the weight, you have far less information than $n$ suggests.
 
 ## ATT and overlap weights
 
@@ -501,18 +427,11 @@ c(ATE_stabilized = ate_sipw,
   ATO_overlap = wmean_diff(ato_w))
 ```
 
-Three different numbers, because they are three different **estimands**, not
-three attempts at one. The overlap-weighted estimate describes the subpopulation
-where comparison is most informative, and its weights are bounded by
-construction.
+Three different numbers, because they are three different **estimands**, not three attempts at one. The overlap-weighted estimate describes the subpopulation where comparison is most informative, and its weights are bounded by construction.
 
 ## The same thing as a weighted regression
 
-The coefficient on a dummy in weighted least squares is the difference of the
-weighted means, so `lm(Y ~ D, weights = w)` must reproduce each Hájek estimate
-exactly. It also hands us a standard error: a sandwich (`HC1`), which treats
-the weights as known. Nothing here accounts for the propensity score having
-been estimated; the bootstrap in section 7 does.
+The coefficient on a dummy in weighted least squares is the difference of the weighted means, so `lm(Y ~ D, weights = w)` must reproduce each Hájek estimate exactly. It also hands us a standard error: a sandwich (`HC1`), which treats the weights as known. Nothing here accounts for the propensity score having been estimated; the bootstrap in section 7 does.
 
 ```{r}
 #| label: weight-wls
@@ -571,16 +490,12 @@ c(estimate = ate_aipw, se = se_aipw,
 ```
 
 ::: callout-tip
-The AIPW estimator is an average of $n$ i.i.d. terms, so its standard error is
-just the standard deviation of those terms over $\sqrt n$. That is not a
-coincidence, `aipw_terms` is the *efficient influence function*, and this is
-the pattern that Week 13 generalizes.
+The AIPW estimator is an average of $n$ i.i.d. terms, so its standard error is just the standard deviation of those terms over $\sqrt n$. That is not a coincidence, `aipw_terms` is the *efficient influence function*, and this is the pattern that Week 13 generalizes.
 :::
 
 ## Bootstrapping the whole procedure
 
-Standard errors must account for the fact that the propensity score was
-*estimated*. The safest route is to bootstrap the entire pipeline.
+Standard errors must account for the fact that the propensity score was *estimated*. The safest route is to bootstrap the entire pipeline.
 
 ```{r}
 #| label: boot-aipw
@@ -599,23 +514,15 @@ bo <- boot(gss, aipw_fun, R = 500)
 c(estimate = bo$t0, boot_se = sd(bo$t), analytic_se = se_aipw)
 ```
 
-The two standard errors agree closely, which is reassuring: the influence-function
-formula is doing its job.
+The two standard errors agree closely, which is reassuring: the influence-function formula is doing its job.
 
 # Sensitivity analysis
 
-All of the above assumed we measured every confounder. We did not. So ask
-instead: **how strong would an unobserved confounder have to be?** Two
-answers, both computed from the long regression `reg` and both on the slides.
+All of the above assumed we measured every confounder. We did not. So ask instead: **how strong would an unobserved confounder have to be?** Two answers, both computed from the long regression `reg` and both on the slides.
 
 ## Oster's coefficient-stability bound
 
-Oster (2019) starts from the old habit of comparing the coefficient *without*
-controls to the coefficient *with* them. A small move is reassuring only if the
-controls explained a good share of the outcome; otherwise unobservables that
-explain more could still move the coefficient a long way. Her method judges the
-move relative to the gain in $R^2$ and extrapolates. The `robomit` package does
-the arithmetic (`install.packages("robomit")`).
+Oster (2019) starts from the old habit of comparing the coefficient *without* controls to the coefficient *with* them. A small move is reassuring only if the controls explained a good share of the outcome; otherwise unobservables that explain more could still move the coefficient a long way. Her method judges the move relative to the gain in $R^2$ and extrapolates. The `robomit` package does the arithmetic (`install.packages("robomit")`).
 
 ```{r}
 #| label: oster
@@ -634,18 +541,14 @@ o_beta(y = "Y", x = "D", con = con, delta = 1, R2max = 1.3 * r2_long, type = "lm
 o_delta(y = "Y", x = "D", con = con, beta = 0, R2max = 1.3 * r2_long, type = "lm", data = gss)
 ```
 
-Read the first row of each table. Oster's standard: the finding is robust if
-the interval from the controlled coefficient to `beta*` excludes zero and
-`delta*` is above one. Here `beta*` is 0.58 and `delta*` is 2.6: unobservables
-would have to matter more than twice as much as everything we controlled for to
-erase the BA premium.
+Read the first row of each table. Oster's standard: the finding is robust if the interval from the controlled coefficient to `beta*` excludes zero and `delta*` is above one. Here `beta*` is 0.58 and `delta*` is 2.6: unobservables would have to matter more than twice as much as everything we controlled for to erase the BA premium.
 
 ## Partial $R^2$ and the robustness value
 
 ```{r}
 #| label: sensemakr
 sens <- sensemakr(model = reg, treatment = "D",
-                  benchmark_covariates = "wordsum",
+                  benchmark_covariates = c("wordsum","female"),
                   kd = 1:3)
 sens
 ```
@@ -656,42 +559,21 @@ sens
 plot(sens)
 ```
 
-Read the **robustness value**: it is the share of residual variation in both the
-treatment and the outcome that a confounder would need to explain to reduce the
-estimate to zero. Compare it to the benchmark: if a confounder three times as
-strong as measured verbal ability would be needed, the finding is reasonably
-robust; if half of one would do it, it is not.
+Read the **robustness value**: it is the share of residual variation in both the treatment and the outcome that a confounder would need to explain to reduce the estimate to zero. Compare it to the benchmark: if a confounder three times as strong as measured verbal ability would be needed, the finding is reasonably robust; if half of one would do it, it is not.
 
 # Exercises
 
-1.  **Estimand discipline.** Redo the analysis targeting the **ATT** throughout
-    (matching, ATT weights, and an ATT version of AIPW). Do the answers move?
-    Explain why the ATE and ATT differ here in terms of who is on the margin of
-    completing college.
+1.  **Estimand discipline.** Redo the analysis targeting the **ATT** throughout (matching, ATT weights, and an ATT version of AIPW). Do the answers move? Explain why the ATE and ATT differ here in terms of who is on the margin of completing college.
 
-2.  **Trimming.** Restrict to $0.1 < \hat e < 0.9$ and recompute IPW and AIPW.
-    How much does the estimate move, and how many observations did you drop?
-    Write one sentence stating what population your new estimate describes.
+2.  **Trimming.** Restrict to $0.1 < \hat e < 0.9$ and recompute IPW and AIPW. How much does the estimate move, and how many observations did you drop? Write one sentence stating what population your new estimate describes.
 
-3.  **Deliberate misspecification, on simulated data.** Double robustness cannot
-    be "confirmed" against observational data, because the causal truth is
-    unknown. Simulate a world with a known ATE, then fit (a) a correct outcome
-    model with a badly wrong propensity model and (b) the reverse. Confirm that
-    AIPW stays close to the truth in both cases while IPW and g-computation each
-    fail in one. This is double robustness in action.
+3.  **Deliberate misspecification, on simulated data.** Double robustness cannot be "confirmed" against observational data, because the causal truth is unknown. Simulate a world with a known ATE, then fit (a) a correct outcome model with a badly wrong propensity model and (b) the reverse. Confirm that AIPW stays close to the truth in both cases while IPW and g-computation each fail in one. This is double robustness in action.
 
-4.  **A bad control.** Add `prestige` (occupational prestige) to the covariate
-    set. It is plausibly a *consequence* of holding a degree. Report how the
-    estimate changes and explain, using the Week 5 vocabulary, why the new number
-    answers a different question.
+4.  **A bad control.** Add `prestige` (occupational prestige) to the covariate set. It is plausibly a *consequence* of holding a degree. Report how the estimate changes and explain, using the Week 5 vocabulary, why the new number answers a different question.
 
-5.  **Balance versus fit.** Compute the AUC of the propensity model. Then add
-    interactions until balance improves. Does the AUC go up or down? Discuss what
-    this means for the "propensity score paradox" from lecture.
+5.  **Balance versus fit.** Compute the AUC of the propensity model. Then add interactions until balance improves. Does the AUC go up or down? Discuss what this means for the "propensity score paradox" from lecture.
 
-6.  **Effective sample size.** Plot the IPW weights against $\hat e$. Identify the
-    ten most heavily weighted observations. Refit without them, how much does
-    the estimate move relative to its standard error?
+6.  **Effective sample size.** Plot the IPW weights against $\hat e$. Identify the ten most heavily weighted observations. Refit without them, how much does the estimate move relative to its standard error?
 
 # Session information
 

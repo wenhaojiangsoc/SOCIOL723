@@ -1,0 +1,321 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_723midtermfeedbk",
+    "SurveyName": "SOCIOL 723 Midterm Feedback (Fall 2026)",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "UR_owner",
+    "SurveyBrandID": "duke",
+    "DivisionID": null,
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "RS_723",
+    "SurveyStatus": "Inactive",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-09-30 17:43:34",
+    "CreatorID": "UR_owner",
+    "LastModified": "2026-09-30 17:43:34",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "BL",
+      "PrimaryAttribute": "Survey Blocks",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": [
+        {
+          "Type": "Default",
+          "Description": "Midterm feedback",
+          "ID": "BL_723default",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID0"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID2"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID3"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID4"
+            }
+          ]
+        },
+        {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_723trash",
+          "BlockElements": []
+        }
+      ]
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "FL",
+      "PrimaryAttribute": "Survey Flow",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_723default",
+            "FlowID": "FL_2"
+          }
+        ],
+        "Properties": {
+          "Count": 2
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "SO",
+      "PrimaryAttribute": "Survey Options",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "BackButton": "false",
+        "SaveAndContinue": "true",
+        "SurveyProtection": "PublicSurvey",
+        "BallotBoxStuffingPrevention": "false",
+        "NoIndex": "Yes",
+        "SecureResponseFiles": "true",
+        "SurveyExpiration": "None",
+        "SurveyTermination": "DefaultMessage",
+        "Header": "",
+        "Footer": "",
+        "ProgressBarDisplay": "None",
+        "PartialData": "+1 week",
+        "ValidationMessage": "",
+        "PreviousButton": " ← ",
+        "NextButton": " → ",
+        "SurveyTitle": "SOCIOL 723 Midterm Feedback",
+        "SkinLibrary": "duke",
+        "SkinType": "MQ",
+        "Skin": "duke",
+        "NewScoring": 1,
+        "AnonymizeResponse": "Yes",
+        "EOSMessage": "",
+        "ShowExportTags": "false",
+        "CollectGeoLocation": "false",
+        "SurveyMetaDescription": "Anonymous midterm feedback for SOCIOL 723."
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "SCO",
+      "PrimaryAttribute": "Scoring",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "ScoringCategories": [],
+        "ScoringSummaryCategory": null,
+        "ScoringSummaryAfterQuestions": 0,
+        "ScoringSummaryAfterSurvey": 0,
+        "DefaultScoringCategory": null,
+        "AutoScoringCategory": null
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "PROJ",
+      "PrimaryAttribute": "CORE",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": "1.1.0",
+      "Payload": {
+        "ProjectCategory": "CORE",
+        "SchemaVersion": "1.1.0"
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "STAT",
+      "PrimaryAttribute": "Survey Statistics",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "MobileCompatible": true,
+        "ID": "Survey Statistics"
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "QC",
+      "PrimaryAttribute": "Survey Question Count",
+      "SecondaryAttribute": "5",
+      "TertiaryAttribute": null,
+      "Payload": null
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID0",
+      "SecondaryAttribute": "Midterm feedback, anonymous",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "<div>This short survey is anonymous. Your answers help me adjust the second half of SOCIOL 723. Four questions, a few minutes. Thank you.</div>",
+        "DefaultChoices": false,
+        "DataExportTag": "Intro",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Midterm feedback, anonymous",
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID0"
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID1",
+      "SecondaryAttribute": "What is working well in the course so far?",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "What is working well in the course so far?",
+        "DefaultChoices": false,
+        "DataExportTag": "Q1",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "What is working well in the course so far?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID1"
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID2",
+      "SecondaryAttribute": "What is not working, or what changes would improve the course?",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "What is not working, or what changes would improve the course?",
+        "DefaultChoices": false,
+        "DataExportTag": "Q2",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "What is not working, or what changes would improve the course?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID2"
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID3",
+      "SecondaryAttribute": "Name one thing about the course that I should keep doing.",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Name one thing about the course that I should keep doing.",
+        "DefaultChoices": false,
+        "DataExportTag": "Q3",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Name one thing about the course that I should keep doing.",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID3"
+      }
+    },
+    {
+      "SurveyID": "SV_723midtermfeedbk",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID4",
+      "SecondaryAttribute": "Name one thing about the course that I should revise.",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "Name one thing about the course that I should revise.",
+        "DefaultChoices": false,
+        "DataExportTag": "Q4",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Name one thing about the course that I should revise.",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "SearchSource": {
+          "AllowFreeResponse": "false"
+        },
+        "QuestionID": "QID4"
+      }
+    }
+  ]
+}

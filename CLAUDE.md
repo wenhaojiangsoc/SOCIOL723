@@ -97,6 +97,22 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   Ahead. 'G-Computation Extrapolates' (same simulation, one panel) sits in the DR section. HECKMAN DROPPED 2026-09-30 (lecture and
   lab). All literature frames web-verified; paper figures live in `figs/` as PNG/JPG.
   Lab 6: exact matching on cells by hand + MatchIt, PS, NN/CEM, weighting, AIPW, sensitivity.
+- Week 7 (IV, 84 pp as of 2026-10-02): endogeneity -> 2SLS -> LATE -> FOUR CANONICAL APPLICATIONS
+  (goal + overview table; AJR 2001, Angrist-Krueger 1991, Angrist 1990 draft lottery, Card 1995
+  proximity on the lab data via `figs/w7_card.R`) -> APPLICATIONS IN SOCIOLOGY (overview table;
+  Sharkey, Torrats-Espinosa & Takyar 2017 ASR nonprofits; de Vaan & Stuart 2019 ASR opioid
+  contagion with the ED physician's leave-one-out prescribing rate, an examiner design; Aksoy &
+  Gambetta 2022 ASR Ramadan daylength) -> weak IV -> judge IV -> shift-share -> Practice.
+  Sharkey & Torrats-Espinosa 2017 JUE was DROPPED 2026-10-02 (user). Every paper = THREE frames in a fixed order
+  (user 2026-10-02): 'In the Literature: Authors (Year)' = The question / The data / The
+  instrument; 'Authors: the Three Conditions' = Relevance / Independence / Exclusion table
+  (threat + evidence, testable or argued) + one or two bullets; 'Authors: Main Results' = OLS /
+  first stage / reduced form / IV table + two reading bullets. AJR, AK, and de Vaan & Stuart
+  numbers verified from the papers (AJR Table 4; AK Table III; dV&S Tables 4-6)
+  -> 2SLS -> LATE -> weak IV -> JUDGE AND EXAMINER DESIGNS (leave-one-out leniency with
+  `figs/w7_judge.R`, worked monotonicity failure, MTW/FLL repairs, Harding et al. 2017/2018/2019)
+  -> SHIFT-SHARE (Bartik/Card, GPSS vs BHJ, `figs/w7_shiftshare.R`, AKM inference, Autor-Dorn-
+  Hanson 2019) -> Practice. New frames unstarred; the user decides stars. Lab 7 = Card proximity IV.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,

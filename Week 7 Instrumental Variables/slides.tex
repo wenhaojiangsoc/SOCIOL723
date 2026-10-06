@@ -17,6 +17,7 @@
 \usepackage{amsmath,amsfonts,amssymb,bm}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \usepackage[english]{babel}
@@ -166,50 +167,34 @@ variation.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Endogeneity]{Endogeneity and the IV Estimator}
+\section[IV]{Instrumental Variable}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{What Goes Wrong, in Scalar Form\core}
 We want $\beta$ in $Y_i = \alpha + \beta D_i + \epsilon_i$, but $D_i$ is
-\alert{endogenous}: $\Cov(D_i,\epsilon_i)\neq 0$. From Week 1,
+\alert{endogenous}, $\Cov(D_i,\epsilon_i)\neq 0$. OLS gives
+\vskip-6pt
 \begin{align*}
   \hat\beta = \frac{\Cov_n(D_i, Y_i)}{\Var_n(D_i)}
-  \ \pto\ \beta + \frac{\Cov(D_i,\epsilon_i)}{\Var(D_i)} .
+     &= \frac{\Cov_n(D_i,\ \alpha + \beta D_i + \epsilon_i)}{\Var_n(D_i)}
+     && \text{\footnotesize substitute the model for $Y_i$} \\
+     &= \beta + \frac{\Cov_n(D_i,\epsilon_i)}{\Var_n(D_i)}
+     && \text{\footnotesize covariance is linear; the constant drops} \\
+     &\pto \beta + \frac{\Cov(D_i,\epsilon_i)}{\Var(D_i)}
+     && \text{\footnotesize LLN: sample moments to population moments}
 \end{align*}
-\vskip2pt
-The bias term does not shrink with $n$: OLS is \emph{inconsistent}, not merely
-biased. More data buys precision around the wrong number.
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item \textbf{Omitted variables}: unmeasured ability, motivation, family
-        resources. This is the OVB formula from Week 1, restated.
-  \item \textbf{Simultaneity}: $Y$ also causes $D$, police and crime, aid and
-        growth, marriage and earnings.
-  \item \textbf{Measurement error in $D$}: classical error attenuates
-        $\hat\beta$ toward zero, by a factor equal to the reliability ratio.
-  \item \textbf{Selection} into the sample on a collider (Week 5).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Sign and Size of the Bias}
-It is worth being concrete about what we are trying to remove. Writing
-$\epsilon_i = \gamma A_i + u_i$ with $A_i$ an unmeasured confounder,
-\begin{align*}
-  \plim \hat\beta_{OLS} = \beta + \gamma\,\frac{\Cov(D_i,A_i)}{\Var(D_i)} .
-\end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item For schooling and earnings: ability raises earnings ($\gamma>0$) and is
-        positively selected into schooling, so OLS is biased \emph{up}.
-  \item Measurement error in reported schooling pushes the other way. The two
-        biases are of unknown relative size, which is why the sign of the total
-        OLS bias is genuinely uncertain, and why the empirical finding that IV
-        estimates \emph{exceed} OLS is not automatically evidence of a bad
-        instrument.
-  \item \alert{Before running IV, say which bias you are trying to remove and in
-        which direction it runs.} If you cannot, the exercise has no target.
-\end{itemize}
+\vskip-5pt
+The second term does not shrink with $n$: OLS is biased \emph{and} inconsistent.
+\vskip0pt
+\textbf{Three sources of $\Cov(D_i,\epsilon_i) \neq 0$}: \textbf{omitted variables}
+(ability, family resources sit in $\epsilon$ and move with $D$; Week 1's OVB
+formula); \textbf{simultaneity} ($Y$ also causes $D$: police and crime);
+\textbf{selection} into the sample on a collider (Week 5).
+\vskip1pt
+\textbf{A different problem, measurement error in $D$}: classical error in $D$
+shrinks the OLS slope toward zero, by the reliability ratio $\Var(D^*)/\Var(D)$.
+A known direction, unlike the three above.
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{An Instrument\core}
@@ -289,97 +274,780 @@ Divide numerator and denominator by $\Var(Z_i)$:
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Applications]{Two Canonical Applications}
+\section[LATE]{What Does IV Estimate?}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Settler Mortality and Institutions}
-\srct{Acemoglu, Johnson, and Robinson (2001)} estimate the effect of institutional
-quality ($D$, protection from expropriation risk) on GDP per capita ($Y$).
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Institutions are obviously endogenous to economic performance: rich
-        countries can afford good institutions, and both may be driven by
-        culture, geography, or history.
-  \item \textbf{The instrument}: mortality rates faced by European settlers in the
-        colonial period.
-  \item \textbf{The mechanism argument}: where settlers could survive, they
-        settled and built inclusive institutions, property rights, rule of law.
-        Where mortality was high, colonization was extractive. Those institutional
-        forms persisted long after the disease environment ceased to matter.
-  \item \textbf{Relevance}: strongly supported by the first stage.
+\begin{frame}[allowframebreaks,t]{Four Types of People\core}
+With a binary instrument and binary treatment, write $D_i(z)$ for the treatment
+unit $i$ would take if assigned $Z_i = z$. Every unit is one of four types:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{lccl}
+\toprule
+Type & $D_i(0)$ & $D_i(1)$ & \\
+\midrule
+\textbf{Compliers} & 0 & 1 & do what the instrument says \\
+Always-takers & 1 & 1 & treated regardless \\
+Never-takers & 0 & 0 & untreated regardless \\
+\alert{Defiers} & 1 & 0 & do the opposite \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item We never observe anyone's type: we see $D_i(1)$ or $D_i(0)$, never both.
+        Type is a latent variable, and this is the same fundamental problem as
+        Week 5, one level up.
+  \item Only \textbf{compliers} have their treatment moved by the instrument.
+  \item \alert{Monotonicity} assumes there are no defiers: the instrument pushes
+        everyone in the same direction, or not at all.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Where the AJR Argument Is Attacked}
-Exclusion requires that historical settler mortality affects income \emph{today}
-only through institutions.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \alert{The leading threat is geography.} The disease environment that
-        killed settlers also shapes agricultural productivity, the modern disease
-        burden, and human capital, all of which affect income directly.
-  \item AJR's response is an \emph{assumption}: that the confounding role of
-        geography is adequately captured by a linear term in distance from the
-        equator plus continent dummies.
-  \item That is a functional-form assumption doing identification work, and it
-        is rarely defended. We come back to it briefly in Week 13.
-  \item Subsequent critiques questioned the mortality data itself. \alert{Note
-        the pattern}: exclusion cannot be tested, so the debate becomes a debate
-        about history, measurement, and functional form. That is healthy, and it
-        is what IV papers should invite.
-\end{itemize}
+\begin{frame}{Deriving the LATE: the Numerator}
+Write the reduced form using the switching equation
+$Y_i = Y_i\big(D_i(Z_i)\big)$ and split by type. Because $Z$ is independent of
+potential outcomes and types,
+\begin{align*}
+  &\E[Y_i\mid Z_i=1] - \E[Y_i\mid Z_i=0] \\
+  &\quad= \Pr(\text{AT})\underbrace{\big(\E[Y_i(1)\mid \text{AT}] - \E[Y_i(1)\mid \text{AT}]\big)}_{=\,0} \\
+  &\quad\ + \Pr(\text{NT})\underbrace{\big(\E[Y_i(0)\mid \text{NT}] - \E[Y_i(0)\mid \text{NT}]\big)}_{=\,0} \\
+  &\quad\ + \Pr(\text{C})\ \big(\E[Y_i(1)\mid \text{C}] - \E[Y_i(0)\mid \text{C}]\big) \\
+  &\quad\ - \Pr(\text{D})\ \big(\E[Y_i(1)\mid \text{D}] - \E[Y_i(0)\mid \text{D}]\big) .
+\end{align*}
+\vskip2pt
+Always- and never-takers take the \emph{same} treatment under both values of
+$Z$, so \alert{by exclusion} their outcomes are unchanged and they contribute
+zero. \alert{Monotonicity} kills the last line by assuming $\Pr(\text{D})=0$, 
+note that defiers would enter with the \emph{wrong sign}.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Quarter of Birth and Schooling}
-\srct{Angrist and Krueger (1991)} estimate the return to schooling using
-\textbf{quarter of birth} as an instrument.
+\begin{frame}{Deriving the LATE: the Denominator\core}
+The first stage, $\E[D_i\mid Z_i=1] - \E[D_i\mid Z_i=0]$, recovers the complier share:
+\begin{align*}
+  \text{first stage}
+  &= \Pr(\text{C}) + \Pr(\text{AT}) - \Pr(\text{AT}) - \Pr(\text{D})
+     && \text{\footnotesize by type} \\
+  &= \Pr(\text{C}) - \Pr(\text{D}) \\
+  &= \Pr(\text{C})
+     && \text{\footnotesize no defiers}
+\end{align*}
 \vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{The mechanism}: children start school in the year they turn six,
-        but may leave at a fixed \emph{age} (16 or 17). Those born early in the
-        calendar year reach the leaving age having completed less schooling.
-  \item \textbf{Relevance}: the first stage is real but small, a fraction of a
-        year of schooling.
-  \item \textbf{Exclusion}: birth quarter should not affect earnings except
-        through schooling. Contested, because season of birth correlates with
-        maternal characteristics, health at birth, and relative age in class.
-  \item \textbf{The compliers} are people who would have dropped out at the
-        minimum age. The LATE is therefore a return to schooling \emph{at the
-        bottom of the schooling distribution}, a different quantity from the
-        average return, and arguably the policy-relevant one for compulsory
-        attendance laws.
-\end{itemize}
+Dividing:
+\begin{block}{The LATE theorem \srcp{Imbens and Angrist 1994}}
+\begin{align*}
+  \frac{\E[Y\mid Z=1] - \E[Y\mid Z=0]}{\E[D\mid Z=1]-\E[D\mid Z=0]}
+  = \E\big[\,Y_i(1) - Y_i(0)\ \big|\ \text{$i$ is a complier}\,\big] .
+\end{align*}
+\end{block}
 \vskip3pt
-{\footnotesize For now, read \emph{compliers} as ``the people whose schooling was
-actually moved by their birth quarter,'' and \emph{LATE} as ``the average effect
-for those people.'' Later in the lecture we define the four compliance types
-properly and show why the IV ratio can only speak for this one group.}
+\alert{IV does not estimate the ATE.} It estimates the average effect for the
+subpopulation whose treatment status the instrument actually changed, a group
+you cannot identify by name, defined by the instrument you happened to choose.
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{The Cautionary Half of Angrist--Krueger}
-The paper is also the standard illustration of what goes wrong with many weak
-instruments. It previews two objects we formalize in the next two sections:
-\textbf{2SLS}, the machinery for combining several instruments, and \textbf{weak
-identification}, which explains how adding instruments can make an estimate
-worse rather than sharper.
-\vskip3pt
+\begin{frame}{Living With the LATE\core}
 \begin{itemize}\itemsep3pt
-  \item To gain precision, the authors interacted quarter of birth with state and
-        year of birth, producing up to 180 instruments.
-  \item \srct{Bound, Jaeger, and Baker (1995)} showed that with that many weak
-        instruments, 2SLS is biased \emph{toward OLS}, and demonstrated it
-        devastatingly: replacing quarter of birth with \emph{randomly generated}
-        instruments produced similar estimates and standard errors.
-  \item The mechanism is overfitting the first stage. $\hat D$ starts to
-        reproduce the endogenous variation we were trying to discard.
-  \item \alert{More instruments is not more information.} Report the just-identified
-        estimate alongside any overidentified one.
+  \item If effects are homogeneous, LATE $=$ ATE and none of this matters. That is
+        rarely a defensible assumption in sociology.
+  \item Different instruments for the same treatment estimate \emph{different}
+        LATEs. When two IV papers disagree, that is not necessarily a
+        contradiction; it may be two correct answers to two different questions.
+  \item \textbf{You can describe the compliers even though you cannot name them}:
+        their share is the first stage, and their covariate means follow because
+        always-takers and never-takers are observed groups (Abadie's $\kappa$).
+  \item \textbf{Compliers are often unusual}: for quarter-of-birth they are
+        marginal dropouts; for judge-leniency designs they are defendants near the
+        decision margin. Whether that group is the policy-relevant one is a
+        substantive question you must answer, not a technicality.
 \end{itemize}
 \vskip2pt
-Sociological instruments worth knowing: sibling sex composition for fertility,
-distance to college for schooling, lottery admission for school quality, and the
-draft lottery for military service.
+\alert{Always characterize your compliers}: without that, a LATE is an average
+effect for a group nobody can describe.
+\end{frame}
+
+\begin{frame}{Describing the Compliers \srcp{Abadie 2003}}
+Binary $Z$ and $D$, no defiers. Among $Z = 0$ the treated are always-takers;
+among $Z = 1$ the untreated are never-takers. So $\Pr(AT)$, $\Pr(NT)$,
+$\E[X \mid AT]$, $\E[X \mid NT]$ are observed, $\Pr(C)$ is the first stage,
+and the complier mean is what is left of the population mean:
+\begin{align*}
+  \E[X \mid C] = \frac{\E[X] - \Pr(AT)\,\E[X \mid AT] - \Pr(NT)\,\E[X \mid NT]}{\Pr(C)}
+\end{align*}
+\vskip-2pt
+\textbf{Card}: $D$ = more than one year of college, $Z$ = near a four-year
+college; $\Pr(AT) = 0.33$, $\Pr(NT) = 0.55$, $\Pr(C) = 0.12$ \srcp{figs/w7\_card.R}.
+\vskip-3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & everyone & always-takers & never-takers & compliers \\
+\midrule
+share Black & 0.23 & 0.15 & 0.29 & 0.21 \\
+share South & 0.40 & 0.50 & 0.38 & 0.26 \\
+share metropolitan & 0.71 & 0.58 & 0.78 & 0.77 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+Compliers are less Southern and more urban than always-takers. Dividing by
+$\Pr(C) = 0.12$ amplifies noise: rough numbers.
+\end{frame}
+
+\begin{frame}{Can You Check Monotonicity? (1) What It Implies}
+Not directly, $D_i(1)$ and $D_i(0)$ are never both seen; but ``no defiers'' can be \emph{refuted}.
+\begin{itemize}\itemsep3pt
+  \item \textbf{One sign everywhere.} If $Z$ only pushes $D$ up, then
+        $\Pr(D=1 \mid Z=1, X=x) \ge \Pr(D=1 \mid Z=0, X=x)$ in every subgroup;
+        a negative first stage somewhere is a rejection. Card \srcp{figs/w7\_card.R}:
+\end{itemize}
+\vskip-4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & South & non-South & metro & non-metro & Black & other \\
+\midrule
+first stage & 0.31 & 0.34 & 0.37 & 0.27 & 0.28 & 0.35 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Balke--Pearl inequalities} (binary $Z$, $D$). Switching $Z$ on
+        can only \emph{add} treated units, so for any outcome set $A$,
+        $\Pr(Y \in A, D=1 \mid Z=1) \ge \Pr(Y \in A, D=1 \mid Z=0)$ and
+        $\Pr(Y \in A, D=0 \mid Z=0) \ge \Pr(Y \in A, D=0 \mid Z=1)$.
+        \srct{Kitagawa (2015)} tests them; rejection means exclusion,
+        independence, or monotonicity failed.
+  \item Passing does not establish monotonicity; for lotteries and distance the
+        case is institutional.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Can You Check Monotonicity? (2) Bounding the Damage}
+With defiers present and first stage $\Delta_D = \Pr(C) - \Pr(D)$:
+\begin{align*}
+  \text{Wald} &= \frac{\Pr(C)\,\tau_C - \Pr(D)\,\tau_D}{\Delta_D}
+     && \text{\footnotesize numerator and denominator by type} \\
+  \tau_C &= \frac{\text{Wald}\cdot\Delta_D + \Pr(D)\,\tau_D}{\Delta_D + \Pr(D)}
+     && \text{\footnotesize solve for the complier effect}
+\end{align*}
+\vskip-2pt
+Only $\Pr(D)$ and $\tau_D$ are unknown. Assume \alert{at most a share $\delta$
+of defiers} and a bounded outcome, $|\tau_D| \le M$; the worst cases bound $\tau_C$.
+\begin{itemize}\itemsep2pt
+  \item \textbf{The judge toy example}: Wald $= -0.20$, $\Delta_D = 0.10$, $M = 1$,
+        $\delta = 0.20$ gives $\tau_C \in [-0.73,\ 0.60]$: a first stage no larger
+        than the defier share is fatal.
+  \item \textbf{Sharp version} \srcp{Noack 2021}: sensitivity parameters for the
+        defier share and the gap $\tau_D - \tau_C$; report how large they must be
+        before the conclusion flips.
+  \item \textbf{Rescue without a bound} \srcp{de Chaisemartin 2017}: if a subgroup
+        of compliers matches the defiers in size and mean effect, Wald is the
+        LATE of the remaining compliers. Untestable.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Strength]{Instrument Strength}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Weak Instruments Are Worse Than No Instrument\core}
+Recall $\hat\beta_{IV} = \Cov_n(Z,Y)/\Cov_n(Z,D)$. If the denominator
+is near zero, small violations of exclusion get \emph{divided by} a small number:
+\begin{align*}
+  \plim \hat\beta_{IV} = \beta + \frac{\Cov(Z,\epsilon)}{\Cov(Z,D)} .
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item An instrument that is one-tenth as endogenous as $D$ but one-hundredth as
+        strongly correlated with it produces \alert{more} bias than plain OLS.
+  \item The IV standard error is roughly the OLS standard error divided by
+        $|\rho_{ZD}|$, the correlation between instrument and treatment: $\rho_{ZD} = 0.14$ costs a factor of 7.
+  \item Worse, under weak identification $\hat\beta_{IV}$ has \alert{no Gaussian
+        limit}: heavy tails, so the $t$-test fails no matter how large $n$ is.
+  \item The problem \emph{worsens} with more instruments, because many weak
+        instruments overfit the first stage (Bound--Jaeger--Baker, in the
+        Angrist--Krueger frames).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Diagnosing Instrument Strength\core}
+\begin{itemize}\itemsep3pt
+  \item \textbf{First-stage $F$} on the excluded instruments. The traditional rule
+        of thumb is $F > 10$ \srcp{Staiger and Stock 1997; Stock and Yogo 2005},
+        derived so that IV bias is under 10\% of OLS bias.
+  \item \alert{That rule is about bias, not about test size, and it is now known
+        to be far too lax for inference.}
+        \srct{Lee, McCrary, Moreira, and Porter (2022)} show that a conventional
+        $5\%$ $t$-test has correct size only when the first-stage $F$ exceeds
+        roughly \textbf{104}. Their \texttt{tF} procedure replaces the $1.96$
+        critical value with a larger one read off $F$: at $F = 10$ the adjusted
+        critical value is about \textbf{3.43}, so the honest interval is roughly
+        \textbf{1.75} times wider than the printed one.
+  \item Use a \emph{robust} first-stage $F$ if you use robust or clustered
+        standard errors in the second stage.
+  \item With several endogenous regressors, use the \emph{Kleibergen--Paap} rank
+        statistic; a strong $F$ on each instrument separately is not enough.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Applications]{Four Canonical Applications}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Four Canonical Applications}
+\textbf{Goal}: read four classic instruments in one fixed order: the question,
+the data, the instrument, the three conditions, the main results.
+\vskip3pt
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}p{2.6cm}@{}}
+\toprule
+ & Angrist \& Krueger (1991) & Card (1995)  & Angrist (1990) & AJR (2001) \\
+\midrule
+Unit & 329,509 men born 1930--39, 1980 Census & 3,010 men, NLS Young Men, 1976  & white men born 1950--52, Social Security earnings records & 64 former colonies, one cross-section \\
+$D$ & years of schooling & years of schooling  & Vietnam-era military service & protection against expropriation, 0--10 \\
+$Y$ & log weekly wage, 1979 & log hourly wage, 1976  & FICA earnings, 1981 & log GDP per capita, 1995 \\
+$Z$ & born in the first quarter & grew up near a four-year college  & draft-eligible lottery number & log settler mortality \\
+First stage & $-0.109$ $(0.013)$ & $0.337$ $(0.081)$  & $0.159$ $(0.040)$ & $-0.61$ $(0.13)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+%% ---- Angrist and Krueger 1991 -----------------------------------------------
+\begin{frame}{In the Literature: Angrist and Krueger (1991)}
+\textbf{The question.} What does a year of schooling ($D$) do to earnings
+($Y$, log weekly wage)? Ability raises both, so OLS is biased up; reported
+schooling is noisy, which pulls OLS down. The two biases have unknown
+relative size.
+\vskip3pt
+\textbf{The data.} 1980 Census, 5\% sample: 329,509 men born 1930--39 with
+positive earnings in 1979.
+\vskip3pt
+\textbf{The instrument.} $Z$ = born in the first quarter of the year.
+Children start school in the calendar year they turn six but may leave at a
+fixed \emph{age}, 16 or 17. A child born in January is older than a classmate
+born in December in every grade and reaches the leaving age with less
+schooling completed.
+\end{frame}
+
+\begin{frame}{Angrist and Krueger: the Three Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
+\toprule
+Relevance & First-quarter men have $0.109$ fewer years of schooling
+  $(0.013)$. \alert{Testable, passes}, but the first stage is a tenth of a
+  year. \\
+Independence & Birth quarter is unrelated to earnings potential. Threat:
+  season of birth varies with mothers' income and education and with
+  health at birth, which also move earnings. \\
+Exclusion & Birth quarter affects earnings only through years of schooling.
+  Threat: the January child is the oldest in the class; relative age may
+  shape test scores and confidence, and earnings, directly. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt
+  \item The two threats are different: the first puts an arrow \emph{into}
+        $Z$, the second an arrow \emph{out of} $Z$ that bypasses $D$.
+  \item \textbf{Whose effect.} The men moved by the instrument are those who
+        would have left at the minimum age. The estimate is a return to
+        schooling at the bottom of the distribution, the quantity compulsory
+        attendance laws care about.
+\end{itemize}
+{\footnotesize \emph{Compliers} in the sense of the previous section: the people
+whose schooling the instrument actually moved.}
+\end{frame}
+
+\begin{frame}{Angrist and Krueger: Main Results}
+Their Table III, men born 1930--39, first quarter against the other three:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & born Q1 & born Q2--Q4 & difference (se) \\
+\midrule
+log weekly wage & 5.892 & 5.903 & $-0.0111$ \ (0.0027) \\
+years of schooling & 12.688 & 12.797 & $-0.109$ \ (0.013) \\
+\midrule
+Wald $= -0.0111 / -0.109$ & & & 0.102 \ (0.024) \\
+OLS & & & 0.0709 \ (0.0003) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Wald is above OLS}, not below: no sign of ability bias.
+        Measurement error in schooling, or a high return for the compliers,
+        can explain the ordering.
+  \item \textbf{The price of a small first stage.} The Wald standard error is
+        80 times the OLS one, from the same 329,509 men. Dividing a tenth of a
+        year into a one-percent wage gap magnifies every error in both.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Angrist and Krueger: the Cautionary Half}
+The paper is also the standard illustration of many weak instruments. It
+combines instruments, which is \textbf{2SLS}, the section after the
+applications, and shows the weak-identification problem at scale.
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item To gain precision, the authors interacted quarter of birth with state
+        and year of birth: up to 180 instruments.
+  \item \srct{Bound, Jaeger, and Baker (1995)}: with that many weak
+        instruments, 2SLS is biased \emph{toward OLS}. Replacing quarter of
+        birth with \emph{randomly generated} instruments gave similar
+        estimates and standard errors.
+  \item The mechanism is overfitting the first stage: $\hat D$ reproduces
+        the endogenous variation we were trying to discard.
+  \item \alert{More instruments is not more information.} Report the
+        just-identified estimate beside any overidentified one.
+\end{itemize}
+Other instruments worth knowing: sibling sex composition for fertility,
+lottery admission for school quality.
+\end{frame}
+
+%% ---- Card 1995 --------------------------------------------------------------
+\begin{frame}{In the Literature: Card (1995)}
+\textbf{The question.} The return to schooling once more: $D$ = years of
+schooling, $Y$ = log hourly wage in 1976. Same two biases as Angrist and
+Krueger, ability up and measurement error down.
+\vskip3pt
+\textbf{The data.} NLS Young Men: 3,010 men first interviewed in 1966, wages
+in 1976. The data of Lab 7 \srcp{figs/w7\_card.R}.
+\vskip3pt
+\textbf{The instrument.} $Z$ = grew up in a county with a four-year college
+(68\% did). A nearby college lowers the cost of attending: a student can live
+at home. The push is strongest for families who could not pay for room and
+board.
+\end{frame}
+
+\begin{frame}{Card: the Three Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
+\toprule
+Relevance & Growing up near a college adds $0.337$ years of schooling
+  $(0.081)$, robust $F = 17.5$. \alert{Testable, passes, not strong.} \\
+Independence & Colleges sit where schools and labor markets are better, and
+  the families who live there differ. Card conditions on family background;
+  Lab 7 on region and metropolitan status. Argued, conditional on controls. \\
+Exclusion & Proximity affects wages only through schooling. Threat: the
+  same local labor market raises wages directly. The same controls carry
+  this argument. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item Here independence and exclusion fail through the same variable,
+        local economic conditions, so one set of controls serves both.
+  \item \textbf{Whose effect.} Men from poorer families for whom a nearby
+        college made attendance possible.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Card: Main Results}
+Lab 7's data, controls for experience, experience$^2$, Black, metropolitan,
+South:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & OLS & first stage & reduced form & IV $= 0.0446/0.3373$ \\
+\midrule
+estimate & 0.074 & 0.337 & 0.045 & 0.132 \\
+(HC1 se) & (0.004) & (0.081) & (0.016) & (0.049) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{IV is nearly twice OLS}, the opposite of ability bias. Card's
+        reading: the compliers have a high return, and measurement error
+        pulls OLS down.
+  \item \textbf{Strength.} $F = 17.5$, $t = 2.72$: inside the range where
+        the $t$-test misleads. Lab 7 computes the Anderson--Rubin set instead.
+\end{itemize}
+\end{frame}
+
+%% ---- Angrist 1990 -----------------------------------------------------------
+\begin{frame}{In the Literature: Angrist (1990)}
+\textbf{The question.} What did Vietnam-era military service ($D$) do to
+later earnings ($Y$)? Veterans differ from non-veterans in health, schooling,
+and family background, and enlistment is a choice: OLS compares the wrong men.
+\vskip3pt
+\textbf{The data.} Social Security (FICA) earnings records for white men born
+1950--52, matched to their birthdates' lottery numbers; about 16,000 men per
+cohort. Veteran status by eligibility from the 1984 SIPP.
+\vskip3pt
+\textbf{The instrument.} $Z_i = 1$ if the man's birthdate drew a number below
+the year's ceiling. The 1970--72 lotteries gave every birthdate a random
+number; low numbers were called first, so eligible men served more often.
+\end{frame}
+
+\begin{frame}{Angrist: the Three Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
+\toprule
+Relevance & Veteran share $0.353$ if eligible, $0.193$ if not: first stage
+  $0.159$ $(0.040)$. \alert{Testable, passes.} \\
+Independence & The number is a lottery draw. \alert{Holds by construction}:
+  nothing that moves earnings also moves the draw. \\
+Exclusion & Eligibility affects earnings only through service. Threat:
+  eligible men stayed in school to keep deferments, a path from $Z$ to $Y$
+  that bypasses service. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The cleanest possible independence and still a live exclusion
+        worry: the two conditions are distinct, as the DAG frame said.
+  \item \textbf{Whose effect.} Men who served because they were drafted and
+        would not have volunteered.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Angrist: Main Results}
+White men born in 1950, 1981 earnings in current dollars:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & first stage & reduced form (1981 \$) & Wald \\
+\midrule
+estimate & 0.159 & $-435.8$ & $-435.8/0.159 = -2{,}741$ \\
+(se) & (0.040) & (210.5) & about 15\% of earnings \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Reading.} Eligibility lowered earnings by \$436 on average
+        across all eligible men; scaled by the 16 points of service it
+        induced, service cost the compliers about \$2,700 a year.
+  \item \textbf{Precision.} With a first stage of $0.16$ the Wald standard
+        error is about \$1,100 even with 16,000 men per cohort. A clean
+        instrument buys credibility, not precision.
+\end{itemize}
+\end{frame}
+
+%% ---- AJR 2001 ---------------------------------------------------------------
+\begin{frame}{In the Literature: Acemoglu, Johnson, and Robinson (2001)}
+\textbf{The question.} Do institutions cause national development, measured
+as GDP per capita? $D$ = average protection
+against expropriation risk 1985--95, a 0--10 rating; $Y$ = log GDP per capita
+in 1995. OLS fails three ways: rich countries can afford good institutions
+(simultaneity); culture, geography, and history drive both (omitted
+variables); the rating is noisy (measurement error, pulling OLS toward zero).
+\vskip3pt
+\textbf{The data.} One cross-section of 64 former European colonies.
+\vskip3pt
+\textbf{The instrument.} $Z$ = log mortality faced by European soldiers,
+bishops, and sailors in the colonies, 17th--19th centuries. Where settlers
+could survive, they settled and built inclusive institutions: property rights,
+rule of law. Where they died, colonization was extractive. Those institutional
+forms persisted after the disease environment stopped mattering.
+\end{frame}
+
+\begin{frame}{AJR: the Three Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
+\toprule
+Relevance & Higher settler mortality, worse institutions today: first stage
+  $-0.61$ $(0.13)$. \alert{Testable, passes.} \\
+Independence & Mortality was set by the diseases Europeans met, not by the
+  colony's later development. Argued from history. \\
+Exclusion & Mortality affects GDP per capita today \emph{only} through institutions.
+  \alert{The leading threat is geography}: the diseases that killed settlers
+  also shape agriculture, today's disease burden, and human capital, which
+  affect output directly. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item AJR's answer to the threat is an \emph{assumption}: geography is
+        captured by latitude and continent dummies. A functional-form
+        assumption doing identification work, rarely defended (Week 13).
+  \item Later critiques questioned the mortality data itself. \alert{The
+        pattern}: exclusion cannot be tested, so the debate becomes one about
+        history, measurement, and functional form. That is what an IV paper
+        should invite.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{AJR: Main Results}
+Their Table 4, 64 countries; coefficient on the 0--10 institutions rating:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & OLS & first stage & reduced form & 2SLS \\
+\midrule
+base sample & 0.52 & $-0.61$ & $-0.57$ & 0.94 \\
+(se) & (0.06) & (0.13) & implied & (0.16) \\
+with latitude & 0.47 & $-0.51$ & & 1.00 \ (0.22) \\
+with continent dummies & 0.42 & $-0.43$ & & 0.98 \ (0.30) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{IV is nearly twice OLS.} AJR read the gap as measurement
+        error in the rating attenuating OLS. One rating point multiplies
+        GDP per capita by $e^{0.94} = 2.6$.
+  \item \textbf{The geography controls} that the exclusion argument leans on
+        leave the estimate where it was; the first stage weakens and the
+        standard error grows.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Applications in Sociology]{Applications in Sociology}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Applications in Sociology}
+\textbf{Goal}: the same reading order on sociological questions.
+\vskip1pt
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{3.5cm}@{}}
+\toprule
+ & Sharkey, Torrats-Espinosa \& Takyar (2017) & de Vaan \& Stuart (2019) & Aksoy \& Gambetta (2022) \\
+\midrule
+Unit & city $\times$ year; 264 cities, 1990--2013 & family $\times$ ED visit; 253,407 visits, 2010--15 & province $\times$ election; 81 provinces, 1973--2018 \\
+$D$ & community nonprofits per 100,000 & source patient fills an opioid prescription & fasting hours on the median Ramadan day; religiosity \\
+$Y$ & log murder, violent, property crime & another household member fills one within a year & Islamist vote share; Quran-course attendance \\
+$Z$ & arts, medical, environmental nonprofits per 100,000 & assigned ED physician's leave-one-out prescribing rate & daylength $=$ latitude $\times$ lunar calendar \\
+First-stage $F$ & 112 & about 820 ($t = 28.6$) & daylength is the treatment \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+%% ---- Sharkey, Torrats-Espinosa and Takyar 2017 ------------------------------
+\begin{frame}{In the Literature: Sharkey, Torrats-Espinosa, and Takyar (2017)}
+\textbf{The question.} Did community nonprofits cut crime, 1990--2013? $D$ =
+nonprofits per 100,000 residents focused on crime, violence, and
+community development; $Y$ = log murder, violent, and property crime. OLS
+fails: nonprofits form where crime rises (simultaneity, pushing OLS toward
+zero) and where civic capacity is high (omitted variable); the IRS registry
+counts organizations with error.
+\vskip3pt
+\textbf{The data.} 264 cities with 100,000 or more residents, 1990--2013.
+Nonprofits from the IRS registry via the National Center for Charitable
+Statistics, crime from the Uniform Crime Reports. Long differences, and
+city and year fixed effects.
+\vskip3pt
+\textbf{The instrument.} $Z$ = nonprofits per 100,000 for the arts, medical
+research, and the environment: organizations that share the city's funding
+climate and do not target violence.
+\end{frame}
+
+\begin{frame}{Sharkey, Torrats-Espinosa, and Takyar: Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
+\toprule
+Relevance & Cities where arts and medical nonprofits grow also grow
+  community nonprofits: first stage $0.607$ $(0.057)$, $F = 112$ in long
+  differences; $0.584$ $(0.049)$, $F = 143$ with fixed effects.
+  \alert{Testable, strong.} \\
+Independence & A city's philanthropic climate is unrelated to its crime
+  trend, given the controls. Threat: a philanthropic boom may signal the
+  prosperity that cuts crime; the city-level controls carry the argument. \\
+Exclusion & Arts, medical, and environmental nonprofits affect crime only
+  through community nonprofits. Threat: an arts program may occupy youth or
+  improve a block on its own. One instrument, so no overidentification test
+  is available. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item A strong first stage settles relevance and nothing else; the other two
+        conditions rest entirely on argument.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Sharkey, Torrats-Espinosa, and Takyar: Results}
+Their Tables 2--3, effect of ten more community nonprofits per 100,000 residents:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{long differences} & \multicolumn{3}{c}{city and year fixed effects} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+ & murder & violent & property & murder & violent & property \\
+\midrule
+OLS & $-6\%$ & $-6\%$ & $-5\%$ & $-5\%$ & $-4\%$ & $-4\%$ \\
+IV  & $-12\%$ & $-10\%$ & $-7\%$ & $-9\%$ & $-6\%$ & $-4\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{IV exceeds OLS} in every column: measurement error in the
+        registry attenuates OLS, or this is the effect in cities whose
+        nonprofit sector responds to the funding climate.
+  \item \textbf{Ordering.} Largest for murder, smallest for property crime,
+        under both estimators and both designs.
+\end{itemize}
+\end{frame}
+
+%% ---- de Vaan and Stuart 2019 ------------------------------------------------
+\begin{frame}{In the Literature: de Vaan and Stuart (2019)}
+\textbf{The question.} Does opioid use spread inside the family? $D$ = a
+family member, the \emph{source patient}, fills an opioid prescription after an
+emergency department (ED) visit; $Y$ = another member of the household fills
+one within a year. OLS fails: households share genes, partners sort on health
+behavior, and members share conditions and physicians.
+\vskip3pt
+\textbf{The data.} Massachusetts All Payer Claims Database, 2010--2015, every
+insured resident's medical and pharmacy claims; families read off shared
+insurance policies. Sample: 253,407 ED visits by a member of a family with no
+prior opioid use; 13\% of the visits ended in an opioid prescription.
+\vskip3pt
+\textbf{The instrument.} $Z$ = the opioid prescribing rate of the ED physician
+the source patient happened to see, computed on that physician's other visits
+(a leave-one-out mean over 1,075 physicians). Arriving patients get whoever is
+on duty.
+\end{frame}
+
+\begin{frame}{de Vaan and Stuart: the Three Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
+\toprule
+Relevance & One SD more prescribing raises the source patient's chance of a
+  prescription from 13.0\% to 15.3\%: first stage $0.859$ $(0.030)$ with ED and
+  month fixed effects and controls. \alert{Testable, very strong.} \\
+Independence & Within an ED and month, the on-duty physician is as good as
+  randomly assigned. Balance (their Table 4): patients of high and low
+  prescribers match on prior benzodiazepine use ($.38$ / $.38$), comorbidity
+  index ($1.08$ / $1.08$), sex ($.50$ / $.50$); age differs by three months. \\
+Exclusion & The physician's habit reaches the household only through the
+  source patient's prescription. Threat: a liberal prescriber may differ in
+  other advice or drugs. Defense: neither patient nor family sees an ED
+  physician again, so the visit is the only contact. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item This is an \textbf{examiner design}: the leave-one-out leniency of a
+        randomly assigned decision-maker. A later section builds it from
+        scratch and adds the condition it needs beyond these three.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{de Vaan and Stuart: Main Results}
+Their Tables 5--6, family level, outcome within a year; base rate 14.6\%:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & OLS, raw & OLS, FE and controls & first stage & IV \\
+\midrule
+estimate & 0.023 & 0.027 & 0.859 & 0.130 \\
+(se) & (0.002) & (0.002) & (0.030) & (0.038) \\
+relative to base & $+16\%$ & $+18\%$ & & $+95\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{IV is five times OLS.} The authors' reading: the instrument
+        moves only households that fill what is prescribed, and the effect
+        is large there; OLS averages in families who refuse opioids whatever
+        the physician does. Prescriptions written but never filled are
+        unobserved, which also pulls OLS down.
+  \item \textbf{Robustness.} 24 OLS and 24 IV specifications (three windows,
+        two levels, four control sets): IV effects run from $+75\%$ to
+        $+200\%$, every one significant.
+\end{itemize}
+\end{frame}
+
+%% ---- Aksoy and Gambetta 2022 ------------------------------------------------
+\begin{frame}{In the Literature: Aksoy and Gambetta (2022)}
+\textbf{The question.} Does a costlier religious practice strengthen
+religiosity and political Islam? The cost is the length of the Ramadan fast.
+$D$ = fasting hours on the median Ramadan day; $Y$ = Islamist party vote
+share, and Quran-course attendance. OLS fails: provinces that fast devoutly
+are also poorer and more rural (omitted variables).
+\vskip3pt
+\textbf{The data.} 81 Turkish provinces $\times$ elections, 1973--2018, with
+province and year fixed effects; a 2014 individual survey for the mechanism
+step.
+\vskip3pt
+\textbf{The instrument.} Daylength on the median Ramadan day $=$ latitude
+$\times$ the lunar calendar. Ramadan moves back 11 days a year, so summer
+Ramadans mean long fasts, more so at high latitude. The fixed effects leave
+only the interaction.
+\end{frame}
+
+\begin{frame}{Aksoy and Gambetta: the Three Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
+\toprule
+Relevance & Daylength \emph{is} the length of the fast. Holds by
+  construction. \\
+Independence & Given province and year effects, the latitude $\times$ lunar
+  calendar interaction is unrelated to anything else provincial. Placebo
+  outcomes, turnout and population: null. \\
+Exclusion & Needed only for the mechanism step, daylength $\to$ religiosity
+  $\to$ vote. Threat: a longer fast also lowers growth \srcp{Campante and
+  Yanagizawa-Drott 2015}, a path from $Z$ to $Y$ not through religiosity.
+  Their overidentification test ($\chi^2_2 = 0.00$) has the power problems of
+  every $J$ test. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\alert{When the instrument is the variable of interest, the reduced form is
+the causal estimate}, and exclusion is not required for it. The IV step asks
+a second question, about mechanism.
+\end{frame}
+
+\begin{frame}{Aksoy and Gambetta: Main Results}
+The main model is the reduced form,
+$Y_{it} = \mu_i + \delta_t + \alpha R_{it} + \epsilon_{it}$, $R_{it}$ the
+fasting hours:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+per hour of fasting & estimate & (se) \\
+\midrule
+Islamist vote share, points & 7.16 & (2.54) \\
+Quran-course attendance, per 1,000 residents & 1.76 & (0.76) \\
+\midrule
+SEM total effect on AKP vote, per daylength category (2014 survey) & 0.03 & (0.009) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Reading.} A half-hour longer fast adds 3.5 points of vote
+        share, 11\% of the 31\% mean.
+  \item \textbf{The IV step} instruments latent religiosity with daylength
+        in the survey; it says the vote moves \emph{because} religiosity
+        moves, if exclusion holds.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -407,6 +1075,133 @@ With covariates and possibly several instruments:
   \item \alert{Never run the two stages by hand.} The second-stage standard errors
         would treat $\hat D$ as data rather than as an estimate. Use
         \texttt{ivreg()} or \texttt{feols(y \textasciitilde\ w | d \textasciitilde\ z)}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why $W$ Goes in Both Stages}
+\begin{columns}[T]
+\begin{column}{0.40\textwidth}
+\begin{center}
+\begin{tikzpicture}[scale=0.72,>=Stealth,
+  every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,minimum size=6.5mm,font=\scriptsize}]
+  \node (z) at (0,0) {$Z$};  \node (d) at (2.2,0) {$D$};  \node (y) at (4.4,0) {$Y$};
+  \node (w) at (2.2,1.5) {$W$};
+  \node[draw=gray,dashed] (u) at (3.3,-1.2) {$U$};
+  \draw[->,dukeblue,thick] (z)--(d); \draw[->,dukeblue,thick] (d)--(y);
+  \draw[->,accent,thick] (w)--(z); \draw[->,accent,thick] (w)--(d); \draw[->,accent,thick] (w)--(y);
+  \draw[->,gray,dashed,thick] (u)--(d); \draw[->,gray,dashed,thick] (u)--(y);
+\end{tikzpicture}
+\end{center}
+\vskip-6pt
+\small
+$Z \leftarrow W \rightarrow Y$ is a back door from instrument to outcome:
+$Z$ is valid only \emph{given} $W$. 2SLS with $W$ in both stages partials $W$
+out of $Y$, $D$, $Z$, then takes the one-$Z$ Wald ratio (FWL). $W$ belongs in
+the first stage when it affects $Z$, in the second when it affects $Y$.
+\end{column}
+\begin{column}{0.58\textwidth}
+\small
+\textbf{Simulation}, true $\beta = 1$, $n = 5{,}000$, 500 draws
+\srcp{figs/w7\_twostage\_W.R}; mean $\hat\beta$:
+\vskip-4pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+$W$ enters & $W \to Z$ & $Z \perp W$ \\
+\midrule
+both stages & 1.00 & 1.00 \\
+second stage only & \alert{0.56} & 1.00 \\
+first stage only & \alert{1.71} & \alert{1.90} \\
+neither & \alert{1.55} & 1.00 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep0pt
+  \item \textbf{Second stage only.} $\hat D$ from $Z$ alone carries $W$'s
+        variation, and $D - \hat D$ is correlated with $W$ in the second-stage
+        error. Harmless only if $Z \perp W$ (a lottery).
+  \item \textbf{First stage only.} $\hat D$ contains $W$, and $W \to Y$ is
+        in the error: exclusion fails for $\hat D$.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{IV Standard Error, Scalar Version (1)}
+One $Y$, one $D$, one $Z$. Substitute the model for $Y_i$ into the Wald ratio:
+\begin{align*}
+  \hat\beta_{IV} = \frac{\Cov_n(Z_i, Y_i)}{\Cov_n(Z_i, D_i)}
+    &= \frac{\Cov_n(Z_i,\ \alpha + \beta D_i + \epsilon_i)}{\Cov_n(Z_i, D_i)}
+    && \text{\footnotesize substitute $Y_i = \alpha + \beta D_i + \epsilon_i$} \\
+    &= \beta + \frac{\Cov_n(Z_i, \epsilon_i)}{\Cov_n(Z_i, D_i)}
+    && \text{\footnotesize covariance is linear; the constant drops} \\
+    &= \beta + \frac{\sum_i \tilde z_i\,\epsilon_i}{\sum_i \tilde z_i\,\tilde d_i}
+    && \text{\footnotesize centered $Z$ and $D$; the $1/n$ cancel}
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{The numerator is the random part}: independent terms
+        $\tilde z_i \epsilon_i$ with mean zero and variance $\tilde z_i^{\,2}\sigma_i^2$; its
+        variance is their sum.
+  \item \textbf{The denominator is treated as fixed} (condition on $Z$ and $D$):
+        the ``strong instrument'' step; the weak-IV section is about its failure.
+\end{itemize}
+\vskip-3pt
+\begin{align*}
+  \Var(\hat\beta_{IV} \mid Z, D) = \frac{\sum_i \tilde z_i^{\,2}\,\sigma_i^2}{\big(\sum_i \tilde z_i\,\tilde d_i\big)^2} .
+\end{align*}
+\end{frame}
+
+\begin{frame}{IV Standard Error, Scalar Version (2)}
+Take $\sigma_i^2 = \sigma^2$ for every $i$ and divide top and bottom by
+$\sum_i \tilde z_i^{\,2}\sum_i \tilde d_i^{\,2}$; $\rho_{ZD}$ is the correlation of $Z$ and $D$:
+\begin{align*}
+  \Var(\hat\beta_{IV}) = \frac{\sigma^2 \sum_i \tilde z_i^{\,2}}{\big(\sum_i \tilde z_i\tilde d_i\big)^2}
+  = \frac{\sigma^2}{\sum_i \tilde d_i^{\,2}}\cdot
+    \frac{\sum_i \tilde z_i^{\,2}\sum_i \tilde d_i^{\,2}}{\big(\sum_i \tilde z_i\tilde d_i\big)^2}
+  = \underbrace{\frac{\sigma^2}{n\,s_D^2}}_{\text{OLS variance}}\cdot\frac{1}{\rho_{ZD}^2}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item \alert{IV standard error $=$ OLS standard error $/\,|\rho_{ZD}|$}, for the
+        same $\sigma$. The instrument explains a fraction $\rho_{ZD}^2$ of the
+        variance in $D$, and only that fraction is used: $\rho_{ZD} = 0.14$
+        costs a factor of 7.
+  \item \textbf{Which residual.} $\sigma^2$ is estimated from
+        $\hat\epsilon_i = Y_i - \hat\alpha - \hat\beta_{IV} D_i$, with the
+        \emph{actual} $D_i$. A second stage run by hand uses $\hat D_i$ instead,
+        gets a smaller residual, and prints too small a standard error.
+  \item \textbf{Robust version.} Keep $\sigma_i^2$ and plug in $\hat\epsilon_i^{\,2}$:
+        $\widehat{\Var} = \sum_i \tilde z_i^{\,2}\hat\epsilon_i^{\,2}/(\sum_i \tilde z_i\tilde d_i)^2$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Scalar Formula on Card's Data}
+Log wage on schooling, instrument near a four-year college, no controls
+($n = 3{,}010$) \srcp{figs/w7\_card.R}.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & estimate & standard error \\
+\midrule
+OLS & 0.052 & 0.00287 \\
+IV, homoskedastic formula & 0.188 & $0.00287 \times 1.321 / 0.1442 = 0.0263$ \\
+IV, robust formula & 0.188 & 0.0261 \ (\texttt{ivreg} + \texttt{vcovHC}: 0.0261) \\
+second stage by hand & 0.188 & 0.0207 \ \alert{too small} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item $\rho_{ZD} = 0.144$: proximity explains 2\% of the variance in
+        schooling, so $1/|\rho_{ZD}| = 6.9$.
+  \item The IV residual is larger than the OLS residual (sd 0.557 against
+        0.421) because the IV slope is not the least-squares slope: another
+        factor of 1.32. Together, 9.2 times the OLS standard error.
+  \item By hand, the second-stage residual has sd 0.438, not 0.557: 21\% too small.
 \end{itemize}
 \end{frame}
 
@@ -464,188 +1259,6 @@ the actual $D_i$, not $\hat D_i$}; this is the other reason not to run the stage
 by hand.
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[LATE]{What Does IV Estimate?}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Four Types of People\core}
-With a binary instrument and binary treatment, write $D_i(z)$ for the treatment
-unit $i$ would take if assigned $Z_i = z$. Every unit is one of four types:
-\begin{center}\small
-\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{lccl}
-\toprule
-Type & $D_i(0)$ & $D_i(1)$ & \\
-\midrule
-\textbf{Compliers} & 0 & 1 & do what the instrument says \\
-Always-takers & 1 & 1 & treated regardless \\
-Never-takers & 0 & 0 & untreated regardless \\
-\alert{Defiers} & 1 & 0 & do the opposite \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip4pt
-\begin{itemize}\itemsep2pt
-  \item We never observe anyone's type: we see $D_i(1)$ or $D_i(0)$, never both.
-        Type is a latent variable, and this is the same fundamental problem as
-        Week 5, one level up.
-  \item Only \textbf{compliers} have their treatment moved by the instrument.
-  \item \alert{Monotonicity} assumes there are no defiers: the instrument pushes
-        everyone in the same direction, or not at all.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Deriving the LATE: the Numerator}
-Write the reduced form using the switching equation
-$Y_i = Y_i\big(D_i(Z_i)\big)$ and split by type. Because $Z$ is independent of
-potential outcomes and types,
-\begin{align*}
-  &\E[Y_i\mid Z_i=1] - \E[Y_i\mid Z_i=0] \\
-  &\quad= \Pr(\text{AT})\underbrace{\big(\E[Y_i(1)\mid \text{AT}] - \E[Y_i(1)\mid \text{AT}]\big)}_{=\,0} \\
-  &\quad\ + \Pr(\text{NT})\underbrace{\big(\E[Y_i(0)\mid \text{NT}] - \E[Y_i(0)\mid \text{NT}]\big)}_{=\,0} \\
-  &\quad\ + \Pr(\text{C})\ \big(\E[Y_i(1)\mid \text{C}] - \E[Y_i(0)\mid \text{C}]\big) \\
-  &\quad\ - \Pr(\text{D})\ \big(\E[Y_i(1)\mid \text{D}] - \E[Y_i(0)\mid \text{D}]\big) .
-\end{align*}
-\vskip2pt
-Always- and never-takers take the \emph{same} treatment under both values of
-$Z$, so \alert{by exclusion} their outcomes are unchanged and they contribute
-zero. \alert{Monotonicity} kills the last line by assuming $\Pr(\text{D})=0$, 
-note that defiers would enter with the \emph{wrong sign}.
-\end{frame}
-
-\begin{frame}{Deriving the LATE: the Denominator\core}
-The first stage recovers the complier share:
-\begin{align*}
-  \E[D_i\mid Z_i=1] - \E[D_i\mid Z_i=0]
-  &= \Pr(\text{C}) + \Pr(\text{AT}) - \big(\Pr(\text{AT})\big) \\
-  &= \Pr(\text{C}) .
-\end{align*}
-\vskip3pt
-Dividing:
-\begin{block}{The LATE theorem \srcp{Imbens and Angrist 1994}}
-\begin{align*}
-  \frac{\E[Y\mid Z=1] - \E[Y\mid Z=0]}{\E[D\mid Z=1]-\E[D\mid Z=0]}
-  = \E\big[\,Y_i(1) - Y_i(0)\ \big|\ \text{$i$ is a complier}\,\big] .
-\end{align*}
-\end{block}
-\vskip3pt
-\alert{IV does not estimate the ATE.} It estimates the average effect for the
-subpopulation whose treatment status the instrument actually changed, a group
-you cannot identify by name, defined by the instrument you happened to choose.
-\end{frame}
-
-\begin{frame}{Living With the LATE\core}
-\begin{itemize}\itemsep3pt
-  \item If effects are homogeneous, LATE $=$ ATE and none of this matters. That is
-        rarely a defensible assumption in sociology.
-  \item Different instruments for the same treatment estimate \emph{different}
-        LATEs. When two IV papers disagree, that is not necessarily a
-        contradiction; it may be two correct answers to two different questions.
-  \item \textbf{You can describe the compliers even though you cannot name them}:
-        their share is the first stage, and their covariate means are recoverable
-        by reweighting (Abadie's $\kappa$).
-  \item \textbf{Compliers are often unusual}: for quarter-of-birth they are
-        marginal dropouts; for judge-leniency designs they are defendants near the
-        decision margin. Whether that group is the policy-relevant one is a
-        substantive question you must answer, not a technicality.
-\end{itemize}
-\vskip2pt
-\alert{Always characterize your compliers.} It is the difference between an
-interpretable LATE and a number.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Weak IV]{Weak Instruments and Inference}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{Weak Instruments Are Worse Than No Instrument\core}
-Recall $\hat\beta_{IV} = \Cov_n(Z,Y)/\Cov_n(Z,D)$. If the denominator
-is near zero, small violations of exclusion get \emph{divided by} a small number:
-\begin{align*}
-  \plim \hat\beta_{IV} = \beta + \frac{\Cov(Z,\epsilon)}{\Cov(Z,D)} .
-\end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item An instrument that is one-tenth as endogenous as $D$ but one-hundredth as
-        strongly correlated with it produces \alert{more} bias than plain OLS.
-  \item In matrix terms\adv, the variance depends on
-        $(\bm D'\bm P_Z\bm D)^{-1}$. If the instruments explain little of $\bm D$
-        that matrix is small and its inverse is large.
-  \item Worse, under weak identification $\hat\beta_{2SLS}$ has \alert{no Gaussian
-        limit}: the limiting distribution is non-normal and heavy-tailed, so the
-        conventional $t$-test fails no matter how large $n$ is.
-  \item The problem \emph{worsens} with more instruments, because many weak
-        instruments overfit the first stage, the Bound--Jaeger--Baker point.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Diagnosing Instrument Strength\core}
-\begin{itemize}\itemsep3pt
-  \item \textbf{First-stage $F$} on the excluded instruments. The traditional rule
-        of thumb is $F > 10$ \srcp{Staiger and Stock 1997; Stock and Yogo 2005},
-        derived so that 2SLS bias is under 10\% of OLS bias.
-  \item \alert{That rule is about bias, not about test size, and it is now known
-        to be far too lax for inference.}
-        \srct{Lee, McCrary, Moreira, and Porter (2022)} show that a conventional
-        $5\%$ $t$-test has correct size only when the first-stage $F$ exceeds
-        roughly \textbf{104}. Their \texttt{tF} procedure replaces the $1.96$
-        critical value with a larger one read off $F$: at $F = 10$ the adjusted
-        critical value is about \textbf{3.43}, so the honest interval is roughly
-        \textbf{1.75} times wider than the printed one.
-  \item Use a \emph{robust} first-stage $F$ if you use robust or clustered
-        standard errors in the second stage.
-  \item With several endogenous regressors, use the \emph{Kleibergen--Paap} rank
-        statistic; a strong $F$ on each instrument separately is not enough.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Anderson--Rubin: Inference That Never Divides}
-The problem is the division by a noisy first stage. \srct{Anderson and Rubin
-(1949)} avoid it by testing the moment condition directly.
-\vskip3pt
-To test $H_0: \beta = \beta_0$, note that under the null
-$\E\big[(Y_i - \beta_0 D_i)Z_i\big] = 0$. Form the statistic
-\begin{align*}
-  C(\beta_0) = \frac{\Big|\En\big[(Y_i - \beta_0 D_i)\,Z_i\big]\Big|^2}
-                    {\Var_n\big[(Y_i-\beta_0D_i)Z_i\big]/n}
-  \ \dto\ \chi^2_1 \quad\text{under } H_0 ,
-\end{align*}
-(with variables residualized on any exogenous controls first). Reject at level
-$a$ if $C(\beta_0) > c_{1-a}$, the $(1-a)$ quantile of $\chi^2_1$.
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item Operationally: regress $Y_i - \beta_0 D_i$ on the instruments and test
-        whether their coefficients are jointly zero.
-  \item \alert{The first stage never appears in the denominator}, so the test is
-        valid whatever the instrument's strength.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Inverting the Test}
-A confidence region is the set of null values the data cannot reject:
-\begin{align*}
-  CR(\beta) = \big\{\beta_0 \in \Theta : C(\beta_0) \leq c_{1-a}\big\} .
-\end{align*}
-In practice: grid over $\beta_0$, compute $C(\beta_0)$, keep the values that
-survive.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item The region can be an interval, a \emph{union} of disjoint intervals, the
-        whole real line, or \emph{empty}. None of these is a bug.
-  \item An \textbf{unbounded} region is the honest statement that the data cannot
-        pin $\beta$ down, which is precisely what a conventional interval hides
-        when the instrument is weak.
-  \item An \textbf{empty} region can arise only when the model is
-        \emph{overidentified}, with one instrument and one endogenous regressor
-        the 2SLS value always satisfies the moment exactly. When it does happen it
-        is evidence against the overidentifying restrictions.
-  \item \texttt{ivmodel}, \texttt{ivDiag}, or a hand-coded grid; it is ten
-        lines of code, and we write them in lab.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{Overidentification Tests: Read Them Carefully}
 With more instruments than endogenous regressors, the Sargan--Hansen $J$ test
 asks whether the instruments agree with one another.
@@ -661,6 +1274,552 @@ asks whether the instruments agree with one another.
         substantive: tell a story about why $Z$ could not affect $Y$ except
         through $D$, and look for \emph{placebo outcomes} it should not move and
         \emph{placebo samples} in which the first stage should be absent.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Weak IV]{Inference Under Weak Instruments}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Where $\E[(Y - \beta D)\,Z] = 0$ Comes From}
+The IV assumption: the instrument is unrelated to the error, $\Cov(Z_i, \epsilon_i) = 0$.
+Substitute what the error is:
+\begin{align*}
+  \epsilon_i &= Y_i - \alpha - \beta D_i
+     && \text{\footnotesize the structural equation, solved for $\epsilon_i$} \\
+  0 = \Cov(Z_i, \epsilon_i) &= \Cov(Z_i,\ Y_i - \beta D_i)
+     && \text{\footnotesize $\alpha$ is a constant} \\
+     &= \Cov(Z_i, Y_i) - \beta\,\Cov(Z_i, D_i)
+     && \text{\footnotesize covariance is linear}
+\end{align*}
+\vskip4pt
+\begin{itemize}\itemsep4pt
+  \item \textbf{In words}: strip the treatment's part, $\beta D$, out of $Y$;
+        what remains must be unrelated to $Z$. The true $\beta$ satisfies this
+        equation.
+  \item \textbf{Solve it for $\beta$} and you get the Wald estimator,
+        $\Cov(Z,Y)/\Cov(Z,D)$. Nothing new is assumed.
+  \item $\E[(Y_i - \beta D_i)\,\tilde Z_i]$ with $\tilde Z_i = Z_i - \E[Z_i]$ is the
+        same covariance; the tilde only centers $Z$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Two Ways to Use the Same Equation}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Solve it} (Wald, 2SLS): $\hat\beta_{IV} = \Cov_n(Z,Y)/\Cov_n(Z,D)$.
+Divides by the first stage; unreliable when that is small and noisy.
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Check it} (Anderson--Rubin): guess $\beta_0$, ask whether
+$\Cov_n(Z,\ Y - \beta_0 D) = 0$. Never divides.
+\end{column}
+\end{columns}
+\vskip6pt
+\textbf{Card's data} ($Z$ = near a college, $D$ = schooling, $Y$ = log wage):
+$\Cov_n(Z,Y) = 0.0338$, $\Cov_n(Z,D) = 0.1798$ \srcp{figs/w7\_weakiv.R}.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+guess $\beta_0$ & 0 & 0.10 & 0.144 & 0.188 & 0.25 & 0.30 \\
+\midrule
+$\Cov_n(Z, Y - \beta_0 D) = 0.0338 - \beta_0 \times 0.1798$ & 0.034 & 0.016 & 0.008 & 0.000 & $-0.011$ & $-0.020$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+Zero at $\beta_0 = 0.188$, the Wald estimate. For the other guesses: how far from
+zero is too far? That needs a scale.
+\end{frame}
+
+\begin{frame}{The AR Statistic, Step by Step}
+\begin{enumerate}\itemsep4pt
+  \item Guess $\beta_0$; build $U_i = Y_i - \beta_0 D_i$.
+  \item Regress $U_i$ on $Z_i$. Since $U_i = \alpha + (\beta - \beta_0) D_i + \epsilon_i$,
+        the true slope is $(\beta - \beta_0)\,\pi$: zero if the guess is right.
+  \item $C(\beta_0) = t^2$ of that slope; $\chi^2_1$ under $H_0\!: \beta = \beta_0$.
+        Reject the guess if $C(\beta_0) > 3.84$.
+\end{enumerate}
+\vskip2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+guess $\beta_0$ & 0 & 0.10 & 0.144 & 0.188 & 0.25 & 0.30 \\
+\midrule
+slope of $U$ on $Z$ & 0.156 & 0.073 & 0.037 & 0.000 & $-0.051$ & $-0.093$ \\
+$t$ & 9.10 & 4.25 & 1.91 & 0.00 & $-1.94$ & $-3.02$ \\
+$C(\beta_0) = t^2$ & 82.7 & 18.0 & 3.66 & 0.00 & 3.76 & 9.12 \\
+verdict & reject & reject & keep & keep & keep & reject \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+Step 2 is an ordinary regression $t$-test: $\hat\pi$ never appears in a
+denominator. A weak instrument shrinks $(\beta - \beta_0)\pi$ for every guess,
+so fewer guesses are rejected: a wider set, not a wrong one.
+\end{frame}
+
+\begin{frame}{Inverting the Test: the AR Confidence Region}
+Keep every guess the data cannot reject, $CR(\beta) = \{\beta_0 : C(\beta_0) \le c_{1-a}\}$.
+\textbf{``Works under a weak instrument''} means: covers the truth 95\% of the
+time whatever $F$ is. Simulation, $n = 500$, $\beta = 1$, 4,000 draws \srcp{figs/w7\_weakiv.R}:
+\vskip-3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+median first-stage $F$ & 1.8 & 6.0 & 9.7 & 101 \\
+\midrule
+Wald interval covers the truth & 87\% & 91\% & 92\% & 95\% \\
+AR region covers the truth & 94\% & 95\% & 95\% & 95\% \\
+AR region is a bounded interval & 26\% & 69\% & 87\% & 100\% \\
+median width, Wald & 2.76 & 1.59 & 1.26 & 0.39 \\
+median width, AR when bounded & 2.29 & 2.15 & 1.70 & 0.40 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{Why Wald fails}: its standard error is too \emph{small}, not too
+        large; $\hat\beta_{IV}$ leans toward OLS with heavy tails, and the printed
+        normal interval is not there.
+  \item \textbf{What AR does}: at $F \approx 6$, a bounded interval in 69\% of
+        draws, wider than Wald's, else an unbounded region: it admits what the
+        data cannot pin down, and coverage stays at 95\%.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{The AR Statistic on Card's Data and on the Weak Draw}
+\begin{center}
+\includegraphics[width=\linewidth]{figs/weakiv_sim.pdf}
+\end{center}
+\vskip2pt
+{\small A: sampling distribution of $\hat\beta_{IV}$ with a strong and a weak
+instrument, 4,000 draws each. B and C: $C(\beta_0)$ against $\beta_0$; the dotted
+line is 3.84 and the dashed line the first-stage $F$. The AR region is where the
+curve lies below 3.84: an interval for Card, the whole line for the weak draw
+\srcp{figs/w7\_weakiv.R}.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Judge IV]{Judge and Examiner Designs}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Design}
+\begin{itemize}\itemsep1pt
+  \item \textbf{Goal}: among people \emph{convicted of a felony}, the effect of a
+        prison sentence ($D = 1$) rather than probation ($D = 0$) on later
+        reoffending or employment $Y$. The pool is the convicted, not the public.
+  \item \textbf{Problem}: within that pool, judges send the worse records and
+        graver offenses to prison, and the same things predict $Y$; prisoners and
+        probationers are not comparable.
+  \item \textbf{Variation}: cases are assigned to judges at random within a
+        court and year, and judges differ persistently in how often they
+        imprison. $Z_i$ = the leniency of the judge defendant $i$ drew.
+\end{itemize}
+\vskip-19pt
+\begin{center}
+\begin{tikzpicture}[scale=0.74,>=Stealth,
+  every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,minimum size=6mm,font=\scriptsize}]
+  \node (z) at (0,0) {$Z$};  \node (d) at (2.4,0) {$D$};  \node (y) at (4.8,0) {$Y$};
+  \node[draw=gray,dashed] (u) at (3.6,1.3) {$U$};
+  \draw[->,dukeblue,thick] (z)--(d) node[draw=none,fill=none,midway,above,font=\scriptsize]{leniency};
+  \draw[->,dukeblue,thick] (d)--(y);
+  \draw[->,gray,dashed,thick] (u)--(d); \draw[->,gray,dashed,thick] (u)--(y);
+  \draw[->,accent,dashed,thick] (z) to[bend right=28] node[rectangle,draw=none,fill=none,midway,below,font=\scriptsize,text=accent]{sentence length, fines, probation terms} (y);
+  \node[rectangle,draw=none,fill=none,font=\scriptsize,text=gray,anchor=west] at (4.2,1.3) {record, dangerousness};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}{Constructing the Instrument}
+Leave-one-out leniency: your judge's incarceration rate in everyone else's
+cases (within court and year), $Z_i = \frac{1}{n_{j(i)} - 1}\sum_{k \neq i:\ j(k) = j(i)} D_k$.
+\begin{itemize}\itemsep0pt
+  \item \textbf{Why leave your own case out.} The leave-in mean contains
+        $D_i$, which is correlated with $\epsilon_i$; the instrument inherits
+        $\Cov(D_i,\epsilon_i)/n_j$ of it, shrinking with cases per judge only.
+  \item \textbf{Judge dummies are the leave-in mean in disguise.} With $J - 1$
+        judge indicators as instruments (Harding et al.; Kling 2006) the fitted
+        value is the judge's rate over \emph{all} cases, own case included: same bias.
+\end{itemize}
+\vskip1pt
+\textbf{Simulation} \srcp{figs/w7\_judge.R}: 100 judges, a confounder raising
+$D$ and $Y$, true $\tau = 0.20$, 500 replications.
+\vskip-7pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+cases per judge & OLS & judge dummies $=$ leave-in (identical every time) & leave-one-out \\
+\midrule
+50  & 1.17 & 0.56 & 0.17 \ (sd 0.29) \\
+200 & 1.17 & 0.33 & 0.20 \ (sd 0.12) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{The Three Conditions, Judge Version}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Relevance.} Judges differ and courts have thousands of cases;
+        $F$ is rarely the problem. Compute $Z$ and $F$ within court $\times$ year.
+  \item \textbf{Independence.} Random assignment is an institutional fact and
+        partly testable: regress $Z$ on defendant and case characteristics
+        (race, age, priors, offense); nothing should predict the draw.
+        Michigan assigns by a random number generator \srcp{Harding et al.\ 2019}.
+  \item \textbf{Exclusion.} The harsh judge must change $Y$ only through
+        prison versus probation. The same judge also sets sentence length,
+        fines, and probation conditions, and speaks differently from the
+        bench: each is a path from $Z$ to $Y$. Remedies: instrument every
+        dimension of the sentence at once (Harding et al.: prison, jail, jail
+        with probation, three sentence lengths), or define the treatment as
+        the whole sentence package.
+  \item \textbf{Monotonicity.} With two judges it reads ``no defiers.'' With
+        many judges it must hold for every pair of judges and every defendant.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Monotonicity With Many Judges: a Worked Failure}
+Two judges, two case types in equal shares.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+share incarcerated & drug cases (50\%) & property cases (50\%) & all cases \\
+\midrule
+Judge A & 0.90 & 0.30 & 0.60 \\
+Judge B & 0.50 & 0.50 & 0.50 \\
+\bottomrule
+\end{tabular}
+\end{center}
+A is harsher overall, so $Z = 1$ for A. Among drug cases A creates 0.40
+compliers; among property cases A is the lenient one and creates 0.20
+\alert{defiers}.
+\begin{align*}
+  \text{first stage} &= 0.5(0.40) - 0.5(0.20) = 0.10
+     && \text{\footnotesize defiers subtract} \\
+  \text{reduced form} &= 0.5(0.40)\,\tau_{\text{drug}} - 0.5(0.20)\,\tau_{\text{prop}}
+     && \text{\footnotesize numerator of the LATE derivation} \\
+  \text{Wald} &= 2\,\tau_{\text{drug}} - \tau_{\text{prop}}
+     && \text{\footnotesize weights sum to one; one is negative}
+\end{align*}
+With $\tau_{\text{drug}} = 0.10$ and $\tau_{\text{prop}} = 0.40$ the Wald
+estimand is $-0.20$: every effect is positive, the IV estimand is negative.
+Within each case type the ordering is stable and the Wald ratio recovers that
+type's $\tau$.
+\end{frame}
+
+\begin{frame}{Detecting a Monotonicity Failure}
+If judge A is harsher than B for one kind of defendant, A must be harsher for
+every kind: plot each judge's rate on one case type against the other
+\srcp{Dobbie, Goldin, and Yang 2018; figs/w7\_mono.R}.
+\vskip-7pt
+\begin{center}
+\includegraphics[width=0.5\linewidth]{figs/mono_judges.pdf}
+\end{center}
+\vskip-5pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{Holds}: judges line up alike on both types; correlation of the
+        two rates $0.92$, 88\% of judge pairs ordered the same way.
+  \item \textbf{Fails}: harsh on drugs means lenient on property; correlation
+        $-0.90$, 15\% of pairs alike. The pooled first stage still looks strong.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Addressing a Monotonicity Failure}
+\begin{itemize}\itemsep4pt
+  \item \textbf{The common fix: build leniency within strata.} Compute $Z_i$
+        from the judge's other cases of the \emph{same type} as case $i$ (case
+        type $\times$ court $\times$ year), and let the first stage differ by
+        stratum. Within a stratum judges are consistently ordered, the Wald
+        ratio recovers that stratum's $\tau$, and 2SLS pools the strata with
+        positive weights.
+  \item \textbf{The common assumption: average monotonicity}
+        \srcp{Mogstad, Torgovitsky, and Walters 2021}. 2SLS with a leniency
+        instrument is a positively weighted average of effects if, for every
+        defendant, leniency and that defendant's own treatment covary
+        non-negatively across judges. Judges may disagree on some cases; no
+        defendant's treatment may run against leniency on average. Plausible
+        when judge differences are mostly a common harshness, as in panel A.
+  \item \textbf{A formal test} \srcp{Frandsen, Lefgren, and Leslie 2023}: with a
+        bounded outcome, exclusion and monotonicity bound the slope of the
+        per-judge mean outcome against the per-judge incarceration rate by the
+        range of $Y$. \texttt{ivcheck::iv\_testjfe} in R.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Whose Effect?}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Compliers are the marginal defendants}: those whose sentence
+        depends on which judge they drew. Not the mandatory minimums, not
+        first-degree murder, not the obvious probation cases. In the toy
+        example the pairwise complier share is the first stage, 0.10.
+  \item With a continuous $Z$, 2SLS averages pairwise LATEs across the leniency
+        distribution, more weight where judges are dense.
+  \item \textbf{Describe them.} Complier means of covariates are recoverable
+        by Abadie's $\kappa$ reweighting; judge papers report a table of
+        complier characteristics next to the full sample.
+  \item \textbf{For once the LATE is the policy parameter.} A sentencing
+        reform moves exactly the marginal cases, not the always-incarcerated.
+  \item \textbf{Different margins, different compliers.} Prison versus
+        probation at sentencing \srcp{Harding et al.\ 2017} and detention
+        versus release before trial \srcp{Dobbie, Goldin, and Yang 2018} are
+        different populations; their LATEs need not agree.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Harding, Morenoff, Nguyen, and Bushway}
+\textbf{Data}: everyone sentenced for a felony in Michigan, 2003--2006
+($n = 111{,}110$), administrative records to 2013--2015; cases with no
+judicial discretion dropped. \textbf{Instruments}: judge dummies and judge
+$\times$ presentence-characteristic interactions in 2SLS, six first stages;
+LIML as a check.
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{PNAS 2017.} Prison rather than probation raises the probability
+        of being back in prison within five years by about 20 points for
+        nonwhite and white defendants alike; technical parole violations
+        account for 18 and 14 of those points, new felony sentences for 4 and
+        9. No effect on new felony convictions after release.
+  \item \textbf{AJS 2018.} The employment effect runs mainly through
+        incapacitation, the sentence and the later returns; post-release
+        penalties are concentrated among whites with a presentence work history.
+  \item \textbf{Nature Human Behaviour 2019.} Violent arrests fall by 8.4
+        points over five years when time inside is counted; after release, no
+        detectable effect on violence.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reading Harding et al.\ with This Week's Tools}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Many instruments.} Judge dummies times characteristics run to
+        hundreds; 2SLS leans toward OLS, hence the LIML check. One leave-one-out
+        leniency per endogenous variable is now the default \srcp{Dobbie, Goldin,
+        and Yang 2018; Bhuller et al.\ 2020}.
+  \item \textbf{Exclusion} is handled by widening the treatment: six sentence
+        dimensions instrumented together.
+  \item \textbf{Monotonicity} is assumed, not tested.
+  \item \textbf{The estimand} is the LATE for marginal felony defendants, the
+        population a sentencing reform would move.
+\end{itemize}
+\vskip3pt
+\textbf{Same design elsewhere.} \srct{Green and Winik (2010)}: 1,003 D.C.\ drug
+defendants on nine random calendars, no effect on re-arrest.
+\srct{Loeffler (2013)}: 20,000 Cook County felony defendants, no effects on
+recidivism or employment. In economics, \srct{Kling (2006)},
+\srct{Dobbie, Goldin, and Yang (2018)}, and \srct{Bhuller et al.\ (2020)}, where
+Norwegian prisons reduce reoffending. Guide: \srct{Chyn, Frandsen, and Leslie (2025)}.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Shift-share]{Shift-Share Instruments}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{The Problem and the Instrument}
+\textbf{Goal}: the effect of a local shock $x_\ell$ (job loss, immigration,
+import competition) on a local outcome $y_\ell$ (marriage, mortality, votes)
+when $x_\ell$ responds to local conditions that also move $y_\ell$.
+\vskip2pt
+\textbf{Idea} \srcp{Bartik 1991; Card 2001}: predict the local shock from
+national shocks by industry, weighted by baseline exposure,
+\begin{align*}
+  z_\ell = \sum_{k=1}^{K} s_{\ell k}\, g_k ,
+\end{align*}
+$s_{\ell k}$ the baseline share of industry $k$ in place $\ell$, $g_k$ the
+national change in $k$. Card (2001): past settlement shares by origin country,
+times national inflows by origin.
+\textbf{Plan}
+\begin{enumerate}\itemsep0pt
+  \item Three places and two industries, by hand.
+  \item Two routes to validity: exogenous shares or exogenous shocks.
+  \item Proof by simulation, then inference.
+  \item Autor, Dorn, and Hanson (2019) on marriage.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Three Places, Two Industries, by Hand}
+National changes over the decade: manufacturing $g_M = -10\%$, services
+$g_S = +5\%$. Baseline employment shares:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+place & $s_{\ell M}$ & $s_{\ell S}$ & $z_\ell = s_{\ell M} g_M + s_{\ell S} g_S$ \\
+\midrule
+A & 0.6 & 0.4 & $0.6(-10) + 0.4(5) = -4$ \\
+B & 0.2 & 0.8 & $0.2(-10) + 0.8(5) = +2$ \\
+C & 0.4 & 0.6 & $0.4(-10) + 0.6(5) = -1$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The shocks are common to every place; $z_\ell$ varies only through the
+        shares. The design compares A with B: the place that was manufacturing
+        when manufacturing collapsed.
+  \item Estimation is 2SLS of $y_\ell$ on $x_\ell$ with $z_\ell$ as the one
+        excluded instrument, controls in both stages. $K$ industries are not
+        $K$ instruments; Bound--Jaeger--Baker does not apply. What $K$ changes
+        is the inference.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Two Routes to Validity}
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}p{2.4cm}p{5.1cm}p{5.1cm}@{}}
+\toprule
+ & shares exogenous \srcp{Goldsmith-Pinkham, Sorkin, and Swift 2020} & shocks exogenous \srcp{Borusyak, Hull, and Jaravel 2022} \\
+\midrule
+as good as random & the baseline shares $s_{\ell k}$, given controls & the shocks $g_k$ across industries; shares may be endogenous \\
+the other piece & shocks only set the weights; the instrument is really the $K$ share variables & shares only set the exposure; the shocks are the identifying variation \\
+reads like & a difference-in-differences with continuous exposure: high-share places would have trended like low-share ones & an industry-level IV with $K$ observations weighted by average exposure $\bar s_k$ \\
+typical setting & Card enclaves; few, large shocks & the China shock; many industries, idiosyncratic shocks \\
+what to check & pre-trends by exposure; Rotemberg weights, which shares carry the estimate & shock balance, do the $g_k$ predict industry averages of covariates; effective number of shocks $1/\sum_k \bar s_k^{\,2}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+Choose the story that fits the setting and defend that one; the two require
+different checks.
+\end{frame}
+
+\begin{frame}{Proof by Simulation}
+300 places, 80 industries, true $\beta = 1$, 1,000 replications, first-stage
+$R^2 \approx 0.20$. A local supply shock enters both $x_\ell$ and $y_\ell$, so
+OLS is biased \srcp{figs/w7\_shiftshare.R}.
+\begin{columns}[T]
+\begin{column}{0.56\textwidth}
+\includegraphics[width=\linewidth]{figs/shiftshare_sim.pdf}
+\end{column}
+\begin{column}{0.42\textwidth}
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+scenario & OLS & SSIV \\
+\midrule
+A. both stories hold & 1.65 & 0.99 \\
+B. shares endogenous & 1.65 & 0.98 \\
+C. shocks not random & 1.69 & \alert{1.35} \\
+\bottomrule
+\end{tabular}
+\end{column}
+\end{columns}
+\vskip2pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{B} (shocks random) is the Borusyak--Hull--Jaravel point: an
+        endogenous share does no harm, because $z_\ell$ averages many mean-zero shocks.
+  \item \textbf{C} is the failure neither story survives: a national shock
+        that moves $y$ through a channel other than $x$ (the industry's
+        technology, unions, politics).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Inference: Places That Look Alike Are Not Independent}
+\srct{Ad\~ao, Kolesár, and Morales (2019)}: if $y_\ell$ carries an industry
+component $\sum_k s_{\ell k}\nu_k$, places with similar shares have correlated
+residuals wherever they sit on the map. Robust and state-clustered standard
+errors miss this and over-reject. Coverage of 95\% intervals in the simulation
+\srcp{figs/w7\_shiftshare.R}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & robust SE & shock-level SE \\
+\midrule
+D. valid, industry-correlated errors & 0.90 & 0.94 \\
+C. shocks not random (biased) & 0.07 & 0.13 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Shock-level regression} \srcp{Borusyak, Hull, and Jaravel 2022}:
+        average $y_\ell$ and $x_\ell$ to industries with exposure weights,
+        instrument with $g_k$, weight by $\bar s_k$. Same point estimate as the
+        place-level 2SLS; the standard error treats the $K$ shocks as the
+        independent units (\texttt{ShiftShareSE} implements Ad\~ao et al.).
+  \item Few effective shocks behave like a small sample: report
+        $1/\sum_k \bar s_k^{\,2}$ next to the first-stage $F$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Autor, Dorn, and Hanson (2019)}
+The title is borrowed from \srct{Wilson (1996)}: does the collapse of
+manufacturing lower young men's value in the marriage market?
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Shock}: growth in Chinese import penetration per worker in
+        commuting zone $\ell$, $x_\ell = \sum_k s_{\ell k}\,\Delta M_k / L_k$,
+        with male and female employment shares separately.
+  \item \textbf{Instrument}: the same sum with China's export growth to eight
+        other high-income countries and lagged shares \srcp{Autor, Dorn, and
+        Hanson 2013}: the exclusion claim is about shocks, Chinese productivity
+        rather than U.S.\ demand. 722 commuting zones, 1990--2000 and
+        2000--2014 stacked, standard errors clustered by state.
+  \item \textbf{Results}: a unit shock, the average decade-level rise in
+        exposure, lowers the share of women aged 18--39 currently married by
+        0.95 points and raises the never-married share by 1.2. Shocks to
+        male-intensive industries do the work.
+\end{itemize}
+Shift-share designs are only now arriving in sociology journals; the first
+China-shock paper in one is next.
+\end{frame}
+
+\begin{frame}{In the Literature: Shen (2026)}
+\srct{Shen (2026)}, \textit{Sociological Science}: did the deterioration of men's
+labor markets raise the correlation between spouses' earnings? The usual story
+credits wives' rising employment; this one asks about husbands' decline.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Data.} Census and ACS, 722 commuting zones, two stacked decadal
+        changes (1990--2000, 2000--2014), $n = 1{,}444$. Outcome: the change in
+        the zone's spousal earnings correlation.
+  \item \textbf{Two shocks.} The Autor--Dorn--Hanson exposure
+        $\sum_j (L_{ij}/L_i)\,\Delta Z^{u}_{ij}$ is split by each industry's male
+        and female employment share in the zone, giving a male-specific and a
+        female-specific import shock (mining versus textiles).
+  \item \textbf{Two instruments.} The same sums built from China's export
+        growth to eight other high-income countries and 1980 industry shares.
+        Two endogenous regressors, so strength is reported as the
+        Sanderson--Windmeijer conditional $F$ (113 and 124) and the
+        Kleibergen--Paap $F$ (62). Standard errors clustered by state.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Shen (2026): Results and Reading}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+change in spousal earnings correlation & all couples & with children & without \\
+\midrule
+male-specific shock & 0.04 (0.02) & 0.06 (0.02) & 0.01 (0.02) \\
+female-specific shock & $-0.01$ (0.01) & $-0.02$ (0.01) & $-0.01$ (0.02) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{Mechanism.} A unit male shock adds 121 (33) annual work hours
+        to mothers married to top-tercile fathers, 79 (23) in the middle, 12
+        (27) at the bottom: families adapt to men's decline unequally, and the
+        adaptation itself widens inequality between households.
+  \item \textbf{Exclusion is the shocks story}: the non-U.S. component of
+        Chinese export growth is as good as random with respect to local
+        determinants of the correlation, given controls \srcp{Borusyak, Hull,
+        and Jaravel 2022}.
+  \item \textbf{Two threats the paper names.} Women are scarce in tradable
+        manufacturing, so the female shock measures women's conditions poorly;
+        and trade shocks also change who marries \srcp{Autor, Dorn, and Hanson 2019}.
 \end{itemize}
 \end{frame}
 
@@ -734,41 +1893,78 @@ note, timed, no coding. Tuesday October 13 is Fall break.
 \begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep3pt
+\item Abadie, Alberto. 2003. ``Semiparametric Instrumental Variable Estimation of Treatment Response Models.'' \textit{Journal of Econometrics} 113(2): 231--263.
 \item Acemoglu, Daron, Simon Johnson, and James A. Robinson. 2001. ``The Colonial
 Origins of Comparative Development.'' \textit{American Economic Review} 91(5):
 1369--1401.
-\item Angrist, Joshua D. and Alan B. Krueger. 1991. ``Does Compulsory School
-Attendance Affect Schooling and Earnings?'' \textit{Quarterly Journal of
-Economics} 106(4): 979--1014.
-\item Angrist, Joshua D., Guido W. Imbens, and Donald B. Rubin. 1996.
-``Identification of Causal Effects Using Instrumental Variables.''
-\textit{Journal of the American Statistical Association} 91(434): 444--455.
+\item Ad\~ao, Rodrigo, Michal Koles\'ar, and Eduardo Morales. 2019. ``Shift-Share Designs: Theory and Inference.'' \textit{Quarterly Journal of Economics} 134(4): 1949--2010.
+\item Aizer, Anna and Joseph J. Doyle Jr. 2015. ``Juvenile Incarceration, Human Capital, and Future Crime: Evidence from Randomly Assigned Judges.'' \textit{Quarterly Journal of Economics} 130(2): 759--803.
+\item Aksoy, Ozan and Diego Gambetta. 2022. ``Commitment through Sacrifice: How Longer Ramadan Fasting Strengthens Religiosity and Political Islam.'' \textit{American Sociological Review} 87(4): 555--583.
 \item Anderson, T.W. and Herman Rubin. 1949. ``Estimation of the Parameters of a
 Single Equation in a Complete System of Stochastic Equations.''
 \textit{Annals of Mathematical Statistics} 20(1): 46--63.
+\item Angrist, Joshua D. 1990. ``Lifetime Earnings and the Vietnam Era Draft Lottery: Evidence from Social Security Administrative Records.'' \textit{American Economic Review} 80(3): 313--336.
+\item Angrist, Joshua D. and Alan B. Krueger. 1991. ``Does Compulsory School
+Attendance Affect Schooling and Earnings?'' \textit{Quarterly Journal of
+Economics} 106(4): 979--1014.
 \item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.
 \textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 4]
+\item Angrist, Joshua D., Guido W. Imbens, and Alan B. Krueger. 1999. ``Jackknife Instrumental Variables Estimation.'' \textit{Journal of Applied Econometrics} 14(1): 57--67.
+\item Angrist, Joshua D., Guido W. Imbens, and Donald B. Rubin. 1996.
+``Identification of Causal Effects Using Instrumental Variables.''
+\textit{Journal of the American Statistical Association} 91(434): 444--455.
+\item Autor, David H., David Dorn, and Gordon H. Hanson. 2013. ``The China Syndrome: Local Labor Market Effects of Import Competition in the United States.'' \textit{American Economic Review} 103(6): 2121--2168.
+\item Autor, David, David Dorn, and Gordon Hanson. 2019. ``When Work Disappears: Manufacturing Decline and the Falling Marriage Market Value of Young Men.'' \textit{American Economic Review: Insights} 1(2): 161--178.
+\item Bartik, Timothy J. 1991. \textit{Who Benefits from State and Local Economic Development Policies?} Kalamazoo: W.E. Upjohn Institute.
+\item Bhuller, Manudeep, Gordon B. Dahl, Katrine V. L\o ken, and Magne Mogstad. 2020. ``Incarceration, Recidivism, and Employment.'' \textit{Journal of Political Economy} 128(4): 1269--1324.
+\item Borusyak, Kirill, Peter Hull, and Xavier Jaravel. 2022. ``Quasi-Experimental Shift-Share Research Designs.'' \textit{Review of Economic Studies} 89(1): 181--213.
+\item Borusyak, Kirill, Peter Hull, and Xavier Jaravel. 2025. ``A Practical Guide to Shift-Share Instruments.'' \textit{Journal of Economic Perspectives} 39(1): 181--204.
 \item Bound, John, David A. Jaeger, and Regina M. Baker. 1995. ``Problems with
 Instrumental Variables Estimation When the Correlation Between the Instruments
 and the Endogenous Explanatory Variable Is Weak.'' \textit{Journal of the
 American Statistical Association} 90(430): 443--450.
+\item Campante, Filipe and David Yanagizawa-Drott. 2015. ``Does Religion Affect Economic Growth and Happiness? Evidence from Ramadan.'' \textit{Quarterly Journal of Economics} 130(2): 615--658.
+\item Card, David. 1995. ``Using Geographic Variation in College Proximity to Estimate the Return to Schooling.'' In \textit{Aspects of Labour Market Behaviour: Essays in Honour of John Vanderkamp}, ed. L. N. Christofides, E. K. Grant, and R. Swidinsky. University of Toronto Press, 201--222.
+\item Card, David. 2001. ``Immigrant Inflows, Native Outflows, and the Local Labor Market Impacts of Higher Immigration.'' \textit{Journal of Labor Economics} 19(1): 22--64.
+\item Chyn, Eric, Brigham Frandsen, and Emily C. Leslie. 2025. ``Examiner and Judge Designs in Economics: A Practitioner's Guide.'' \textit{Journal of Economic Literature} 63(2): 401--439.
+\item de Vaan, Mathijs and Toby Stuart. 2019. ``Does Intra-household Contagion Cause an Increase in Prescription Opioid Use?'' \textit{American Sociological Review} 84(4): 577--608.
+\item Dufour, Jean-Marie. 1997. ``Some Impossibility Theorems in Econometrics with Applications to Structural and Dynamic Models.'' \textit{Econometrica} 65(6): 1365--1387.
+\item de Chaisemartin, Cl\'ement. 2017. ``Tolerating Defiance? Local Average Treatment Effects without Monotonicity.'' \textit{Quantitative Economics} 8(2): 367--396.
+\item Dobbie, Will, Jacob Goldin, and Crystal S. Yang. 2018. ``The Effects of Pretrial Detention on Conviction, Future Crime, and Employment: Evidence from Randomly Assigned Judges.'' \textit{American Economic Review} 108(2): 201--240.
+\item Evans, William N. and Emily G. Owens. 2007. ``COPS and Crime.'' \textit{Journal of Public Economics} 91(1--2): 181--201.
+\item Frandsen, Brigham, Lars Lefgren, and Emily Leslie. 2023. ``Judging Judge Fixed Effects.'' \textit{American Economic Review} 113(1): 253--277.
+\item Goldsmith-Pinkham, Paul, Isaac Sorkin, and Henry Swift. 2020. ``Bartik Instruments: What, When, Why, and How.'' \textit{American Economic Review} 110(8): 2586--2624.
+\item Green, Donald P. and Daniel Winik. 2010. ``Using Random Judge Assignments to Estimate the Effects of Incarceration and Probation on Recidivism among Drug Offenders.'' \textit{Criminology} 48(2): 357--387.
+\item Harding, David J., Jeffrey D. Morenoff, Anh P. Nguyen, and Shawn D. Bushway. 2017. ``Short- and Long-Term Effects of Imprisonment on Future Felony Convictions and Prison Admissions.'' \textit{Proceedings of the National Academy of Sciences} 114(42): 11103--11108.
+\item Harding, David J., Jeffrey D. Morenoff, Anh P. Nguyen, and Shawn D. Bushway. 2018. ``Imprisonment and Labor Market Outcomes: Evidence from a Natural Experiment.'' \textit{American Journal of Sociology} 124(1): 49--110.
+\item Harding, David J., Jeffrey D. Morenoff, Anh P. Nguyen, Shawn D. Bushway, and Ingrid A. Binswanger. 2019. ``A Natural Experiment Study of the Effects of Imprisonment on Violence in the Community.'' \textit{Nature Human Behaviour} 3(7): 671--677.
 \item Imbens, Guido W. and Joshua D. Angrist. 1994. ``Identification and
 Estimation of Local Average Treatment Effects.'' \textit{Econometrica} 62(2):
 467--475.
+\item Kitagawa, Toru. 2015. ``A Test for Instrument Validity.'' \textit{Econometrica} 83(5): 2043--2063.
+\item Kling, Jeffrey R. 2006. ``Incarceration Length, Employment, and Earnings.'' \textit{American Economic Review} 96(3): 863--876.
 \item Lee, David S., Justin McCrary, Marcelo J. Moreira, and Jack Porter. 2022.
 ``Valid $t$-Ratio Inference for IV.'' \textit{American Economic Review} 112(10):
 3260--3290.
+\item Levitt, Steven D. 2002. ``Using Electoral Cycles in Police Hiring to Estimate the Effects of Police on Crime: Reply.'' \textit{American Economic Review} 92(4): 1244--1250.
+\item Loeffler, Charles E. 2013. ``Does Imprisonment Alter the Life Course? Evidence on Crime and Employment from a Natural Experiment.'' \textit{Criminology} 51(1): 137--166.
+\item Mogstad, Magne, Alexander Torgovitsky, and Christopher R. Walters. 2021. ``The Causal Interpretation of Two-Stage Least Squares with Multiple Instrumental Variables.'' \textit{American Economic Review} 111(11): 3663--3698.
 \item Morgan, Stephen L. and Christopher Winship. 2015.
 \textit{Counterfactuals and Causal Inference}, 2nd ed. Cambridge University
 Press. [Ch.\ 9]
+\item Shen, Yifan. 2026. ``Men's Labor-Market Decline and the Rising Correlation between Spouses' Earnings in the United States.'' \textit{Sociological Science} 13: 1018--1045.
+\item Sharkey, Patrick and Gerard Torrats-Espinosa. 2017. ``The Effect of Violent Crime on Economic Mobility.'' \textit{Journal of Urban Economics} 102: 22--33.
+\item Noack, Claudia. 2021. ``Sensitivity of LATE Estimates to Violations of the Monotonicity Assumption.'' arXiv:2106.06421.
+\item Sharkey, Patrick, Gerard Torrats-Espinosa, and Delaram Takyar. 2017. ``Community and the Crime Decline: The Causal Effect of Local Nonprofits on Violent Crime.'' \textit{American Sociological Review} 82(6): 1214--1240.
 \item Sovey, Allison J. and Donald P. Green. 2011. ``Instrumental Variables
 Estimation in Political Science: A Reader's Guide.'' \textit{American Journal of
 Political Science} 55(1): 188--200.
+\item Staiger, Douglas and James H. Stock. 1997. ``Instrumental Variables
+Regression with Weak Instruments.'' \textit{Econometrica} 65(3): 557--586.
 \item Stock, James H. and Motohiro Yogo. 2005. ``Testing for Weak Instruments in
 Linear IV Regression.'' In \textit{Identification and Inference for Econometric
 Models}, ed. Andrews and Stock. Cambridge University Press, 80--108.
-\item Staiger, Douglas and James H. Stock. 1997. ``Instrumental Variables
-Regression with Weak Instruments.'' \textit{Econometrica} 65(3): 557--586.
+\item Wilson, William Julius. 1996. \textit{When Work Disappears: The World of the New Urban Poor}. New York: Knopf.
 \end{itemize}
 \end{frame}
 
