@@ -102,7 +102,9 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   proximity on the lab data via `figs/w7_card.R`) -> APPLICATIONS IN SOCIOLOGY (overview table;
   Sharkey, Torrats-Espinosa & Takyar 2017 ASR nonprofits; de Vaan & Stuart 2019 ASR opioid
   contagion with the ED physician's leave-one-out prescribing rate, an examiner design; Aksoy &
-  Gambetta 2022 ASR Ramadan daylength) -> weak IV -> judge IV -> shift-share -> Practice.
+  Gambetta 2022 ASR Ramadan daylength) -> WEAK IV: TWO REMEDIES (opener; Anderson-Rubin in four
+  titled steps + Card/weak-draw figure from `figs/w7_weakiv.R`; LIML/Fuller k-class frame + simulation
+  table from `figs/w7_liml.R`, 2026-10-07) -> judge IV -> shift-share -> Practice.
   Sharkey & Torrats-Espinosa 2017 JUE was DROPPED 2026-10-02 (user). Every paper = THREE frames in a fixed order
   (user 2026-10-02): 'In the Literature: Authors (Year)' = The question / The data / The
   instrument; 'Authors: the Three Conditions' = Relevance / Independence / Exclusion table
@@ -112,7 +114,21 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   -> 2SLS -> LATE -> weak IV -> JUDGE AND EXAMINER DESIGNS (leave-one-out leniency with
   `figs/w7_judge.R`, worked monotonicity failure, MTW/FLL repairs, Harding et al. 2017/2018/2019)
   -> SHIFT-SHARE (Bartik/Card, GPSS vs BHJ, `figs/w7_shiftshare.R`, AKM inference, Autor-Dorn-
-  Hanson 2019) -> Practice. New frames unstarred; the user decides stars. Lab 7 = Card proximity IV.
+  Hanson 2019, then Derenoncourt 2022 AER Great Migration in four frames: the three-frame pattern
+  plus a 'Shock' frame (predictors by item + LASSO; equations frame dropped 2026-10-07; results table rows all / Black men (T6) / white men (T7)); numbers from the Aug 2021 draft posted by WCEG Feb 2022, Tables 3, 4, 9; not checked against the AER print) -> Practice. New frames unstarred; the user decides stars. Lab 7 = Card proximity IV.
+  2026-10-07 (user): shift-share 'Proof by Simulation' and AKM 'Inference' frames DROPPED, Card (2001)
+  row dropped from the keeps/throws-away table; ADH 2013 row = decade change in US imports per worker
+  (no extra note, user found it confusing); SHEN (2026) DROPPED 2026-10-07 (frames, ref, lab mention); 'Two Routes' table replaced by three frames after keeps/throws-away: Two Routes (goal+plan, ADH s and g), Route 1 shares (furniture-town hypothetical, ADH Table 2 pre-trend 0.43/-0.13 vs -0.75), Route 2 shocks (industry pre-trend, consumer electronics, 'factors specific to China'); ADH 2019 frame = change in import PENETRATION (1991 absorption).
+  figs/w7_shiftshare.R and shiftshare_sim.pdf now unused (kept).
+  2026-10-07: new frame 'When Is AR Useful?' after the AR Card/weak-draw figure (hopeless / weak / Card
+  lab numbers / beta=0 test); 'Wald interval' renamed 'usual 95% CI' in slides and lab.
+  2026-10-07 (user): OVERIDENTIFICATION AND LIML DROPPED from slides and lab (no J/Sargan frame,
+  no LIML/Fuller frames; weak-IV section is AR only; Wu-Hausman and Sargan not taught). Lab 7 uses
+  age (not experience) as the exogenous control throughout (one endogenous regressor); 4.3 shows
+  feols for several endogenous regressors (evaluated: second stage + all three first stages; text says order does not matter, every regressor on all instruments); 5.3 = ivDiag::AR_test (AR F 4.14 =
+  reduced-form t^2, set [0.004, 0.256]); section 6 uses the lecture DGP (corr 0.9) and shows Wald
+  coverage among SIGNIFICANT draws (0.94/0.84/0.69), no funnel figure (user cut it); Wu-Hausman hidden in all printed output (diagnostics = FALSE, fitstat = ~ ivwald); compliers by hand kappa
+  plus ivdesc (unconditional, balance test rejects). ivreg/ivDiag/ivdesc installed 2026-10-07.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,

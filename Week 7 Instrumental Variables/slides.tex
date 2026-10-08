@@ -608,8 +608,7 @@ applications, and shows the weak-identification problem at scale.
         estimates and standard errors.
   \item The mechanism is overfitting the first stage: $\hat D$ reproduces
         the endogenous variation we were trying to discard.
-  \item \alert{More instruments is not more information.} Report the
-        just-identified estimate beside any overidentified one.
+  \item \alert{More instruments is not more information.}
 \end{itemize}
 Other instruments worth knowing: sibling sex composition for fertility,
 lottery admission for school quality.
@@ -871,8 +870,7 @@ Independence & A city's philanthropic climate is unrelated to its crime
   prosperity that cuts crime; the city-level controls carry the argument. \\
 Exclusion & Arts, medical, and environmental nonprofits affect crime only
   through community nonprofits. Threat: an arts program may occupy youth or
-  improve a block on its own. One instrument, so no overidentification test
-  is available. \\
+  improve a block on its own. \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1011,9 +1009,7 @@ Independence & Given province and year effects, the latitude $\times$ lunar
   outcomes, turnout and population: null. \\
 Exclusion & Needed only for the mechanism step, daylength $\to$ religiosity
   $\to$ vote. Threat: a longer fast also lowers growth \srcp{Campante and
-  Yanagizawa-Drott 2015}, a path from $Z$ to $Y$ not through religiosity.
-  Their overidentification test ($\chi^2_2 = 0.00$) has the power problems of
-  every $J$ test. \\
+  Yanagizawa-Drott 2015}, a path from $Z$ to $Y$ not through religiosity. \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1069,9 +1065,8 @@ With covariates and possibly several instruments:
         part and discard the rest.
   \item \alert{The exogenous covariates $W_i$ must appear in \emph{both} stages.}
         Omitting them from the first stage is a common and serious error.
-  \item \textbf{Order condition}: at least as many excluded instruments as
-        endogenous regressors. \emph{Exactly identified} means equality;
-        \emph{overidentified} means more.
+  \item \textbf{One excluded instrument per endogenous regressor}
+        (\emph{just identified}), the case this course uses throughout.
   \item \alert{Never run the two stages by hand.} The second-stage standard errors
         would treat $\hat D$ as data rather than as an estimate. Use
         \texttt{ivreg()} or \texttt{feols(y \textasciitilde\ w | d \textasciitilde\ z)}.
@@ -1140,17 +1135,18 @@ One $Y$, one $D$, one $Z$. Substitute the model for $Y_i$ into the Wald ratio:
     &= \beta + \frac{\sum_i \tilde z_i\,\epsilon_i}{\sum_i \tilde z_i\,\tilde d_i}
     && \text{\footnotesize centered $Z$ and $D$; the $1/n$ cancel}
 \end{align*}
-\vskip-4pt
+\vskip-8pt
 \begin{itemize}\itemsep1pt
   \item \textbf{The numerator is the random part}: independent terms
         $\tilde z_i \epsilon_i$ with mean zero and variance $\tilde z_i^{\,2}\sigma_i^2$; its
         variance is their sum.
-  \item \textbf{The denominator is treated as fixed} (condition on $Z$ and $D$):
-        the ``strong instrument'' step; the weak-IV section is about its failure.
+  \item \textbf{The denominator is nearly fixed}: $\frac{1}{n}\sum_i \tilde z_i\tilde d_i$
+        settles at $\Cov(Z, D)$ as $n$ grows (law of large numbers). If
+        $\Cov(Z, D)$ is near zero, its small changes matter: the weak-IV problem.
 \end{itemize}
-\vskip-3pt
+\vskip-6pt
 \begin{align*}
-  \Var(\hat\beta_{IV} \mid Z, D) = \frac{\sum_i \tilde z_i^{\,2}\,\sigma_i^2}{\big(\sum_i \tilde z_i\,\tilde d_i\big)^2} .
+  \Var(\hat\beta_{IV}) \approx \frac{\sum_i \tilde z_i^{\,2}\,\sigma_i^2}{\big(\sum_i \tilde z_i\,\tilde d_i\big)^2} .
 \end{align*}
 \end{frame}
 
@@ -1259,30 +1255,28 @@ the actual $D_i$, not $\hat D_i$}; this is the other reason not to run the stage
 by hand.
 \end{frame}
 
-\begin{frame}{Overidentification Tests: Read Them Carefully}
-With more instruments than endogenous regressors, the Sargan--Hansen $J$ test
-asks whether the instruments agree with one another.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Rejection} says at least one instrument is invalid, \emph{or}
-        that effects are heterogeneous, so the instruments estimate different
-        LATEs and are supposed to disagree. It does not say which.
-  \item \textbf{Non-rejection is nearly worthless.} It is consistent with all the
-        instruments being invalid \emph{in the same direction}, and the test has
-        little power.
-  \item The $J$ test cannot validate exclusion. Nothing can. The defence is
-        substantive: tell a story about why $Z$ could not affect $Y$ except
-        through $D$, and look for \emph{placebo outcomes} it should not move and
-        \emph{placebo samples} in which the first stage should be absent.
-\end{itemize}
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Weak IV]{Inference Under Weak Instruments}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Where $\E[(Y - \beta D)\,Z] = 0$ Comes From}
+\begin{frame}{The Goal}
+\textbf{Goal}: a weak first stage breaks the $t$-test: the usual 95\% CI,
+$\hat\beta_{IV} \pm 1.96\,\widehat{SE}$, though wide, covers the truth less than 95\% of the time, and $\hat\beta_{IV}$
+has no Gaussian limit. \textbf{Anderson--Rubin}
+tests a guessed $\beta_0$ without ever dividing by the first stage: it repairs
+\emph{inference}; the estimate is unchanged.
+\vskip4pt
+\textbf{Plan}
+\begin{enumerate}\itemsep2pt
+  \item The equation to test.
+  \item Two ways to use it: solve it or check it.
+  \item The statistic.
+  \item The confidence region, on Card's data and in simulation.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Anderson--Rubin, Step 1: the Equation to Test}
 The IV assumption: the instrument is unrelated to the error, $\Cov(Z_i, \epsilon_i) = 0$.
 Substitute what the error is:
 \begin{align*}
@@ -1300,12 +1294,10 @@ Substitute what the error is:
         equation.
   \item \textbf{Solve it for $\beta$} and you get the Wald estimator,
         $\Cov(Z,Y)/\Cov(Z,D)$. Nothing new is assumed.
-  \item $\E[(Y_i - \beta D_i)\,\tilde Z_i]$ with $\tilde Z_i = Z_i - \E[Z_i]$ is the
-        same covariance; the tilde only centers $Z$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Two Ways to Use the Same Equation}
+\begin{frame}{Anderson--Rubin, Step 2: Solve It or Check It}
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
 \textbf{Solve it} (Wald, 2SLS): $\hat\beta_{IV} = \Cov_n(Z,Y)/\Cov_n(Z,D)$.
@@ -1334,7 +1326,7 @@ Zero at $\beta_0 = 0.188$, the Wald estimate. For the other guesses: how far fro
 zero is too far? That needs a scale.
 \end{frame}
 
-\begin{frame}{The AR Statistic, Step by Step}
+\begin{frame}{Anderson--Rubin, Step 3: the Statistic}
 \begin{enumerate}\itemsep4pt
   \item Guess $\beta_0$; build $U_i = Y_i - \beta_0 D_i$.
   \item Regress $U_i$ on $Z_i$. Since $U_i = \alpha + (\beta - \beta_0) D_i + \epsilon_i$,
@@ -1362,7 +1354,7 @@ denominator. A weak instrument shrinks $(\beta - \beta_0)\pi$ for every guess,
 so fewer guesses are rejected: a wider set, not a wrong one.
 \end{frame}
 
-\begin{frame}{Inverting the Test: the AR Confidence Region}
+\begin{frame}{Anderson--Rubin, Step 4: the Confidence Region}
 Keep every guess the data cannot reject, $CR(\beta) = \{\beta_0 : C(\beta_0) \le c_{1-a}\}$.
 \textbf{``Works under a weak instrument''} means: covers the truth 95\% of the
 time whatever $F$ is. Simulation, $n = 500$, $\beta = 1$, 4,000 draws \srcp{figs/w7\_weakiv.R}:
@@ -1373,27 +1365,26 @@ time whatever $F$ is. Simulation, $n = 500$, $\beta = 1$, 4,000 draws \srcp{figs
 \toprule
 median first-stage $F$ & 1.8 & 6.0 & 9.7 & 101 \\
 \midrule
-Wald interval covers the truth & 87\% & 91\% & 92\% & 95\% \\
+usual 95\% CI covers the truth & 87\% & 91\% & 92\% & 95\% \\
 AR region covers the truth & 94\% & 95\% & 95\% & 95\% \\
 AR region is a bounded interval & 26\% & 69\% & 87\% & 100\% \\
-median width, Wald & 2.76 & 1.59 & 1.26 & 0.39 \\
+median width, usual CI & 2.76 & 1.59 & 1.26 & 0.39 \\
 median width, AR when bounded & 2.29 & 2.15 & 1.70 & 0.40 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip-2pt
 \begin{itemize}\itemsep1pt
-  \item \textbf{Why Wald fails}: its standard error is too \emph{small}, not too
-        large; $\hat\beta_{IV}$ leans toward OLS with heavy tails, and the printed
-        normal interval is not there.
-  \item \textbf{What AR does}: at $F \approx 6$, a bounded interval in 69\% of
-        draws, wider than Wald's, else an unbounded region: it admits what the
-        data cannot pin down, and coverage stays at 95\%.
+  \item \textbf{Why the usual CI fails}: it widens as the instrument weakens,
+        but not enough (87\%); it misses the draws that lean toward OLS and
+        look most precise.
+  \item \textbf{What AR does}: at $F \approx 6$, bounded in 69\% of draws,
+        unbounded otherwise; coverage stays at 95\%.
 \end{itemize}
 \end{frame}
 
 
-\begin{frame}{The AR Statistic on Card's Data and on the Weak Draw}
+\begin{frame}{Anderson--Rubin on Card's Data and on the Weak Draw}
 \begin{center}
 \includegraphics[width=\linewidth]{figs/weakiv_sim.pdf}
 \end{center}
@@ -1404,6 +1395,23 @@ line is 3.84 and the dashed line the first-stage $F$. The AR region is where the
 curve lies below 3.84: an interval for Card, the whole line for the weak draw
 \srcp{figs/w7\_weakiv.R}.}
 \end{frame}
+
+\begin{frame}{When Is AR Useful?}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Hopeless instrument} ($F$ below about 4): AR is mostly
+        unbounded. No method can do better; the usual 95\% CI prints a finite
+        interval that looks informative and is not. AR refuses.
+  \item \textbf{Weak instrument} ($F$ about 5--20; Card 10, Derenoncourt 15): AR is
+        usually a bounded interval with correct coverage. In the simulation,
+        bounded in 69\% of draws at $F \approx 6$ and 87\% at $F \approx 10$,
+        coverage 95\%; the usual CI covers 91--92\%.
+  \item \textbf{It can be more informative.} Card's data with controls,
+        $F \approx 10$ \srcp{lab 7}: usual CI $[-0.003, 0.190]$, includes zero;
+        AR $[0.004, 0.256]$, excludes it. AR follows the data's shape instead
+        of a symmetric interval around a biased estimate.
+\end{itemize}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Judge IV]{Judge and Examiner Designs}
@@ -1578,43 +1586,22 @@ every kind: plot each judge's rate on one case type against the other
 \textbf{Data}: everyone sentenced for a felony in Michigan, 2003--2006
 ($n = 111{,}110$), administrative records to 2013--2015; cases with no
 judicial discretion dropped. \textbf{Instruments}: judge dummies and judge
-$\times$ presentence-characteristic interactions in 2SLS, six first stages;
-LIML as a check.
+$\times$ presentence-characteristic interactions in 2SLS, six first stages.
 \vskip2pt
-\begin{itemize}\itemsep2pt
-  \item \textbf{PNAS 2017.} Prison rather than probation raises the probability
-        of being back in prison within five years by about 20 points for
-        nonwhite and white defendants alike; technical parole violations
-        account for 18 and 14 of those points, new felony sentences for 4 and
-        9. No effect on new felony convictions after release.
-  \item \textbf{AJS 2018.} The employment effect runs mainly through
-        incapacitation, the sentence and the later returns; post-release
-        penalties are concentrated among whites with a presentence work history.
-  \item \textbf{Nature Human Behaviour 2019.} Violent arrests fall by 8.4
-        points over five years when time inside is counted; after release, no
-        detectable effect on violence.
+\begin{itemize}\itemsep4pt
+  \item \textbf{PNAS 2017.} Prison rather than probation raises the chance of a
+        return to prison within five years of \emph{release} by about 20
+        points, for nonwhite and white defendants alike. Most of it is
+        \textbf{parole}: returns for technical violations (missed meetings,
+        failed drug tests, curfew), 18 and 14 points; on a new felony
+        sentence, 4 and 9. No significant effect on new felony convictions.
+  \item \textbf{AJS 2018.} Prison lowers employment mainly by keeping people
+        \emph{inside}, the sentence itself and the later returns. After
+        release, penalties fall on whites with a presentence work history.
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Reading Harding et al.\ with This Week's Tools}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Many instruments.} Judge dummies times characteristics run to
-        hundreds; 2SLS leans toward OLS, hence the LIML check. One leave-one-out
-        leniency per endogenous variable is now the default \srcp{Dobbie, Goldin,
-        and Yang 2018; Bhuller et al.\ 2020}.
-  \item \textbf{Exclusion} is handled by widening the treatment: six sentence
-        dimensions instrumented together.
-  \item \textbf{Monotonicity} is assumed, not tested.
-  \item \textbf{The estimand} is the LATE for marginal felony defendants, the
-        population a sentencing reform would move.
-\end{itemize}
-\vskip3pt
-\textbf{Same design elsewhere.} \srct{Green and Winik (2010)}: 1,003 D.C.\ drug
-defendants on nine random calendars, no effect on re-arrest.
-\srct{Loeffler (2013)}: 20,000 Cook County felony defendants, no effects on
-recidivism or employment. In economics, \srct{Kling (2006)},
-\srct{Dobbie, Goldin, and Yang (2018)}, and \srct{Bhuller et al.\ (2020)}, where
-Norwegian prisons reduce reoffending. Guide: \srct{Chyn, Frandsen, and Leslie (2025)}.
+\vskip2pt
+\alert{Prison begets prison through parole supervision, not through more
+crime.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1623,25 +1610,119 @@ Norwegian prisons reduce reoffending. Guide: \srct{Chyn, Frandsen, and Leslie (2
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{The Problem and the Instrument}
-\textbf{Goal}: the effect of a local shock $x_\ell$ (job loss, immigration,
-import competition) on a local outcome $y_\ell$ (marriage, mortality, votes)
-when $x_\ell$ responds to local conditions that also move $y_\ell$.
-\vskip2pt
-\textbf{Idea} \srcp{Bartik 1991; Card 2001}: predict the local shock from
-national shocks by industry, weighted by baseline exposure,
+\textbf{Goal}: the effect of an actual local change $D_\ell$ (employment
+growth, immigrant inflow, growth in import exposure) on a local outcome $Y_\ell$ (wages,
+marriage, votes), one observation per place $\ell$. $D_\ell$ responds to
+local conditions, a plant closing or a housing boom, that also move $Y_\ell$.
+
+\textbf{The instrument}: what $D_\ell$ would have been if every industry in
+$\ell$ had moved at the \emph{national} rate,
 \begin{align*}
-  z_\ell = \sum_{k=1}^{K} s_{\ell k}\, g_k ,
+  Z_\ell = \sum_{k=1}^{K} s_{\ell k}\, g_k ,
+  && \text{\footnotesize $s_{\ell k}$ = industry $k$'s share of $\ell$ at baseline;\ \ $g_k$ = national change in $k$.}
 \end{align*}
-$s_{\ell k}$ the baseline share of industry $k$ in place $\ell$, $g_k$ the
-national change in $k$. Card (2001): past settlement shares by origin country,
-times national inflows by origin.
+\vskip-2pt
+\alert{$Z_\ell$ instruments $D_\ell$, the local change.} The $g_k$ are not
+instruments: each is one number for the whole country. $Z_\ell$ varies across
+places only because the industry mix $s_{\ell k}$ does.
+\vskip2pt
+\textbf{Plan}: what $Z_\ell$ keeps; three places by hand; two routes to
+validity; Autor, Dorn, and Hanson (2019),
+Derenoncourt (2022).
+\end{frame}
+
+\begin{frame}{What $Z_\ell$ Keeps and What It Throws Away}
+\vskip-10pt
+\begin{align*}
+  D_\ell &= \sum_k s_{\ell k}\, g_{\ell k}
+     && \text{\footnotesize actual change = local industry changes $g_{\ell k}$, weighted} \\
+  &= Z_\ell + \underbrace{\textstyle\sum_k s_{\ell k}\,(g_{\ell k} - g_k)}_{\text{local part}}
+     && \text{\footnotesize add and subtract the national $g_k$}
+\end{align*}
+\vskip-6pt
+The local part is where endogeneity lives (a plant closes because $\ell$'s
+wages fell); $Z_\ell$ drops it and keeps the national part, which $\ell$ did not cause.
+\vskip-4pt
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{1.3cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{1.9cm}@{}}
+\toprule
+ & $k$ & $D_\ell$, measured & $Z_\ell$, constructed & $Y_\ell$ \\
+\midrule
+Bartik (1991) & industry & employment growth in $\ell$ & growth at national industry rates, 1970s shares & wage growth \\
+Autor, Dorn, Hanson (2013) & industry & decade change in US imports from China per worker & same with China's exports to 8 other rich countries, lagged shares & change in manufacturing employment \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Two Routes to Validity}
+\textbf{Goal}: $Z_\ell = \sum_k s_{\ell k}\, g_k$ must be unrelated to everything
+else that moves $Y_\ell$. It is a product of two pieces, so it is enough that
+\emph{one} of them is as good as random.
+\vskip2pt
+\textbf{In ADH (2013)}, $Y_\ell$ = the change in a commuting zone's
+manufacturing employment, 1990--2007, and
+\begin{itemize}\itemsep1pt
+  \item $s_{\ell k}$ = industry $k$'s share of $\ell$'s employment ten years
+        before the period (1980 for the 1990s), 397 industries;
+  \item $g_k$ = the growth of China's exports in industry $k$ to eight other
+        rich countries.
+\end{itemize}
 \textbf{Plan}
-\begin{enumerate}\itemsep0pt
-  \item Three places and two industries, by hand.
-  \item Two routes to validity: exogenous shares or exogenous shocks.
-  \item Proof by simulation, then inference.
-  \item Autor, Dorn, and Hanson (2019) on marriage.
+\begin{enumerate}\itemsep1pt
+  \item Route 1, \textbf{exogenous shares} \srcp{Goldsmith-Pinkham, Sorkin,
+        and Swift 2020}: the claim, how it fails, how to check.
+  \item Route 2, \textbf{exogenous shocks} \srcp{Borusyak, Hull, and Jaravel
+        2022}: the same three steps.
 \end{enumerate}
+\end{frame}
+
+\begin{frame}{Route 1: Exogenous Shares, in ADH}
+\textbf{The claim.} Which places held which industries in 1980 is as good as
+random, given the controls. Then $Z_\ell$ is valid whatever the shocks are.
+\vskip2pt
+\textbf{How it fails, hypothetically.} Furniture and textile towns had older
+plants and were already losing factory jobs in the 1980s, for reasons unrelated
+to China. They get a high $Z_\ell$ \emph{and} keep losing jobs, and 2SLS
+credits China with a decline already under way.
+\vskip2pt
+\textbf{How to check: pre-trends by place.} Regress a \emph{past} change in
+$\ell$'s manufacturing employment on its \emph{future} exposure. ADH, Table 2:
+\vskip-2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lc@{}}
+\toprule
+change in manufacturing employment & coefficient on exposure \\
+\midrule
+1970s, on future exposure & $0.43$ $(0.15)$ \\
+1980s, on future exposure & $-0.13$ $(0.13)$ \\
+1990--2007, on current exposure & $-0.75$ $(0.07)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Places hit later were not already losing manufacturing.
+\end{frame}
+
+\begin{frame}{Route 2: Exogenous Shocks, in ADH}
+\textbf{The claim.} Across the 397 industries, where China's exports grew is as
+good as random, driven by China's productivity and WTO entry. Then the shares
+may be endogenous: furniture towns can differ in every way, as long as the
+industries China grew in are not the ones in trouble anyway.
+\vskip2pt
+\textbf{How it fails, hypothetically.}
+\begin{itemize}\itemsep0pt
+  \item China grows most in labor-intensive industries that were already
+        shrinking in every rich country (automation, earlier offshoring).
+  \item Demand rises for a product in all rich countries at once; ADH name
+        consumer electronics. Then $g_k$ carries US demand after all.
+\end{itemize}
+\vskip2pt
+\textbf{How to check: pre-trends by industry.} One row per industry: regress
+the 1980s change in US employment in $k$ on $g_k$. A slope near zero indicates
+that the industries in which China's exports to the eight other countries grew
+fastest were not already shrinking in the US.
 \end{frame}
 
 \begin{frame}{Three Places, Two Industries, by Hand}
@@ -1651,7 +1732,7 @@ $g_S = +5\%$. Baseline employment shares:
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}lccl@{}}
 \toprule
-place & $s_{\ell M}$ & $s_{\ell S}$ & $z_\ell = s_{\ell M} g_M + s_{\ell S} g_S$ \\
+place & $s_{\ell M}$ & $s_{\ell S}$ & $Z_\ell = s_{\ell M} g_M + s_{\ell S} g_S$ \\
 \midrule
 A & 0.6 & 0.4 & $0.6(-10) + 0.4(5) = -4$ \\
 B & 0.2 & 0.8 & $0.2(-10) + 0.8(5) = +2$ \\
@@ -1661,94 +1742,14 @@ C & 0.4 & 0.6 & $0.4(-10) + 0.6(5) = -1$ \\
 \end{center}
 \vskip2pt
 \begin{itemize}\itemsep2pt
-  \item The shocks are common to every place; $z_\ell$ varies only through the
-        shares. The design compares A with B: the place that was manufacturing
-        when manufacturing collapsed.
-  \item Estimation is 2SLS of $y_\ell$ on $x_\ell$ with $z_\ell$ as the one
-        excluded instrument, controls in both stages. $K$ industries are not
-        $K$ instruments; Bound--Jaeger--Baker does not apply. What $K$ changes
-        is the inference.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Two Routes to Validity}
-\begin{center}\scriptsize
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{@{}p{2.4cm}p{5.1cm}p{5.1cm}@{}}
-\toprule
- & shares exogenous \srcp{Goldsmith-Pinkham, Sorkin, and Swift 2020} & shocks exogenous \srcp{Borusyak, Hull, and Jaravel 2022} \\
-\midrule
-as good as random & the baseline shares $s_{\ell k}$, given controls & the shocks $g_k$ across industries; shares may be endogenous \\
-the other piece & shocks only set the weights; the instrument is really the $K$ share variables & shares only set the exposure; the shocks are the identifying variation \\
-reads like & a difference-in-differences with continuous exposure: high-share places would have trended like low-share ones & an industry-level IV with $K$ observations weighted by average exposure $\bar s_k$ \\
-typical setting & Card enclaves; few, large shocks & the China shock; many industries, idiosyncratic shocks \\
-what to check & pre-trends by exposure; Rotemberg weights, which shares carry the estimate & shock balance, do the $g_k$ predict industry averages of covariates; effective number of shocks $1/\sum_k \bar s_k^{\,2}$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip4pt
-Choose the story that fits the setting and defend that one; the two require
-different checks.
-\end{frame}
-
-\begin{frame}{Proof by Simulation}
-300 places, 80 industries, true $\beta = 1$, 1,000 replications, first-stage
-$R^2 \approx 0.20$. A local supply shock enters both $x_\ell$ and $y_\ell$, so
-OLS is biased \srcp{figs/w7\_shiftshare.R}.
-\begin{columns}[T]
-\begin{column}{0.56\textwidth}
-\includegraphics[width=\linewidth]{figs/shiftshare_sim.pdf}
-\end{column}
-\begin{column}{0.42\textwidth}
-\footnotesize
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-scenario & OLS & SSIV \\
-\midrule
-A. both stories hold & 1.65 & 0.99 \\
-B. shares endogenous & 1.65 & 0.98 \\
-C. shocks not random & 1.69 & \alert{1.35} \\
-\bottomrule
-\end{tabular}
-\end{column}
-\end{columns}
-\vskip2pt
-\begin{itemize}\itemsep1pt
-  \item \textbf{B} (shocks random) is the Borusyak--Hull--Jaravel point: an
-        endogenous share does no harm, because $z_\ell$ averages many mean-zero shocks.
-  \item \textbf{C} is the failure neither story survives: a national shock
-        that moves $y$ through a channel other than $x$ (the industry's
-        technology, unions, politics).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Inference: Places That Look Alike Are Not Independent}
-\srct{Ad\~ao, Kolesár, and Morales (2019)}: if $y_\ell$ carries an industry
-component $\sum_k s_{\ell k}\nu_k$, places with similar shares have correlated
-residuals wherever they sit on the map. Robust and state-clustered standard
-errors miss this and over-reject. Coverage of 95\% intervals in the simulation
-\srcp{figs/w7\_shiftshare.R}:
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}lcc@{}}
-\toprule
- & robust SE & shock-level SE \\
-\midrule
-D. valid, industry-correlated errors & 0.90 & 0.94 \\
-C. shocks not random (biased) & 0.07 & 0.13 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item \textbf{Shock-level regression} \srcp{Borusyak, Hull, and Jaravel 2022}:
-        average $y_\ell$ and $x_\ell$ to industries with exposure weights,
-        instrument with $g_k$, weight by $\bar s_k$. Same point estimate as the
-        place-level 2SLS; the standard error treats the $K$ shocks as the
-        independent units (\texttt{ShiftShareSE} implements Ad\~ao et al.).
-  \item Few effective shocks behave like a small sample: report
-        $1/\sum_k \bar s_k^{\,2}$ next to the first-stage $F$.
+  \item The shocks are common to every place; $Z_\ell$ varies only through
+        the shares. The design compares A with B: the place that was
+        manufacturing when manufacturing collapsed.
+  \item If A's employment actually fell 7\% (a local plant closed too), then
+        $D_A = -7$, $Z_A = -4$, and the extra $-3$ is the local part, discarded.
+  \item 2SLS of $Y_\ell$ on $D_\ell$ with $Z_\ell$ as the one excluded
+        instrument, controls in both stages. $K$ industries are not $K$
+        instruments; what $K$ changes is the inference.
 \end{itemize}
 \end{frame}
 
@@ -1757,69 +1758,116 @@ The title is borrowed from \srct{Wilson (1996)}: does the collapse of
 manufacturing lower young men's value in the marriage market?
 \vskip3pt
 \begin{itemize}\itemsep3pt
-  \item \textbf{Shock}: growth in Chinese import penetration per worker in
-        commuting zone $\ell$, $x_\ell = \sum_k s_{\ell k}\,\Delta M_k / L_k$,
-        with male and female employment shares separately.
-  \item \textbf{Instrument}: the same sum with China's export growth to eight
-        other high-income countries and lagged shares \srcp{Autor, Dorn, and
-        Hanson 2013}: the exclusion claim is about shocks, Chinese productivity
-        rather than U.S.\ demand. 722 commuting zones, 1990--2000 and
-        2000--2014 stacked, standard errors clustered by state.
-  \item \textbf{Results}: a unit shock, the average decade-level rise in
+  \item \textbf{The change in exposure}: $D_\ell = \sum_k s_{\ell k}\,\Delta IP_k$,
+        with $s_{\ell k}$ = industry $k$'s share of $\ell$'s employment in 1990
+        and $\Delta IP_k$ = the decade change in US imports from China in $k$,
+        divided by US absorption of $k$ in 1991 (shipments plus net imports).
+  \item \textbf{Instrument}: the same sum with the change in China's exports
+        to eight other high-income countries, 1980 employment shares, and
+        absorption lagged three years. 722 commuting zones, 1990--2000 and
+        2000--2014 changes stacked, SEs clustered by state.
+  \item \textbf{Results}: a unit shock, roughly the average decade rise in
         exposure, lowers the share of women aged 18--39 currently married by
-        0.95 points and raises the never-married share by 1.2. Shocks to
-        male-intensive industries do the work.
+        0.95 points and raises the never-married share by 1.2. Male-intensive
+        shocks reduce marriage; female-intensive ones push the other way.
 \end{itemize}
-Shift-share designs are only now arriving in sociology journals; the first
-China-shock paper in one is next.
 \end{frame}
 
-\begin{frame}{In the Literature: Shen (2026)}
-\srct{Shen (2026)}, \textit{Sociological Science}: did the deterioration of men's
-labor markets raise the correlation between spouses' earnings? The usual story
-credits wives' rising employment; this one asks about husbands' decline.
+%% ---- Derenoncourt 2022 --------------------------------------------------------
+\begin{frame}{In the Literature: Derenoncourt (2022)}
+\textbf{The question.} Did the Great Migration (1940--1970) lower the upward
+mobility northern cities offer children today? OLS fails: migrants went
+where jobs were growing, and booming cities differ in mobility for other
+reasons.
 \vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Data.} Census and ACS, 722 commuting zones, two stacked decadal
-        changes (1990--2000, 2000--2014), $n = 1{,}444$. Outcome: the change in
-        the zone's spousal earnings correlation.
-  \item \textbf{Two shocks.} The Autor--Dorn--Hanson exposure
-        $\sum_j (L_{ij}/L_i)\,\Delta Z^{u}_{ij}$ is split by each industry's male
-        and female employment share in the zone, giving a male-specific and a
-        female-specific import shock (mining versus textiles).
-  \item \textbf{Two instruments.} The same sums built from China's export
-        growth to eight other high-income countries and 1980 industry shares.
-        Two endogenous regressors, so strength is reported as the
-        Sanderson--Windmeijer conditional $F$ (113 and 124) and the
-        Kleibergen--Paap $F$ (62). Standard errors clustered by state.
-\end{itemize}
+\textbf{The data.} 130 non-southern commuting zones. $D$: 1940--1970 rise
+in urban Black population over 1940 urban population. $Y$: adult income rank
+of children born 1980--1986, IRS records \srcp{Chetty and Hendren 2018}.
+\vskip3pt
+\textbf{The instrument} \srcp{Boustan 2010, at the county level}: with $j$ a
+southern county, the share is $\omega_{jc}$ = the fraction of county $j$'s
+1935--1940 Black migrants who settled in city $c$ (1940 complete-count
+census), and the shock is $\hat m_j$ = Black out-migration from $j$,
+1940--1970, \emph{predicted} from county economies: cotton and tenant
+farming, tobacco, mining, and WWII defense spending:
+\begin{align*}
+  Z_{CZ} = \frac{\sum_{c \in CZ}\sum_{j}\omega_{jc}\,\hat m_j}
+                {\text{urban population}_{CZ,1940}}
+  && \text{\footnotesize $\sum_k s_{\ell k}\,g_k$, $k$ = 1{,}200+ counties}
+\end{align*}
 \end{frame}
 
-\begin{frame}{Shen (2026): Results and Reading}
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}lccc@{}}
+\begin{frame}{Derenoncourt: the Shock}
+$\hat m_j$: Black out-migration from southern county $j$, 1940--1970,
+predicted from the county's economy one census earlier. Predictors \srcp{Boustan 2010}:
+\begin{itemize}\itemsep0pt
+  \item \textbf{Cotton}: cotton's share of farm acreage; share of farms run by
+        tenants. Cotton mechanized after WWII and displaced tenants and
+        sharecroppers: a push out.
+  \item \textbf{Farming and tobacco}: agriculture's share of the labor force;
+        tobacco state; their interaction.
+  \item \textbf{Mining}: mining's share of the labor force; mining state
+        (Oklahoma, Texas); their interaction.
+  \item \textbf{WWII defense spending} per capita: war plants and shipyards
+        kept workers in the South.
+\end{itemize}
+\textbf{LASSO, then prediction.} Each decade, LASSO (5-fold cross-validation)
+picks which predictors forecast the county's net migration rate; OLS on those
+gives the predicted rate. $\hat m_j$ = predicted rate $\times$ Black
+population, summed over the 1940s, 1950s, and 1960s. All are conditions in southern counties, argued to be unrelated to later
+mobility in northern cities.
+\end{frame}
+
+\begin{frame}{Derenoncourt: the Three Conditions}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lp{10.6cm}@{}}
 \toprule
-change in spousal earnings correlation & all couples & with children & without \\
-\midrule
-male-specific shock & 0.04 (0.02) & 0.06 (0.02) & 0.01 (0.02) \\
-female-specific shock & $-0.01$ (0.01) & $-0.02$ (0.01) & $-0.01$ (0.02) \\
+Relevance & One percentile more predicted increase gives $0.297$ $(0.076)$
+  percentile more actual increase; $F = 15.3$. \alert{Testable, adequate, not strong.} \\
+Independence & The shocks story \srcp{Borusyak, Hull, and Jaravel 2022}:
+  early migrants did not pick cities at random, but southern push shocks
+  are unrelated to northern mobility. Placebo (her Table 3): $Z$ does not
+  predict 1900--1940 school attendance of teens with low-status fathers
+  ($0.011$ to $0.025$, s.e.\ near $0.03$) or 1940 education. \\
+Exclusion & Southern shocks reach northern children only through who
+  arrived. Threats: a shock hitting origin and destination together (Virginia's
+  and Baltimore's defense plants), or another migration. Defenses: shocks
+  residualized on southern state fixed effects and a birth-state version
+  give the same answer; controls for white southern migration, European
+  migration instrumented by railway access \srcp{Sequeira, Nunn, and Qian
+  2020}, and a manufacturing Bartik shock. \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip2pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Mechanism.} A unit male shock adds 121 (33) annual work hours
-        to mothers married to top-tercile fathers, 79 (23) in the middle, 12
-        (27) at the bottom: families adapt to men's decline unequally, and the
-        adaptation itself widens inequality between households.
-  \item \textbf{Exclusion is the shocks story}: the non-U.S. component of
-        Chinese export growth is as good as random with respect to local
-        determinants of the correlation, given controls \srcp{Borusyak, Hull,
-        and Jaravel 2022}.
-  \item \textbf{Two threats the paper names.} Women are scarce in tradable
-        manufacturing, so the female shock measures women's conditions poorly;
-        and trade shocks also change who marries \srcp{Autor, Dorn, and Hanson 2019}.
+\end{frame}
+
+\begin{frame}{Derenoncourt: Main Results}
+Her Tables 4, 6, 7; 130 zones (129 for Black men). $D$ enters as its percentile; one SD = 29 percentiles:
+\vskip-4pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+outcome, parents at $p = 25$ & OLS & first stage & reduced form & 2SLS \\
+\midrule
+household income rank, all & $-0.066$ & $0.297$ & $-0.037$ & $-0.125$ \\
+ & $(0.010)$ & $(0.076)$ & $(0.010)$ & $(0.033)$ \\
+individual income rank, Black men & $-0.065$ & $0.310$ & $-0.026$ & $-0.085$ \\
+ & $(0.012)$ & $(0.074)$ & $(0.011)$ & $(0.033)$ \\
+individual income rank, white men & $-0.014$ & $0.297$ & $-0.012$ & $-0.041$ \\
+ & $(0.010)$ & $(0.076)$ & $(0.009)$ & $(0.031)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{Reading.} $-0.037/0.297 = -0.125$: one SD more Great
+        Migration, $3.6$ rank points lower (mean $45.8$).
+  \item \textbf{Black versus white men}, same outcome, both born 1978--83:
+        $-0.085$ against $-0.041$ (not significant), $2.5$ against $1.2$ rank
+        points per SD. The penalty fell mainly on Black men.
+  \item The Migration accounts for 27\% of today's northern Black--white gap.
 \end{itemize}
 \end{frame}
 
@@ -1842,7 +1890,6 @@ Adapted from \srct{Sovey and Green (2011)}. Any IV paper should report:
         and size of the correction, and whether it goes the way theory predicts.
   \item Who the \textbf{compliers} are, and their share.
   \item Weak-instrument-robust inference if $F$ is not comfortably large.
-  \item The just-identified estimate if the paper is overidentified.
   \item Placebo checks: outcomes and subgroups $Z$ should not affect.
 \end{enumerate}
 \vskip2pt
@@ -1897,7 +1944,6 @@ note, timed, no coding. Tuesday October 13 is Fall break.
 \item Acemoglu, Daron, Simon Johnson, and James A. Robinson. 2001. ``The Colonial
 Origins of Comparative Development.'' \textit{American Economic Review} 91(5):
 1369--1401.
-\item Ad\~ao, Rodrigo, Michal Koles\'ar, and Eduardo Morales. 2019. ``Shift-Share Designs: Theory and Inference.'' \textit{Quarterly Journal of Economics} 134(4): 1949--2010.
 \item Aizer, Anna and Joseph J. Doyle Jr. 2015. ``Juvenile Incarceration, Human Capital, and Future Crime: Evidence from Randomly Assigned Judges.'' \textit{Quarterly Journal of Economics} 130(2): 759--803.
 \item Aksoy, Ozan and Diego Gambetta. 2022. ``Commitment through Sacrifice: How Longer Ramadan Fasting Strengthens Religiosity and Political Islam.'' \textit{American Sociological Review} 87(4): 555--583.
 \item Anderson, T.W. and Herman Rubin. 1949. ``Estimation of the Parameters of a
@@ -1924,10 +1970,12 @@ Instrumental Variables Estimation When the Correlation Between the Instruments
 and the Endogenous Explanatory Variable Is Weak.'' \textit{Journal of the
 American Statistical Association} 90(430): 443--450.
 \item Campante, Filipe and David Yanagizawa-Drott. 2015. ``Does Religion Affect Economic Growth and Happiness? Evidence from Ramadan.'' \textit{Quarterly Journal of Economics} 130(2): 615--658.
+\item Boustan, Leah Platt. 2010. ``Was Postwar Suburbanization `White Flight'? Evidence from the Black Migration.'' \textit{Quarterly Journal of Economics} 125(1): 417--443.
 \item Card, David. 1995. ``Using Geographic Variation in College Proximity to Estimate the Return to Schooling.'' In \textit{Aspects of Labour Market Behaviour: Essays in Honour of John Vanderkamp}, ed. L. N. Christofides, E. K. Grant, and R. Swidinsky. University of Toronto Press, 201--222.
-\item Card, David. 2001. ``Immigrant Inflows, Native Outflows, and the Local Labor Market Impacts of Higher Immigration.'' \textit{Journal of Labor Economics} 19(1): 22--64.
+\item Chetty, Raj and Nathaniel Hendren. 2018. ``The Impacts of Neighborhoods on Intergenerational Mobility II: County-Level Estimates.'' \textit{Quarterly Journal of Economics} 133(3): 1163--1228.
 \item Chyn, Eric, Brigham Frandsen, and Emily C. Leslie. 2025. ``Examiner and Judge Designs in Economics: A Practitioner's Guide.'' \textit{Journal of Economic Literature} 63(2): 401--439.
 \item de Vaan, Mathijs and Toby Stuart. 2019. ``Does Intra-household Contagion Cause an Increase in Prescription Opioid Use?'' \textit{American Sociological Review} 84(4): 577--608.
+\item Derenoncourt, Ellora. 2022. ``Can You Move to Opportunity? Evidence from the Great Migration.'' \textit{American Economic Review} 112(2): 369--408.
 \item Dufour, Jean-Marie. 1997. ``Some Impossibility Theorems in Econometrics with Applications to Structural and Dynamic Models.'' \textit{Econometrica} 65(6): 1365--1387.
 \item de Chaisemartin, Cl\'ement. 2017. ``Tolerating Defiance? Local Average Treatment Effects without Monotonicity.'' \textit{Quantitative Economics} 8(2): 367--396.
 \item Dobbie, Will, Jacob Goldin, and Crystal S. Yang. 2018. ``The Effects of Pretrial Detention on Conviction, Future Crime, and Employment: Evidence from Randomly Assigned Judges.'' \textit{American Economic Review} 108(2): 201--240.
@@ -1952,7 +2000,7 @@ Estimation of Local Average Treatment Effects.'' \textit{Econometrica} 62(2):
 \item Morgan, Stephen L. and Christopher Winship. 2015.
 \textit{Counterfactuals and Causal Inference}, 2nd ed. Cambridge University
 Press. [Ch.\ 9]
-\item Shen, Yifan. 2026. ``Men's Labor-Market Decline and the Rising Correlation between Spouses' Earnings in the United States.'' \textit{Sociological Science} 13: 1018--1045.
+\item Sequeira, Sandra, Nathan Nunn, and Nancy Qian. 2020. ``Immigrants and the Making of America.'' \textit{Review of Economic Studies} 87(1): 382--419.
 \item Sharkey, Patrick and Gerard Torrats-Espinosa. 2017. ``The Effect of Violent Crime on Economic Mobility.'' \textit{Journal of Urban Economics} 102: 22--33.
 \item Noack, Claudia. 2021. ``Sensitivity of LATE Estimates to Violations of the Monotonicity Assumption.'' arXiv:2106.06421.
 \item Sharkey, Patrick, Gerard Torrats-Espinosa, and Delaram Takyar. 2017. ``Community and the Crime Decline: The Causal Effect of Local Nonprofits on Violent Crime.'' \textit{American Sociological Review} 82(6): 1214--1240.
