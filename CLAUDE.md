@@ -158,6 +158,16 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   n=300: expanded OLS collapses); lasso keeps SEI, prestige 1/100; neural nets (690S content:
   X1X2 example, backprop, SGD, dropout); embeddings/CNN/attention/PPI; Fragile Families, Kleinberg
   bail, Obermeyer, fairness impossibility. Subtitle changed; folder name unchanged. Lab 12 not aligned.
+- Week 13 (causal ML, 53 pp, rebuilt 2026-10-08; user frames kept): simulation `figs/w13_sims.R`
+  (design A = CCDDHNR Fig. 1: naive bias/sd -3.2, DML coverage .93; design B very nonlinear: DML
+  also biased, l-hat RMSE 1.02 -> "orthogonality makes errors multiply, not small"); orthogonality
+  derived (Gateaux), product-of-errors expansion, single vs double selection (BCH abortion-crime),
+  DML variance, AIPW score, PLIV, folds/clusters; 401(k) via hdm::pension (`figs/w13_401k.R`: raw
+  19,559, OLS 5,896, single 8,099, double 8,956, DML PLR lasso/RF/boost 9,609/8,965/9,907, IRM
+  9,319/8,022/8,232; causal forest ATE 7,964, calibration diff .03 p=.47, income GATES 3,946 ->
+  19,326, RATE n.s.); Long-story-short sensitivity; meta-learners, causal forest weights, BLP/GATES,
+  RATE, policy learning, conformal ITE; Athey-Wager 2019 (SIMULATED NSLM data, said on slide),
+  Brand et al. 2021 (2019 WP numbers). Lab 13 not aligned.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,

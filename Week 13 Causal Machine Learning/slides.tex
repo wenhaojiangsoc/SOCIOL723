@@ -17,6 +17,7 @@
 \usepackage{amsmath,amsfonts,amssymb,bm}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \usepackage[english]{babel}
@@ -165,6 +166,26 @@ giving up $\sqrt n$ inference.
 \end{block}
 \end{frame}
 
+\begin{frame}{Plan}
+\textbf{Goal}: valid $\sqrt n$ inference on a causal parameter when the nuisance
+functions are estimated by machine learning, and honest estimates of how effects vary.
+\vskip3pt
+\begin{enumerate}\itemsep2pt
+  \item Why plugging ML into a regression fails: regularization bias, shown in a
+        simulation; single versus double selection.
+  \item Neyman orthogonality, derived; why the product of errors is what matters.
+  \item Cross-fitting and the DML recipe; its variance; the ATE score.
+  \item The 401(k) data: OLS, single and double lasso, DML with three learners,
+        sensitivity to omitted confounders.
+  \item Heterogeneous effects: meta-learners, causal forests, BLP, GATES, RATE,
+        policy learning, on the 401(k) data.
+  \item Applications in social science: growth mindset, college and low-wage work.
+\end{enumerate}
+\vskip3pt
+{\footnotesize Scripts: \texttt{figs/w13\_sims.R}, \texttt{figs/w13\_401k.R}. Book: \srct{Chernozhukov, Hansen, Kallus, Spindler, and Syrgkanis (2024)}.}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[The Problem]{Why Naive ML Fails}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -250,6 +271,35 @@ can do that under sparsity or smoothness assumptions.
 \textbf{First-order bias has become second-order.}
 \end{frame}
 
+\begin{frame}{Seeing the Bias: a Simulation}
+$Y = 0.5\,D + g(W) + \epsilon$, $D = m(W) + v$; random forests for the nuisances;
+300 draws \srcp{figs/w13\_sims.R}.
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{A: smooth ($n = 500$)} & \multicolumn{2}{c}{B: very nonlinear ($n = 1{,}000$)} \\
+estimator & bias / sd & coverage & bias / sd & coverage \\
+\midrule
+OLS on $(D, W)$ & $-0.08$ & & $+11.2$ & \\
+naive plug-in ($Y - \hat g$ on raw $D$) & $-3.20$ & & $+6.40$ & \\
+partialling out, in-sample forests & $+0.11$ & 0.94 & $+3.57$ & 0.04 \\
+DML, 5-fold cross-fitting & $+0.28$ & 0.93 & $+3.96$ & 0.01 \\
+\midrule
+RMSE of $\hat m$, $\hat\ell$ & \multicolumn{2}{c}{0.41, \ 0.35} & \multicolumn{2}{c}{0.43, \ 1.02} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep0pt\small
+  \item \textbf{A} (Chernozhukov et al.'s Figure 1 design): the naive plug-in is off by
+        three sds; partialling out is centred and covers.
+  \item \textbf{B}: forests cannot learn $g$ here (RMSE of $\hat\ell$ 1.02); DML is biased too.
+        \alert{Orthogonality makes errors multiply; it does not make bad estimates good.}
+  \item In-sample forests matched cross-fitting here; learners that overfit more do not.
+\end{itemize}
+\end{frame}
+
+
 \begin{frame}{This Is Neyman Orthogonality Again\adv}
 The residualized moment condition is
 \begin{align*}
@@ -273,6 +323,83 @@ and it satisfies
         idea, three levels of generality.
 \end{itemize}
 \end{frame}
+
+\begin{frame}{Orthogonality, Derived}
+Perturb the nuisances in some direction: $\ell_r = \ell_0 + r\,\delta_\ell$,
+$m_r = m_0 + r\,\delta_m$. With $V = D - m_0(W)$ and $\E[V\mid W] = 0$:
+\begin{align*}
+  \psi_r &= \big[Y - \ell_r - \theta_0(D - m_r)\big](D - m_r)
+   && \text{\footnotesize the score} \\
+  \frac{\partial}{\partial r}\E[\psi_r]\Big|_{r=0}
+  &= \E\big[(-\delta_\ell + \theta_0\delta_m)\,V\big] - \E\big[(Y - \ell_0 - \theta_0 V)\,\delta_m\big]
+   && \text{\footnotesize product rule} \\
+  &= 0 - \E[\epsilon\,\delta_m] = 0
+   && \text{\footnotesize $\E[V\mid W] = 0$, $\E[\epsilon\mid W] = 0$}
+\end{align*}
+\vskip-3pt
+Compare the naive score $\varphi = (Y - \theta D - g(W))\,D$:
+\begin{align*}
+  \frac{\partial}{\partial r}\E\big[(Y - \theta_0 D - g_0 - r\delta_g)D\big]\Big|_{r=0}
+  = -\E[\delta_g(W)\,D] = -\E[\delta_g(W)\,m_0(W)] \neq 0 .
+\end{align*}
+\vskip-2pt
+{\footnotesize A small error in $\hat g$ moves the naive moment at first order; it moves the orthogonal
+one only at second order, through products of errors.}
+\end{frame}
+
+\begin{frame}{Where the Product Comes From}
+Write $V = D - m(W)$, $\epsilon = Y - \ell(W) - \theta_0 V$, and the nuisance errors
+$\Delta_m = \hat m - m$, $\Delta_\ell = \hat\ell - \ell$. The cross-fitted score at $\theta_0$ is
+\begin{align*}
+  \big(Y_i - \hat\ell_i - \theta_0(D_i - \hat m_i)\big)\big(D_i - \hat m_i\big)
+  &= \big(\epsilon_i - \Delta_{\ell i} + \theta_0\Delta_{mi}\big)\big(V_i - \Delta_{mi}\big) .
+\end{align*}
+Multiply out and average:
+\begin{align*}
+  \tfrac1n\textstyle\sum_i\psi_i
+  = \underbrace{\tfrac1n\textstyle\sum \epsilon_i V_i}_{\text{CLT term}}
+  \underbrace{- \tfrac1n\textstyle\sum (\Delta_{\ell i} - \theta_0\Delta_{mi})V_i - \tfrac1n\textstyle\sum\epsilon_i\Delta_{mi}}_{\text{mean zero}}
+  + \underbrace{\tfrac1n\textstyle\sum (\Delta_{\ell i} - \theta_0\Delta_{mi})\Delta_{mi}}_{\text{product of errors}}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item The middle terms have mean zero because $\Delta$ was estimated on \emph{other}
+        folds: it is fixed given those folds, while $V_i$ and $\epsilon_i$ have mean
+        zero. That is what cross-fitting buys.
+  \item The last term is of order $\|\Delta_m\|\,\|\Delta_\ell\| + \|\Delta_m\|^2$; it must be
+        $o(n^{-1/2})$, which holds if each error is $o(n^{-1/4})$.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Single Selection Versus Double Selection}
+{\footnotesize\color{gray}\srct{Belloni, Chernozhukov, and Hansen (2014)}}\vskip1pt
+\textbf{Single selection}: lasso of $Y$ on $W$ picks the controls; then OLS of
+$Y$ on $D$ and those controls.
+\begin{itemize}\itemsep0pt
+  \item A confounder that predicts $D$ strongly but $Y$ only moderately is
+        likely dropped: its coefficient in the $Y$-lasso is small, and $D$ is not
+        there to stand in for it. Omitted-variable bias returns.
+\end{itemize}
+\vskip2pt
+\textbf{Double selection}: union of the controls chosen to predict $Y$ \emph{and}
+those chosen to predict $D$; then OLS. A variable important for either equation
+is kept: the lasso version of partialling out both sides.
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+abortion and crime, 48 states $\times$ 12 years & violent & property & murder \\
+\midrule
+Donohue and Levitt (2001) & $-0.129$ (0.024) & $-0.091$ (0.018) & $-0.121$ (0.047) \\
+all 251 controls & $0.294$ (0.472) & $-0.068$ (0.157) & $0.321$ (1.109) \\
+double selection & $-0.087$ (0.181) & $-0.094$ (0.051) & $0.006$ (0.280) \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize Double selection keeps initial abortion rates and their trends, which predict
+abortion with $R^2 \approx 0.9$; the violent-crime and murder effects lose significance.}
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[DML]{Double Machine Learning}
@@ -323,6 +450,86 @@ This is the same device as cross-validation in Week 12, but used to protect
 \texttt{mlr3} learners.
 \end{frame}
 
+\begin{frame}{The DML Variance}
+Write the score as $\psi = (\tilde Y - \theta\tilde D)\tilde D$ with
+$\tilde Y = Y - \ell(W)$, $\tilde D = D - m(W)$. A linear score gives a ratio, and a
+ratio gives a sandwich:
+\begin{align*}
+  \hat\theta - \theta_0
+  &= \frac{\frac1n\sum_i (\tilde Y_i - \theta_0\tilde D_i)\tilde D_i}{\frac1n\sum_i \tilde D_i^2}
+   && \text{\footnotesize subtract $\theta_0$ from the ratio} \\
+  \sqrt n(\hat\theta - \theta_0) &\dto N\Big(0,\ \frac{\E[\psi^2]}{J^2}\Big),
+  \qquad J = \E[\tilde D^2]
+   && \text{\footnotesize CLT on top; LLN below}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item The estimate of $\E[\psi^2]/J^2$ is the heteroskedasticity-robust variance
+        of the final residual-on-residual regression (Week 2), computed with
+        cross-fitted residuals.
+  \item Orthogonality is what lets the estimated $\hat\ell, \hat m$ stand in for the
+        true ones without adding a term to this variance.
+  \item With $S$ repeated splits: take the median estimate, and inflate the
+        variance by the spread across splits.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The ATE Score: AIPW Is DML}
+Binary $D$, no constant-effect assumption: target the ATE with outcome models
+$m_d(x) = \E[Y\mid D=d, X=x]$ and propensity $e(x)$ (Week 6):
+\begin{align*}
+  \psi_i = m_1(X_i) - m_0(X_i)
+  + \frac{D_i\,(Y_i - m_1(X_i))}{e(X_i)}
+  - \frac{(1-D_i)(Y_i - m_0(X_i))}{1 - e(X_i)} - \theta .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Orthogonal in $(m_0, m_1, e)$: the error is
+        $\E\big[(\hat e - e)(\hat m_1 - m_1)/\hat e\big]$ plus the analogous term
+        for $m_0$, a product.
+  \item With cross-fitted ML for the three functions, this is DML for the
+        \textbf{interactive regression model}. It estimates the ATE even when effects vary;
+        the partially linear model estimates a variance-weighted average of them.
+  \item Weights $1/\hat e$ explode near 0 or 1: check overlap, trim, or
+        target the ATT or the overlap-weighted effect (Week 6).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DML for Instruments: the Partially Linear IV Model}
+$Y = \theta D + g(W) + \epsilon$ with $\E[\epsilon\mid Z, W] = 0$; $D$ endogenous,
+$Z$ an instrument valid only conditional on $W$ (Week 7):
+\begin{align*}
+  \psi = \big[(Y - \ell(W)) - \theta(D - r(W))\big]\big(Z - q(W)\big),
+  \qquad
+  \hat\theta = \frac{\sum_i (Z_i - \hat q)(Y_i - \hat\ell)}{\sum_i (Z_i - \hat q)(D_i - \hat r)}
+\end{align*}
+with $\ell, r, q$ the conditional means of $Y, D, Z$ given $W$, cross-fitted.
+\begin{itemize}\itemsep3pt
+  \item A Wald ratio of residuals: partial $W$ out of $Y$, $D$, and $Z$ by ML, then IV.
+  \item Card's proximity instrument (Week 7) is credible only given region,
+        urbanicity, and family background; this lets them enter flexibly.
+  \item Weak-instrument problems survive: a small $\sum(Z - \hat q)(D - \hat r)$ is
+        still a small denominator; Anderson--Rubin logic still applies.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Folds, Clusters, and Panels}
+\begin{itemize}\itemsep4pt
+  \item Cross-fitting assumes the held-out fold is independent of the training
+        folds. With students in schools or person-years in a panel, \alert{split by
+        school or person}; otherwise the same person's other years leak into
+        the nuisance fit and the overfitting bias returns.
+  \item The variance must also be clustered at that level (sum the score within
+        cluster before squaring).
+  \item \textbf{Repeated splits}: the estimate depends on the random partition;
+        repeat $S$ times, report the median, and add the between-split spread to
+        the variance. The 401(k) estimates use 5 folds $\times$ 5 repetitions.
+  \item \textbf{How many folds}: 5 is typical; 2 wastes data in each nuisance fit.
+        DML2 (pool the score across folds) is preferred over averaging
+        fold-specific estimates.
+\end{itemize}
+\end{frame}
+
+
+
 \begin{frame}[allowframebreaks,t]{What the Theory Requires, and What It Does Not\core}
 \begin{columns}[T]
 \begin{column}{0.47\textwidth}
@@ -355,6 +562,75 @@ confounder, no amount of machine learning helps.
 \end{alertblock}
 \end{frame}
 
+\begin{frame}{Running Example: 401(k) Eligibility and Wealth}
+\textbf{The question.} Does being eligible for a 401(k) plan raise household
+net financial assets? Eligibility is set by the employer, so it is not randomly
+assigned: it is plausibly ignorable only after conditioning on income, age, and
+other characteristics that predict both job choice and saving
+\srcp{Poterba, Venti, and Wise 1994; Chernozhukov et al.\ 2018}.
+\vskip3pt
+\textbf{The data.} SIPP 1991, 9,915 households (\texttt{hdm::pension}). 37\% eligible.
+Controls: age, income, education, family size, married, two earners, defined-benefit
+pension, IRA, home owner.
+\vskip3pt
+\textbf{Why ML}: the confounders enter through income and age in ways no one
+would write down; a linear model in nine controls is a strong functional-form claim.
+\vskip3pt
+\textbf{Plan}: raw gap; OLS; single vs.\ double lasso on a 139-column dictionary;
+DML, partially linear and interactive, with lasso, forests, and boosting.
+\end{frame}
+
+\begin{frame}{401(k): One Effect, Many Estimators}
+Effect of eligibility on net financial assets, dollars (robust se) \srcp{figs/w13\_401k.R}:
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+estimator & nuisances & estimate & se \\
+\midrule
+difference in means & none & 19,559 & 1,413 \\
+OLS, 9 linear controls & linear & 5,896 & 1,524 \\
+single selection (lasso of $Y$ only) & 9 of 139 terms & 8,099 & \\
+double selection & 14 of 139 terms & 8,956 & 1,290 \\
+\midrule
+DML, partially linear & lasso (139 terms) & 9,609 & 1,343 \\
+ & random forest & 8,965 & 1,306 \\
+ & boosting & 9,907 & 1,368 \\
+DML, interactive (ATE) & lasso & 9,319 & 3,065 \\
+ & random forest & 8,022 & 1,214 \\
+ & boosting & 8,232 & 1,239 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-4pt
+{\footnotesize Flexible adjustment lands near \$8,000--10,000 whatever the learner; Chernozhukov et al.\
+(2018) report 9,247 and 8,105 with forests. The partially linear model weights effects by
+$\Var(D\mid X)$; the interactive one targets the ATE (lasso's se is large: propensities near 0.04).}
+\end{frame}
+
+\begin{frame}{How Robust? Sensitivity for DML}
+\srct{Chernozhukov, Cinelli, Newey, Sharma, and Syrgkanis (forthcoming)} extend
+Week 6's omitted-variable sensitivity to DML: how strong would an unobserved
+confounder have to be?
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Bound the bias by two partial $R^2$'s: how much of the residual variation
+        in the outcome, and in the treatment (its Riesz representer), the confounder
+        explains, $C_Y^2$ and $C_D^2$.
+  \item 401(k), DML with forests: partially linear estimate 9,002 (se 1,394);
+        \textbf{robustness value} 5.4\%: a confounder explaining 5.4\% of both
+        residual variations would bring the estimate to zero.
+  \item A confounder as strong as $C_Y^2 \approx 4\%$, $C_D^2 \approx 3\%$ (their
+        benchmark, calibrated on observed variables): bias at most 4,196; bounds
+        [4,808; 13,196]. Still positive.
+\end{itemize}
+\vskip3pt
+{\footnotesize Same logic as Cinelli and Hazlett (Week 6), with the treatment equation
+replaced by the Riesz representer, which covers the ATE score as well as the partially
+linear one.}
+\end{frame}
+
+
 \begin{frame}[allowframebreaks,t]{Where DML Plugs In}
 The same two ingredients, an orthogonal score plus cross-fitting, apply to
 almost every design in this course:
@@ -383,6 +659,26 @@ Conditional DID & outcome trend and propensity, by cohort & 10 \\
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Recent Directions}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Automatic debiasing} \srcp{Chernozhukov, Newey, and Singh 2022}: every
+        orthogonal score in this lecture is ``plug-in $+$ a weight $\times$ residual''.
+        The weight (the Riesz representer: $1/e(X)$ terms for the ATE) can be
+        learned directly by lasso, without deriving its formula, for any linear
+        functional (average derivatives, policy effects).
+  \item \textbf{Deep learning for causal effects}: networks with a shared representation
+        of $X$ and one output head per treatment arm, sometimes with a third head
+        for the propensity; train, then plug the heads into the AIPW score
+        \srcp{Koch et al.\ 2025, a primer for sociologists}.
+  \item \textbf{Text and images as confounders}: embeddings (Week 12) enter $W$; the
+        orthogonal score makes small errors in those representations second order.
+  \item \textbf{Software}: \texttt{DoubleML} (R, Python), \texttt{grf}, and
+        \texttt{hdm}; the textbook is \srct{Chernozhukov, Hansen, Kallus, Spindler,
+        and Syrgkanis (2024)}.
+\end{itemize}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[HTE]{Heterogeneous Treatment Effects}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -409,6 +705,30 @@ Drop the constant-effect assumption. The target becomes the
         the subgroups are not chosen using the same data that tests them.
 \end{itemize}
 \end{frame}
+
+\begin{frame}{Meta-Learners: Five Ways to Estimate $\tau(x)$}
+With $\mu_d(x) = \E[Y\mid D=d, X=x]$ and $e(x) = \Pr(D=1\mid X=x)$:
+\begin{center}\scriptsize
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{7.4cm}>{\raggedright\arraybackslash}p{3.4cm}@{}}
+\toprule
+learner & recipe & weakness \\
+\midrule
+S & one model $\hat\mu(x, d)$; $\hat\tau(x) = \hat\mu(x,1) - \hat\mu(x,0)$ & regularization can shrink $d$ out \\
+T & separate $\hat\mu_1$, $\hat\mu_0$; subtract & errors of two fits add \\
+X & impute each unit's effect from the \emph{other} group's model, then smooth, weighted by $e(x)$ \srcp{Künzel et al.\ 2019} & good when groups differ in size \\
+R & minimize $\sum_i\big[(Y_i - \hat\ell(X_i)) - (D_i - \hat e(X_i))\tau(X_i)\big]^2$ \srcp{Nie and Wager 2021} & needs orthogonal residuals \\
+DR & regress the AIPW pseudo-outcome $\Gamma_i$ on $X_i$ \srcp{Kennedy 2023} & extreme $1/\hat e$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep0pt\small
+  \item R and DR are \emph{orthogonal}: their error beyond an oracle is a product,
+        $(\hat e - e)(\hat\mu_d - \mu_d)$, as in DML.
+  \item The R-learner is Robinson's partialling out with $\theta$ replaced by $\tau(X)$.
+\end{itemize}
+\end{frame}
+
 
 \begin{frame}{The Doubly Robust Score as a Pseudo-Outcome\core}
 Take the AIPW summand from Week 6, unit by unit:
@@ -455,6 +775,26 @@ treatment effect} rather than in the outcome.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{How a Causal Forest Estimates $\tau(x)$}
+A forest defines \alert{weights}: $\alpha_i(x)$ = how often unit $i$ shares a leaf
+with the point $x$, averaged over trees. Then solve a local, residualized
+regression:
+\begin{align*}
+  \hat\tau(x) = \frac{\sum_i \alpha_i(x)\,\big(D_i - \hat e(X_i)\big)\big(Y_i - \hat\ell(X_i)\big)}
+                     {\sum_i \alpha_i(x)\,\big(D_i - \hat e(X_i)\big)^2}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item The partially linear (Robinson) estimator, but weighted toward units near
+        $x$: DML made local. With $\alpha_i(x) = 1/n$ it is the DML estimate.
+  \item Splits are chosen to make $\hat\tau$ differ most between children
+        (a gradient approximation keeps it fast) \srcp{Athey, Tibshirani, and Wager 2019}.
+  \item \textbf{Honesty}: half of each tree's subsample chooses the splits, the other
+        half fills the leaves. \textbf{Subsampling} (not bootstrap) gives the
+        variance for pointwise intervals \srcp{Wager and Athey 2018}.
+\end{itemize}
+\end{frame}
+
+
 \begin{frame}{Reporting Heterogeneity Honestly\core}
 An estimated $\hat\tau(x)$ that varies is not by itself evidence of
 heterogeneity, noise varies too.
@@ -473,6 +813,180 @@ heterogeneity, noise varies too.
         abused.} The honest-splitting discipline is not optional.
 \end{itemize}
 \end{frame}
+
+\begin{frame}{Testing for Heterogeneity: BLP and GATES \srcp{Chernozhukov, Demirer, Duflo, and Fernández-Val 2025}}
+Given a proxy $S(X)$ for the CATE, built on one half of the data, use the other half:
+\begin{align*}
+  \textbf{BLP:}\quad &\Gamma_i = \beta_1 + \beta_2\big(S(X_i) - \bar S\big) + \text{error}
+   && \text{\footnotesize $\beta_1$: ATE; $\beta_2 = 1$ if $S$ is the true CATE} \\
+  \textbf{GATES:}\quad &\gamma_k = \E\big[\Gamma_i \mid S(X_i) \in \text{quintile } k\big]
+   && \text{\footnotesize effects in groups sorted by $S$}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item $\beta_2 = 0$ means no detectable heterogeneity along $S$; the test is valid even
+        if $S$ is a bad estimate (a bad $S$ just has low power).
+  \item \textbf{CLAN}: compare covariate means between the most and least affected groups.
+  \item Repeat over many splits and report medians (with adjusted $p$-values).
+\end{itemize}
+\vskip2pt
+{\footnotesize India immunization incentives (25 vs.\ 78 villages): ATE 2.8 shots per village per
+month; most-affected fifth $+13.2$, least-affected $-8.0$, significantly negative.}
+\end{frame}
+
+\begin{frame}{Heterogeneity in the 401(k) Data}
+Causal forest on the nine controls; doubly robust scores for every comparison
+\srcp{figs/w13\_401k.R}:
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.66\linewidth]{figs/k401_gates.pdf}
+\end{center}
+\vskip-10pt
+\begin{itemize}\itemsep0pt\small
+  \item ATE 7,964 (1,124). Calibration: mean prediction 1.10 (good); differential
+        prediction 0.03 ($p = 0.47$): the forest's own ranking carries no detectable signal.
+  \item By pre-specified income quintile: 3,946 (904) at the bottom to 19,326 (4,656)
+        at the top. Partly scale: dollars of saving rise with income.
+  \item RATE on a held-out half: ranking by the forest 1,253 (1,928); by income
+        9,661 (5,974). Targeting gains are not established.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Should We Target? Rank-Weighted ATEs \srcp{Yadlowsky et al.\ 2025}}
+A prioritization rule $S(X)$ ranks units; treat the top share $u$ first.
+\begin{align*}
+  \text{TOC}(u) &= \E\big[\tau(X)\mid S(X)\ \text{in the top } u\big] - \text{ATE}
+   && \text{\footnotesize gain from targeting the top $u$} \\
+  \text{RATE} &= \int_0^1 \alpha(u)\,\text{TOC}(u)\,du
+   && \text{\footnotesize AUTOC: $\alpha = 1$; Qini: $\alpha(u) = u$}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item RATE $> 0$: the rule finds units with larger effects. Estimate $S$ on one
+        sample, RATE on another.
+  \item Works for any rule: a forest's $\hat\tau(x)$, a risk score, or income.
+\end{itemize}
+\vskip3pt
+\textbf{Policy learning} \srcp{Athey and Wager 2021}: choose a treatment rule
+$\pi(x) \in \{0, 1\}$ from a simple class (a depth-2 tree) to maximize
+$\frac1n\sum_i (2\pi(X_i) - 1)\,\Gamma_i$; regret shrinks like
+$\sqrt{\text{complexity}/n}$. The DR scores again do the work.
+\end{frame}
+
+\begin{frame}{Intervals for Individual Effects \srcp{Lei and Candès 2021}}
+$\hat\tau(x)$ with a standard error describes the \emph{average} effect among
+people like $x$. A person's own effect $Y_i(1) - Y_i(0)$ varies around it.
+\vskip3pt
+\begin{itemize}\itemsep4pt
+  \item Weighted split conformal (Week 12): build a prediction interval for the
+        missing $Y_i(1)$ or $Y_i(0)$, reweighting calibration cases by the
+        propensity to correct for covariate shift between groups.
+  \item Combine the two intervals into an interval for the individual effect,
+        with coverage guaranteed if the propensity is known (randomized
+        experiments), approximately otherwise.
+  \item Typical finding: individual intervals are wide, often covering zero,
+        even when the CATE is precisely estimated. Statements about ``who
+        benefits'' are about groups.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Applications]{Applications}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{In the Literature: Growth Mindset in Schools \srcp{Athey and Wager 2019}}
+\textbf{The question.} A short online intervention teaches students that
+intelligence can grow. For whom does it raise achievement?
+\vskip3pt
+\textbf{The data.} \alert{Simulated} from a model fit to the National Study of
+Learning Mindsets (a randomized study) by the organizers of a 2018 workshop:
+10,391 students in 76 schools. The simulated data show selection, so the authors
+treat them as observational. A demonstration of method, not a finding about mindsets.
+\vskip3pt
+\textbf{The design.} A causal forest with propensity and outcome forests for
+local centering, clustered by school; heterogeneity checked by the calibration
+test and by pre-specified school-level moderators.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lc@{}}
+\toprule
+AIPW average effect & 0.247 \ ($\pm 0.04$) \\
+above- minus below-median predicted effect & 0.053 \ ($\pm 0.071$) \\
+calibration: differential prediction & 0.322 \ (se 0.307, $p = 0.29$) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Athey and Wager: What the Forest Could and Could Not Say}
+\begin{itemize}\itemsep4pt
+  \item The overall effect is clear. The forest's own ranking of students does
+        not separate large from small effects: the omnibus test finds no
+        heterogeneity it can trust.
+  \item One \textbf{pre-specified} school characteristic, the school's average
+        fixed mindset, shows credible moderation in a test on school-level DR
+        scores ($t = -3.02$, $p = 0.004$); the authors add that it is unclear
+        whether it survives controls for other school covariates.
+  \item The forest split on that variable often (24\% of depth-weighted
+        splits), but splits are not tests: the test came from the DR scores.
+  \item Lesson for practice: a CATE surface that varies is not evidence of
+        heterogeneity; report the calibration test, and keep a short list of
+        moderators chosen before looking.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Brand, Xu, Koch, and Geraldo (2021)}
+\textbf{The question.} Who benefits most from college, in avoiding low-wage work?
+Theories of positive selection (those likeliest to go gain most) and negative
+selection (the disadvantaged gain most) predict opposite patterns.
+\vskip3pt
+\textbf{The data.} NLSY79, ages 14--17 in 1979, completed at least 12th grade:
+4,548 respondents. Outcome: share of 1990--2014 spent in low-wage work (below
+two thirds of the median hourly wage).
+\vskip3pt
+\textbf{The design.} \emph{Causal trees} with honest splitting: one half of the
+sample grows the tree, the other estimates the effect in each leaf, with
+propensity-score matching inside leaves; sensitivity analysis for unobserved
+confounding.
+\vskip3pt
+\textbf{Average effect}: college reduces time in low-wage work by about 18
+percentage points (matching), 17 (causal forest).
+\end{frame}
+
+\begin{frame}{Brand et al.: Who Gains Most}
+The tree's first split is mother's education:
+\vskip3pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lc@{}}
+\toprule
+leaf & effect of college (pts) \\
+\midrule
+mother without a high-school degree & $-26$ pts \\
+\quad and a large family & $-33$ pts \\
+mother high school or more, low income & $-19$ pts \\
+\quad father did not attend college & $-21$ pts \\
+all respondents & $-17$ to $-18$ pts \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item Larger effects for the more disadvantaged: \alert{negative selection}, and a
+        case for expanding access at the margin where college is least likely.
+  \item The leaves are found by the algorithm, not by the authors' hypotheses;
+        honest estimation keeps the effects in each leaf from being selected
+        because they are large.
+\end{itemize}
+{\footnotesize Numbers from the 2019 working version; see also \srct{Brand, Zhou, and Xie (2023)} for a review.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Wrap-Up]{Wrap-Up}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Where This Leaves the Course}
 \begin{itemize}\itemsep4pt
@@ -494,24 +1008,30 @@ Synthesis, and a review for the final exam.
 
 \begin{frame}[allowframebreaks,t]{References}
 \footnotesize
-\begin{itemize}\itemsep3pt
-\item Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied
-Econometrics: Causality and Policy Evaluation.'' \textit{Journal of Economic
-Perspectives} 31(2): 3--32.
-\item Athey, Susan, Julie Tibshirani, and Stefan Wager. 2019. ``Generalized
-Random Forests.'' \textit{Annals of Statistics} 47(2): 1148--1178.
-\item Belloni, Alexandre, Victor Chernozhukov, and Christian Hansen. 2014.
-``High-Dimensional Methods and Inference on Structural and Treatment Effects.''
-\textit{Journal of Economic Perspectives} 28(2): 29--50.
-\item Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, Esther Duflo,
-Christian Hansen, Whitney Newey, and James Robins. 2018. ``Double/Debiased
-Machine Learning for Treatment and Structural Parameters.''
-\textit{The Econometrics Journal} 21(1): C1--C68.
-\item Chernozhukov, Victor et al. 2025. \textit{Applied Causal Inference Powered
-by ML and AI}. [Ch.\ 4 and 10]
-\item Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of
-Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the
-American Statistical Association} 113(523): 1228--1242.
+\begin{itemize}\itemsep2pt
+\item Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied Econometrics: Causality and Policy Evaluation.'' \textit{Journal of Economic Perspectives} 31(2): 3--32.
+\item Athey, Susan, Julie Tibshirani, and Stefan Wager. 2019. ``Generalized Random Forests.'' \textit{Annals of Statistics} 47(2): 1148--1178.
+\item Athey, Susan and Stefan Wager. 2019. ``Estimating Treatment Effects with Causal Forests: An Application.'' \textit{Observational Studies} 5.
+\item Athey, Susan and Stefan Wager. 2021. ``Policy Learning with Observational Data.'' \textit{Econometrica} 89(1): 133--161.
+\item Bach, Philipp, Malte S. Kurz, Victor Chernozhukov, Martin Spindler, and Sven Klaassen. 2024. ``DoubleML: An Object-Oriented Implementation of Double Machine Learning in R.'' \textit{Journal of Statistical Software} 108(3).
+\item Belloni, Alexandre, Victor Chernozhukov, and Christian Hansen. 2014. ``High-Dimensional Methods and Inference on Structural and Treatment Effects.'' \textit{Journal of Economic Perspectives} 28(2): 29--50.
+\item Belloni, Alexandre, Victor Chernozhukov, and Christian Hansen. 2014. ``Inference on Treatment Effects after Selection among High-Dimensional Controls.'' \textit{Review of Economic Studies} 81(2): 608--650.
+\item Brand, Jennie E., Jiahui Xu, Bernard Koch, and Pablo Geraldo. 2021. ``Uncovering Sociological Effect Heterogeneity Using Tree-Based Machine Learning.'' \textit{Sociological Methodology} 51(2): 189--223.
+\item Brand, Jennie E., Xiang Zhou, and Yu Xie. 2023. ``Recent Developments in Causal Inference and Machine Learning.'' \textit{Annual Review of Sociology} 49: 81--110.
+\item Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins. 2018. ``Double/Debiased Machine Learning for Treatment and Structural Parameters.'' \textit{The Econometrics Journal} 21(1): C1--C68.
+\item Chernozhukov, Victor, Carlos Cinelli, Whitney Newey, Amit Sharma, and Vasilis Syrgkanis. Forthcoming. ``Long Story Short: Omitted Variable Bias in Causal Machine Learning.'' \textit{Review of Economics and Statistics}.
+\item Chernozhukov, Victor, Mert Demirer, Esther Duflo, and Iván Fernández-Val. 2025. ``Fisher--Schultz Lecture: Generic Machine Learning Inference on Heterogeneous Treatment Effects in Randomized Experiments, with an Application to Immunization in India.'' \textit{Econometrica} 93(4): 1121--1164.
+\item Chernozhukov, Victor, Christian Hansen, Nathan Kallus, Martin Spindler, and Vasilis Syrgkanis. 2024. \textit{Applied Causal Inference Powered by ML and AI}. arXiv:2403.02467.
+\item Chernozhukov, Victor, Whitney K. Newey, and Rahul Singh. 2022. ``Automatic Debiased Machine Learning of Causal and Structural Effects.'' \textit{Econometrica} 90(3): 967--1027.
+\item Kennedy, Edward H. 2023. ``Towards Optimal Doubly Robust Estimation of Heterogeneous Causal Effects.'' \textit{Electronic Journal of Statistics} 17(2): 3008--3049.
+\item Koch, Bernard J., Tim Sainburg, Pablo Geraldo, Song Jiang, Yizhou Sun, and Jacob Gates Foster. 2025. ``A Primer on Deep Learning for Causal Inference.'' \textit{Sociological Methods \& Research} 54(2): 397--447.
+\item Künzel, Sören R., Jasjeet S. Sekhon, Peter J. Bickel, and Bin Yu. 2019. ``Metalearners for Estimating Heterogeneous Treatment Effects Using Machine Learning.'' \textit{PNAS} 116(10): 4156--4165.
+\item Lei, Lihua and Emmanuel J. Candès. 2021. ``Conformal Inference of Counterfactuals and Individual Treatment Effects.'' \textit{Journal of the Royal Statistical Society Series B}: 911--938.
+\item Nie, Xinkun and Stefan Wager. 2021. ``Quasi-Oracle Estimation of Heterogeneous Treatment Effects.'' \textit{Biometrika} 108(2): 299--319.
+\item Poterba, James M., Steven F. Venti, and David A. Wise. 1994. ``401(k) Plans and Tax-Deferred Saving.'' In \textit{Studies in the Economics of Aging}, edited by D. A. Wise. University of Chicago Press.
+\item Robinson, Peter M. 1988. ``Root-N-Consistent Semiparametric Regression.'' \textit{Econometrica} 56(4): 931--954.
+\item Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the American Statistical Association} 113(523): 1228--1242.
+\item Yadlowsky, Steve, Scott Fleming, Nigam Shah, Emma Brunskill, and Stefan Wager. 2025. ``Evaluating Treatment Prioritization Rules via Rank-Weighted Average Treatment Effects.'' \textit{Journal of the American Statistical Association} 120(549): 38--51.
 \end{itemize}
 \end{frame}
 
