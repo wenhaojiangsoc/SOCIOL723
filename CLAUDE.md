@@ -151,6 +151,13 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   (`figs/w11_sims.R`); Basque two specs and gsynth EDR turnout (`figs/w11_more.R`: TWFE .78 vs IFE r=2
   4.90); German reunification (ADH 2015); penalized/augmented/SDiD/MC/IFE/staggered/recent;
   Bartos & Kubrin 2018 Prop 47. synthdid + augsynth are GitHub-only. Lab 11 not yet aligned.
+- Week 12 (ML, 69 pp, rebuilt 2026-10-08; user asked to merge 690S Weeks 2+3: trees AND neural nets
+  and beyond): bias-variance proof, optimism 2p sigma^2/n, CV (Bates et al.), ridge SVD/Hoerl-Kennard,
+  soft thresholding, trees/pruning, RF variance, boosting = gradient descent, stacking, classification;
+  GSS benchmark (`figs/w12_gss.R`: test R2 boosting .381, RF .373, lasso .344, OLS .338, NN .342;
+  n=300: expanded OLS collapses); lasso keeps SEI, prestige 1/100; neural nets (690S content:
+  X1X2 example, backprop, SGD, dropout); embeddings/CNN/attention/PPI; Fragile Families, Kleinberg
+  bail, Obermeyer, fairness impossibility. Subtitle changed; folder name unchanged. Lab 12 not aligned.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
