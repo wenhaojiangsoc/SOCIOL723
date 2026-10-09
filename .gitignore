@@ -17,3 +17,8 @@ syllabus/main.pdf
 
 # answer keys for problem sets stay local
 Homework/*/*_answers.*
+
+# the real midterm and the script behind its numbers stay local until after the exam
+Midterm/midterm.tex
+Midterm/midterm.pdf
+Midterm/midterm_numbers.*

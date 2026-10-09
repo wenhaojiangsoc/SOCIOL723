@@ -277,6 +277,7 @@ Lecture started from the standard error. `summary()` prints a $z$ for every coef
 ```{r}
 #| label: wald-one
 ## the unrestricted model; summary() divides each coefficient by its SE
+gss <- gss[sample(1:nrow(gss),size=20,replace=FALSE),]
 m_full <- glm(ba ~ pareduc + wordsum + female + black,
               data = gss, family = binomial)
 z <- coef(summary(m_full))["black", "z value"]
