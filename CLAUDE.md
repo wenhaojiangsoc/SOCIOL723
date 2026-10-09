@@ -144,6 +144,13 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   CS/SA/ETWFE-never -10.56, imputation = ETWFE-notyet -4.85; HonestDiD breakdown < .05) ->
   beyond (dose, on/off, DDD, distributions, design-based) -> sociology (Harknett et al. 2021;
   Choper et al. 2026 ASR; Kalil et al. 2023) -> Chiu et al. 2026 lessons. Lab 10 not yet aligned.
+- Week 11 (SC, 50 pp, rebuilt 2026-10-08; user frames kept): Prop 99 rebuilt from tidysynth::smoking
+  (`figs/w11_prop99.R`: weights Utah .342/Nevada .238/Montana .209/Colorado .149/CT .062, gap -18.8,
+  placebo rank 1/39, in-time placebo -3.4, leave-one-out, min-norm regression weights 17 negative,
+  DiD/SC/SDiD -27.3/-19.6/-15.6, ASCM -16.0, conformal p .097); factor-model bias + simulation
+  (`figs/w11_sims.R`); Basque two specs and gsynth EDR turnout (`figs/w11_more.R`: TWFE .78 vs IFE r=2
+  4.90); German reunification (ADH 2015); penalized/augmented/SDiD/MC/IFE/staggered/recent;
+  Bartos & Kubrin 2018 Prop 47. synthdid + augsynth are GitHub-only. Lab 11 not yet aligned.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
