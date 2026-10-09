@@ -18,6 +18,7 @@
 \usepackage{dsfont}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \usepackage[english]{babel}
@@ -193,9 +194,37 @@ cut-off, a vote share above 50\%, an age of eligibility.
 \end{tikzpicture}
 \end{center}
 \vskip-6pt
-\alert{Just below and just above the cutoff, units are essentially identical}, 
+\alert{Just below and just above the cutoff, units are essentially identical},
 except that one group got the treatment. The jump in the outcome at $c$ is the
 effect.
+\end{frame}
+
+\begin{frame}{Where RD Sits}
+\textbf{Goal}: an effect estimate when treatment is assigned by a rule on a
+measured score, with no overlap anywhere.
+\vskip3pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lll@{}}
+\toprule
+design & comparable units & needs \\
+\midrule
+matching, weighting (Week 6) & same $X$, both treatments observed & overlap, $0 < e(x) < 1$ \\
+IV (Week 7) & moved by $Z$, which moves only $D$ & exclusion, monotonicity \\
+RD (today) & just either side of a cutoff in $X$ & continuity at the cutoff \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\textbf{Plan}:
+\begin{enumerate}\itemsep0pt
+  \item Sharp RD: why continuity identifies the effect at $c$, and only there.
+  \item Estimation: bias, variance, bandwidth, and valid intervals.
+  \item Covariates and power; validity checks; local randomization.
+  \item Fuzzy RD as local IV; Dell and Querubín (2018) on bombing in Vietnam.
+  \item Extensions: several cutoffs, away from the cutoff, boundaries, kinks, time.
+  \item Two sociological applications.
+\end{enumerate}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -203,16 +232,16 @@ effect.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Setup and Identification\core}
+\begin{frame}{Setup and Identification\core}
 A \alert{running variable} (or forcing variable) $X_i$ determines treatment
 deterministically:
 \begin{align*}
   D_i = \mathds{1}\{X_i \geq c\} .
 \end{align*}
+Write $m_d(x) = \E[Y_i(d)\mid X_i = x]$ for the two potential-outcome curves.
 \vskip2pt
 \begin{block}{Continuity assumption \srcp{Hahn, Todd, and van der Klaauw 2001}}
-$\E[Y_i(1)\mid X_i = x]$ and $\E[Y_i(0)\mid X_i = x]$ are continuous in $x$ at
-$x = c$.
+$m_1(x)$ and $m_0(x)$ are continuous in $x$ at $x = c$.
 \end{block}
 \vskip3pt
 Then
@@ -223,14 +252,110 @@ Then
 \end{align*}
 \vskip2pt
 \begin{itemize}\itemsep2pt
-  \item Note what is \emph{not} assumed: nothing about the shape of $\E[Y\mid X]$
-        away from the cutoff, and no ignorability anywhere else.
-  \item \alert{Positivity fails at every $x$, the cutoff included}: assignment is
-        deterministic, so $\Pr(D=1\mid X=x)$ is $0$ or $1$ and never strictly
-        between. Identification therefore does \emph{not} come from overlap. It
-        comes from \textbf{continuity} of $x\mapsto\E[Y_i(d)\mid X_i=x]$, which
-        lets the two one-sided limits stand in for the missing counterfactual at
-        $c$. That is also why the estimand is local to $c$.
+  \item Not assumed: anything about the shape of $\E[Y\mid X]$ away from
+        the cutoff, or ignorability anywhere else.
+  \item \alert{Positivity fails at every $x$}: $\Pr(D=1\mid X=x)$ is $0$ or $1$.
+        Identification comes from continuity, not overlap, which is why the
+        estimand is local to $c$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Two Curves, Each Seen on One Side}
+\begin{center}
+\begin{tikzpicture}[scale=0.95]
+  \draw[->] (0,0) -- (9.4,0) node[right]{\scriptsize $x$};
+  \draw[->] (0,0) -- (0,3.4) node[above]{\scriptsize $\E[Y_i(d)\mid X_i=x]$};
+  \draw[gray,dashed] (4.6,0) -- (4.6,3.3);
+  \node[gray] at (4.6,-0.32) {\scriptsize $c$};
+  %% m0: observed left (solid), unobserved right (dashed)
+  \draw[dukeblue,very thick,domain=0.3:4.6,smooth,variable=\x] plot ({\x},{0.6+0.25*\x+0.012*\x*\x});
+  \draw[dukeblue,thick,dashed,domain=4.6:9.0,smooth,variable=\x] plot ({\x},{0.6+0.25*\x+0.012*\x*\x});
+  %% m1: unobserved left (dashed), observed right (solid)
+  \draw[accent,thick,dashed,domain=0.3:4.6,smooth,variable=\x] plot ({\x},{1.35+0.21*\x+0.008*\x*\x});
+  \draw[accent,very thick,domain=4.6:9.0,smooth,variable=\x] plot ({\x},{1.35+0.21*\x+0.008*\x*\x});
+  \fill[dukeblue] (4.6,1.996) circle (2pt);
+  \fill[accent] (4.6,2.485) circle (2pt);
+  \draw[<->,thick] (4.75,1.996) -- (4.75,2.485);
+  \node[right,fill=white,inner sep=1pt] at (4.85,2.6) {\scriptsize $\tau_{RD}$};
+  \node[dukeblue] at (2.4,0.55) {\scriptsize $m_0(x)$, seen for $x<c$};
+  \node[accent] at (6.1,3.55) {\scriptsize $m_1(x)$, seen for $x\geq c$};
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item The observed regression $\E[Y_i\mid X_i=x]$ follows $m_0$ to the left of $c$
+        and $m_1$ to the right; it jumps at $c$ by $m_1(c) - m_0(c)$.
+  \item The dashed halves are never observed. Away from $c$ the gap between the
+        curves, $\tau(x)$, is not identified without further assumptions.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Identification, Step by Step}
+Above the cutoff every unit is treated, so $Y_i = Y_i(1)$ there:
+\begin{align*}
+  \lim_{x\downarrow c}\E[Y_i\mid X_i=x]
+  &= \lim_{x\downarrow c}\E[Y_i(1)\mid X_i=x]
+   && \text{\footnotesize $D_i = 1$ for $x \geq c$; consistency} \\
+  &= \lim_{x\downarrow c} m_1(x) = m_1(c)
+   && \text{\footnotesize continuity of $m_1$ at $c$} \\[3pt]
+  \lim_{x\uparrow c}\E[Y_i\mid X_i=x]
+  &= \lim_{x\uparrow c}\E[Y_i(0)\mid X_i=x]
+   && \text{\footnotesize $D_i = 0$ for $x < c$; consistency} \\
+  &= m_0(c)
+   && \text{\footnotesize continuity of $m_0$ at $c$}
+\end{align*}
+Subtract:
+\begin{align*}
+  \lim_{x\downarrow c}\E[Y_i\mid X_i=x] - \lim_{x\uparrow c}\E[Y_i\mid X_i=x]
+  = m_1(c) - m_0(c) = \E[Y_i(1) - Y_i(0)\mid X_i = c].
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Continuity of $m_1$ is used only from the right and of $m_0$ only
+        from the left: we need the \emph{unseen} side of each curve to meet
+        the seen side at $c$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Continuity Rules Out}
+Continuity fails when something other than $D$ changes at $c$.
+\vskip3pt
+\begin{itemize}\itemsep4pt
+  \item \textbf{A second treatment at the same cutoff.} An age threshold that
+        grants a pension and also lowers a tax; a district boundary where
+        schools, police, and taxes all change. The jump is the effect of the
+        bundle.
+  \item \textbf{Sorting.} If people who would do well anyway can place
+        themselves just above $c$, the units just above differ from those just
+        below in $Y_i(0)$ itself, and $m_0$ jumps.
+  \item \textbf{Selection of the cutoff on outcomes.} An agency that sets $c$ where
+        it expects a change, after seeing the data, builds the jump in.
+\end{itemize}
+\vskip4pt
+Continuity is a statement about $Y_i(0)$ and $Y_i(1)$, so it cannot be tested
+directly. It has \alert{two testable implications}: the density of $X$ and the
+distribution of pre-determined covariates should not jump at $c$. Both come
+from the next frame.
+\end{frame}
+
+\begin{frame}{Why Continuity Should Hold \srcp{Lee 2008}}
+Let $W_i$ be a unit's type (everything fixed before $X$ is realized) and let
+$X_i$ have density $f(x\mid w)$ given $W_i = w$. By Bayes' rule
+\begin{align*}
+  f(w\mid x) &= \frac{f(x\mid w)\,f(w)}{f(x)}
+   && \text{\footnotesize density of types among units with $X_i=x$} \\
+  m_d(x) &= \int \E[Y_i(d)\mid W_i=w]\, f(w\mid x)\,dw
+   && \text{\footnotesize $Y_i(d)$ is a function of type}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item \alert{If every type's density $f(x\mid w)$ is continuous at $c$}, then
+        $f(w\mid x)$ is continuous, so $m_0$, $m_1$, and the mean of any
+        pre-determined covariate are continuous at $c$.
+  \item This is \textbf{imprecise control}: units may influence $X$ (study harder,
+        campaign more), but a random component they cannot steer remains.
+        Near $c$, treatment is as good as randomly assigned.
+  \item It fails when some type can place itself exactly: then $f(x\mid w)$
+        jumps at $c$ for that type, and so does $f(x)$, the density of $X$.
 \end{itemize}
 \end{frame}
 
@@ -252,6 +377,29 @@ $\tau_{RD}$ is the average effect \alert{for units at the cutoff}. Nothing more.
 $X_i$, then treatment near the cutoff is \emph{as good as randomly assigned}, and
 the design is a local experiment.
 \end{frame}
+
+\begin{frame}{Running Example: the U.S. Senate}
+Does winning a Senate seat help the party keep it six years later?
+\srcp{Lee 2008 for the House; Cattaneo, Frandsen, and Titiunik 2015 for the Senate}
+\vskip1pt
+\begin{itemize}\itemsep1pt
+  \item $X_i$: Democratic margin of victory at $t$, in points ($c = 0$);
+        $Y_i$: Democratic vote share in the same seat at $t+6$.
+  \item 1,297 elections, 1914--2010 (595 lost, 702 won).
+\end{itemize}
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.7\linewidth]{figs/senate_rdplot.pdf}
+\end{center}
+\vskip-8pt
+{\footnotesize Dots: means in 5-point bins. Lines: the local linear fits used below
+\srcp{figs/w9\_senate.R}.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Estimation]{Estimation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Estimation: Local Linear Regression\core}
 Fit separate linear regressions on each side of the cutoff, using only
@@ -284,7 +432,7 @@ interacted local linear regression} on the observations within the bandwidth:
   \sum_{i:\,|X_i - c|\leq h} K\!\left(\frac{X_i-c}{h}\right)
   \Big(Y_i - \mu - \tau D_i - \beta_-(X_i-c)(1-D_i) - \beta_+(X_i-c)D_i\Big)^2 ,
 \end{align*}
-with $D_i = \mathbf 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
+with $D_i = \mathds 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
 \vskip3pt
 \begin{itemize}\itemsep2pt
   \item \alert{Centre the running variable at $c$}, so that the intercept shift
@@ -295,6 +443,104 @@ with $D_i = \mathbf 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
   \item \textbf{Triangular kernel} $K(u) = (1-|u|)_+$ weights observations
         linearly down to zero at the boundary and is minimax optimal at a
         boundary point. A uniform kernel is simpler and usually similar.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Estimator on the Senate Data}
+\texttt{rdrobust} defaults: local linear, triangular kernel, $h = 17.75$ points
+\srcp{figs/w9\_senate.R}.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lr@{}}
+\toprule
+weighted \texttt{lm(vote \textasciitilde{} D * margin)}, $|X_i| \leq 17.75$ & \\
+\midrule
+intercept $= \hat\mu_-$ (lost by a hair) & 45.17 \\
+$D$ $= \hat\tau$ & 7.41 \\
+slope below, $\hat\beta_-$ & 0.164 \\
+slope above, $\hat\beta_+ = 0.164 + 0.097$ & 0.261 \\
+\midrule
+\texttt{rdrobust} conventional estimate & 7.41 \\
+effective $n$: below, above & 360, \ 323 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item A party that barely wins a seat gets $\hat\mu_+ = 52.6\%$ of the vote six
+        years later; one that barely loses gets $45.2\%$.
+  \item \alert{683 of 1,297 elections carry positive weight}; the rest do not
+        enter the estimate.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why Not Compare Means Near the Cutoff?}
+Take the mean of $Y$ within $h$ on each side (a local constant fit). Each OLS
+line passes through its side's means, so with $\bar x_\pm$ the mean distance to $c$:
+\begin{align*}
+  \bar Y_+ - \bar Y_-
+  &= (\hat\mu_+ + \hat\beta_+ \bar x_+) - (\hat\mu_- + \hat\beta_- \bar x_-)
+   && \text{\footnotesize the line through the means} \\
+  &= \hat\tau_{\text{linear}} + \underbrace{\hat\beta_+\bar x_+ - \hat\beta_-\bar x_-}_{\text{slope}\,\times\,\text{distance}}
+   && \text{\footnotesize regroup}
+\end{align*}
+\vskip-4pt
+Senate, $h = 17.75$, uniform kernel:
+\begin{align*}
+  10.91 = 7.09 + 0.260 \times 7.96 + 0.226 \times 7.75 = 7.09 + 2.07 + 1.75 .
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item \alert{The bias of comparing means is of order $h$}: the means sit at
+        $\pm h/2$ on average, not at $c$, and any slope turns that distance
+        into a gap. Here it inflates the effect by half.
+  \item A boundary is the worst place for a local mean: data lie on one side
+        only, so the slope cannot cancel. Local linear removes the first-order
+        term.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Bias of Local Linear Is of Order $h^2$}
+Above $c$, write $u_i = (X_i - c)/h \in [0,1]$; take $u$ uniform (a uniform kernel, flat density) and expand
+\begin{align*}
+  m_1(c + hu) &= m_1(c) + m_1'(c)\,hu + \tfrac12 m_1''(c)\,h^2u^2 + \dots
+   && \text{\footnotesize Taylor} .
+\end{align*}
+The line fits the first two terms exactly. The bias is the intercept of the
+best line through $u^2$:
+\begin{align*}
+  \text{slope} &= \frac{\Cov(u,u^2)}{\Var(u)} = \frac{\tfrac14 - \tfrac12\cdot\tfrac13}{\tfrac1{12}} = 1
+   && \text{\footnotesize $\E u^k = 1/(k+1)$} \\
+  \text{intercept} &= \E u^2 - 1\cdot\E u = \tfrac13 - \tfrac12 = -\tfrac16
+   && \text{\footnotesize line through the means} \\
+  \E[\hat\mu_+] - m_1(c) &\approx \tfrac12 m_1''(c)\,h^2 \cdot\big(-\tfrac16\big) = -\tfrac{1}{12}\,m_1''(c)\,h^2
+   && \text{\footnotesize scale by $\tfrac12 m_1''h^2$}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item \alert{Bias $= B h^2$}, with $B$ set by the curvature on each side:
+        $B = -\tfrac1{12}\,(m_1''(c) - m_0''(c))$. Other kernels change only the
+        constant $\tfrac1{12}$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Variance Is of Order $1/(nh)$}
+With $f(c)$ the density of $X$ at $c$, about $m = n f(c) h$ observations fall
+in $[c, c+h]$. The fitted intercept is a prediction at the \emph{edge} of the data:
+\begin{align*}
+  \Var(\hat\mu_+)
+  &= \frac{\sigma^2}{m}\left(1 + \frac{(0 - \bar u)^2}{\Var(u)}\right)
+   && \text{\footnotesize variance of an OLS prediction at $u=0$} \\
+  &= \frac{\sigma^2}{m}\left(1 + \frac{1/4}{1/12}\right) = \frac{4\,\sigma^2}{m}
+   && \text{\footnotesize $u$ uniform on $[0,1]$} \\
+  \Var(\hat\tau) &= \frac{4\,(\sigma_+^2 + \sigma_-^2)}{n f(c)\, h} \equiv \frac{V}{nh}
+   && \text{\footnotesize two independent sides}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item \alert{Extrapolating to the edge costs a factor of 4}: a mean at the
+        centre of the window would have variance $\sigma^2/m$.
+  \item The variance falls as the window widens, the bias rises: that is the
+        bandwidth problem.
 \end{itemize}
 \end{frame}
 
@@ -328,26 +574,279 @@ with $D_i = \mathbf 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
         interval, which \texttt{rdrobust} reports by default.
 \end{itemize}
 \end{frame}
-\begin{frame}[allowframebreaks,t]{Why the Optimal Bandwidth Breaks the Confidence Interval\adv}
-The local linear estimator has an asymptotic expansion
+
+\begin{frame}{The MSE-Optimal Bandwidth}
+Put the two previous frames together:
 \begin{align*}
-  \hat\tau_h - \tau \;\approx\; \underbrace{B\,h^2}_{\text{bias}}
-  \;+\; \underbrace{O_p\big((nh)^{-1/2}\big)}_{\text{noise}} ,
+  \text{MSE}(h) &= B^2 h^4 + \frac{V}{nh}
+   && \text{\footnotesize bias$^2$ + variance} \\
+  0 &= 4B^2h^3 - \frac{V}{nh^2}
+   && \text{\footnotesize derivative in $h$ set to zero} \\
+  h^{*} &= \left(\frac{V}{4B^2}\right)^{1/5} n^{-1/5}
+   && \text{\footnotesize solve}
 \end{align*}
-so squared bias grows like $h^4$ while variance falls like $1/(nh)$.
-\vskip3pt
 \begin{itemize}\itemsep3pt
-  \item Minimizing MSE gives $h^{*} \propto n^{-1/5}$, at which the bias and the
-        standard error are \alert{of the same order}.
-  \item Consequently the conventional interval $\hat\tau_{h^*} \pm 1.96\,\hat{se}$
-        is \emph{not} centred on $\tau$: it undercovers, sometimes badly.
-  \item \srct{Calonico, Cattaneo, and Titiunik (2014)}: estimate the bias with a
-        higher-order local polynomial, subtract it, and \alert{widen the interval
-        to account for having estimated the bias}. That is the ``robust'' row in
-        \texttt{rdrobust} output.
-  \item \alert{Report the robust interval.} Reporting the conventional one at an
-        MSE-optimal bandwidth is internally inconsistent.
+  \item \textbf{Wider} when the noise $V$ is large or the density $f(c)$ is low;
+        \textbf{narrower} when the curves bend sharply at $c$ ($B$ large).
+  \item $B$ and $V$ are unknown: a pilot fit estimates $m''$, $\sigma^2$, and
+        $f(c)$ and plugs them in \srcp{Imbens and Kalyanaraman 2012; Calonico, Cattaneo, and Titiunik 2014}.
+  \item $h^{*}$ shrinks slowly: ten times the data narrows it by $10^{1/5} = 1.6$.
+  \item Senate: $\hat h^{*} = 17.75$ points on both sides.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Why the Optimal Bandwidth Breaks the Confidence Interval\adv}
+At $h^{*}$, the first-order condition fixes the ratio of bias to standard error:
+\begin{align*}
+  4B^2h^{*5} = \frac{V}{n}
+  \ \ \Longrightarrow\ \
+  \underbrace{B^2 h^{*4}}_{\text{bias}^2} = \frac14\,\underbrace{\frac{V}{n h^{*}}}_{\text{variance}}
+  \ \ \Longrightarrow\ \
+  |\text{bias}| = \tfrac12\,\text{se} .
+  && \text{\footnotesize divide by $4h^{*}$}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item The bias does not vanish relative to the standard error as $n$
+        grows: both shrink like $n^{-2/5}$.
+  \item $\hat\tau \pm 1.96\,\widehat{\text{se}}$ is centred half a standard error
+        off: coverage $\Pr(|N(\tfrac12, 1)| \leq 1.96) = 0.921$, lower when $h$ is
+        estimated. Covering 95\% needs 2.18, not 1.96 \srcp{Armstrong and Kolesár 2020}.
+  \item The best $h$ for a \emph{point estimate} is not the best $h$ for an \emph{interval}.
+\end{itemize}
+\vskip2pt
+\textbf{Repairs}: a smaller $h$ (undersmoothing); subtract an estimate of the
+bias (robust bias correction); or bound the bias and widen by the bound (honest intervals).
+\end{frame}
+
+\begin{frame}{Robust Bias Correction}
+\srct{Calonico, Cattaneo, and Titiunik (2014)}:
+\vskip-9pt
+\begin{align*}
+  \hat\tau^{\,bc} &= \hat\tau_h - \hat B\,h^2
+   && \text{\footnotesize $\hat B$: local quadratic, pilot bandwidth $b$} \\
+  \Var(\hat\tau^{\,bc}) &= \Var(\hat\tau_h) + h^4\Var(\hat B) - 2h^2\Cov(\hat\tau_h,\hat B)
+   && \text{\footnotesize $\hat B$ adds noise}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item The \alert{robust} interval centres on $\hat\tau^{\,bc}$ and uses the second line;
+        ``bias-corrected'' keeps the old standard error and undercovers.
+  \item \textbf{Identity}: with $b = h$, $\hat\tau^{\,bc}$ and its robust s.e. are the local
+        quadratic estimate at $h$ and its s.e.
+\end{itemize}
+\vskip2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Senate, \texttt{rdrobust} & estimate & s.e. & 95\% interval \\
+\midrule
+conventional, $h = 17.75$ & 7.41 & 1.46 & [4.56, 10.27] \\
+bias-corrected, $b = 28.03$ & 7.51 & 1.46 & [4.65, 10.37] \\
+\alert{robust} & 7.51 & 1.74 & \alert{[4.09, 10.92]} \\
+\midrule
+robust with $b = h$ & 8.3212 & 2.0649 & \\
+local quadratic at $h$, conventional & 8.3212 & 2.0649 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Does the Repair Work? A Simulation}
+The design of \srct{Calonico, Cattaneo, and Titiunik (2014)}: quintic curves
+fitted to Lee's House data, $\tau = 0.04$, 1,000 draws \srcp{figs/w9\_sims.R}.
+\vskip4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+coverage of a nominal 95\% interval & $n = 500$ & $n = 5{,}000$ \\
+\midrule
+conventional, MSE-optimal $h$ & 0.896 & 0.784 \\
+robust, MSE-optimal $h$ & 0.917 & 0.889 \\
+robust, CER-optimal $h$ & 0.930 & 0.935 \\
+\midrule
+bias / sd of the conventional estimate & 0.31 & 0.80 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item The conventional interval gets \emph{worse} with more data.
+  \item \textbf{CER-optimal bandwidth} \srcp{Calonico, Cattaneo, and Farrell 2020}:
+        a smaller $h$ chosen to minimize the coverage error of the robust interval;
+        $h_{CER} = h_{MSE}\times n^{-1/20}$ for local linear. Senate: $17.75 \times 0.699 = 12.41$.
+  \item Practice: report the point estimate at $h_{MSE}$ and the robust interval
+        at $h_{CER}$ (\texttt{bwselect = "cerrd"}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Honest Intervals \srcp{Armstrong and Kolesár 2018, 2020}}
+Assume a bound on curvature, $|m_d''(x)| \leq M$ near $c$. For a given $h$ the
+estimator's weights are known, so its \alert{largest possible bias} $\bar b$ is
+computable. Then
+\begin{align*}
+  \hat\tau \pm \text{cv}_{0.95}\!\big(\bar b/\widehat{\text{se}}\big)\cdot\widehat{\text{se}},
+  \qquad
+  \text{cv}_{0.95}(t) = \text{the 95th percentile of } |N(t,1)| .
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item Coverage is at least 95\% for every curve with $|m''| \leq M$: the
+        interval is widened by exactly enough to absorb the worst bias.
+  \item $h$ is chosen to make the interval shortest; nothing is bias-corrected.
+  \item The price is choosing $M$. A rule of thumb uses a global quartic fit;
+        report how the interval changes with $M$.
+  \item The same logic handles a \textbf{discrete running variable}, where
+        continuity-based asymptotics do not apply \srcp{Kolesár and Rothe 2018}.
+\end{itemize}
+\vskip2pt
+Senate (\texttt{RDHonest}, $\hat M = 0.114$): $h = 9.84$, estimate 8.03, s.e.
+1.85, $\bar b = 1.13$, $\text{cv} = 2.27$, interval [3.82, 12.24].
+\end{frame}
+
+\begin{frame}{Global Polynomials Weight Distant Races}
+\srct{Gelman and Imbens (2019)}.
+Every estimator of $\mu_+$ is a weighted mean of the $Y_i$ above the cutoff,
+weights $=$ row 1 of $(\bm{X}'\bm{W}\bm{X})^{-1}\bm{X}'\bm{W}$.
+\vskip-6pt
+\begin{center}
+\includegraphics[width=0.66\linewidth]{figs/poly_weights.pdf}
+\end{center}
+\vskip-10pt
+\begin{itemize}\itemsep1pt
+  \item A degree-6 fit gives a race won by 75 points $3.4$ times the average
+        weight; the estimate moves with the degree: $p = 1,\dots,6$ gives
+        6.04, 4.93, 7.32, 9.41, 7.96, 6.63.
+  \item The local linear weights are zero beyond $h$ and largest at the cutoff.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bandwidth Sensitivity on the Senate Data}
+Conventional estimate and robust 95\% interval ($b/h$ fixed at the default) \srcp{figs/w9\_senate.R}:
+\vskip4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}rccc@{}}
+\toprule
+$h$ & estimate & robust 95\% interval & effective $n$ (below, above) \\
+\midrule
+5 & 12.27 & [7.93, 19.77] & 128, 117 \\
+10 & 7.98 & [4.39, 13.11] & 245, 206 \\
+12.41 \ ($h_{CER}$) & 7.63 & [4.07, 11.29] & 284, 248 \\
+17.75 \ ($h_{MSE}$) & 7.41 & [4.09, 10.92] & 360, 323 \\
+30 & 7.28 & [5.13, 10.71] & 474, 457 \\
+50 & 6.48 & [4.87, 9.70] & 565, 562 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item Stable between $h = 10$ and $50$; every interval excludes zero.
+  \item At $h = 5$ the estimate rises, with 245 elections: noise, and the
+        interval says so.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Covariates]{Covariates and Power}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Adding Covariates \srcp{Calonico, Cattaneo, Farrell, and Titiunik 2019}}
+Add pre-determined $Z_i$ (lagged vote, say) to the local regression, additively,
+same kernel and bandwidth. By the omitted-variable formula (Week 1):
+\begin{align*}
+  \tilde\tau = \hat\tau_Y - \hat\tau_Z'\,\hat\gamma
+   && \text{\footnotesize exact, for weighted least squares}
+\end{align*}
+\vskip-4pt
+{\small $\hat\tau_Y$: RD estimate for $Y$;\ \ $\hat\tau_Z$: RD estimates with each $Z$
+as the outcome;\ \ $\hat\gamma$: coefficients on $Z$ in the regression that includes $Z$.}
+\begin{itemize}\itemsep3pt
+  \item If $Z$ is continuous at $c$, $\tau_Z = 0$ and $\tilde\tau$ estimates the
+        \alert{same} $\tau_{RD}$; the gain is precision when $Z$ predicts $Y$.
+  \item If $\tilde\tau$ moves far from $\hat\tau_Y$, then $\hat\tau_Z$ is
+        large: a covariate jumps at the cutoff. \alert{That is a failed balance
+        test, not an improvement.}
+  \item Do not interact $Z$ with $D_i$; never use post-treatment $Z$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Covariates on the Senate Data}
+Four pre-determined covariates, 1,205 complete elections, $h = 17.75$,
+triangular kernel \srcp{figs/w9\_senate.R}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+covariate $Z$ & jump $\hat\tau_Z$ & coefficient $\hat\gamma$ \\
+\midrule
+Democratic vote share, $t-6$ & 4.047 & 0.112 \\
+Democratic vote share, $t-12$ & 1.679 & 0.138 \\
+Democratic presidential vote share & $-1.115$ & $-0.019$ \\
+open seat & $-0.139$ & $-1.119$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\small
+\begin{align*}
+  \tilde\tau = 7.826 - \big(4.047\cdot 0.112 + 1.679\cdot0.138 + (-1.115)(-0.019) + (-0.139)(-1.119)\big) = 6.966
+\end{align*}}
+\begin{itemize}\itemsep2pt
+  \item With \texttt{rdrobust}'s bandwidths: 7.82 $\to$ 6.97; robust interval 2\% shorter.
+  \item The shift comes mostly from the lagged vote, which jumps by 4 points
+        ($p = 0.09$ in the balance test). Report both estimates.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Flexible Covariate Adjustment}
+\textbf{Goal}: more precision from many covariates without adding bias.
+\vskip3pt
+\begin{itemize}\itemsep4pt
+  \item Linear adjustment is one choice of a function $\eta(Z_i)$ subtracted
+        from $Y_i$ before the RD:
+        \begin{align*}
+          \tau_{RD} = \lim_{x\downarrow c}\E[Y_i - \eta(Z_i)\mid X_i=x] - \lim_{x\uparrow c}\E[Y_i - \eta(Z_i)\mid X_i=x],
+        \end{align*}
+        true for \emph{any} $\eta$ when $Z$ is continuous at $c$: the
+        $\eta$ terms cancel at the cutoff.
+  \item So $\eta$ can be estimated by machine learning, on held-out folds,
+        to predict $Y$ as well as possible; the estimand does not change
+        \srcp{Noack, Olma, and Rothe 2026}.
+  \item The precision gain is largest when $Z$ explains much of $Y$ near
+        the cutoff, such as a lagged outcome.
+\end{itemize}
+\vskip3pt
+{\footnotesize Week 13 returns to cross-fitting.}
+\end{frame}
+
+\begin{frame}{Why RD Needs Several Times the Data of an Experiment}
+Compare $\Var(\hat\tau)$ in RD with a coin-flip experiment, same $n$, same
+$\sigma^2$, model $Y_i = \alpha + \tau D_i + \beta X_i + \epsilon_i$:
+\begin{align*}
+  \Var(\hat\tau_{RD}) &= \frac{\sigma^2}{n\Var(D)\,(1-\rho^2_{DX})}
+   && \text{\footnotesize FWL: only the part of $D$ not explained by $X$ counts} \\
+  \Var(\hat\tau_{\text{exp}}) &= \frac{\sigma^2}{n\Var(D)}
+   && \text{\footnotesize $D$ independent of $X$} \\
+  \text{ratio} &= \frac{1}{1-\rho^2_{DX}}
+   && \text{\footnotesize $\rho_{DX} = \text{corr}(\mathds 1\{X\geq c\}, X)$}
+\end{align*}
+\vskip-3pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+$X$ & $\rho^2_{DX}$ & ratio & simulation (20,000 draws) \\
+\midrule
+uniform, $c$ at the middle & $3/4$ & 4 & 3.98 \\
+normal, $c$ at the mean \srcp{Goldberger 1972} & $2/\pi$ & 2.75 & 2.73 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\footnotesize Separate slopes: 4.07 (uniform), 2.73 (normal); local fits use fewer observations still \srcp{figs/w9\_sims.R}.}
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{Covariates, Power, and What to Report}
@@ -361,70 +860,14 @@ so squared bias grows like $h^4$ while variance falls like $1/(nh)$.
         \emph{inside the bandwidth} on each side. An RD with $n = 100{,}000$ often
         has 400 observations doing the work, and the standard errors should be
         read accordingly.
-  \item \textbf{Power}: RD is a local method and is inherently data-hungry. The
-        required sample size is a substantial multiple of an experiment's for the
-        same power, often quoted as around $3\times$, though the exact factor
-        depends on the design, because we are extrapolating to a boundary from
-        one side at a time.
+  \item \textbf{Power}: RD is data-hungry (previous frame); plan with
+        \texttt{rdpower} \srcp{Cattaneo, Titiunik, and Vazquez-Bare 2019}.
   \item \textbf{Discrete running variables and heaping}: rounded ages, coarse
         test-score grids, or income bunched at round numbers do not invalidate the
         design, but they do invalidate the continuous-$X$ asymptotics behind
         bandwidth selection and bias correction. Use a discrete-score method and
         say so.
 \end{itemize}
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Fuzzy RD]{Fuzzy RD}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{When the Rule Is Not Followed\core}
-Often crossing the cutoff changes the \emph{probability} of treatment rather than
-determining it: eligibility is not take-up.
-\begin{align*}
-  \lim_{x\downarrow c}\Pr(D_i=1\mid X_i=x) - \lim_{x\uparrow c}\Pr(D_i=1\mid X_i=x)
-  \ \in\ (0,1) .
-\end{align*}
-The fuzzy RD estimator is a ratio of two sharp RD estimates:
-\begin{align*}
-  \tau_{FRD} = \frac{\text{jump in } Y \text{ at } c}{\text{jump in } D \text{ at } c}
-  = \frac{\lim_{x\downarrow c}\E[Y\mid x] - \lim_{x\uparrow c}\E[Y\mid x]}
-         {\lim_{x\downarrow c}\E[D\mid x] - \lim_{x\uparrow c}\E[D\mid x]} .
-\end{align*}
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item \alert{This is exactly the Wald estimator of Week 7}, with
-        $\mathbf 1\{X\geq c\}$ as the instrument, estimated locally.
-  \item The numerator alone is the \textbf{intention-to-treat} effect of crossing
-        the cutoff, and it is worth reporting on its own, it needs no
-        first-stage assumption.
-\end{itemize}
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Fuzzy RD Inherits Everything From IV\core}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Exclusion}: crossing the cutoff must affect $Y$ only through $D$.
-        If the threshold also triggers something else, a different school, a
-        different caseworker, a label, exclusion fails.
-  \item \textbf{Monotonicity}: no one is treated \emph{because} they fell below
-        the cutoff.
-  \item \textbf{The estimand is doubly local}: the effect for \alert{compliers at
-        the cutoff}. Not the ATE, not the ATT, and not the effect for everyone
-        near the cutoff.
-  \item \textbf{Weak first stage} is a real risk: if take-up jumps by only a few
-        percentage points, you are dividing by a small noisy number and all the
-        Week 7 pathologies return. Report the size of the jump in $D$.
-\end{itemize}
-\vskip3pt
-\begin{block}{Related designs}
-\textbf{Regression kink}: identification from a change in \emph{slope} rather
-than level. \textbf{Geographic RD}: the running variable is distance to a
-boundary, and the ``cutoff'' is two-dimensional. \textbf{Multi-cutoff RD}:
-different units face different thresholds, which can be normalized and pooled.
-\end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -452,6 +895,197 @@ threshold, a firm holding hiring just below a regulatory headcount.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{What Sorting Does}
+Simulation: true effect of crossing $= 0$; 88 of the units landing in $[-2, 0)$,
+those with high unobserved $u$, move to $[0, 2)$ \srcp{figs/w9\_sims.R}.
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.8\linewidth]{figs/manip_density.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep1pt
+  \item RD estimate (truth 0): 0.04 without sorting, \alert{2.89} with it.
+  \item Density test $p$-value: 0.071 without sorting, 0.00001 with it.
+\end{itemize}
+\vskip2pt
+{\footnotesize The movers bring their high $u$ with them: $m_0$ now jumps at $c$, and the
+density shows the hole and the spike that produced it.}
+\end{frame}
+
+\begin{frame}{The Density Test, and the Senate}
+\textbf{The test.} Estimate the density of $X$ at $c$ separately from each side
+and compare:
+\begin{align*}
+  T = \frac{\hat f_+(c) - \hat f_-(c)}{\widehat{\text{se}}} \ \approx\ N(0,1)
+  \ \text{ under no sorting.}
+\end{align*}
+\srct{McCrary (2008)} bins $X$ and runs local linear regressions on the bin
+counts; \srct{Cattaneo, Jansson, and Ma (2020)} fit a local polynomial to the
+empirical distribution function, with no bins (\texttt{rddensity}).
+\vskip3pt
+\textbf{Senate}: $T = -0.76$, $p = 0.45$; 49 elections lost by less than 2
+points, 47 won by less than 2 \srcp{figs/w9\_senate.R}.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item A pass is weak evidence: sorting in \emph{both} directions leaves the
+        density smooth while changing who sits on each side.
+  \item A failure is strong evidence, unless the spike has a mechanical cause
+        such as rounding (next frames).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Covariate Balance on the Senate Data}
+Each pre-determined covariate as the outcome, \texttt{rdrobust} defaults, robust
+intervals \srcp{figs/w9\_senate.R}:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lrrc@{}}
+\toprule
+covariate & mean below & jump & robust $p$ \\
+\midrule
+Democratic vote share, $t-6$ & 47.86 & 3.88 & 0.09 \\
+Democratic vote share, $t-12$ & 47.29 & 1.72 & 0.27 \\
+Democratic presidential vote share & 43.95 & $-1.14$ & 0.63 \\
+open seat & 0.34 & $-0.14$ & 0.09 \\
+state population (millions) & 3.95 & $-0.18$ & 0.82 \\
+House terms of the candidate & 1.19 & $-0.17$ & 0.56 \\
+Senate terms of the candidate & 3.30 & $-0.19$ & 0.90 \\
+midterm year & 0.51 & 0.08 & 0.21 \\
+Democratic president & 0.47 & $-0.08$ & 0.37 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep1pt
+  \item Two of nine at $p < 0.10$; about one expected by chance. The lagged vote
+        is the one to watch: it is what moved the covariate-adjusted estimate.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Close Elections Under Scrutiny}
+\textbf{The challenge} \srcp{Caughey and Sekhon 2011}: in U.S.\ House races
+1942--2008 decided by less than 0.5 points, the party already holding the seat
+won 59 of 85 (69\%). Bare winners also outspent their opponents more often.
+Imbalance \emph{grew} closer to the cutoff, the opposite of what Lee's argument
+predicts.
+\vskip4pt
+\textbf{The reply} \srcp{Eggers, Fowler, Hainmueller, Hall, and Snyder 2015}:
+over 40,000 close races (other House periods, statewide, state-legislative,
+mayoral, and nine other countries), the incumbent-party advantage in bare wins
+\alert{appears nowhere else}.
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item Precise control is possible where recounts, lawyers, and
+        certification are contested; such places need balance checks that
+        go beyond the density.
+  \item The lesson is not ``close elections are fine'' or ``are not'': the
+        design is checked application by application, and the checks have
+        found failures.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Placebo Cutoffs and Donuts on the Senate Data}
+\begin{columns}[T]
+\begin{column}{0.48\linewidth}
+\textbf{Placebo cutoffs} (one side only):
+\vskip2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}rrc@{}}
+\toprule
+cutoff & estimate & robust $p$ \\
+\midrule
+$-20$ & 6.62 & 0.16 \\
+$-15$ & $-6.89$ & 0.23 \\
+$-10$ & $-23.22$ & \alert{0.005} \\
+$-5$ & $-0.18$ & 0.72 \\
+$5$ & 3.32 & 0.67 \\
+$10$ & 2.92 & 0.11 \\
+$15$ & $-1.22$ & 0.65 \\
+$20$ & $-0.25$ & 0.89 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\begin{column}{0.48\linewidth}
+\textbf{Donut}: drop $|X_i| < \delta$:
+\vskip2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}rrrc@{}}
+\toprule
+$\delta$ & dropped & estimate & robust 95\% \\
+\midrule
+0 & 0 & 7.41 & [4.09, 10.92] \\
+0.25 & 9 & 6.94 & [3.32, 10.45] \\
+0.5 & 23 & 7.09 & [3.20, 10.83] \\
+1 & 43 & 6.58 & [2.19, 10.60] \\
+2 & 96 & 4.70 & [0.21, 8.96] \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\end{columns}
+\vskip6pt
+\begin{itemize}\itemsep2pt
+  \item One placebo of eight rejects at 1\%: with eight tests that happens about
+        8\% of the time by chance. Look at the plot near $-10$ before deciding.
+  \item The donut shrinks the estimate as it removes the closest races, which
+        carry the most weight; with $\delta = 2$ the fit extrapolates over a
+        4-point gap.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Heaping: a Cautionary Tale}
+\textbf{The design} \srcp{Almond, Doyle, Kowalski, and Williams 2010}: newborns
+under 1,500 g are classified ``very low birth weight'' and get more care.
+One-year mortality just below the cutoff is lower by about 1 point
+($-0.0095$, se $0.0048$; mean 5.5\% just above).
+\vskip3pt
+\textbf{The problem} \srcp{Barreca, Guldi, Lindo, and Waddell 2011}: weights
+\alert{heap} at round numbers (1,500 g; whole ounces), and heaped births are
+disproportionately from poorer, less healthy pregnancies. The heap sits exactly
+at the cutoff, on the treated side.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lc@{}}
+\toprule
+one-year mortality effect (85 g bandwidth) & estimate (se) \\
+\midrule
+original & $-0.0095$ \\
+donut: drop multiples of 100 g & $-0.0054$ \ (0.0031) \\
+donut: drop multiples of 100 g and of an ounce & $\phantom{-}0.0000$ \ (0.0050) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\footnotesize Numbers from the working-paper version (IZA DP 5106). The original
+authors reply that the estimates fall but remain large \srcp{Almond et al.\ 2011}.
+Heaping fails the density test for a reason unrelated to sorting.}
+\end{frame}
+
+\begin{frame}{When Sorting Is Present: Bounds \srcp{Gerard, Rokkanen, and Rothe 2020}}
+Suppose sorting only pushes units \emph{up} past $c$. The density then has an
+excess just above $c$, and the excess is the movers:
+\begin{align*}
+  \pi = \frac{f_+(c) - f_-(c)}{f_+(c)} = 1 - \frac{f_-(c)}{f_+(c)}
+   && \text{\footnotesize share of units just above $c$ who moved there}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item The non-movers just above $c$ are comparable to the units just below.
+        We do not know \emph{which} units above are movers, only how many.
+  \item \textbf{Worst cases}: drop the top $\pi$ share of outcomes above $c$,
+        or the bottom $\pi$ share. The two trimmed means bound
+        $\E[Y_i(1)\mid X_i = c, \text{non-mover}]$, and subtracting the mean
+        just below bounds the effect.
+  \item The trimming logic of bounds for sample attrition \srcp{Lee 2009}. The
+        bounds widen with $\pi$; a density test that fails by a little costs a little.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Other Checks and Common Errors}
 \begin{itemize}\itemsep3pt
   \item \textbf{Placebo cutoffs}: estimate at fake thresholds away from $c$, using
@@ -470,6 +1104,634 @@ threshold, a firm holding hiring just below a regulatory headcount.
         bandwidth.
 \end{itemize}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Local Rand.]{Local Randomization}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{A Second Framework \srcp{Cattaneo, Frandsen, and Titiunik 2015}}
+\textbf{Goal}: treat a small window around $c$ as an experiment, and analyse
+it as one.
+\vskip3pt
+\textbf{Assumption}: there is a window $W_0 = [c - w,\, c + w]$ in which
+\begin{enumerate}\itemsep1pt
+  \item which units fall above $c$ is as if decided by a coin flip, and
+  \item $Y_i(d)$ does not depend on $X_i$ inside the window.
+\end{enumerate}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Then the difference in means inside $W_0$ estimates the effect, and a
+        \textbf{Fisher randomization test} gives exact $p$-values:
+        reshuffle who is above $c$ among the window's units, recompute, compare.
+  \item \textbf{Continuity} extrapolates two curves to one point; \textbf{local
+        randomization} assumes a whole window is an experiment. Condition 2 is
+        stronger, and it is why $w$ must be small \srcp{Sekhon and Titiunik 2017}.
+  \item Natural when $X$ is discrete with few values near $c$ (ranks, ages
+        in years), where curve fitting has little to work with.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Choosing the Window, Then Testing}
+\textbf{Window}: in nested windows, test balance on pre-determined covariates;
+take the largest window in which the smallest $p$-value stays above 0.15
+(\texttt{rdlocrand::rdwinselect}). Senate, nine covariates \srcp{figs/w9\_senate.R}:
+\vskip2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+window & smallest balance $p$ & below & above \\
+\midrule
+$\pm 0.500$ & 0.225 & 9 & 14 \\
+$\pm 0.625$ & 0.208 & 13 & 17 \\
+$\pm 0.750$ & 0.065 & 15 & 22 \\
+$\pm 1.000$ & 0.043 & 17 & 25 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\textbf{Test} in $\pm 0.625$: mean vote at $t+6$ is 42.74 below and 52.36 above,
+a difference of \alert{9.62}. Of 5,000 reshufflings of the 17 ``above'' labels
+among the 30 races, 0.12\% give a difference this large: $p = 0.0012$.
+\vskip3pt
+{\footnotesize Larger than the continuity estimate (7.41), from 30 races instead
+of 683. \srct{Cattaneo, Frandsen, and Titiunik (2015)} use $\pm 0.75$ (9.69 here).}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Fuzzy]{Fuzzy RD}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{When the Rule Is Not Followed\core}
+Often crossing the cutoff changes the \emph{probability} of treatment rather than
+determining it: eligibility is not take-up.
+\begin{align*}
+  \lim_{x\downarrow c}\Pr(D_i=1\mid X_i=x) - \lim_{x\uparrow c}\Pr(D_i=1\mid X_i=x)
+  \ \in\ (0,1) .
+\end{align*}
+The fuzzy RD estimator is a ratio of two sharp RD estimates:
+\begin{align*}
+  \tau_{FRD} = \frac{\text{jump in } Y \text{ at } c}{\text{jump in } D \text{ at } c}
+  = \frac{\lim_{x\downarrow c}\E[Y\mid x] - \lim_{x\uparrow c}\E[Y\mid x]}
+         {\lim_{x\downarrow c}\E[D\mid x] - \lim_{x\uparrow c}\E[D\mid x]} .
+\end{align*}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \alert{This is exactly the Wald estimator of Week 7}, with
+        $\mathds 1\{X\geq c\}$ as the instrument, estimated locally.
+  \item The numerator alone is the \textbf{intention-to-treat} effect of crossing
+        the cutoff, and it is worth reporting on its own, it needs no
+        first-stage assumption.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What the Ratio Estimates}
+Let $D_i(1)$, $D_i(0)$ be unit $i$'s treatment just above and just below $c$
+(compliers: $D_i(1)=1$, $D_i(0)=0$). As in Week 7:
+\begin{align*}
+  \text{jump in } Y
+  &= \E\big[Y_i(D_i(1)) - Y_i(D_i(0))\mid X_i = c\big]
+   && \text{\footnotesize continuity, for each type} \\
+  &= \E\big[(D_i(1) - D_i(0))\,(Y_i(1) - Y_i(0))\mid X_i = c\big]
+   && \text{\footnotesize zero unless $D_i(1) \neq D_i(0)$} \\
+  &= \Pr(C\mid c)\,\tau_C(c) - \Pr(\text{defier}\mid c)\,\tau_{\text{def}}(c)
+   && \text{\footnotesize split by type} \\
+  &= \Pr(C\mid c)\,\tau_C(c)
+   && \text{\footnotesize monotonicity: no defiers} \\
+  \text{jump in } D &= \Pr(C\mid c)
+   && \text{\footnotesize same steps with $D$}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item The ratio is $\tau_C(c)$: the effect for \alert{compliers at the cutoff}
+        \srcp{Hahn, Todd, and van der Klaauw 2001}.
+  \item ``Continuity for each type'' is the new assumption: the share of each
+        type and its mean outcomes do not jump at $c$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Estimation: Local 2SLS}
+Run the sharp RD twice, same kernel and same $h$, and divide:
+\begin{align*}
+  Y_i &= \alpha_Y + \beta_Y Z_i + \gamma_Y (X_i - c) + \eta_Y Z_i (X_i - c) + \epsilon_i \\
+  D_i &= \alpha_D + \beta_D Z_i + \gamma_D (X_i - c) + \eta_D Z_i (X_i - c) + v_i,
+  \qquad \hat\tau = \hat\beta_Y / \hat\beta_D ,
+\end{align*}
+with $Z_i = \mathds 1\{X_i \geq c\}$. Numerically the same: 2SLS of $Y$ on $D_i$
+and $D_i(X_i - c)$, instrumented by $Z_i$ and $Z_i(X_i - c)$, controlling for $(X_i - c)$.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item One bandwidth for both regressions; \texttt{rdrobust(y, x, fuzzy = d)}
+        chooses it for the ratio.
+  \item The standard error is the IV standard error of Week 7, computed locally.
+  \item Report $\hat\beta_D$, the first stage, in the main table.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Fuzzy RD Inherits Everything From IV\core}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Exclusion}: crossing the cutoff must affect $Y$ only through $D$.
+        If the threshold also triggers something else, a different school, a
+        different caseworker, a label, exclusion fails.
+  \item \textbf{Monotonicity}: no one is treated \emph{because} they fell below
+        the cutoff.
+  \item \textbf{The estimand is doubly local}: the effect for \alert{compliers at
+        the cutoff}. Not the ATE, not the ATT, and not the effect for everyone
+        near the cutoff.
+  \item \textbf{Weak first stage} is a real risk: if take-up jumps by only a few
+        percentage points, you are dividing by a small noisy number and all the
+        Week 7 pathologies return. Report the size of the jump in $D$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Weak First Stage: Anderson--Rubin at the Cutoff}
+The Week 7 idea carries over. To test $H_0: \tau = \tau_0$, build
+\begin{align*}
+  \tilde Y_i = Y_i - \tau_0 D_i ,
+  \qquad
+  \text{jump in } \tilde Y = \text{jump in } Y - \tau_0\cdot\text{jump in } D ,
+\end{align*}
+which is zero exactly when $\tau_0$ is the ratio. Run a \emph{sharp} RD on
+$\tilde Y_i$; keep every $\tau_0$ it does not reject.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item No division, so a small jump in $D$ does not distort the test; the set
+        can be wide or unbounded, and then it should be.
+  \item \srct{Feir, Lemieux, and Marmer (2016)}: the usual fuzzy-RD $t$-test
+        over-rejects when the jump in take-up is small; invert a test with
+        the null-restricted standard error instead.
+  \item \srct{Noack and Rothe (2024)}: the same construction with the bias of each
+        sharp RD bounded as in honest intervals; valid with weak first stages,
+        discrete running variables, and donuts.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Vietnam]{Application: Bombing in Vietnam}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{In the Literature: Dell and Querubín (2018)}
+\textbf{The question.} Does force from above win hearts and minds? The effect of
+U.S.\ bombing on insurgency, local government, and civic life in South Vietnam,
+and of the Army's firepower doctrine against the Marines' ``hearts and minds''.
+\vskip3pt
+\textbf{The data.} The Hamlet Evaluation System (HES), 1969--1973: 169 monthly
+and quarterly questions on security, politics, and the economy, answered by
+U.S.\ advisers for nearly every hamlet. Outcomes: indices built from HES
+answers, armed-forces records of operations and attacks, and public opinion
+surveys.
+\vskip3pt
+\textbf{Two designs.}
+\begin{enumerate}\itemsep1pt
+  \item \textbf{Bombing}: a fuzzy RD at the rounding thresholds of an algorithm
+        that scored hamlet security; air strikes were targeted on the rounded score.
+  \item \textbf{Doctrine}: a boundary RD at the line between the Marines' I Corps
+        and the Army's II Corps.
+\end{enumerate}
+\vskip3pt
+{\footnotesize Numbers in this section are from NBER Working Paper 22395 (2016);
+the QJE version is \emph{QJE} 133(2): 701--764.}
+\end{frame}
+
+\begin{frame}{The Score Nobody Saw}
+\small
+\begin{itemize}\itemsep1pt
+  \item The HES questions feed 19 submodels. Each starts from a flat prior over
+        five security classes, A (5) to E (1), and updates by Bayes' rule using
+        a matrix of conditional probabilities.
+  \item The \alert{posterior mean}, a continuous number between 1 and 5, is
+        \alert{rounded}: 3.49 becomes C, 3.51 becomes B. Rounded submodel scores
+        are combined into one letter grade per hamlet.
+  \item Air strikes were planned weekly by quota, with the hamlet grade among
+        the inputs. Just below a rounding threshold, a hamlet is graded one letter
+        worse than a near-identical one just above.
+  \item The continuous scores were never printed; the conditional probabilities
+        were classified. The authors rebuilt them from archived tapes and
+        reproduce every rounded score.
+\end{itemize}
+\vskip1pt
+\textbf{Running variable}: distance from the continuous score to the nearest of
+four thresholds (A/B, B/C, C/D, D/E); \textbf{instrument}: being below it.
+Hamlets near each threshold: 35\%, 46\%, 16\%, 3\%.
+\end{frame}
+
+\begin{frame}{Dell and Querubín: the Estimating Equation}
+For hamlet $h$ first near a threshold in quarter $t$ (each hamlet once):
+\begin{align*}
+  y_{h,t+n} = \gamma\,\text{below}_{ht}
+  &+ \sum_{d=1}^{4} \Big(\delta_d D_{htd} + D_{htd}\,f_d(\text{dist}_{ht})
+  + D_{htd}\,f_d(\text{dist}_{ht})\,\text{below}_{ht}\Big) \\
+  &+ \alpha_t + X_{ht}'\beta + \epsilon_{ht}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item $D_{htd} = 1$ if threshold $d$ is the nearest: a separate intercept and
+        separate local linear slopes on each side of each threshold. This is
+        the multi-cutoff pooling of the next section.
+  \item $\alpha_t$: quarter fixed effects; $X_{ht}$: indicators for every
+        answer that entered the score, for precision.
+  \item Local linear, Imbens--Kalyanaraman bandwidth; standard errors clustered
+        by village.
+  \item First stage: $y$ = bombing; second stage instruments bombing with
+        $\text{below}_{ht}$. The estimate is a LATE for hamlets bombed
+        \emph{because} they were rounded down.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: the First Stage}
+\begin{center}
+\includegraphics[width=0.82\linewidth]{figs/dq_firststage.png}
+\end{center}
+\vskip-6pt
+{\footnotesize Their Figure 3(a)--(b). Horizontal: distance to the threshold;
+below the threshold on the left. Vertical: bombing, residualized.}
+\vskip3pt
+\begin{itemize}\itemsep1pt
+  \item Being just below raises the share of months with air or artillery strikes near the
+        hamlet next quarter by \alert{0.054 (0.014)}, from a mean of 0.28; $F = 14.9$.
+        Through U.S.\ withdrawal: 0.044 (0.013), mean 0.26, $F = 11.5$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: Checking the Design}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{10.6cm}@{}}
+\toprule
+No sorting & Scores were computed centrally and never printed; field staff did not
+  know the probabilities. McCrary test: no jump in the density. \\
+Continuity & Pre-period outcomes balanced (a few of many differ, e.g.\ South
+  Vietnamese deaths). Bombing in the current and previous quarter does not jump:
+  0.011 (0.011), $-0.001$ (0.018). \\
+Placebo year & In 1969 the score was computed but not used: no first stage,
+  $-0.016$ (0.019). \\
+Exclusion & No jump in other allocations (ground troops, U.S.\ operations, naval
+  attacks, local forces): friendly forces nearby 0.016 (0.018). \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The 1969 placebo is the strongest check: same algorithm, same
+        thresholds, no use of the score, no jump. Whatever moves bombing in
+        1970 is the score's use, not hamlet differences at the threshold.
+  \item Exclusion is argued by measuring the other channels a
+        lower grade could trigger.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: Reduced Forms}
+\begin{center}
+\includegraphics[width=0.53\linewidth]{figs/dq_reduced.png}
+\end{center}
+\vskip-8pt
+{\footnotesize Their Figure 5(a)--(d), cumulative outcomes through withdrawal. Left of zero: rounded down, bombed more.}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: Main Results}
+IV estimates, outcomes cumulative through U.S.\ withdrawal (their Tables 4, 6, 7):
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+outcome & IV (se) & mean & at mean bombing \\
+\midrule
+security index & $-0.642$ (0.246) & 0.68 & $-17$ pts \\
+armed Viet Cong present & $0.571$ (0.222) & 0.19 & $+15$ pts \\
+Viet Cong infrastructure active & $0.978$ (0.384) & 0.25 & $+25$ pts \\
+village committee filled & $-0.798$ (0.380) & 0.84 & $-21$ pts \\
+local government collects taxes & $-0.944$ (0.443) & 0.70 & $-25$ pts \\
+civic society index & $-0.523$ (0.248) & 0.69 & $-14$ pts \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{Reading}: a coefficient is the effect of going from no bombing to
+        bombing in every month; the last column multiplies by mean bombing,
+        0.26 (e.g.\ $0.571 \times 0.26 = 0.15$).
+  \item Bombing strengthened the insurgency it aimed at and weakened local
+        government and non-communist civic life.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: a Boundary Design}
+\begin{columns}[T]
+\begin{column}{0.45\linewidth}
+\includegraphics[width=\linewidth]{figs/dq_map.jpg}
+{\scriptsize Their Figure 7: the I/II Corps boundary; hamlets within 25 km.}
+\end{column}
+\begin{column}{0.5\linewidth}
+\small
+Marines (I Corps): small units in villages, ``hearts and minds''; Army
+(II Corps): firepower.
+{\footnotesize
+\begin{align*}
+  y_{hs} = \alpha_0 + \alpha_1\,\text{USMC}_{hs} + f(\text{lat}, \text{lon}) + G_{hs}'\beta + \alpha_s
+\end{align*}}
+\vskip-4pt
+\begin{itemize}\itemsep1pt
+  \item $f$: local linear in location; $G$: geography; $\alpha_s$: boundary segment.
+  \item 302 hamlets within 25 km, 64 village clusters.
+  \item Results (Table 10): armed VC present $-0.560$ (0.075); VC attacks on
+        hamlets $-0.482$ (0.061); education $0.243$ (0.096); health $0.562$
+        (0.198); security index $0.095$ (0.110).
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: What the Boundary Cannot Separate}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Compound treatment.} More than doctrine changes at the line:
+        the service, its soldiers, officer rotation (six months in combat for
+        Army officers, up to a year for Marines). The authors grant these
+        channels cannot be ruled out.
+  \item \textbf{Balance is imperfect}: colonial military posts 0.300 (0.160);
+        total roads 2.253 (0.816), more on the Marine side.
+  \item \textbf{Few clusters}: 64 villages; attitudes come from 13 surveyed
+        hamlets near the line, so that table is OLS within 100 km, not RD.
+  \item \textbf{Comparison of the two designs}: the bombing RD has a single,
+        measured treatment and a placebo year; the boundary RD compares two
+        bundles of everything an army does.
+\end{itemize}
+\vskip4pt
+The headline survives both: the firepower approach produced worse outcomes,
+on security and on the institutions it meant to build.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Extensions]{Extensions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Several Cutoffs: What Pooling Estimates}
+Group $j$ faces cutoff $c_j$ (with probability $p_j$). Pool by centring,
+$\tilde X_i = X_i - c_{J_i}$, and run one RD at $\tilde X = 0$:
+\begin{align*}
+  \text{jump at } \tilde X = 0
+  &= \sum_j \Pr(J_i = j \mid \tilde X_i = 0)\,\tau_j
+   && \text{\footnotesize group jumps, mixed} \\
+  \Pr(J_i = j\mid\tilde X_i = 0) &= \frac{f_j(c_j)\,p_j}{\sum_k f_k(c_k)\,p_k}
+   && \text{\footnotesize Bayes' rule; $f_j$: density in group $j$}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item The pooled effect is a weighted average of cutoff-specific effects,
+        weights $\propto$ how many units sit at each cutoff
+        \srcp{Cattaneo, Keele, Titiunik, and Vazquez-Bare 2016}.
+  \item In Dell and Querubín, 46\% of hamlets sit near the B/C threshold and 3\%
+        near D/E: the pooled estimate is mostly about mid-grade hamlets.
+  \item Report the cutoff-specific estimates when you can; they show whether
+        one $\tau$ is a fair summary.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Away From the Cutoff}
+\textbf{Goal}: $\tau(x)$ for $x \neq c$, which continuity alone cannot deliver.
+\vskip2pt
+\textbf{With two cutoffs} $c_1 < c_2$, at $x \in (c_1, c_2)$ group 1 is treated
+and group 2 is not. Assume the two control curves are parallel:
+$m_{0,1}(x) - m_{0,2}(x) = \Delta$ for all $x$.
+\begin{align*}
+  \Delta &= m_{0,1}(c_1) - m_{0,2}(c_1)
+   && \text{\footnotesize both observed untreated at $c_1$ (group 1 from the left)} \\
+  \tau_1(x) &= m_{1,1}(x) - \big(m_{0,2}(x) + \Delta\big)
+   && \text{\footnotesize the unseen $m_{0,1}(x)$ replaced}
+\end{align*}
+\vskip-2pt
+{\footnotesize \srcp{Cattaneo, Keele, Titiunik, and Vazquez-Bare 2021}; the assumption is Week 10's parallel trends, with $x$ for time.}
+\vskip4pt
+\textbf{Other routes}:
+\begin{itemize}\itemsep2pt
+  \item \textbf{Conditional independence}: given other predictors $W$, $Y(d)$
+        does not depend on $X$; then $W$, not $X$, does the work away from $c$,
+        and the assumption is testable on each side \srcp{Angrist and Rokkanen 2015}.
+  \item \textbf{The slope of the effect at $c$}, $\tau'(c)$, is identified from
+        the change in slopes; it answers ``what if the threshold moved a
+        little?'' \srcp{Dong and Lewbel 2015}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Boundaries and Two Scores}
+\textbf{Geographic RD}: the running variable is location $(\text{lat}, \text{lon})$;
+the cutoff is a line \srcp{Keele and Titiunik 2015}.
+\begin{itemize}\itemsep3pt
+  \item The estimand is $\tau(b)$ at each boundary point $b$; one number pools
+        them, weighted by where units live along the line.
+  \item \textbf{Distance to the boundary} as a single running variable mixes
+        points that are close to the line but far from each other; boundary
+        segment fixed effects, as in Dell and Querubín, compare neighbours.
+  \item Recent work estimates $\tau(b)$ point by point, with location-based or
+        distance-based local polynomials and valid intervals
+        \srcp{Cattaneo, Titiunik, and Yu 2025; \texttt{rd2d}}.
+  \item \alert{Compound treatment is the rule}: borders separate taxes,
+        schools, police, and history at once. Name the bundle.
+\end{itemize}
+\vskip3pt
+\textbf{Two scores} (pass both a reading and a math test): the treated region is
+a corner; each edge of the boundary has its own effect
+\srcp{Papay, Willett, and Murnane 2011; Reardon and Robinson 2012}.
+\end{frame}
+
+\begin{frame}{Regression Kink \srcp{Card, Lee, Pei, and Weber 2015}}
+A benefit $B_i = b(X_i)$ follows a known schedule that is continuous but
+\emph{changes slope} at $c$ (a benefit cap, a tax bracket). With $Y_i = y(B_i, X_i, U_i)$:
+\begin{align*}
+  \frac{d}{dx}\E[Y_i\mid X_i = x]
+  &= \E\Big[\frac{\partial y}{\partial B}\Big|\, x\Big]\, b'(x)
+   + \text{smooth terms}
+   && \text{\footnotesize chain rule} \\
+  \underbrace{\lim_{x\downarrow c}\tfrac{d}{dx}\E[Y\mid x] - \lim_{x\uparrow c}\tfrac{d}{dx}\E[Y\mid x]}_{\text{kink in } Y}
+  &= \E\Big[\frac{\partial y}{\partial B}\Big|\, c\Big]\,
+     \underbrace{\big(b'(c^+) - b'(c^-)\big)}_{\text{kink in } B}
+   && \text{\footnotesize subtract}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Effect $=$ kink in $Y$ / kink in $B$: the RD ratio with slopes for levels.
+  \item Slopes are estimated far less precisely than levels; local quadratic
+        fits and robust intervals are standard.
+  \item Austrian unemployment benefits: higher benefits lengthen joblessness.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{RD in Time}
+The running variable is the date; the treatment starts at $t^{*}$ for everyone
+\srcp{Hausman and Rapson 2018}.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{No one sorts into a date}, but other things happen on dates:
+        holidays, seasons, a second event. Check for coincident events.
+  \item \textbf{Observations are not independent}: one time series,
+        autocorrelated; inference must account for it.
+  \item \textbf{Windows tend to be wide}: daily data with few days near
+        $t^{*}$ invite long windows, and then the RD is an interrupted time
+        series with a polynomial trend.
+  \item \textbf{Effects evolve}: anticipation before $t^{*}$, fading or
+        building after. The jump at $t^{*}$ is the short-run effect only.
+  \item \textbf{Placebo dates} and a comparison group (Week 10) are the main defences.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Repeated Cutoffs: Dynamic RD}
+\textbf{Goal}: the effect of a treatment $k$ years later when units that barely
+miss can try again (a district loses a bond vote, proposes again, passes).
+\vskip2pt
+The RD of ``barely won at $t$'' on $Y_{t+k}$ is an intention-to-treat effect,
+$\text{ITT}_k$. Let $\pi_j$ be the RD jump in the chance of a bond at $t+j$
+($\pi_0 = 1$) and $\theta_k$ the effect of a bond $k$ years after it passes:
+\begin{align*}
+  \text{ITT}_k &= \sum_{j=0}^{k} \pi_j\,\theta_{k-j}
+   && \text{\footnotesize every bond induced at $t+j$ acts for $k-j$ years} \\
+  \theta_k &= \text{ITT}_k - \sum_{j=1}^{k} \pi_j\,\theta_{k-j}
+   && \text{\footnotesize solve from $\theta_0 = \text{ITT}_0$ upward}
+\end{align*}
+\vskip-2pt
+{\small Hypothetical numbers: $\text{ITT}_0 = 10$, $\text{ITT}_1 = 12$, $\pi_1 = -0.4$ (losers
+pass a year later): $\theta_1 = 12 - (-0.4)(10) = 16$. The ITT understates the bond's effect.}
+\end{frame}
+
+\begin{frame}{Dynamic RD: Applications and Assumptions}
+\begin{itemize}\itemsep4pt
+  \item California school bonds and house prices \srcp{Cellini, Ferreira, and Rothstein 2010};
+        Wisconsin operating vs.\ capital referenda \srcp{Baron 2022}.
+  \item Assumes $\theta_k$ does not depend on a unit's history; \srct{Hsu and Shen (2024)}
+        identify the effects under weaker assumptions.
+  \item Cumulative effect: $\sum_k \theta_k$. The ITT path is the effect of a close win,
+        retries included; Bol et al.'s \texteuro180,000 below is of that kind.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Sociology]{Applications in Sociology}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{In the Literature: Bol, de Vaan, and van de Rijt (2018)}
+\textbf{The question.} Merton's Matthew effect: does early success cause later
+success, or do repeated winners just have more ability? Cumulative advantage
+is a cornerstone claim of stratification research and hard to separate from
+selection.
+\vskip3pt
+\textbf{The data.} The Dutch science foundation's early-career ``Veni'' grant
+(\texteuro250,000): review scores and decisions for recent PhDs, followed for
+up to 16 years.
+\vskip3pt
+\textbf{The design.} A hard threshold: every winner scored above every
+non-winner. Running variable: the applicant's \alert{rank} relative to the
+funding line in each competition; compare the two ranks just above (+1, +2)
+with the two just below ($-1$, $-2$), with exact tests. A sharp RD with a
+discrete running variable, analysed as a local experiment.
+\vskip3pt
+\textbf{Outcomes.} Later grants (the mid-career ``Vidi'' and three others),
+applications for them, publications and citations, a full professorship.
+\end{frame}
+
+\begin{frame}{Bol, de Vaan, and van de Rijt: Checking the Design}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{10.6cm}@{}}
+\toprule
+No sorting & Applicants cannot place their score; ranks are set by panels. A
+  density test is uninformative: ranks are evenly spaced by construction. \\
+Continuity & Publications, citations, and H-index \emph{before} the competition
+  rise smoothly with rank, with no jump at the line. \\
+Placebo cutoffs & No difference in later outcomes between any other pair of
+  neighbouring ranks. \\
+Specification & A parametric RD (supplement) gives the same size and
+  significance. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item Only rank is used, not the score; the comparison of $\pm 1, 2$ is the
+        local-randomization window, chosen before looking.
+  \item Productivity \emph{after} the grant also shows no jump: the grant did not
+        buy measurably better science, which rules out one mechanism.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bol, de Vaan, and van de Rijt: Main Results}
+Ranks $+1/+2$ against $-1/-2$:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+outcome & just below & just above & test \\
+\midrule
+won a mid-career grant & 10\% & 26\% & $P < 0.001$ \\
+applied for a mid-career grant & 40\% & 59\% & $P < 0.001$ \\
+later funding, 4 years on & & $+$\texteuro40,000 & $P < 0.01$ \\
+later funding, 8 years on & & $+$\texteuro180,000 & $P < 0.01$ \\
+full professor in 2018 & 19\% & 28\% & $P < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The near-winners got more than twice the later money of near-losers,
+        excluding the Veni itself; this is 40\% of the gap between best and worst.
+  \item \textbf{Participation}: near-losers stop applying. A critique reran the RD
+        on Vidi applicants only; that conditions on applying, a post-treatment
+        variable (the Week 5 collider). Winning raised applications by about half
+        and wins by 100--150\% \srcp{Bol et al.\ 2019 reply}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Legewie (2016)}
+\textbf{The question.} Do salient events trigger periods of more racially
+biased policing? Two NYPD officers were shot by Black suspects
+(July 9, 2007; December 12, 2011).
+\vskip3pt
+\textbf{The data.} About 3.9 million NYPD pedestrian stops, 2006--2012.
+Outcome: any physical force in the stop (16\% of stops of whites, 22\% of
+Blacks, 24\% of Hispanics).
+\vskip3pt
+\textbf{The design.} Time is the running variable; the shooting is the cutoff.
+The main analysis compares stops in the three days after each shooting with
+matched stops (same precinct, race, place, time of day, suspect
+characteristics) from the year before; an RD in time with local linear fits is
+the robustness check.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+three days after, log-odds of force (se) & White & Black & Hispanic \\
+\midrule
+December 2011 & $-0.30$ (0.16) & \alert{0.20 (0.05)} & $-0.10$ (0.08) \\
+July 2007 & $-0.01$ (0.14) & \alert{0.16 (0.06)} & $0.02$ (0.08) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Legewie: Results and Checks}
+\begin{center}
+\includegraphics[width=0.68\linewidth]{figs/legewie_fig3.png}
+\end{center}
+\vskip-8pt
+{\footnotesize His Figure 3: force in stops of Black suspects, observed against counterfactual trend.}
+\vskip2pt
+\begin{itemize}\itemsep1pt\small
+  \item Force against Blacks up 16\% (21.9\% to 25.4\%) in 2011, 13\% in 2007;
+        no change for whites or Hispanics; it fades in about 3.5 and 10 days.
+  \item \textbf{Placebo events}: shootings by white or Hispanic suspects show no
+        effect. Among 800 random sets of dates, 1.3\% match the Black-suspect pattern.
+  \item \textbf{RD in time}: estimates across bandwidths stay positive; very short
+        windows shrink the 2007 effect, as news needs time to spread.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Practice]{Practice}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Reading and Reporting an RD\core}
 \begin{enumerate}\itemsep2pt
@@ -507,34 +1769,145 @@ Tuesday (October 27) and is due Monday November 9; it covers Weeks 7 and 9.
 
 \begin{frame}[allowframebreaks,t]{References}
 \footnotesize
-\begin{itemize}\itemsep3pt
+\begin{itemize}\itemsep2pt
+\item Almond, Douglas, Joseph J. Doyle, Amanda E. Kowalski, and Heidi Williams. 2010.
+``Estimating Marginal Returns to Medical Care: Evidence from At-Risk Newborns.''
+\textit{Quarterly Journal of Economics} 125(2): 591--634.
+\item Almond, Douglas, Joseph J. Doyle, Amanda E. Kowalski, and Heidi Williams. 2011.
+``The Role of Hospital Heterogeneity in Measuring Marginal Returns to Medical
+Care: A Reply to Barreca, Guldi, Lindo, and Waddell.'' \textit{Quarterly Journal
+of Economics} 126(4): 2125--2131.
+\item Angrist, Joshua D. and Miikka Rokkanen. 2015. ``Wanna Get Away? Regression
+Discontinuity Estimation of Exam School Effects Away from the Cutoff.''
+\textit{Journal of the American Statistical Association} 110(512): 1331--1344.
+\item Armstrong, Timothy B. and Michal Kolesár. 2018. ``Optimal Inference in a
+Class of Regression Models.'' \textit{Econometrica} 86(2): 655--683.
+\item Armstrong, Timothy B. and Michal Kolesár. 2020. ``Simple and Honest
+Confidence Intervals in Nonparametric Regression.'' \textit{Quantitative
+Economics} 11(1): 1--39.
+\item Barreca, Alan I., Melanie Guldi, Jason M. Lindo, and Glen R. Waddell. 2011.
+``Saving Babies? Revisiting the Effect of Very Low Birth Weight
+Classification.'' \textit{Quarterly Journal of Economics} 126(4): 2117--2123.
+\item Baron, E. Jason. 2022. ``School Spending and Student Outcomes: Evidence from
+Revenue Limit Elections in Wisconsin.'' \textit{American Economic Journal:
+Economic Policy} 14(1): 1--39.
+\item Bol, Thijs, Mathijs de Vaan, and Arnout van de Rijt. 2018. ``The Matthew
+Effect in Science Funding.'' \textit{Proceedings of the National Academy of
+Sciences} 115(19): 4887--4890.
+\item Calonico, Sebastian, Matias D. Cattaneo, and Max H. Farrell. 2018. ``On the
+Effect of Bias Estimation on Coverage Accuracy in Nonparametric Inference.''
+\textit{Journal of the American Statistical Association} 113(522): 767--779.
+\item Calonico, Sebastian, Matias D. Cattaneo, and Max H. Farrell. 2020. ``Optimal
+Bandwidth Choice for Robust Bias-Corrected Inference in Regression
+Discontinuity Designs.'' \textit{Econometrics Journal} 23(2): 192--210.
 \item Calonico, Sebastian, Matias D. Cattaneo, and Roc\'{\i}o Titiunik. 2014.
 ``Robust Nonparametric Confidence Intervals for Regression-Discontinuity
 Designs.'' \textit{Econometrica} 82(6): 2295--2326.
 \item Calonico, Sebastian, Matias D. Cattaneo, Max H. Farrell, and
 Roc\'{\i}o Titiunik. 2019. ``Regression Discontinuity Designs Using Covariates.''
 \textit{Review of Economics and Statistics} 101(3): 442--451.
+\item Card, David, David S. Lee, Zhuan Pei, and Andrea Weber. 2015. ``Inference on
+Causal Effects in a Generalized Regression Kink Design.'' \textit{Econometrica}
+83(6): 2453--2483.
+\item Cattaneo, Matias D., Brigham R. Frandsen, and Roc\'{\i}o Titiunik. 2015.
+``Randomization Inference in the Regression Discontinuity Design: An Application
+to Party Advantages in the U.S. Senate.'' \textit{Journal of Causal Inference}
+3(1): 1--24.
+\item Cattaneo, Matias D., Nicol\'as Idrobo, and Roc\'{\i}o Titiunik. 2020.
+\textit{A Practical Introduction to Regression Discontinuity Designs:
+Foundations}. Cambridge Elements. Cambridge University Press.
+\item Cattaneo, Matias D., Nicol\'as Idrobo, and Roc\'{\i}o Titiunik. 2024.
+\textit{A Practical Introduction to Regression Discontinuity Designs:
+Extensions}. Cambridge Elements. Cambridge University Press.
 \item Cattaneo, Matias D., Michael Jansson, and Xinwei Ma. 2020. ``Simple Local
 Polynomial Density Estimators.'' \textit{Journal of the American Statistical
 Association} 115(531): 1449--1455.
+\item Cattaneo, Matias D., Luke Keele, Roc\'{\i}o Titiunik, and Gonzalo
+Vazquez-Bare. 2016. ``Interpreting Regression Discontinuity Designs with
+Multiple Cutoffs.'' \textit{Journal of Politics} 78(4): 1229--1248.
+\item Cattaneo, Matias D., Luke Keele, Roc\'{\i}o Titiunik, and Gonzalo
+Vazquez-Bare. 2021. ``Extrapolating Treatment Effects in Multi-Cutoff
+Regression Discontinuity Designs.'' \textit{Journal of the American Statistical
+Association} 116(536): 1941--1952.
+\item Cattaneo, Matias D., Roc\'{\i}o Titiunik, and Gonzalo Vazquez-Bare. 2019.
+``Power Calculations for Regression-Discontinuity Designs.'' \textit{Stata
+Journal} 19(1): 210--245.
+\item Cattaneo, Matias D., Roc\'{\i}o Titiunik, and Ruiqi Rae Yu. 2025.
+``Estimation and Inference in Boundary Discontinuity Designs: Location-Based
+Methods.'' arXiv:2505.05670.
+\item Cellini, Stephanie Riegg, Fernando Ferreira, and Jesse Rothstein. 2010. ``The
+Value of School Facility Investments: Evidence from a Dynamic Regression
+Discontinuity Design.'' \textit{Quarterly Journal of Economics} 125(1): 215--261.
+\item Caughey, Devin and Jasjeet S. Sekhon. 2011. ``Elections and the Regression
+Discontinuity Design: Lessons from Close U.S. House Races, 1942--2008.''
+\textit{Political Analysis} 19(4): 385--408.
+\item Dell, Melissa and Pablo Querub\'in. 2018. ``Nation Building Through Foreign
+Intervention: Evidence from Discontinuities in Military Strategies.''
+\textit{Quarterly Journal of Economics} 133(2): 701--764.
+\item Dong, Yingying and Arthur Lewbel. 2015. ``Identifying the Effect of Changing
+the Policy Threshold in Regression Discontinuity Models.'' \textit{Review of
+Economics and Statistics} 97(5): 1081--1092.
+\item Eggers, Andrew C., Anthony Fowler, Jens Hainmueller, Andrew B. Hall, and
+James M. Snyder. 2015. ``On the Validity of the Regression Discontinuity Design
+for Estimating Electoral Effects: New Evidence from Over 40,000 Close Races.''
+\textit{American Journal of Political Science} 59(1): 259--274.
+\item Feir, Donna, Thomas Lemieux, and Vadim Marmer. 2016. ``Weak Identification in
+Fuzzy Regression Discontinuity Designs.'' \textit{Journal of Business \&
+Economic Statistics} 34(2): 185--196.
 \item Gelman, Andrew and Guido Imbens. 2019. ``Why High-Order Polynomials Should
 Not Be Used in Regression Discontinuity Designs.'' \textit{Journal of Business \&
 Economic Statistics} 37(3): 447--456.
+\item Gerard, François, Miikka Rokkanen, and Christoph Rothe. 2020. ``Bounds on
+Treatment Effects in Regression Discontinuity Designs with a Manipulated Running
+Variable.'' \textit{Quantitative Economics} 11(3): 839--870.
+\item Goldberger, Arthur S. 1972. ``Selection Bias in Evaluating Treatment
+Effects: Some Formal Illustrations.'' Discussion Paper 123-72, Institute for
+Research on Poverty, University of Wisconsin.
 \item Hahn, Jinyong, Petra Todd, and Wilbert van der Klaauw. 2001.
 ``Identification and Estimation of Treatment Effects with a
 Regression-Discontinuity Design.'' \textit{Econometrica} 69(1): 201--209.
+\item Hausman, Catherine and David S. Rapson. 2018. ``Regression Discontinuity in
+Time: Considerations for Empirical Applications.'' \textit{Annual Review of
+Resource Economics} 10: 533--552.
+\item Hsu, Yu-Chin and Shu Shen. 2024. ``Dynamic Regression Discontinuity under
+Treatment Effect Heterogeneity.'' \textit{Quantitative Economics} 15(4): 1035--1064.
 \item Imbens, Guido W. and Thomas Lemieux. 2008. ``Regression Discontinuity
 Designs: A Guide to Practice.'' \textit{Journal of Econometrics} 142(2): 615--635.
 \item Imbens, Guido W. and Karthik Kalyanaraman. 2012. ``Optimal Bandwidth Choice
 for the Regression Discontinuity Estimator.'' \textit{Review of Economic Studies}
 79(3): 933--959.
+\item Keele, Luke J. and Roc\'{\i}o Titiunik. 2015. ``Geographic Boundaries as
+Regression Discontinuities.'' \textit{Political Analysis} 23(1): 127--155.
+\item Kolesár, Michal and Christoph Rothe. 2018. ``Inference in Regression
+Discontinuity Designs with a Discrete Running Variable.'' \textit{American
+Economic Review} 108(8): 2277--2304.
 \item Lee, David S. 2008. ``Randomized Experiments from Non-Random Selection in
 U.S. House Elections.'' \textit{Journal of Econometrics} 142(2): 675--697.
+\item Lee, David S. 2009. ``Training, Wages, and Sample Selection: Estimating
+Sharp Bounds on Treatment Effects.'' \textit{Review of Economic Studies} 76(3):
+1071--1102.
 \item Lee, David S. and Thomas Lemieux. 2010. ``Regression Discontinuity Designs
 in Economics.'' \textit{Journal of Economic Literature} 48(2): 281--355.
+\item Legewie, Joscha. 2016. ``Racial Profiling and Use of Force in Police Stops:
+How Local Events Trigger Periods of Increased Discrimination.'' \textit{American
+Journal of Sociology} 122(2): 379--424.
 \item McCrary, Justin. 2008. ``Manipulation of the Running Variable in the
 Regression Discontinuity Design: A Density Test.'' \textit{Journal of
 Econometrics} 142(2): 698--714.
+\item Noack, Claudia, Tomasz Olma, and Christoph Rothe. 2026. ``Flexible Covariate
+Adjustments in Regression Discontinuity Designs.'' \textit{Journal of
+Econometrics} 257: 106298.
+\item Noack, Claudia and Christoph Rothe. 2024. ``Bias-Aware Inference in Fuzzy
+Regression Discontinuity Designs.'' \textit{Econometrica} 92(3): 687--711.
+\item Papay, John P., John B. Willett, and Richard J. Murnane. 2011. ``Extending
+the Regression-Discontinuity Approach to Multiple Assignment Variables.''
+\textit{Journal of Econometrics} 161(2): 203--207.
+\item Reardon, Sean F. and Joseph P. Robinson. 2012. ``Regression Discontinuity
+Designs with Multiple Rating-Score Variables.'' \textit{Journal of Research on
+Educational Effectiveness} 5(1): 83--104.
+\item Sekhon, Jasjeet S. and Roc\'{\i}o Titiunik. 2017. ``On Interpreting the
+Regression Discontinuity Design as a Local Experiment.'' \textit{Advances in
+Econometrics} 38: 1--28.
 \end{itemize}
 \end{frame}
 

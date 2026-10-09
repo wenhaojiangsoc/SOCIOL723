@@ -129,6 +129,11 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   reduced-form t^2, set [0.004, 0.256]); section 6 uses the lecture DGP (corr 0.9) and shows Wald
   coverage among SIGNIFICANT draws (0.94/0.84/0.69), no funnel figure (user cut it); Wu-Hausman hidden in all printed output (diagnostics = FALSE, fitstat = ~ ivwald); compliers by hand kappa
   plus ivdesc (unconditional, balance test rejects). ivreg/ivDiag/ivdesc installed 2026-10-07.
+- Week 9 (RD, 88 pp incl. two dynamic-RD frames, rebuilt 2026-10-08): sharp RD identification (Lee 2008 argument) -> estimation
+  on the Senate data (`figs/w9_senate.R`, `figs/w9_sims.R`: bias/variance/h* derivations, RBC, CER,
+  honest CIs, Gelman-Imbens weights) -> covariates and power -> validity -> local randomization ->
+  fuzzy (AR at the cutoff) -> Dell & Querubin 2018 Vietnam bombing (8 frames, NBER WP numbers) ->
+  extensions -> sociology: Bol et al. 2018 PNAS, Legewie 2016 AJS. Lab 9 not yet aligned.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
