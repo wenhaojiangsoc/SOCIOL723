@@ -134,6 +134,16 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   honest CIs, Gelman-Imbens weights) -> covariates and power -> validity -> local randomization ->
   fuzzy (AR at the cutoff) -> Dell & Querubin 2018 Vietnam bombing (8 frames, NBER WP numbers) ->
   extensions -> sociology: Bol et al. 2018 PNAS, Legewie 2016 AJS. Lab 9 not yet aligned.
+- Week 10 (Panel + DiD, 95 pp, rebuilt 2026-10-08; user frames kept verbatim): panel FE on
+  `wooldridge::wagepan` (`figs/w10_panel.R`: marriage premium pooled .108/RE .064/FE .047/FD .038,
+  Mundlak, FE variance weights, Imai-Kim DAG, FEIS, impact function; Budig & England 2001; Ludwig &
+  Bruderl 2018 FE 8.3% -> FEIS 0.5%) -> 2x2 (Card-Krueger 2.76; Roth-Sant'Anna scale; OR/IPW/DR;
+  covariates in TWFE; placebo laws `figs/w10_placebo.R` iid .477 vs cluster .049) -> event studies
+  (Roth 2022, base periods, plotting, Kleven et al. 2019 child penalty) -> staggered on
+  `bacondecomp::divorce` (`figs/w10_divorce.R`: TWFE -3.05; Bacon table; 267 negative weights;
+  CS/SA/ETWFE-never -10.56, imputation = ETWFE-notyet -4.85; HonestDiD breakdown < .05) ->
+  beyond (dose, on/off, DDD, distributions, design-based) -> sociology (Harknett et al. 2021;
+  Choper et al. 2026 ASR; Kalil et al. 2023) -> Chiu et al. 2026 lessons. Lab 10 not yet aligned.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,

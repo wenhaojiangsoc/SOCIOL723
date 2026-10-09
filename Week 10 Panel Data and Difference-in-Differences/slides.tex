@@ -18,6 +18,7 @@
 \usepackage{dsfont}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \usepackage[english]{babel}
@@ -136,6 +137,17 @@
 
 \begin{document}
 
+\tikzset{
+  dag/.style={>=Stealth,thick,
+    every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,
+                       minimum size=9mm,font=\small}},
+  unobs/.style={draw=gray,dashed},
+  lab/.style={draw=none,fill=none,rectangle,inner sep=2pt,font=\footnotesize},
+  arr/.style={->,dukeblue,thick},
+  uarr/.style={->,gray,thick},
+  bad/.style={->,accent,thick,dashed}}
+
+
 \begin{frame}[plain]
   \titlepage
 \end{frame}
@@ -165,6 +177,28 @@ and could not name.
         sociologists use most.
 \end{itemize}
 \end{frame}
+
+\begin{frame}{Plan}
+\textbf{Goal}: what fixed effects and difference-in-differences estimate, under
+which assumptions, and how to estimate it when the textbook regression fails.
+\begin{enumerate}\itemsep0pt
+  \item \textbf{Panel fixed effects}: what FE removes, what it averages, when it is
+        causal; individual slopes; the marriage wage premium on real data.
+  \item \textbf{The $2\times2$}: parallel trends, scale, covariates (three
+        estimators), inference with serial correlation.
+  \item \textbf{Event studies}: what pre-trend tests can and cannot show; base
+        periods; sensitivity to parallel-trends violations.
+  \item \textbf{Staggered adoption}: why TWFE fails; the decomposition; the
+        new estimators; all of them on one dataset (divorce laws and suicide).
+  \item \textbf{Beyond the binary absorbing treatment}: doses, switching on and
+        off, triple differences, distributions, design-based views.
+  \item \textbf{Applications in sociology}.
+\end{enumerate}
+{\footnotesize Running data: NLSY men 1980--87 (\texttt{wooldridge::wagepan});
+Stevenson--Wolfers state panel 1964--96 (\texttt{bacondecomp::divorce}).}
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Panel Data]{Panel Data and Unobserved Heterogeneity}
@@ -307,6 +341,243 @@ Unit dummies & include $n-1$ indicators & numerically identical to within \\
 \end{itemize}
 \end{frame}
 
+\begin{frame}{The Marriage Wage Premium, Four Ways}
+NLSY men observed every year 1980--87 (545 men, 4,360 person-years; Vella
+and Verbeek 1998). Log hourly wage on married, union, and year effects;
+standard errors clustered by man \srcp{figs/w10\_panel.R}.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+estimator & uses & married & (se) \\
+\midrule
+pooled OLS (+ education, race, experience) & all variation & 0.108 & (0.026) \\
+random effects & a GLS mix & 0.064 & (0.017) \\
+fixed effects & within-man change & 0.047 & (0.021) \\
+first differences & year-to-year change & 0.038 & (0.024) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item The premium falls by more than half once each man is compared with
+        himself: men with higher earning potential are more likely to marry.
+  \item Hausman test of FE against RE: $\chi^2_{10} = 37.0$, $p < 0.001$.
+  \item 310 of 545 men change marital status; the other 235 contribute nothing
+        to the FE estimate of the marriage effect (next frames).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Fixed Effects as a Regression on Unit Means \srcp{Mundlak 1978}}
+Suppose the unit effect depends on the regressors only through their mean,
+$\alpha_i = \gamma\bar D_i + a_i$ with $a_i$ unrelated to $D_{i1},\dots,D_{iT}$:
+\begin{align*}
+  Y_{it} &= \beta D_{it} + \alpha_i + \epsilon_{it}
+   && \text{\footnotesize the FE model} \\
+  &= \beta D_{it} + \gamma \bar D_i + (a_i + \epsilon_{it})
+   && \text{\footnotesize substitute $\alpha_i$} \\
+  &= \beta (D_{it} - \bar D_i) + (\beta + \gamma)\bar D_i + (a_i + \epsilon_{it})
+   && \text{\footnotesize regroup: within and between parts}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item Pooled OLS of this equation gives \alert{exactly} the FE $\hat\beta$
+        (FWL: $D_{it}$ net of $\bar D_i$ is $D_{it} - \bar D_i$). Marriage data:
+        0.0467 both ways.
+  \item $\gamma$ is the between-minus-within gap: 0.094 (0.045) here. Random
+        effects is this model with $\gamma = 0$; testing $\gamma = 0$ is a
+        Hausman test that works with clustered errors.
+  \item Sociology's \textbf{hybrid model} \srcp{Allison 2009} is the last line plus
+        time-invariant covariates, which FE cannot estimate; their coefficients
+        are not causal merely because the model is FE-consistent.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Fixed Effects Averages}
+Binary $D$, unit $i$ treated in $m_i$ of $T$ periods, $p_i = m_i/T$. With
+tildes for deviations from unit means:
+\begin{align*}
+  \hat\beta_{FE}
+  &= \frac{\sum_i\sum_t \tilde D_{it}\tilde Y_{it}}{\sum_i\sum_t \tilde D_{it}^2}
+   = \sum_i \underbrace{\frac{\sum_t\tilde D_{it}^2}{\sum_j\sum_t\tilde D_{jt}^2}}_{w_i}\;
+     \underbrace{\frac{\sum_t\tilde D_{it}\tilde Y_{it}}{\sum_t\tilde D_{it}^2}}_{b_i}
+   && \text{\footnotesize multiply and divide by $\textstyle\sum_t\tilde D_{it}^2$} \\
+  \textstyle\sum_t \tilde D_{it}^2 &= T\,p_i(1-p_i)
+   && \text{\footnotesize variance of a 0/1 variable}
+\end{align*}
+$b_i$ is unit $i$'s own before--after difference. \alert{Units are weighted by
+how much their treatment varies}, not by their number.
+\vskip3pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+years married, of 8 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+weight per man, $8p(1-p)$ & 0.88 & 1.50 & 1.88 & 2.00 & 1.88 & 1.50 & 0.88 \\
+share of total weight & .08 & .11 & .19 & .15 & .22 & .14 & .12 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip1pt
+{\footnotesize Man effects only: $\hat\beta_{FE} = 0.243$ = weighted mean of 310 men's $b_i$ (unweighted 0.255).
+Adding year effects: 0.061; wages rise with age for everyone, and marriage comes with age \srcp{figs/w10\_panel.R}.}
+\end{frame}
+
+\begin{frame}{When Is Fixed Effects Causal? \srcp{Imai and Kim 2019}}
+\begin{columns}[T]
+\begin{column}{0.46\linewidth}
+\begin{center}
+\begin{tikzpicture}[dag,scale=0.9,every node/.append style={transform shape}]
+  \node (U) at (1.6,2.6) {$\alpha_i$};
+  \node (D1) at (0,1.2) {$D_{t-1}$};
+  \node (D2) at (3.2,1.2) {$D_t$};
+  \node (Y1) at (0,-0.6) {$Y_{t-1}$};
+  \node (Y2) at (3.2,-0.6) {$Y_t$};
+  \draw[uarr] (U) -- (D1); \draw[uarr] (U) -- (D2);
+  \draw[uarr] (U) to[bend right=55] (Y1); \draw[uarr] (U) to[bend left=55] (Y2);
+  \draw[arr] (D1) -- (Y1); \draw[arr] (D2) -- (Y2);
+  \draw[bad] (D1) -- (Y2);
+  \draw[bad] (Y1) -- (D2);
+\end{tikzpicture}
+\end{center}
+{\scriptsize Solid: allowed. Dashed orange: ruled out.}
+\end{column}
+\begin{column}{0.52\linewidth}
+\small
+FE removes $\alpha_i$ and nothing else. It needs:
+\begin{itemize}\itemsep3pt
+  \item \textbf{No time-varying confounders} of $D_t$ and $Y_t$.
+  \item \textbf{No carryover}: past treatment does not affect today's outcome
+        ($D_{t-1}\not\to Y_t$).
+  \item \textbf{No feedback}: past outcomes do not affect today's treatment
+        ($Y_{t-1}\not\to D_t$).
+\end{itemize}
+\vskip2pt
+Together: \alert{strict exogeneity}. A man whose wage rises and who then
+marries is feedback; a marriage effect that builds over years is carryover.
+\end{column}
+\end{columns}
+\vskip4pt
+{\footnotesize Relaxing these turns FE into matching on treatment histories
+\srcp{Imai, Kim, and Wang 2023; \texttt{PanelMatch}} or into an event study (below).}
+\end{frame}
+
+\begin{frame}{Selection on Growth: Individual Slopes}
+FE allows men to differ in wage \emph{levels}. If men on steeper wage paths
+marry, FE still mistakes their growth for a marriage effect.
+\begin{align*}
+  Y_{it} &= \alpha_i + \gamma_i\,x_{it} + \beta D_{it} + \epsilon_{it}
+   && \text{\footnotesize own intercept $\alpha_i$, own slope $\gamma_i$ in experience $x$} \\
+  \ddot Y_{it} &= \beta \ddot D_{it} + \ddot\epsilon_{it}
+   && \text{\footnotesize double dots: residuals from man $i$'s own regression on $(1, x_{it})$}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{FEIS}, fixed effects with individual slopes: detrend each unit
+        separately, then pool \srcp{Brüderl and Ludwig 2015; Rüttenauer and Ludwig 2023}.
+        Needs at least three observations per unit.
+  \item Identifies $\beta$ from \emph{departures} from each man's own trajectory
+        at marriage: a jump, not a steeper path.
+  \item Our 8-year panel: FE 0.047 (0.021), FEIS 0.055 (0.024). Eight years
+        per man is short for estimating a slope; the NLSY79 over 34 years
+        (next frames) tells a different story.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Impact Function: an Event Study Around Marriage}
+Men who marry once in 1981--87 (239) and men never married in the panel (162);
+event-time dummies, man and year effects, $k = -1$ omitted \srcp{figs/w10\_panel.R}:
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.72\linewidth]{figs/marriage_impact.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep1pt
+  \item Before marriage: $-0.008$, $0.006$, $-0.010$. After: 0.04--0.05, each
+        within noise.
+  \item The impact function shows what one coefficient hides: anticipation,
+        build-up, fade-out \srcp{Ludwig and Brüderl 2021}. It is a DiD event
+        study with marriage as the event (next section).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Budig and England (2001)}
+\textbf{The question.} Why do mothers earn less? NLSY79 women 1982--93: 5,287
+women, 41,842 person-years; log hourly wage on number of children.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+penalty per child, their Table 2 & fixed effects & pooled OLS \\
+\midrule
+no controls & $-0.068$ (0.004) & $-0.081$ (0.002) \\
++ marital status & $-0.073$ & $-0.081$ \\
++ experience, seniority, education & $-0.047$ & $-0.018$ \\
++ job characteristics & $-0.037$ & $-0.012$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item About 7\% per child within women, close to OLS: little selection of
+        lower-wage women into motherhood on fixed traits.
+  \item Experience (lost years at work) explains about a third of the FE
+        penalty; the rest remains. Note that experience is \emph{post}-birth,
+        a mediator: controlling for it answers a different question.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Ludwig and Brüderl (2018)}
+\textbf{The question.} Is the male marriage wage premium causal, or do men on
+steeper careers marry? A test of specialization theory.
+\vskip3pt
+\textbf{The data.} NLSY79, 1979--2012: 4,287 employed men, 49,801
+person-years; men observed never married at least once.
+\vskip3pt
+\textbf{The design.} Four estimators of one coefficient:
+\vskip2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lll@{}}
+\toprule
+model & allows men to differ in & marriage premium \\
+\midrule
+pooled OLS & nothing & 17.7\% \\
+FE & wage level & 8.3\% \\
+FE, group slopes & level; growth by future marital status & 4.3\% \\
+FEIS & level and own wage growth & 0.5\% (n.s.) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\footnotesize Their Figure 3. Before marrying, future husbands' wages grew 5\% per
+year of experience; never-married men's, 3\%.}
+\end{frame}
+
+\begin{frame}{Ludwig and Brüderl: the Premium Over Time}
+\begin{columns}[T]
+\begin{column}{0.5\linewidth}
+\includegraphics[width=\linewidth]{figs/lb_fig4.png}
+{\scriptsize Their Figure 4: effect by years since first marriage.}
+\end{column}
+\begin{column}{0.48\linewidth}
+\small
+\begin{itemize}\itemsep3pt
+  \item FE: the premium grows to 11.4\% after 5 years and 14.8\% after 11--15,
+        the pattern read as evidence of specialization.
+  \item FEIS: about zero throughout.
+  \item The growing ``premium'' is the steeper wage path the men were already
+        on: selection on growth, not an effect of marriage.
+  \item Generalizes: an FE impact function that keeps rising after the event
+        is a warning sign of selection on slopes.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[DID]{Difference-in-Differences}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -336,6 +607,35 @@ Control & $\E[Y\mid g{=}0,t{=}1]$ & $\E[Y\mid g{=}0,t{=}2]$ & $\Delta_0$ \\
         + \tau\,(\text{treated}_i \times \text{post}_t) + \epsilon_{it}$.
 \end{itemize}
 \end{frame}
+
+\begin{frame}{The $2\times2$ in the Literature: Card and Krueger (1994)}
+New Jersey raised its minimum wage from \$4.25 to \$5.05 in April 1992;
+Pennsylvania did not. 410 fast-food restaurants surveyed in February and
+November 1992.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+FTE employment per store (se), their Table 3 & PA (79) & NJ (331) & NJ $-$ PA \\
+\midrule
+February (before) & 23.33 (1.35) & 20.44 (0.51) & $-2.89$ (1.44) \\
+November (after) & 21.17 (0.94) & 21.03 (0.52) & $-0.14$ (1.07) \\
+change & $-2.16$ (1.25) & 0.59 (0.54) & \alert{2.76 (1.36)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item $2.76 = 0.59 - (-2.16)$: Pennsylvania's decline stands in for what New
+        Jersey would have done without the law.
+  \item Parallel trends here is one claim about one region in one season.
+        Their within-NJ check: high-wage NJ stores, not bound by the law,
+        changed like PA ($-2.16$ vs.\ $-2.28$, balanced sample).
+\end{itemize}
+\end{frame}
+
+
 
 
 \begin{frame}[allowframebreaks,t]{The $2\times2$ in Regression Form}
@@ -445,6 +745,98 @@ Control & 40 & 44 & $+4$ \\
         careful. If they are similar, the choice matters less.
 \end{itemize}
 \end{frame}
+
+\begin{frame}{When Does the Scale Not Matter? \srcp{Roth and Sant'Anna 2023}}
+Parallel trends in levels, in logs, in ranks: when can all hold at once?
+\vskip3pt
+\begin{block}{Result}
+Parallel trends holds for \emph{every} monotone transformation of $Y$ if and only if
+the whole \emph{distribution} of $Y(0)$ satisfies a parallel-trends condition.
+Essentially only two cases deliver that: treatment is as good as random, or
+$Y(0)$'s distribution does not change over time for the groups that differ.
+\end{block}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item In any real DiD the scale is therefore part of the assumption. Choose it
+        before seeing results, on substantive grounds (previous frame).
+  \item The distributional condition is testable in the pre-period: compare
+        the groups' outcome distributions, not only means.
+  \item For effects on whole distributions under weaker assumptions:
+        \srct{Callaway and Li (2019)} (later frame).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Parallel Trends Given Covariates: Three Estimators}
+Assume parallel trends only within levels of pre-treatment $X$; two periods,
+$\Delta Y_i = Y_{i2} - Y_{i1}$, $e(x) = \Pr(D_i=1\mid X_i=x)$,
+$m_{0,\Delta}(x) = \E[\Delta Y_i\mid X_i=x, D_i=0]$:
+\begin{align*}
+  \text{regression:}\quad \text{ATT} &= \E[\Delta Y_i\mid D_i=1] - \E[m_{0,\Delta}(X_i)\mid D_i=1] \\
+  \text{weighting:}\quad \text{ATT} &= \E\Big[\frac{D_i - e(X_i)}{\Pr(D=1)\,(1-e(X_i))}\,\Delta Y_i\Big] \\
+  \text{doubly robust:}\quad \text{ATT} &= \E\big[(w_1(D_i) - w_0(D_i, X_i))\,(\Delta Y_i - m_{0,\Delta}(X_i))\big]
+\end{align*}
+with $w_1 = D/\E[D]$ and $w_0 \propto e(X)(1-D)/(1-e(X))$, normalized to mean one
+\srcp{Heckman, Ichimura, and Todd 1997; Abadie 2005; Sant'Anna and Zhao 2020}.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item This is Week 6 applied to $\Delta Y$: matching and weighting on the
+        \emph{change}, not the level.
+  \item The DR version is consistent if either $e$ or $m_{0,\Delta}$ is right
+        (\texttt{DRDID}); it is what \texttt{did} uses inside each $ATT(g,t)$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why Not Just Add Covariates to TWFE?}
+$Y_{it} = \alpha_i + \lambda_t + \beta D_{it} + X_{it}'\delta + \epsilon_{it}$
+is the default. Even with two periods it fails when
+\srcp{Caetano and Callaway 2024}:
+\vskip3pt
+\begin{enumerate}\itemsep3pt
+  \item $X_{it}$ is affected by treatment (a ``bad control'', Week 5);
+  \item trends depend on the \emph{level} of $X$, not only its change: the
+        within transformation keeps only changes;
+  \item trends depend on time-invariant $X$ (region, education), which the
+        unit effects absorb;
+  \item effects vary with $X$, so the regression weights the subgroups in its
+        own way (Week 6's regression weights again);
+  \item the linear form is wrong.
+\end{enumerate}
+\vskip3pt
+Fix: use pre-treatment $X$ (or $X$ at a baseline period) in one of the three
+estimators on the previous frame; never post-treatment $X$.
+\end{frame}
+
+\begin{frame}{Inference: Placebo Laws on Real Data}
+\srct{Bertrand, Duflo, and Mullainathan (2004)}: give fake laws to random
+states in CPS wage data, 1979--99. Ordinary standard errors on the micro data
+reject ``no effect'' 67.5\% of the time at 5\%; 44\% even after aggregating to
+a state-year panel.
+\vskip3pt
+\textbf{Same experiment on our state panel} (female suicides, 51 states,
+1964--96): 25 random states get a fake law from a random year, 1,000 times
+\srcp{figs/w10\_placebo.R}.
+\vskip2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lc@{}}
+\toprule
+standard error & share of fake laws ``significant'' at 5\% \\
+\midrule
+assumes independent state-years & \alert{0.477} \\
+clustered by state & 0.049 \\
+clustered by state, only 3 treated states & 0.139 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep1pt
+  \item Residuals are serially correlated (lag-1 correlation 0.36): 33 years of one
+        state are far fewer than 33 independent observations.
+  \item With few \emph{treated} clusters, clustering also fails; use randomization
+        inference or methods built for it \srcp{Conley and Taber 2011; MacKinnon and Webb 2018}.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Event Studies\core}
 Generalize to many periods by estimating an effect for each period relative to
 treatment:
@@ -481,6 +873,115 @@ and each must be reported.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Pre-Trend Tests Have Low Power \srcp{Roth 2022}}
+\textbf{The practice}: estimate the leads, see that they are insignificant,
+proceed as if parallel trends holds.
+\vskip3pt
+\textbf{The audit}: 12 event-study papers in leading economics journals
+(2014--18) with replication data. Roth asks what happens under a linear
+violation of parallel trends that the usual pre-test would catch only half the
+time.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item The bias such a violation produces is often as large as the estimated
+        effect, sometimes larger.
+  \item In the worst case a nominal 95\% interval covers the truth \alert{24\%}
+        of the time.
+  \item \textbf{Conditioning on passing makes it worse}: among draws that pass the
+        pre-test, the bias is usually larger, sometimes twice as large, because
+        passing selects draws whose noise happened to offset the trend.
+\end{itemize}
+\vskip1pt
+Practical: report the power of the pre-test against violations you care about
+(\texttt{pretrends}), and replace ``test and proceed'' with sensitivity
+analysis (\srct{Rambachan and Roth 2023}, below).
+\end{frame}
+
+\begin{frame}{Base Periods: Why Event-Study Plots Disagree \srcp{Roth 2026}}
+No effect at all; untreated outcomes of the treated group drift by $\gamma$
+per period relative to controls; treatment starts at $r = 0$.
+\begin{align*}
+  \text{universal base } (r = -1):&\quad \hat\beta_r = \gamma\,(r+1)\ \text{ for every } r
+   && \text{\footnotesize as TWFE: one straight line} \\
+  \text{varying base, } r < 0:&\quad \hat\beta_r = \gamma
+   && \text{\footnotesize compares } r \text{ with } r-1 \\
+  \text{varying base, } r \geq 0:&\quad \hat\beta_r = \gamma\,(r+1)
+   && \text{\footnotesize compares } r \text{ with } -1
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item Callaway--Sant'Anna's default (``varying'') draws a flat pre-period and
+        a rising post-period: a \alert{kink at zero that looks like an effect}.
+        The imputation estimator's default draws a jump.
+  \item The pre-period points answer different questions under the two bases.
+        Do not read a varying-base plot with TWFE eyes, and do not feed it to
+        \texttt{HonestDiD}.
+  \item For plots: \texttt{base\_period = "universal"} in \texttt{did}. All event
+        studies in this lecture use it.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Drawing an Event Study \srcp{Freyaldenhoven, Hansen, Pérez Pérez, and Shapiro 2025}}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Normalize} $\hat\beta_{-1} = 0$ and label that point with the
+        outcome's mean, so readers can judge magnitudes.
+  \item \textbf{Two kinds of bands}: pointwise 95\% intervals, and a
+        \alert{sup-$t$ band} that covers the whole path at once. A path shape
+        (``no pre-trend at all leads'') is a joint claim; only the uniform band
+        tests it.
+  \item \textbf{Report two $p$-values} in the legend: no pre-trends (leads jointly
+        zero) and effects levelling off (last lags equal).
+  \item \textbf{Show the least wiggly confound} consistent with the leads: if a
+        smooth trend through the pre-period would explain the post-period, the
+        plot should show it.
+  \item \textbf{Bin or trim the end points} and say which.
+\end{itemize}
+\vskip4pt
+{\footnotesize \srct{Freyaldenhoven, Hansen, and Shapiro (2019)}: a covariate
+affected by the confound but not by the policy can identify the effect even
+with pre-trends (instrument the confound with leads of the policy).}
+\end{frame}
+
+\begin{frame}{In the Literature: Kleven, Landais, and Søgaard (2019)}
+\textbf{The question.} How much of the gender gap in earnings is caused by
+children? Danish registers 1980--2013; parents with a first birth 1985--2003,
+followed from 5 years before to 10 years after.
+\vskip2pt
+\textbf{The design}: an event study around the first birth, separately for
+mothers and fathers, with age and year dummies:
+\begin{align*}
+  Y_{ist}^g &= \sum_{j\neq -1}\alpha_j^g\,\mathds 1\{j = t\}
+   + \sum_k \beta_k^g\,\mathds 1\{k = \text{age}_{is}\}
+   + \sum_y \gamma_y^g\,\mathds 1\{y = s\} + \nu_{ist}^g \\
+  P_t &= \big(\hat\alpha_t^{m} - \hat\alpha_t^{w}\big)\big/\E[\tilde Y_{ist}^{w}\mid t]
+\end{align*}
+with $t$ event time, $s$ year, and $\tilde Y$ the prediction from age and year
+alone. $P_t$ is the \textbf{child penalty}: the gap that opens, as a share of
+women's counterfactual earnings.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item No control group of non-parents: identification is smoothness, the
+        same argument as RD in time, with fathers as a check.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Kleven, Landais, and Søgaard: Results}
+\begin{center}
+\includegraphics[width=0.7\linewidth]{figs/kleven_fig1.png}
+\end{center}
+\vskip-6pt
+{\footnotesize Their Figure 1, panels A--B (accepted manuscript, 2018).}
+\vskip2pt
+\begin{itemize}\itemsep1pt\small
+  \item Mothers' earnings fall almost 30\% at birth and settle about 20\% below the
+        counterfactual; fathers' do not move. Long-run penalty: earnings 0.194,
+        hours 0.097, participation 0.130, wage rate 0.091.
+  \item The share of gender earnings inequality due to children rose from about
+        40\% (1980) to about 80\% (2013).
+\end{itemize}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Staggered]{The Trouble with Two-Way Fixed Effects}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -505,6 +1006,26 @@ comparisons in the data, including comparisons that use
 \alert{already-treated units as controls}.
 \end{alertblock}
 \end{frame}
+
+\begin{frame}{Running Example: Unilateral Divorce and Female Suicide}
+\srct{Stevenson and Wolfers (2006)}: did letting either spouse end a marriage
+reduce women's suicide? States adopted unilateral divorce in different years.
+\vskip1pt
+\begin{itemize}\itemsep0pt
+  \item 51 states, 1964--96; outcome: female suicides per million women (mean 51 in 1964).
+  \item 9 states adopted before 1964 (always treated), 37 adopted 1969--85, 5 never.
+\end{itemize}
+\vskip-3pt
+\begin{center}
+\includegraphics[width=0.6\linewidth]{figs/divorce_raw.pdf}
+\end{center}
+\vskip-9pt
+{\footnotesize Mean rate by adoption cohort. Their event study (percent change): $-9.7\%$
+(2.3) averaged over 20 years, $-18.7\%$ (3.2) after 19+ years; nothing for men.
+Data: \texttt{bacondecomp::divorce}, crude rates \srcp{figs/w10\_divorce.R}.}
+\end{frame}
+
+
 
 \begin{frame}{The Forbidden Comparison\core}
 \begin{center}
@@ -598,6 +1119,36 @@ Three kinds of comparison arise:
 Type 3 uses already-treated units as controls. If their effects are still
 evolving, that evolution is subtracted from the late group's effect.
 \end{frame}
+
+\begin{frame}{The Decomposition on the Divorce Data}
+TWFE: $\hat\beta = -3.05$ (2.32). All 156 $2\times2$ comparisons, grouped
+\srcp{figs/w10\_divorce.R; Goodman-Bacon's own numbers, age-adjusted rates, 49 states, in grey}:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lcc>{\color{gray}}c>{\color{gray}}c@{}}
+\toprule
+comparison & weight & average $2\times2$ & weight & average \\
+\midrule
+timing states vs.\ always treated (pre-1964) & 0.41 & $-6.92$ & 0.38 & $-7.04$ \\
+treated vs.\ never treated & 0.23 & $-5.21$ & 0.24 & $-5.33$ \\
+earlier treated vs.\ later (not yet) treated & 0.11 & $1.25$ & 0.11 & $-0.19$ \\
+\alert{later treated vs.\ earlier (already) treated} & 0.25 & \alert{$3.36$} & 0.26 & $3.51$ \\
+\midrule
+TWFE $=$ weighted sum & & $-3.05$ & & $-3.08$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item A quarter of the weight sits on comparisons that use already-treated
+        states as controls; their average has the \emph{opposite sign}.
+  \item 41\% comes from always-treated states as controls: their whole period is
+        post-treatment, so they are clean only if their effects are constant.
+\end{itemize}
+\end{frame}
+
+
 
 \begin{frame}[allowframebreaks,t]{The Goodman-Bacon Weights, Explicitly\adv}
 Let $n_k, n_l, n_U$ be the groups' sample shares and $\bar D_j$ the fraction of
@@ -696,6 +1247,36 @@ that negative weights are the rule in staggered designs, not a corner case.
 genuinely constant.} It is unreliable exactly where sociologists use it most.
 \end{frame}
 
+\begin{frame}{Negative Weights on the Divorce Data}
+The formula two frames back, computed cell by cell:
+$w_{it} = \tilde D_{it}/\sum_{D_{it}=1}\tilde D_{it}$ with $\tilde D$ the
+double-demeaned treatment \srcp{figs/w10\_divorce.R}.
+\vskip4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lr@{}}
+\toprule
+treated state-years & 1,164 \\
+with a negative weight & 267 \\
+sum of the negative weights & $-0.38$ \\
+\midrule
+states carrying them & adopted before 1964, 1969, 1970 \\
+years & 1974--1996 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Exactly where the formula said: early adopters, late in the panel.
+        Their long-run effects, which Stevenson and Wolfers find are the
+        largest, enter TWFE with the wrong sign.
+  \item Positive weights sum to 1.38, so TWFE is not a convex average of any
+        group's effect.
+\end{itemize}
+\end{frame}
+
+
+
 \begin{frame}[allowframebreaks,t]{Callaway--Sant'Anna: Build Clean Blocks, Then Aggregate}
 Define the \alert{group-time average treatment effect} for cohort $g$ at time $t$:
 \begin{align*}
@@ -729,6 +1310,71 @@ is ever used as a control.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Imputation, Step by Step \srcp{Borusyak, Jaravel, and Spiess 2024}}
+Use only untreated cells to learn the untreated model, then fill in:
+\begin{align*}
+  \text{1.}&\quad Y_{it} = \alpha_i + \lambda_t + \epsilon_{it}\ \text{ on cells with } D_{it} = 0
+   && \text{\footnotesize never-treated, and pre-periods of the treated} \\
+  \text{2.}&\quad \hat Y_{it}(0) = \hat\alpha_i + \hat\lambda_t\ \text{ for cells with } D_{it} = 1
+   && \text{\footnotesize impute the missing potential outcome} \\
+  \text{3.}&\quad \hat\tau_{it} = Y_{it} - \hat Y_{it}(0),\quad
+   \hat\tau = \textstyle\sum_{D_{it}=1} v_{it}\,\hat\tau_{it}
+   && \text{\footnotesize average with weights you choose}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item No treated cell is ever a control; any aggregation ($v_{it}$) is
+        allowed, so the estimand is chosen, not inherited from OLS.
+  \item \textbf{Efficient} when errors are homoskedastic and serially
+        uncorrelated: it uses all pre-periods, not just $g-1$.
+  \item \textbf{Pre-trend tests are separate}: run on untreated cells only, so
+        testing does not change the estimate.
+  \item \srct{Gardner (2022)}'s two-stage DiD is the same idea as two regressions
+        (\texttt{did2s}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Extended TWFE: the Regression Was Not the Problem \srcp{Wooldridge 2025}}
+TWFE failed because it forced one $\beta$ on all treated cells. Give every
+cohort--period its own coefficient:
+\begin{align*}
+  Y_{it} = \alpha_i + \lambda_t
+   + \sum_{g}\sum_{t\geq g} \tau_{gt}\,\mathds 1\{G_i = g\}\,\mathds 1\{\text{period} = t\}
+   + \epsilon_{it} .
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item The unit and period effects are then fitted on untreated cells only (every
+        treated cell has its own dummy), so $\hat\tau_{gt}$ equals the imputation
+        estimate. \alert{Divorce data: both give $-4.85$}.
+  \item Adding the pre-period interactions too, against never-treated states,
+        reproduces Sun--Abraham and Callaway--Sant'Anna with a universal base:
+        \alert{all three give $-10.56$}.
+  \item Covariates enter as cohort-by-period interactions (the ``two-way
+        Mundlak'' regression). Nonlinear versions (logit, Poisson) follow
+        (\texttt{etwfe}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Stacked DiD and Its Weights}
+\textbf{Stacking} \srcp{Cengiz, Dube, Lindner, and Zipperer 2019}: for each
+adoption cohort, build a sub-experiment (the cohort plus clean controls, in a
+fixed window around adoption), stack them, and run one regression with
+sub-experiment-specific unit and time effects.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Never uses already-treated controls, and is easy to explain.
+  \item \alert{Unweighted stacking does not estimate a clean average}: each
+        sub-experiment's treated and control shares differ, so OLS weights
+        their trends unequally \srcp{Wing, Freedman, and Hollingsworth 2024}.
+        Corrective sample weights recover a ``trimmed aggregate ATT''.
+  \item Used in sociology: Walmart Supercenters and unions
+        \srcp{Choper, Lehner, and Parolin 2026}; welfare reform and children's
+        home environments \srcp{Kalil et al.\ 2023}, both later.
+\end{itemize}
+\end{frame}
+
+
+
 
 \begin{frame}{The Modern Estimators\core}
 All of them share one principle: \alert{never use an already-treated unit as a
@@ -758,6 +1404,75 @@ parallel only after adjusting for covariates, estimated by IPW, regression, or
 doubly robust, Week 6, reappearing.
 \end{frame}
 
+\begin{frame}{Six Estimators, One Dataset}
+Divorce data without the 9 always-treated states (they have no pre-period);
+standard errors clustered by state \srcp{figs/w10\_divorce.R}:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+estimator & controls, baseline & ATT & (se) \\
+\midrule
+TWFE, all 51 states & everything & $-3.05$ & (2.32) \\
+TWFE, 42 states & everything & $-0.34$ & (2.76) \\
+Callaway--Sant'Anna & never treated, year $g-1$ & $-10.56$ & (3.12) \\
+Callaway--Sant'Anna & not yet treated, year $g-1$ & $-8.69$ & (3.40) \\
+Sun--Abraham & never treated, year $g-1$ & $-10.56$ & (3.52) \\
+imputation $=$ extended TWFE & not yet treated, all pre-years & $-4.85$ & (2.97) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item The robust estimators agree on the sign and say TWFE understates the effect.
+  \item They differ in size because they assume parallel trends over different
+        windows: from $g-1$ only, or over every pre-period. Next frame shows
+        why that matters here.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Event Studies, Side by Side}
+\begin{center}
+\includegraphics[width=0.92\linewidth]{figs/divorce_es.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep1pt\small
+  \item Leads are not flat (Callaway--Sant'Anna at $k = -5$: $-7.6$): untreated
+        trends were not parallel in every pre-year, so ``which pre-years define the
+        baseline'' changes the answer.
+  \item Effects grow with time since adoption ($-14.9$ at $k = 15$), the dynamic
+        heterogeneity that breaks TWFE.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Choices Every Staggered DiD Makes}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{5.3cm}@{}}
+\toprule
+choice & options & consequence \\
+\midrule
+comparison group & never treated; not yet treated & not-yet uses more data but needs no
+  anticipation and parallel trends with future adopters \\
+baseline & $g-1$ only; all pre-periods & all pre-periods is efficient if trends are
+  parallel throughout, biased if not \\
+aggregation & simple; by event time; by cohort; by calendar time & each is a different
+  estimand; say which \\
+anticipation & shift $g$ back by $\delta$ periods & otherwise effects leak into the baseline \\
+covariates & none; DR within each $ATT(g,t)$ & use pre-treatment values only \\
+inference & cluster; bootstrap; randomization & few treated cohorts need care \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+{\footnotesize Efficiency when adoption timing is as good as random:
+\srct{Roth and Sant'Anna (2023)} (\texttt{staggered}). A design-based reading of
+TWFE under random timing: \srct{Athey and Imbens (2022)}.}
+\end{frame}
+
+
+
 \begin{frame}[allowframebreaks,t]{Honest Inference About Pre-Trends}
 Rather than testing pre-trends and proceeding as if they had passed,
 \srct{Rambachan and Roth (2023)} propose bounding how badly parallel trends could
@@ -781,6 +1496,249 @@ fail.
 treatment varies. With few clusters, use CR2 or a wild cluster bootstrap
 (Week 2).
 \end{alertblock}
+\end{frame}
+
+\begin{frame}{Sensitivity on the Divorce Data}
+Callaway--Sant'Anna event study, universal base; target: the average effect
+over $k = 0,\dots,10$, estimated at $-6.53$ \srcp{figs/w10\_divorce.R, \texttt{HonestDiD}}.
+\vskip4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lc@{}}
+\toprule
+allowed post-period violation, relative to the largest pre-period one ($\bar M$) & 95\% interval \\
+\midrule
+none (parallel trends exact) & $[-11.9,\ -1.1]$ \\
+$\bar M = 0.05$ & $[-13.4,\ \phantom{-}0.8]$ \\
+$\bar M = 0.25$ & $[-28.4,\ 16.4]$ \\
+$\bar M = 1$ & $[-55.1,\ 55.1]$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item \alert{Breakdown below $\bar M = 0.05$}: allowing post-period violations
+        one-twentieth the size of the largest pre-period swing erases the sign.
+  \item The pre-period swings are large (leads near $-7.6$), so relative
+        magnitudes give little room. The estimate is honest about what these
+        data can say.
+\end{itemize}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Beyond]{Beyond a Binary, Absorbing Treatment}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Doses: a Continuous Treatment}
+\srct{Callaway, Goodman-Bacon, and Sant'Anna (2025)}.
+Units receive dose $d$ (minimum-wage increase in dollars, hours of a program);
+some get $d = 0$. Two different questions:
+\begin{align*}
+  \text{ATT}(d\mid d) &= \E[Y_t(d) - Y_t(0)\mid D = d]
+   \qquad \text{\footnotesize effect of dose $d$ on those who got $d$} \\
+  \text{ATT}(d\mid d) - \text{ATT}(d'\mid d') &= \underbrace{\text{ATT}(d\mid d) - \text{ATT}(d'\mid d)}_{\text{causal: more dose, same units}}
+   + \underbrace{\text{ATT}(d'\mid d) - \text{ATT}(d'\mid d')}_{\text{selection: different units}}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Ordinary parallel trends (each dose group vs.\ $d=0$) identifies each
+        $\text{ATT}(d\mid d)$, but \alert{not} how effects change with the dose.
+  \item Comparing doses needs \textbf{strong parallel trends}: every dose group
+        would have trended like any other under every dose. It rules out
+        selection on gains.
+  \item TWFE on a continuous $D$ mixes both terms with weights that do not
+        follow the dose distribution; its weights on level effects sum to zero
+        (\texttt{contdid}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Treatments That Switch On and Off}
+Union membership, unemployment, living with a partner: units enter and leave
+treatment, and past treatment may still matter.
+\vskip3pt
+\begin{itemize}\itemsep4pt
+  \item TWFE with $D_{it}$ switching assumes no carryover (Imai--Kim) and
+        constant effects, and uses switchers as each other's controls.
+  \item \srct{de Chaisemartin and D'Haultf\oe uille (2026)}: compare units whose
+        treatment first changes at $t$ with units that had the \emph{same}
+        treatment history up to $t$ and have not yet changed. The effect of
+        having been exposed for $\ell$ periods, $\text{DID}_\ell$, is an event
+        study for non-absorbing, non-binary treatments (\texttt{DIDmultiplegtDYN}).
+  \item Matching on treatment histories \srct{(Imai, Kim, and Wang 2023)} does
+        the same with explicit lag length $L$.
+\end{itemize}
+\vskip3pt
+Cost: only units with a matching history count, so fewer comparisons and
+wider intervals. That is the price of not assuming carryover away.
+\end{frame}
+
+\begin{frame}{Triple Differences}
+A policy hits one group (say, mothers) in treated states. Difference the
+state DiD for mothers against the state DiD for a group the policy should not
+touch (women without children):
+\begin{align*}
+  \text{DDD} = \text{DiD}_{\text{mothers}} - \text{DiD}_{\text{non-mothers}} .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Needs only \textbf{one} parallel-trends assumption: the bias in the two
+        DiDs is the same. Neither DiD needs to be unbiased on its own
+        \srcp{Olden and Møen 2022}.
+  \item With covariates or staggered timing, ``the difference of two DiDs''
+        and three-way fixed effects regressions are generally \alert{not}
+        valid; pooling not-yet-treated units can add bias even without
+        covariates. Use estimators built for DDD
+        \srcp{Ortiz-Villavicencio and Sant'Anna 2025; \texttt{triplediff}}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Distributions, and a Design-Based View}
+\textbf{Effects on the distribution} \srcp{Callaway and Li 2019}: with three
+or more panel periods, distributional parallel trends plus copula stability
+(the link between a unit's change in $Y(0)$ and its level stays the same over
+time) identify quantile effects on the treated.
+\vskip3pt
+\textbf{Where does uncertainty come from?} Standard errors here usually imagine
+resampling units. In policy panels we observe every state.
+\begin{itemize}\itemsep2pt
+  \item \srct{Athey and Imbens (2022)}: treat the \emph{adoption date} as the random
+        element; TWFE then has a design-based reading, and the usual variance
+        is conservative.
+  \item \srct{Rambachan and Roth (2026)}: design-based uncertainty for
+        quasi-experiments; usual standard errors can remain valid, if
+        conservative, for a well-defined estimand.
+\end{itemize}
+\vskip3pt
+\textbf{Factor models} (unit-specific responses to common shocks) relax
+parallel trends further: synthetic DiD, generalized synthetic control,
+counterfactual estimators (\texttt{fect}). Next week.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Sociology]{Applications in Sociology}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{In the Literature: Harknett, Schneider, and Irwin (2021)}
+\textbf{The question.} Does making work schedules predictable improve workers'
+lives? Seattle's Secure Scheduling Ordinance (2017): two weeks' notice, pay for
+last-minute changes, extra pay for ``clopening'' shifts; large retail and
+food-service firms.
+\vskip3pt
+\textbf{The data.} The Shift Project: surveys of hourly workers recruited by
+Facebook and Instagram ads. Seattle: 754 workers at baseline (spring 2017), 747
+after one year, 441 after two. Comparison: workers at the \emph{same firms} in 24
+large metros with above-federal minimum wages. 17,689 responses in all.
+\vskip3pt
+\textbf{The design.} DiD with two post periods,
+\begin{align*}
+  Y_{ict} = \beta_1\,\text{Seattle}_c\times\text{Year1}_t + \beta_2\,\text{Seattle}_c\times\text{Year2}_t
+   + \text{city and wave effects} + X_{ict}'\delta + \epsilon_{ict} ,
+\end{align*}
+linear probability models, weighted to the American Community Survey.
+Same firms on both sides holds employer practices fixed, as Card and Krueger
+held the industry fixed.
+\end{frame}
+
+\begin{frame}{Harknett, Schneider, and Irwin: Checking the Design}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{10.4cm}@{}}
+\toprule
+Baseline levels & Similar: unpredictability scale 2.79 vs.\ 2.85; happy 76\% vs.\ 75\%;
+  any material hardship 60\% vs.\ 58\%. Clopening differs (37\% vs.\ 44\%). \\
+Pre-trends & No pre-2017 data, so no event study. Instead: in places without
+  scheduling laws, the national scale stays near 2.8 in 2017, 2018, 2019. \\
+Comparison group & Results hold with cities that considered but did not pass a
+  law, with a propensity-matched sample, and (smaller) with workers just
+  outside Seattle, where spillover is plausible. \\
+Composition & The Seattle sample becomes slightly younger and shorter-tenured. \\
+Sampling & Not a probability sample; more women and White workers than the
+  workforce. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+{\footnotesize A one-treated-city DiD: inference rests on the comparison
+cities behaving like Seattle would have. Next week's synthetic control is built
+for exactly this case.}
+\end{frame}
+
+\begin{frame}{Harknett, Schneider, and Irwin: Main Results}
+Change in Seattle minus change in comparison cities after the law (their Figures 1--2):
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lc@{}}
+\toprule
+outcome & DiD estimate \\
+\midrule
+schedule unpredictability scale (baseline 2.8) & $-0.50$ \ ($-18\%$) \\
+at least two weeks' notice & $+11$ pts \\
+last-minute changes without pay & $-13$ pts \\
+on-call shifts & $-7$ pts \ ($p \leq 0.07$) \\
+\midrule
+happy & $+7$ pts \\
+good sleep quality & $+11$ pts \\
+any material hardship & $-10$ pts \\
+psychological distress & n.s. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+{\footnotesize The law changed schedules first; well-being followed. An IV extension uses the law
+as an instrument for predictability (first-stage $F = 17.1$).}
+\end{frame}
+
+\begin{frame}{Staggered DiD in Sociology: Two Recent Studies}
+\textbf{Choper, Lehner, and Parolin (2026, ASR)}: Walmart Supercenters and
+unions. Restricted PSID 1983--2019; 966 first Supercenter openings across
+counties; stacked DiD with never-treated controls, matched workers, $\pm 10$
+years.
+\begin{itemize}\itemsep1pt
+  \item Union membership falls 1.4 points (se 0.8); \alert{3.5 points (1.3)} when
+        differential linear pre-trends are removed: about 21\% of the 16.1\% baseline.
+  \item The headline depends on a trend adjustment: report both, as they do.
+\end{itemize}
+\vskip4pt
+\textbf{Kalil, Corman, Dave, Schwartz-Soicher, and Reichman (2023,
+\emph{Demography})}: staggered state welfare reform 1992--98; NLSY79 unmarried,
+low-educated mothers of young children.
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+home environment score & TWFE & stacked (not-yet-treated controls) \\
+\midrule
+emotional support & $-4.95$ (1.44) & $-6.56$ (1.77) \\
+overall & $-2.89$ & $-5.40$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize Already-treated controls attenuate TWFE when effects grow, as in the divorce data.}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Practice]{Practice}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{What a Reanalysis of 49 Studies Found \srcp{Chiu, Lan, Liu, and Xu 2026}}
+Political scientists reran 49 published panel studies with the
+heterogeneity-robust estimators of this lecture.
+\vskip4pt
+\begin{itemize}\itemsep4pt
+  \item The new estimators usually agree with TWFE \emph{qualitatively}, but the
+        estimates vary a lot across estimators.
+  \item Many studies lack evidence for parallel trends once pre-periods are
+        examined properly.
+  \item Many are underpowered: the robust estimators' intervals are wide.
+\end{itemize}
+\vskip4pt
+Read with the divorce data in mind: the estimator mattered (TWFE vs.\ robust),
+and so did the window over which trends are assumed parallel. The practical
+guide that collects these steps: \srct{Baker, Callaway, Cunningham,
+Goodman-Bacon, and Sant'Anna (2026)}.
 \end{frame}
 
 \begin{frame}{A DID Checklist\core}
@@ -821,33 +1779,57 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 
 \begin{frame}[allowframebreaks,t]{References}
 \footnotesize
-\begin{itemize}\itemsep3pt
-\item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009.
-\textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 5]
-\item Bertrand, Marianne, Esther Duflo, and Sendhil Mullainathan. 2004. ``How
-Much Should We Trust Differences-in-Differences Estimates?''
-\textit{Quarterly Journal of Economics} 119(1): 249--275.
-\item Borusyak, Kirill, Xavier Jaravel, and Jann Spiess. 2024. ``Revisiting
-Event-Study Designs: Robust and Efficient Estimation.''
-\textit{Review of Economic Studies} 91(6): 3253--3285.
-\item Callaway, Brantly and Pedro H.C. Sant'Anna. 2021. ``Difference-in-Differences
-with Multiple Time Periods.'' \textit{Journal of Econometrics} 225(2): 200--230.
-\item de Chaisemartin, Cl\'ement and Xavier D'Haultf\oe uille. 2020. ``Two-Way
-Fixed Effects Estimators with Heterogeneous Treatment Effects.''
-\textit{American Economic Review} 110(9): 2964--2996.
-\item Goodman-Bacon, Andrew. 2021. ``Difference-in-Differences with Variation in
-Treatment Timing.'' \textit{Journal of Econometrics} 225(2): 254--277.
-\item Rambachan, Ashesh and Jonathan Roth. 2023. ``A More Credible Approach to
-Parallel Trends.'' \textit{Review of Economic Studies} 90(5): 2555--2591.
-\item Roth, Jonathan. 2022. ``Pretest with Caution: Event-Study Estimates after
-Testing for Parallel Trends.'' \textit{American Economic Review: Insights} 4(3):
-305--322.
-\item Roth, Jonathan, Pedro H.C. Sant'Anna, Alyssa Bilinski, and John Poe. 2023.
-``What's Trending in Difference-in-Differences?''
-\textit{Journal of Econometrics} 235(2): 2218--2244.
-\item Sun, Liyang and Sarah Abraham. 2021. ``Estimating Dynamic Treatment Effects
-in Event Studies with Heterogeneous Treatment Effects.''
-\textit{Journal of Econometrics} 225(2): 175--199.
+\begin{itemize}\itemsep2pt
+\item Abadie, Alberto. 2005. ``Semiparametric Difference-in-Differences Estimators.'' \textit{Review of Economic Studies} 72(1): 1--19.
+\item Allison, Paul D. 2009. \textit{Fixed Effects Regression Models}. Sage.
+\item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009. \textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 5]
+\item Athey, Susan and Guido W. Imbens. 2022. ``Design-Based Analysis in Difference-in-Differences Settings with Staggered Adoption.'' \textit{Journal of Econometrics} 226(1): 62--79.
+\item Baker, Andrew, Brantly Callaway, Scott Cunningham, Andrew Goodman-Bacon, and Pedro H.C. Sant'Anna. 2026. ``Difference-in-Differences Designs: A Practitioner's Guide.'' \textit{Journal of Economic Literature} 64(2): 498--557.
+\item Bertrand, Marianne, Esther Duflo, and Sendhil Mullainathan. 2004. ``How Much Should We Trust Differences-in-Differences Estimates?'' \textit{Quarterly Journal of Economics} 119(1): 249--275.
+\item Borusyak, Kirill, Xavier Jaravel, and Jann Spiess. 2024. ``Revisiting Event-Study Designs: Robust and Efficient Estimation.'' \textit{Review of Economic Studies} 91(6): 3253--3285.
+\item Brüderl, Josef and Volker Ludwig. 2015. ``Fixed-Effects Panel Regression.'' Pp.\ 327--357 in \textit{The SAGE Handbook of Regression Analysis and Causal Inference}, edited by H. Best and C. Wolf. Sage.
+\item Budig, Michelle J. and Paula England. 2001. ``The Wage Penalty for Motherhood.'' \textit{American Sociological Review} 66(2): 204--225.
+\item Caetano, Carolina and Brantly Callaway. 2024. ``Difference-in-Differences when Parallel Trends Holds Conditional on Covariates.'' arXiv:2406.15288.
+\item Callaway, Brantly, Andrew Goodman-Bacon, and Pedro H.C. Sant'Anna. 2025. ``Difference-in-Differences with a Continuous Treatment.'' arXiv:2107.02637 (NBER WP 32117).
+\item Callaway, Brantly and Tong Li. 2019. ``Quantile Treatment Effects in Difference in Differences Models with Panel Data.'' \textit{Quantitative Economics} 10(4): 1579--1618.
+\item Callaway, Brantly and Pedro H.C. Sant'Anna. 2021. ``Difference-in-Differences with Multiple Time Periods.'' \textit{Journal of Econometrics} 225(2): 200--230.
+\item Card, David and Alan B. Krueger. 1994. ``Minimum Wages and Employment: A Case Study of the Fast-Food Industry in New Jersey and Pennsylvania.'' \textit{American Economic Review} 84(4): 772--793.
+\item Cengiz, Doruk, Arindrajit Dube, Attila Lindner, and Ben Zipperer. 2019. ``The Effect of Minimum Wages on Low-Wage Jobs.'' \textit{Quarterly Journal of Economics} 134(3): 1405--1454.
+\item Chiu, Albert, Xingchen Lan, Ziyi Liu, and Yiqing Xu. 2026. ``Causal Panel Analysis under Parallel Trends: Lessons from a Large Reanalysis Study.'' \textit{American Political Science Review} 120(1): 245--266.
+\item Choper, Joshua, Clemens Lehner, and Zachary Parolin. 2026. ``Countervailing Powers: Labor Unions Against the Buyer Power of Walmart Supercenters.'' \textit{American Sociological Review} 91(3): 435--463.
+\item Conley, Timothy G. and Christopher R. Taber. 2011. ``Inference with `Difference in Differences' with a Small Number of Policy Changes.'' \textit{Review of Economics and Statistics} 93(1): 113--125.
+\item de Chaisemartin, Cl\'ement and Xavier D'Haultf\oe uille. 2020. ``Two-Way Fixed Effects Estimators with Heterogeneous Treatment Effects.'' \textit{American Economic Review} 110(9): 2964--2996.
+\item de Chaisemartin, Cl\'ement and Xavier D'Haultf\oe uille. 2026. ``Difference-in-Differences Estimators of Intertemporal Treatment Effects.'' \textit{Review of Economics and Statistics} 108(4): 863--880.
+\item Freyaldenhoven, Simon, Christian Hansen, Jorge Pérez Pérez, and Jesse M. Shapiro. 2025. ``Visualization, Identification, and Estimation in the Linear Panel Event-Study Design.'' Pp.\ 225--268 in \textit{Advances in Economics and Econometrics: Twelfth World Congress}, Vol.\ 2. Cambridge University Press.
+\item Freyaldenhoven, Simon, Christian Hansen, and Jesse M. Shapiro. 2019. ``Pre-Event Trends in the Panel Event-Study Design.'' \textit{American Economic Review} 109(9): 3307--3338.
+\item Gardner, John. 2022. ``Two-Stage Differences in Differences.'' arXiv:2207.05943.
+\item Goodman-Bacon, Andrew. 2021. ``Difference-in-Differences with Variation in Treatment Timing.'' \textit{Journal of Econometrics} 225(2): 254--277.
+\item Harknett, Kristen, Daniel Schneider, and Véronique Irwin. 2021. ``Improving Health and Economic Security by Reducing Work Schedule Uncertainty.'' \textit{Proceedings of the National Academy of Sciences} 118(42): e2107828118.
+\item Heckman, James J., Hidehiko Ichimura, and Petra E. Todd. 1997. ``Matching as an Econometric Evaluation Estimator: Evidence from Evaluating a Job Training Programme.'' \textit{Review of Economic Studies} 64(4): 605--654.
+\item Imai, Kosuke and In Song Kim. 2019. ``When Should We Use Unit Fixed Effects Regression Models for Causal Inference with Longitudinal Data?'' \textit{American Journal of Political Science} 63(2): 467--490.
+\item Imai, Kosuke, In Song Kim, and Erik H. Wang. 2023. ``Matching Methods for Causal Inference with Time-Series Cross-Sectional Data.'' \textit{American Journal of Political Science} 67(3): 587--605.
+\item Kalil, Ariel, Hope Corman, Dhaval M. Dave, Ofira Schwartz-Soicher, and Nancy E. Reichman. 2023. ``Welfare Reform and the Quality of Young Children's Home Environments.'' \textit{Demography} 60(6): 1791--1813.
+\item Kleven, Henrik, Camille Landais, and Jakob Egholt Søgaard. 2019. ``Children and Gender Inequality: Evidence from Denmark.'' \textit{American Economic Journal: Applied Economics} 11(4): 181--209.
+\item Ludwig, Volker and Josef Brüderl. 2018. ``Is There a Male Marital Wage Premium? New Evidence from the United States.'' \textit{American Sociological Review} 83(4): 744--770.
+\item Ludwig, Volker and Josef Brüderl. 2021. ``What You Need to Know When Estimating Impact Functions with Panel Data for Demographic Research.'' \textit{Comparative Population Studies} 46.
+\item MacKinnon, James G. and Matthew D. Webb. 2018. ``The Wild Bootstrap for Few (Treated) Clusters.'' \textit{Econometrics Journal} 21(2): 114--135.
+\item Mundlak, Yair. 1978. ``On the Pooling of Time Series and Cross Section Data.'' \textit{Econometrica} 46(1): 69--85.
+\item Olden, Andreas and Jarle Møen. 2022. ``The Triple Difference Estimator.'' \textit{Econometrics Journal} 25(3): 531--553.
+\item Ortiz-Villavicencio, Marcelo and Pedro H.C. Sant'Anna. 2025. ``Better Understanding Triple Differences Estimators.'' arXiv:2505.09942.
+\item Rambachan, Ashesh and Jonathan Roth. 2023. ``A More Credible Approach to Parallel Trends.'' \textit{Review of Economic Studies} 90(5): 2555--2591.
+\item Rambachan, Ashesh and Jonathan Roth. 2026. ``Design-Based Uncertainty for Quasi-Experiments.'' \textit{Journal of the American Statistical Association} 121(553): 477--491.
+\item Roth, Jonathan. 2022. ``Pretest with Caution: Event-Study Estimates after Testing for Parallel Trends.'' \textit{American Economic Review: Insights} 4(3): 305--322.
+\item Roth, Jonathan. 2026. ``Interpreting Event-Studies from Recent Difference-in-Differences Methods.'' \textit{Japanese Economic Review} 77(2): 275--288.
+\item Roth, Jonathan and Pedro H.C. Sant'Anna. 2023. ``When Is Parallel Trends Sensitive to Functional Form?'' \textit{Econometrica} 91(2): 737--747.
+\item Roth, Jonathan and Pedro H.C. Sant'Anna. 2023. ``Efficient Estimation for Staggered Rollout Designs.'' \textit{Journal of Political Economy Microeconomics} 1(4): 669--709.
+\item Roth, Jonathan, Pedro H.C. Sant'Anna, Alyssa Bilinski, and John Poe. 2023. ``What's Trending in Difference-in-Differences?'' \textit{Journal of Econometrics} 235(2): 2218--2244.
+\item Rüttenauer, Tobias and Volker Ludwig. 2023. ``Fixed Effects Individual Slopes: Accounting and Testing for Heterogeneous Effects in Panel Data or Other Multilevel Models.'' \textit{Sociological Methods \& Research} 52(1): 43--84.
+\item Sant'Anna, Pedro H.C. and Jun Zhao. 2020. ``Doubly Robust Difference-in-Differences Estimators.'' \textit{Journal of Econometrics} 219(1): 101--122.
+\item Stevenson, Betsey and Justin Wolfers. 2006. ``Bargaining in the Shadow of the Law: Divorce Laws and Family Distress.'' \textit{Quarterly Journal of Economics} 121(1): 267--288.
+\item Sun, Liyang and Sarah Abraham. 2021. ``Estimating Dynamic Treatment Effects in Event Studies with Heterogeneous Treatment Effects.'' \textit{Journal of Econometrics} 225(2): 175--199.
+\item Vella, Francis and Marno Verbeek. 1998. ``Whose Wages Do Unions Raise? A Dynamic Model of Unionism and Wage Rate Determination for Young Men.'' \textit{Journal of Applied Econometrics} 13(2): 163--183.
+\item Wing, Coady, Seth M. Freedman, and Alex Hollingsworth. 2024. ``Stacked Difference-in-Differences.'' NBER Working Paper 32054.
+\item Wooldridge, Jeffrey M. 2025. ``Two-Way Fixed Effects, the Two-Way Mundlak Regression, and Difference-in-Differences Estimators.'' \textit{Empirical Economics} 69(5): 2545--2587.
 \end{itemize}
 \end{frame}
 
