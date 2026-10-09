@@ -2,7 +2,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[top=1.1in,bottom=1.1in,left=1.1in,right=1.1in]{geometry}
-\usepackage{amsmath,amssymb,bm}
+\usepackage{amsmath,amssymb,bm,dsfont}
 \usepackage{booktabs}
 \usepackage{enumitem}
 \usepackage{needspace}
@@ -26,12 +26,19 @@
                        minimum size=9mm,font=\small}},
   unobs/.style={draw=gray,dashed},
   arr/.style={->,dukeblue,thick},
-  uarr/.style={->,gray,thick}}
+  uarr/.style={->,gray,thick},
+  noarr/.style={->,accent,thick,dashed},
+  dagl/.style={shape=rectangle,font=\scriptsize\itshape,text=gray,draw=none,fill=none,
+               minimum size=0pt,inner sep=1pt,label distance=2pt},
+  elab/.style={shape=rectangle,draw=none,fill=none,minimum size=0pt,inner sep=1pt,
+               font=\scriptsize,text=accent}}
 %% answers: blue, indented, set off from the question
 \newenvironment{answer}{\par\smallskip
   \begin{list}{}{\leftmargin=1.2em\rightmargin=0pt}\item[]\color{dukeblue}%
   \textbf{Answer.}\ }{\end{list}\smallskip}
-\newcommand{\yn}{\hfill\textsc{yes}\quad\textsc{no}}
+\newcommand{\yn}{\nolinebreak\hspace*{1em plus 1fill}\mbox{\textsc{yes}\quad\textsc{no}}}
+%% where to look when studying: \slideref{week}{slide numbers}
+\newcommand{\slideref}[2]{{\footnotesize\color{gray}[Week #1, slide #2]}}
 
 \begin{document}
 
@@ -46,7 +53,8 @@
 midterm. The midterm is open book and open note, timed (150 minutes), and asks for no
 code. It covers Weeks 1--7 and draws on the frames marked with a blue star in the slides.
 Where a question asks for sentences, write them as you would in a paper. Show your
-arithmetic: a right number with no work earns partial credit only.
+arithmetic: a right number with no work earns partial credit only. The gray tag after each
+question names the slides to review (Week 1 has two decks; ``Tue'' is Tuesday's).
 
 \begin{center}
 \renewcommand{\arraystretch}{1.15}
@@ -57,7 +65,7 @@ Part & Format & Weeks & Points \\
 1 & Five yes-or-no questions & 1--7 & 10 \\
 2 & Ten single-choice questions & 1--7 & 30 \\
 3 & Three longer questions & 1--2, 3--4, 5 and 7 & 60 \\
-Bonus & One derivation & 5--6 & $+5$ \\
+Bonus & One derivation & 7 & $+10$ \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -69,37 +77,62 @@ Bonus & One derivation & 5--6 & $+5$ \\
 Circle \textsc{yes} or \textsc{no}. Two points each.
 
 \begin{enumerate}[leftmargin=*,itemsep=6pt]
-\item In your sample, the OLS residuals are uncorrelated with $X$. This is evidence that
-      $\E[\epsilon_i \mid X_i] = 0$. \yn
+\item Suppose the true model is $\log(\text{earnings}_i) = \beta_0 + \beta_1\,
+      \text{schooling}_i + \epsilon_i$, where $\epsilon_i$ is the true, unobserved error
+      (everything else that affects earnings, such as ability). You estimate it by OLS and
+      find that the fitted residuals $\hat e_i$ are uncorrelated with schooling. This is
+      evidence that $\E[\epsilon_i \mid \text{schooling}_i] = 0$.
+      \slideref{1 Tue}{15--16} \yn
 \begin{answer}
-\textsc{No}. The normal equations force $\sum_i X_i\hat e_i = 0$ in every sample, for every
-dataset. A zero correlation between residuals and $X$ is algebra, not evidence.
+\textsc{No}. The normal equations force $\sum_i \text{schooling}_i\,\hat e_i = 0$ (and
+$\sum_i \hat e_i = 0$) in every sample, whatever the true relation between schooling and
+$\epsilon_i$. The zero correlation is algebra, not evidence. If ability raises earnings and
+goes with schooling, $\epsilon_i$ is correlated with schooling, yet the residuals $\hat e_i$
+are still uncorrelated with it: OLS has absorbed that correlation into a biased $\hat\beta_1$.
+The assumption is about the unobserved $\epsilon_i$, and the data cannot check it.
 \end{answer}
 
-\item Heteroskedasticity makes the OLS coefficients biased. \yn
+\item In the same regression, the spread of log earnings is wider among the more schooled,
+      so the errors are heteroskedastic. This biases the OLS schooling coefficient.
+      \slideref{2}{19} \yn
 \begin{answer}
-\textsc{No}. Under exogeneity OLS stays unbiased. Only the classical standard-error formula
-is wrong; the robust (sandwich) formula fixes it.
+\textsc{No}. Unbiasedness needs only $\E[\epsilon_i \mid X_i] = 0$; it says nothing about
+the variance of $\epsilon_i$. Heteroskedasticity makes the classical standard-error formula
+wrong, not the coefficient. Keep $\hat\beta$ and report a robust (sandwich) standard error.
 \end{answer}
 
-\item The likelihood $\mathcal L(\theta; y)$ is a probability distribution over $\theta$. \yn
+\item You fit a logit of voting on age, then fit it again with education added. The
+      log-likelihood at the MLE of the second model can never be lower than that of the
+      first, so the second model will always have the lower (better) AIC.
+      \slideref{3}{55, 69} \yn
 \begin{answer}
-\textsc{No}. It is the density read backwards: data fixed, $\theta$ varying. It does not
-integrate to one over $\theta$.
+\textsc{No}. The first half is true: the first model is the second with the education
+coefficient fixed at zero, so the larger model's maximum is at least as high and
+$LR = 2(\ell_{\text{big}} - \ell_{\text{small}}) \ge 0$. But $\text{AIC} = -2\ell + 2k$:
+adding education lowers $-2\ell$ by $LR$ and raises the penalty by 2. AIC falls only if
+$LR > 2$. Example: $\ell = -612.4$ with $k = 2$ and $\ell = -611.9$ with $k = 3$ give
+AIC $1228.8$ and $1229.8$; the better-fitting model has the higher AIC.
 \end{answer}
 
-\item If treatment is assigned by a coin flip, the difference in mean outcomes between the
-      treated and the untreated estimates the ATE. \yn
+\item Places in a job-training program are assigned by lottery, and every winner enrolls.
+      The difference in mean earnings between winners and losers two years later estimates
+      the ATE. \slideref{5}{13} \yn
 \begin{answer}
-\textsc{Yes}. Randomization gives $(Y_i(0), Y_i(1)) \indep D_i$, so the selection-bias term
-$\E[Y_i(0)\mid D_i=1] - \E[Y_i(0)\mid D_i=0]$ is zero and ATE $=$ ATT.
+\textsc{Yes}. This is classic Random Control Trial (RCT) with completely randomized treatment. The lottery makes $(Y_i(0), Y_i(1)) \indep D_i$, so the baseline selection
+term $\E[Y_i(0)\mid D_i=1] - \E[Y_i(0)\mid D_i=0]$ is zero, ATT $=$ ATU $=$ ATE, and the
+difference in means is unbiased for all three.
 \end{answer}
 
-\item With a binary instrument and no defiers, the first stage
-      $\E[D_i\mid Z_i=1] - \E[D_i\mid Z_i=0]$ equals the share of compliers. \yn
+\item A scholarship awarded by lottery is used as an instrument for college attendance in
+      a regression of earnings at age 30. Because the lottery is random, the scholarship is
+      a valid instrument. \slideref{7}{6--7} \yn
 \begin{answer}
-\textsc{Yes}. The first stage is $\Pr(\text{C}) - \Pr(\text{defiers})$, and monotonicity sets
-the second term to zero.
+\textsc{No}. The lottery buys independence: winning is unrelated to ability or family
+background. It does not buy exclusion. The money itself can change earnings through
+channels other than attendance: winners graduate with less debt, can take unpaid
+internships or lower-paid first jobs, and may enter a different field. The scholarship
+affects $Y$ other than through $D$, so the IV estimate mixes the effect of attending with
+the effect of the cash. Randomization makes an instrument independent, not excludable.
 \end{answer}
 \end{enumerate}
 
@@ -111,7 +144,7 @@ Circle one letter. Three points each.
 \begin{enumerate}[leftmargin=*,itemsep=8pt]
 \item A researcher regresses children's test scores on neighborhood poverty and omits
       parental income. Parental income raises test scores, and it is lower in poorer
-      neighborhoods. The short regression's poverty coefficient is
+      neighborhoods. The short regression's poverty coefficient is \slideref{1 Tue}{35}
       \begin{enumerate}[label=(\Alph*),itemsep=0pt]
       \item biased downward: poverty looks more harmful than it is.
       \item biased upward: poverty looks less harmful than it is.
@@ -123,51 +156,37 @@ Circle one letter. Three points each.
 (income is lower where poverty is higher): the bias is negative.
 \end{answer}
 
-\item Students sit in 40 schools, and the treatment was assigned by school. A pairs
-      bootstrap that resamples \emph{students} gives a standard error of 0.8. The right
-      bootstrap
+\item Students sit in 40 schools, and the treatment was assigned by school. You run a
+      bootstrap with $B = 1{,}000$ draws, each draw resampling individual students with
+      equal probability, and get a standard error of 0.8. The right bootstrap
+      \slideref{2}{47}
       \begin{enumerate}[label=(\Alph*),itemsep=0pt]
       \item resamples whole schools with replacement, each bringing all its students.
       \item resamples students, but with $B = 5{,}000$ instead of $1{,}000$.
       \item resamples students within each school.
-      \item is not needed: the pairs bootstrap is already heteroskedasticity-robust.
+      \item is not needed: resampling students is already heteroskedasticity-robust.
       \end{enumerate}
 \begin{answer}
-(A). Resample the units the assignment lottery ran over. Resampling students copies the
-too-small standard error of the naive formula.
+(A). Resample the units the assignment lottery ran over. Resampling students treats them
+as independent and copies the too-small standard error of the naive formula; more draws
+only estimate that wrong number more precisely.
 \end{answer}
 
-\item Five independent Poisson counts: $2, 5, 1, 4, 3$. The MLE $\hat\theta$ and its
-      standard error are
+\item Five independent Poisson counts: $2, 5, 1, 4, 3$. The MLE $\hat\theta$ is
+      \slideref{3}{29}
       \begin{enumerate}[label=(\Alph*),itemsep=0pt]
-      \item $3$ and $0.77$
-      \item $3$ and $0.60$
-      \item $3$ and $1.73$
-      \item $2.5$ and $0.71$
+      \item $3$
+      \item $2.5$
+      \item $15$
+      \item $0.6$
       \end{enumerate}
 \begin{answer}
-(A). $\hat\theta = \bar y = 15/5 = 3$. Observed information
-$-\ell''(\hat\theta) = \sum_i y_i/\hat\theta^2 = 15/9 = 1.67$, so
-$\text{SE} = 1/\sqrt{1.67} = 0.77$; equivalently $\sqrt{\hat\theta/n} = \sqrt{3/5}$.
-\end{answer}
-
-\item A logit is fitted with and without a block of three dummies, on the same 2,000 rows.
-      The log-likelihoods are $-1{,}199.1$ (with) and $-1{,}204.6$ (without). The
-      $\chi^2_3$ 5\% cut-off is $7.81$ and $\log 2000 = 7.6$. Which is right?
-      \begin{enumerate}[label=(\Alph*),itemsep=0pt]
-      \item $LR = 11.0$: reject at 5\%; BIC prefers the model without the block.
-      \item $LR = 5.5$: do not reject at 5\%.
-      \item $LR = 11.0$: reject at 5\%; BIC prefers the model with the block.
-      \item $LR = -11.0$: the smaller model fits better.
-      \end{enumerate}
-\begin{answer}
-(A). $LR = 2[-1199.1 - (-1204.6)] = 11.0 > 7.81$. BIC charges $q\log n = 3 \times 7.6 =
-22.8$ for the block, more than the $11.0$ it buys: $BIC_{\text{small}} - BIC_{\text{big}} =
-11.0 - 22.8 < 0$.
+(A). $\ell(\theta) = \sum_i (y_i\log\theta - \theta - \log y_i!)$, so the score is
+$\sum_i y_i/\theta - n = 0$, giving $\hat\theta = \bar y = 15/5 = 3$.
 \end{answer}
 
 \item In a logit of voting ($0/1$), the coefficient on holding a college degree is $0.693$,
-      so $e^{0.693} = 2$. Which sentence is correct?
+      so $e^{0.693} = 2$. Which sentence is correct? \slideref{4}{14}
       \begin{enumerate}[label=(\Alph*),itemsep=0pt]
       \item Graduates are twice as likely to vote as non-graduates.
       \item A degree raises the probability of voting by $0.693$.
@@ -179,36 +198,25 @@ $\text{SE} = 1/\sqrt{1.67} = 0.77$; equivalently $\sqrt{\hat\theta/n} = \sqrt{3/
 probability depends on where a person starts on the S-curve.
 \end{answer}
 
-\item A Poisson regression of the number of arrests shows strong overdispersion. What
-      follows?
+\item You regress log earnings on schooling and age, and the schooling coefficient is
+      $0.10$. Then you (i) regress log earnings on age and save the residuals,
+      (ii) regress schooling on age and save the residuals, and (iii) regress the
+      residuals from (i) on the residuals from (ii). The slope in (iii) is
+      \slideref{1 Tue}{26, 29}
       \begin{enumerate}[label=(\Alph*),itemsep=0pt]
-      \item The coefficients are badly biased and must be discarded.
-      \item The coefficients are about right, but the Poisson standard errors are too
-            small.
-      \item The standard errors are too large, so the tests are conservative.
-      \item Nothing: overdispersion only matters for prediction.
+      \item exactly $0.10$.
+      \item close to $0.10$, but not equal, because residuals are estimated.
+      \item the slope of log earnings on schooling without age.
+      \item the coefficient on age.
       \end{enumerate}
 \begin{answer}
-(B). The mean is still right, so $\hat{\bm\beta}$ is fine; the Poisson's variance $=$ mean
-claim is wrong, so its SEs are too small. Use robust SEs or a negative binomial.
-\end{answer}
-
-\item A random-intercept model of math scores for students in schools reports
-      $\hat\tau^2 = 4$ (between schools) and $\hat\sigma^2 = 36$ (within schools). The
-      intraclass correlation is
-      \begin{enumerate}[label=(\Alph*),itemsep=0pt]
-      \item $0.10$
-      \item $0.11$
-      \item $0.33$
-      \item $0.90$
-      \end{enumerate}
-\begin{answer}
-(A). $\text{ICC} = \tau^2/(\tau^2+\sigma^2) = 4/40 = 0.10$: 10\% of the unexplained variation
-is between schools.
+(A). This is the Frisch--Waugh--Lovell theorem: the coefficient on schooling in the
+regression with age equals the slope from regressing the part of earnings not explained by
+age on the part of schooling not explained by age. It holds exactly, in every sample.
 \end{answer}
 
 \needspace{12\baselineskip}
-\item Four units:
+\item Four units: \slideref{5}{9--10}
 \begin{center}\small
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{ccccc}
@@ -233,25 +241,25 @@ Unit & $D_i$ & $Y_i(0)$ & $Y_i(1)$ \\
 2$, so naive $= 9 - 3 = 6$ $=$ ATT $+$ selection bias $= 5 + (4 - 3)$.
 \end{answer}
 
-\needspace{14\baselineskip}
+\needspace{18\baselineskip}
 \item In the DAG below, $D$ is job training, $Y$ is earnings two years later, $X$ is
       earnings before training, $M$ is hours worked after training, and $S$ is whether the
       person is still in the survey at follow-up. To estimate the \emph{total} effect of $D$
-      on $Y$, condition on
+      on $Y$, condition on \slideref{5}{32, 41, 46}
 \begin{center}
-\begin{tikzpicture}[dag,node distance=1.2cm and 2.0cm]
-  \node (X) {$X$};
-  \node (D) [below left=of X] {$D$};
-  \node (Y) [below right=of X] {$Y$};
-  \node (M) [below=1.0cm of $(D)!0.5!(Y)$] {$M$};
-  \node (S) [right=1.6cm of Y] {$S$};
+\begin{tikzpicture}[dag]
+  \node (D) at (0,0)      [label={[dagl]left:training}] {$D$};
+  \node (Y) at (4.4,0)    [label={[dagl]above right:earnings}] {$Y$};
+  \node (X) at (2.2,1.9)  [label={[dagl]above:prior earnings}] {$X$};
+  \node (M) at (2.2,-1.6) [label={[dagl]left:hours}] {$M$};
+  \node (S) at (7.0,0)    [label={[dagl]right:in survey}] {$S$};
   \draw[arr] (X) -- (D);
   \draw[arr] (X) -- (Y);
   \draw[arr] (D) -- (Y);
   \draw[arr] (D) -- (M);
   \draw[arr] (M) -- (Y);
   \draw[arr] (Y) -- (S);
-  \draw[arr] (D) to[bend right=50] (S);
+  \draw[arr] (D) .. controls (1.0,-3.6) and (6.0,-3.6) .. (S);
 \end{tikzpicture}
 \end{center}
       \begin{enumerate}[label=(\Alph*),itemsep=0pt]
@@ -268,7 +276,8 @@ spurious path.
 \end{answer}
 
 \item In a cell where the propensity score is $e(x) = 0.8$, weighting for the ATT gives each
-      \emph{untreated} unit the weight
+      treated unit the weight $1$ (the treated are already the population we want).
+      Each \emph{untreated} unit gets the weight \slideref{6}{41}
       \begin{enumerate}[label=(\Alph*),itemsep=0pt]
       \item $4$
       \item $1.25$
@@ -279,6 +288,52 @@ spurious path.
 (A). ATT weights: treated $1$, untreated $e(x)/(1-e(x)) = 0.8/0.2 = 4$, the odds of
 treatment. The untreated are reweighted to look like the treated, of whom there are four
 per untreated unit in this cell.
+\end{answer}
+
+\needspace{14\baselineskip}
+\item Two cells of a covariate, with ignorability given the cell: \slideref{6}{8}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lcccc}
+\toprule
+cell & treated ($n$) & untreated ($n$) & treated mean $Y$ & untreated mean $Y$ \\
+\midrule
+1 & 10 & 30 & 8 & 5 \\
+2 & 30 & 30 & 12 & 10 \\
+\bottomrule
+\end{tabular}
+\end{center}
+      The ATE from exact matching is
+      \begin{enumerate}[label=(\Alph*),itemsep=0pt]
+      \item $2.4$
+      \item $2.25$
+      \item $2.5$
+      \item $3.5$
+      \end{enumerate}
+\begin{answer}
+(A). Within-cell differences $8 - 5 = 3$ and $12 - 10 = 2$. The ATE weights cells by their
+share of \emph{everyone}: $(40 \times 3 + 60 \times 2)/100 = 2.4$. The ATT weights by the
+treated, $(10 \times 3 + 30 \times 2)/40 = 2.25$; the unweighted average of the two cells
+is $2.5$; the naive comparison is $11 - 7.5 = 3.5$, inflated because the treated sit mostly
+in cell 2.
+\end{answer}
+
+\item A regression of wages on schooling uses one instrument whose first-stage robust $F$
+      is $2.5$ in a sample of $3{,}000$ men. Compared with OLS, the 2SLS estimate
+      \slideref{7}{21--22, 65}
+      \begin{enumerate}[label=(\Alph*),itemsep=0pt]
+      \item is pulled toward the OLS estimate, and its usual 95\% interval covers the truth
+            less than 95\% of the time.
+      \item is unbiased; the only cost of a weak instrument is a wider interval.
+      \item is pulled toward zero, as under classical measurement error.
+      \item is fine, because the sample is large and the reduced form is what matters.
+      \end{enumerate}
+\begin{answer}
+(A). With a weak instrument the first stage fits sampling noise that is correlated with the
+structural error, so 2SLS is centered between the truth and OLS, and its sampling
+distribution is far from normal: the usual interval is too narrow. Report the
+Anderson--Rubin interval, which keeps its size at any $F$, together with the first stage
+and the reduced form.
 \end{answer}
 \end{enumerate}
 
@@ -311,7 +366,7 @@ median size four) $0.0065$.
 
 \begin{enumerate}[label=(\alph*),leftmargin=*,itemsep=6pt]
 \item Interpret the schooling coefficient in model (1) in one sentence a reader of a
-      sociology journal would understand.
+      sociology journal would understand. \slideref{1 Tue}{23}
 \begin{answer}
 Among these workers, each additional year of schooling is associated with about $0.119$ log
 points, roughly $12\%$, higher annual earnings. It is a description (the best linear
@@ -320,7 +375,7 @@ approximation to the CEF), not yet a causal claim.
 
 \item Use the omitted-variable-bias formula to recover the coefficient in model (1) from
       models (2) and (3). Show the arithmetic, and explain in words why adding parents'
-      education lowers the schooling coefficient.
+      education lowers the schooling coefficient. \slideref{1 Tue}{32--35}
 \begin{answer}
 Short $=$ long $+$ (effect of omitted) $\times$ (regression of omitted on included):
 $0.1099 + 0.0154 \times 0.5703 = 0.1099 + 0.0088 = 0.1187$. Parents' education raises
@@ -328,29 +383,23 @@ earnings ($0.0154 > 0$) and moves with own schooling ($0.5703 > 0$), so model (1
 schooling with part of the family-background advantage; the bias is positive.
 \end{answer}
 
-\item Is $0.1099$ the causal effect of a year of schooling? Name one variable still omitted,
-      sign the bias it creates, and say whether a higher $R^2$ would settle the matter.
+\item Is $0.1099$ the causal effect of a year of schooling? Name one variable still omitted, and explain the bias it creates.
+      \slideref{1 Tue}{39, 67--68}
 \begin{answer}
-Not without an argument that nothing else confounds schooling and earnings. Ability is the
-standard omitted variable: it raises earnings and rises with schooling, so the coefficient
-is still overstated. $R^2$ does not help: it answers how well the line fits (Week 1's Q1),
-not whether the compared people are comparable (Q2).
+No, not without arguing that nothing else confounds schooling and earnings. Example:
+ability. It raises earnings and goes with more schooling, so by the OVB formula (positive
+$\times$ positive) the coefficient is still biased upward.
 \end{answer}
 
 \item Using the HC3 standard error, compute the $t$-statistic and a 95\% confidence
-      interval for the schooling coefficient in model (2). Explain why the HC3 and classical
-      standard errors differ while the coefficient is the same.
+      interval for the schooling coefficient in model (2). \slideref{2}{17, 30}
 \begin{answer}
-$t = 0.1099/0.0064 = 17.2$; interval $0.1099 \pm 1.96 \times 0.0064 = [0.097,\ 0.122]$.
-The coefficient comes from the same normal equations either way. The classical formula
-pools one $s^2$; HC3 lets each observation carry its own squared residual (inflated by its
-leverage), so it is right when the spread of earnings differs across schooling levels.
-Heteroskedasticity changes the uncertainty, not the estimate.
+$t = 0.1099/0.0064 = 17.2$. Interval: $0.1099 \pm 1.96 \times 0.0064 = 0.1099 \pm 0.0125
+= [0.097,\ 0.122]$.
 \end{answer}
 
 \item The GSS samples areas first and then people within them. Which of the three
-      standard errors would you report, and why are the HC3 and clustered numbers so
-      close here?
+      standard errors would you report? \slideref{2}{41}
 \begin{answer}
 The clustered one: cluster at the level of the sampling lottery, the primary sampling unit.
 Here the clusters are tiny (median four people), so little within-cluster correlation can
@@ -360,6 +409,7 @@ choosing the smaller number.
 
 \item A colleague suggests adding occupational prestige to model (2) ``to be safe.'' Do you
       agree? Answer with a reason that refers to what the coefficient would then estimate.
+      \slideref{1 Tue}{72}
 \begin{answer}
 No. Occupation is a consequence of schooling on the path to earnings, a mediator. Holding it
 fixed removes the part of the schooling effect that works through better jobs, so the
@@ -372,69 +422,58 @@ coefficient would no longer be the total effect. More controls are not more cons
 \subsection*{Question 2: A Logit of Ever Having Married}
 Same $3{,}509$ workers; $73\%$ have ever married. A logit of ever married ($0/1$):
 \begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{lrrrr}
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lrrr}
 \toprule
- & $\hat\beta$ & SE & $z$ & $e^{\hat\beta}$ \\
+ & $\hat\beta$ & SE & $z$ \\
 \midrule
-intercept & $-2.2286$ & $0.2791$ & $-7.98$ & \\
-years of schooling & $-0.0147$ & $0.0149$ & $-0.99$ & $0.985$ \\
-female & $0.0406$ & $0.0836$ & $0.49$ & $1.041$ \\
-Black & $-0.9636$ & $0.1066$ & $-9.04$ & $0.382$ \\
-age (years) & $0.0864$ & $0.0043$ & $19.91$ & $1.090$ \\
+intercept & $-2.23$ & $0.279$ & $-7.98$ \\
+years of schooling & $-0.01$ & $0.015$ & $-0.99$ \\
+female & $0.04$ & $0.084$ & $0.49$ \\
+Black & $-0.96$ & $0.107$ & $-9.04$ \\
+age (years) & $0.09$ & $0.004$ & $19.91$ \\
 \midrule
-log-likelihood & \multicolumn{4}{l}{$-1{,}769.5$} \\
+log-likelihood & \multicolumn{3}{l}{$-1{,}769.5$} \\
 \bottomrule
 \end{tabular}
 \end{center}
-Average marginal effects: age $0.0144$ per year; Black $-0.178$.
 
 \begin{enumerate}[label=(\alph*),leftmargin=*,itemsep=6pt]
 \item Write the model twice: once in log-odds form and once in probability form.
+      \slideref{4}{9}
 \begin{answer}
-$\log\dfrac{p_i}{1-p_i} = \beta_0 + \beta_1\,\text{school}_i + \beta_2\,\text{female}_i +
+$\log\frac{p_i}{1-p_i} = \beta_0 + \beta_1\,\text{school}_i + \beta_2\,\text{female}_i +
 \beta_3\,\text{Black}_i + \beta_4\,\text{age}_i = X_i'\bm\beta$, and
-$p_i = \dfrac{e^{X_i'\bm\beta}}{1+e^{X_i'\bm\beta}}$.
-\end{answer}
-
-\item Read the Black coefficient on all three scales: log-odds, odds, and probability. Say
-      what is wrong with the sentence ``Black workers are $62\%$ less likely to have
-      married.''
-\begin{answer}
-Log-odds: $0.96$ lower, other covariates fixed. Odds: multiplied by $e^{-0.964} = 0.38$.
-Probability: on average $17.8$ percentage points lower (the AME). The sentence reads the
-odds ratio as a ratio of probabilities; $0.38$ multiplies the odds, and the probability
-change depends on where a person sits on the S-curve.
+$p_i = e^{X_i'\bm\beta}/(1+e^{X_i'\bm\beta})$.
 \end{answer}
 
 \item Compute, by hand, the predicted probability of having married for a woman with 16
-      years of schooling who is not Black, at age 30 and at age 40.
+      years of schooling who is not Black, at age 30 and at age 40. \slideref{4}{15--16}
 \begin{answer}
-Age 30: $X'\hat\beta = -2.2286 - 0.0147(16) + 0.0406 + 0.0864(30) = 0.169$; odds
-$e^{0.169} = 1.18$; $\hat p = 1.18/2.18 = 0.54$. Age 40: add $10 \times 0.0864 = 0.864$,
-$X'\hat\beta = 1.033$, odds $2.81$, $\hat p = 0.74$.
+Age 30: $X'\hat\beta = -2.23 - 0.01(16) + 0.04 + 0.09(30) = -2.23 - 0.16 + 0.04 + 2.70 =
+0.35$; odds $e^{0.35} = 1.42$; $\hat p = 1.42/2.42 = 0.59$. Age 40: add $10 \times 0.09 =
+0.90$, so $X'\hat\beta = 1.25$, odds $e^{1.25} = 3.49$, $\hat p = 3.49/4.49 = 0.78$.
 \end{answer}
 
-\item For this woman, ten years of age raise the probability by about 20 points. Ten times
-      the AME of age is only $14$ points. Explain the difference.
+\item For this woman, ten years of age raise the probability by about 19 points. The
+      average marginal effect of age is $0.014$ per year, so ten times the AME is only $14$
+      points. Explain the difference. \slideref{4}{17--18}
 \begin{answer}
 The slope of the probability is $\hat p_i(1-\hat p_i)\hat\beta$: steepest at $\hat p = 0.5$.
-This woman starts at $0.54$, the steep part of the S-curve. The AME averages the slope over
-all $3{,}509$ people, and with $73\%$ married most of them sit higher, where the curve is
-flatter.
+This woman starts at $0.59$, near the steep part of the S-curve. The AME averages the slope
+over all $3{,}509$ people, and with $73\%$ married most of them sit higher, where the curve
+is flatter.
 \end{answer}
 
-\item Adding eight census-region dummies raises the log-likelihood to $-1{,}756.6$. Carry
-      out the likelihood-ratio test (the $\chi^2_8$ 5\% cut-off is $15.5$). Then compute
-      $BIC_{\text{without}} - BIC_{\text{with}}$ using $\log n = 8.16$, and explain why the
-      test and BIC disagree. If region were a confounder of a coefficient you care about,
-      would you drop it?
+\item Adding eight census-region dummies raises the log-likelihood to $-1{,}756.6$. Compute
+      the BIC of both models, $BIC = -2\ell + k\log n$, with $k = 5$ and $k = 13$ parameters
+      and $\log n = 8.16$. Under the BIC criterion, should the region dummies be included?
+      \slideref{3}{70--71}
 \begin{answer}
-$LR = 2[-1756.6 - (-1769.5)] = 25.9 > 15.5$, $p = 0.001$: region matters. BIC:
-$LR - q\log n = 25.9 - 8 \times 8.16 = -39.4$, so BIC prefers the model without region.
-Eight parameters bought $25.9$ units of fit, about $3.2$ each: too much for chance, too little
-for BIC's price of $8.16$ per parameter. A confounder stays regardless: selection criteria
-choose descriptions, not identification.
+Without region: $-2(-1769.5) + 5 \times 8.16 = 3539.0 + 40.8 = 3579.8$. With region:
+$-2(-1756.6) + 13 \times 8.16 = 3513.2 + 106.1 = 3619.3$. Smaller is better, so BIC says
+no: the eight dummies bought $25.8$ units of fit, about $3.2$ each, less than BIC's price of
+$8.16$ per parameter.
 \end{answer}
 \end{enumerate}
 
@@ -459,36 +498,60 @@ estimate & $0.074$ & $0.337$ & $0.045$ & $0.132$ \\
 Robust first-stage $F = 17.5$. (Unrounded: reduced form $0.0446$, first stage $0.3373$.)
 
 \begin{enumerate}[label=(\alph*),leftmargin=*,itemsep=6pt]
-\item Draw a DAG with $Z$, $D$, $Y$, unmeasured ability $U$, and local labor-market
-      conditions $L$. Mark the arrows that must be \emph{absent} for $Z$ to be a valid
-      instrument.
+\item Draw a DAG with $Z$, $D$, $Y$, and unmeasured parental social capital $U$ (the
+      parents' networks and connections), which affects both schooling $D$ and the son's
+      wage $Y$. Include the two arrows whose presence would violate independence and
+      exclusion, and mark them as the ones that must be absent. \slideref{7}{6--7}
 \begin{answer}
-Arrows present: $Z \to D \to Y$, $U \to D$, $U \to Y$; $L \to Y$ (and possibly $L \to D$).
-Must be absent: $Z \to Y$ directly (exclusion), and any common cause of $Z$ and $Y$, such as
-$L \to Z$ with $L \to Y$, or $U \to Z$ (independence). The controls (metropolitan, South)
-are there to block the $Z \leftarrow L \to Y$ path.
+Solid arrows are the design; the dashed orange arrows must be absent.
+\begin{center}
+\begin{tikzpicture}[dag]
+  \node (Z) at (0,0)      [label={[dagl]below:college nearby}] {$Z$};
+  \node (D) at (3.0,0)    [label={[dagl]below:schooling}] {$D$};
+  \node (Y) at (6.0,0)    [label={[dagl]below:log wage}] {$Y$};
+  \node (U) at (4.5,2.0)  [unobs,label={[dagl]right:parental social capital}] {$U$};
+  \draw[arr] (Z) -- (D);
+  \draw[arr] (D) -- (Y);
+  \draw[uarr] (U) -- (D);
+  \draw[uarr] (U) -- (Y);
+  \draw[noarr] (Z) .. controls (1.5,-1.9) and (4.5,-1.9) .. (Y)
+      node[elab,pos=0.5,below=2pt] {exclusion: no $Z \to Y$};
+  \draw[noarr] (U) -- (Z)
+      node[elab,pos=0.6,above left=1pt] {independence: no $U \to Z$};
+\end{tikzpicture}
+\end{center}
+Present: $Z \to D \to Y$; $U \to D$ (well-connected parents steer their sons into more
+schooling); $U \to Y$ (the same connections help them find better-paid jobs). These two
+arrows are why OLS is biased and an instrument is needed. Must be absent: $Z \to Y$, any
+effect of proximity on wages that does not run through schooling (exclusion); and
+$U \to Z$, parental social capital shaping where the family lives (independence).
+\end{answer}
+
+\item For each of the two conditions, give one concrete reason the marked arrow might in
+      fact be present in Card's setting. \slideref{7}{30}
+\begin{answer}
+\textbf{Independence} ($U \to Z$): families do not land near colleges at random. Parents
+with more social capital (professional networks, ties to institutions) are more likely to
+live in college towns, and the same connections raise their sons' wages; then $Z$ is
+correlated with the error. Card's controls (metropolitan, South) and family background
+variables only partly close this. \textbf{Exclusion} ($Z \to Y$): counties
+with a college have different labor markets, more professional jobs and higher wages, which
+raise a man's wage whether or not he attended. Neither can be tested; both have to be
+argued.
 \end{answer}
 
 \item Show that the IV estimate is the ratio of two numbers in the table, and interpret it
-      in one sentence.
+      in one sentence. \slideref{7}{8--10, 31}
 \begin{answer}
 $\hat\beta_{IV} = \text{reduced form}/\text{first stage} = 0.0446/0.3373 = 0.132$. Growing up
 near a college raises wages by $4.5\%$ and schooling by a third of a year; scaled up, a year
 of schooling raises wages by about $13\%$ for the men whose schooling proximity changed.
 \end{answer}
 
-\item State the three IV conditions for this instrument. For each, say whether it can be
-      tested, and give one threat specific to college proximity.
-\begin{answer}
-\textbf{Relevance}: proximity moves schooling. Testable; passes ($0.337$, $F = 17.5$).
-\textbf{Independence}: proximity is as good as random given the controls. Not testable;
-threat: families who live near colleges differ (richer, more educated parents).
-\textbf{Exclusion}: proximity affects wages only through schooling. Not testable; threat:
-counties with colleges have better local labor markets that raise wages directly.
-\end{answer}
-
-\item Ability bias predicts that OLS overstates the return to schooling, yet IV ($0.132$) is
-      almost twice OLS ($0.074$). Give two explanations consistent with valid instruments.
+\item Omitted parental social capital predicts that OLS overstates the return to schooling,
+      yet IV ($0.132$) is almost twice OLS ($0.074$). Give two explanations consistent with
+      valid instruments.
+      \slideref{7}{16, 28}
 \begin{answer}
 (i) \textbf{Measurement error} in reported schooling pulls OLS toward zero; IV is not
 affected by classical error in $D$. (ii) \textbf{LATE}: IV estimates the return for compliers,
@@ -501,6 +564,7 @@ of the design, not explanations under valid instruments.)
 \item Treat schooling as ``attended college or not.'' Describe compliers, always-takers, and
       never-takers in this setting, and state monotonicity in words. Is the IV estimate the
       right number for a policy that opens new colleges in counties without one?
+      \slideref{7}{12--13, 16--17}
 \begin{answer}
 Compliers attend college only if one is nearby; always-takers attend wherever they grow up;
 never-takers do not attend either way. Monotonicity: no one attends \emph{because} there is
@@ -508,63 +572,82 @@ no college nearby. For opening new colleges the LATE is close to the right numbe
 such a policy would move are exactly those whose attendance responds to proximity. It is not
 the effect for always-takers or for everyone.
 \end{answer}
-
-\item The first-stage $F$ of $17.5$ clears the ``$F > 10$'' rule. Should you trust the
-      conventional $t$-test of the IV estimate ($t = 2.72$)? What would you report?
-\begin{answer}
-Not fully. $F > 10$ was derived to keep bias small; for a $t$-test with correct size, Lee et
-al.\ (2022) show $F$ must exceed about $104$. At $F = 17.5$ the honest critical value is well
-above $1.96$, so report a weak-instrument-robust interval (Anderson--Rubin, or the tF
-adjustment), together with the reduced form ($0.045$, $t = 2.72$), which needs no strength
-assumption, and the first stage and OLS alongside.
-\end{answer}
 \end{enumerate}
 
 \newpage
 %% =====================================================================
-\section*{Bonus: Where the Naive Comparison Goes Wrong}
-Five points. Use only the definitions of the ATE, ATT, ATU, and $\pi = \Pr(D_i = 1)$, the
-switching equation, and the law of iterated expectations.
+\section*{Bonus: Deriving the Wald Estimate}
+Ten points. Binary instrument $Z_i$, binary treatment $D_i$. Write $D_i(z)$ for the
+treatment unit $i$ takes when assigned $Z_i = z$, and $Y_i(d)$ for its potential outcomes,
+so that $D_i = D_i(Z_i)$ and $Y_i = Y_i(D_i)$. Write $\tau_i = Y_i(1) - Y_i(0)$. The four
+types are compliers ($D_i(1) = 1, D_i(0) = 0$), always-takers ($1, 1$), never-takers
+($0, 0$), and defiers ($D_i(1) = 0, D_i(0) = 1$). Assume
+(i) independence: $\big(Y_i(0), Y_i(1), D_i(0), D_i(1)\big) \indep Z_i$;
+(ii) exclusion, already built into writing $Y_i(d)$ without $z$;
+(iii) relevance: the first stage is not zero.
+Do \emph{not} assume away defiers until part (c). \slideref{7}{12--15}
 
 \begin{enumerate}[label=(\alph*),leftmargin=*,itemsep=6pt]
-\item Prove that $\text{ATE} = \pi\,\text{ATT} + (1-\pi)\,\text{ATU}$.
-\item Prove that
-\begin{align*}
-  \E[Y_i\mid D_i=1] - \E[Y_i\mid D_i=0]
-  &= \text{ATE}
-  + \underbrace{\E[Y_i(0)\mid D_i=1] - \E[Y_i(0)\mid D_i=0]}_{\text{baseline selection}} \\
-  &\quad + \underbrace{(1-\pi)(\text{ATT} - \text{ATU})}_{\text{selection on the effect}} .
-\end{align*}
-\item Check the identity on the four units of Part 2, Question 8.
-\item Show that both selection terms are zero when treatment is randomly assigned.
+\item The denominator. Show that the first stage is
+      $\E[D_i\mid Z_i=1] - \E[D_i\mid Z_i=0] = \Pr(\text{complier}) - \Pr(\text{defier})$.
+\item The numerator. Show that the reduced form is
+      \begin{align*}
+        \E[Y_i\mid Z_i=1] - \E[Y_i\mid Z_i=0]
+        = \Pr(\text{complier})\,\E[\tau_i\mid\text{complier}]
+        - \Pr(\text{defier})\,\E[\tau_i\mid\text{defier}] .
+      \end{align*}
+      Say where you use exclusion and where you use independence.
+\item Now assume monotonicity, $D_i(1) \ge D_i(0)$ for every $i$ (i.e., no defiers). Show that the Wald ratio,
+      numerator over denominator, equals $\E[\tau_i\mid\text{complier}]$, the LATE.
+\item Without monotonicity, suppose $20\%$ are compliers with an average effect of $1$ and
+      $5\%$ are defiers with an average effect of $3$. Compute the Wald ratio and explain
+      why it is not an average effect for anyone.
 \end{enumerate}
 
 \begin{answer}
-\textbf{(a)} Write $\tau_i = Y_i(1) - Y_i(0)$. By iterated expectations over the two values
-of $D_i$,
+\textbf{(a)} You can show it either by expression below, or by plotting two groups $Z = 1$ and $Z = 0$ with different shares of treated units, as we did in class. Same intuitions in the following questions. \\
+
+When $Z_i = 1$ the unit takes $D_i(1)$, and $D_i(1) = 1$ exactly for compliers
+and always-takers:
 \begin{align*}
-  \text{ATE} = \E[\tau_i]
-  &= \Pr(D_i=1)\,\E[\tau_i\mid D_i=1] + \Pr(D_i=0)\,\E[\tau_i\mid D_i=0]
-  && \text{\footnotesize iterated exp.} \\
-  &= \pi\,\text{ATT} + (1-\pi)\,\text{ATU} .
-  && \text{\footnotesize definitions}
+  \E[D_i\mid Z_i=1]
+  &= \E[D_i(1)\mid Z_i=1]
+  && \text{\footnotesize $D_i = D_i(Z_i)$} \\
+  &= \E[D_i(1)]
+  && \text{\footnotesize independence} \\
+  &= \Pr(\text{complier}) + \Pr(\text{always-taker}) .
+  && \text{\footnotesize $D_i(1)$ is a $0/1$ indicator}
 \end{align*}
-\textbf{(b)} By the switching equation, $Y_i = Y_i(1)$ when $D_i = 1$ and $Y_i = Y_i(0)$ when
-$D_i = 0$. Add and subtract $\E[Y_i(0)\mid D_i=1]$:
+The same lines with $Z_i = 0$ give $\E[D_i\mid Z_i=0] = \E[D_i(0)] = \Pr(\text{always-taker})
++ \Pr(\text{defier})$. Subtracting, the always-takers cancel:
+$\Pr(\text{complier}) - \Pr(\text{defier})$.
+\par\textbf{(b)} Since $D_i$ is $0$ or $1$, $Y_i = Y_i(D_i) = Y_i(0) + D_i\,\tau_i$; this is
+where exclusion enters, because $Y_i(d)$ carries no $z$. Then
 \begin{align*}
-  \E[Y_i\mid D_i=1] - \E[Y_i\mid D_i=0]
-  &= \E[Y_i(1)\mid D_i=1] - \E[Y_i(0)\mid D_i=0] \\
-  &= \text{ATT} + \E[Y_i(0)\mid D_i=1] - \E[Y_i(0)\mid D_i=0] .
+  \E[Y_i\mid Z_i=1]
+  &= \E\big[Y_i(0) + D_i(1)\,\tau_i \mid Z_i=1\big]
+  && \text{\footnotesize switching equation, $D_i = D_i(1)$} \\
+  &= \E\big[Y_i(0) + D_i(1)\,\tau_i\big] ,
+  && \text{\footnotesize independence: the bracket does not involve $Z_i$}
 \end{align*}
-From (a), $\text{ATT} - \text{ATE} = \text{ATT} - \pi\,\text{ATT} - (1-\pi)\,\text{ATU}
-= (1-\pi)(\text{ATT}-\text{ATU})$, so $\text{ATT} = \text{ATE} + (1-\pi)(\text{ATT}-\text{ATU})$.
-Substituting this for ATT in the second line gives the identity.
-\textbf{(c)} Naive $= 6$; ATE $= 3$; baseline selection $= \tfrac12(3+5) - \tfrac12(4+2) = 1$;
-$\pi = 0.5$, ATU $= (2+0)/2 = 1$, so $(1-\pi)(\text{ATT}-\text{ATU}) = 0.5 \times (5-1) = 2$.
-$3 + 1 + 2 = 6$. \checkmark
-\textbf{(d)} Randomization gives $(Y_i(0),Y_i(1)) \indep D_i$. Then
-$\E[Y_i(0)\mid D_i=1] = \E[Y_i(0)\mid D_i=0]$, so baseline selection is zero; and
-$\E[\tau_i\mid D_i=1] = \E[\tau_i\mid D_i=0]$, so ATT $=$ ATU and the second term is zero.
+and likewise $\E[Y_i\mid Z_i=0] = \E[Y_i(0) + D_i(0)\,\tau_i]$. Subtracting, $\E[Y_i(0)]$
+cancels and the reduced form is $\E[(D_i(1) - D_i(0))\,\tau_i]$. The difference
+$D_i(1) - D_i(0)$ is $1$ for compliers, $-1$ for defiers, and $0$ for always- and
+never-takers, so by iterated expectations over the four types
+\begin{align*}
+  \E[(D_i(1) - D_i(0))\,\tau_i]
+  = \Pr(\text{complier})\,\E[\tau_i\mid\text{complier}]
+  - \Pr(\text{defier})\,\E[\tau_i\mid\text{defier}] .
+\end{align*}
+\par\textbf{(c)} Monotonicity rules out $D_i(1) = 0, D_i(0) = 1$, so $\Pr(\text{defier}) = 0$.
+The numerator becomes $\Pr(\text{complier})\,\E[\tau_i\mid\text{complier}]$ and the
+denominator $\Pr(\text{complier})$, which is positive by relevance. Their ratio is
+$\E[\tau_i\mid\text{complier}]$: the average effect among the people the instrument moves.
+\par\textbf{(d)} Numerator $0.20 \times 1 - 0.05 \times 3 = 0.05$; denominator $0.20 - 0.05 =
+0.15$; Wald ratio $0.05/0.15 = 0.33$. Every person the instrument moves has an effect of at
+least $1$, yet the ratio is $0.33$: defiers enter with a negative weight, so the ratio is a
+difference of two group averages, not an average over any group. With the defiers' effect
+at $4$ or more the ratio would be zero or negative.
 \end{answer}
 
 \end{document}
