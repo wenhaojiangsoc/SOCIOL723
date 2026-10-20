@@ -49,7 +49,7 @@
 \newcommand{\bhat}{\hat{\bm{\beta}}}
 \newcommand{\dto}{\overset{d}{\longrightarrow}}
 \newcommand{\pto}{\overset{p}{\longrightarrow}}
-\usetikzlibrary{shapes,decorations.pathmorphing}
+\usetikzlibrary{shapes,decorations.pathmorphing,decorations.pathreplacing}
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
@@ -219,11 +219,11 @@ RD (today) & just either side of a cutoff in $X$ & continuity at the cutoff \\
 \textbf{Plan}:
 \begin{enumerate}\itemsep0pt
   \item Sharp RD: why continuity identifies the effect at $c$, and only there.
-  \item Estimation: bias, variance, bandwidth, and valid intervals.
-  \item Covariates and power; validity checks; local randomization.
+  \item Estimation as four choices: shape, weights, bandwidth, inference.
+  \item Covariates and power; validity checks; local randomization (with Dutch science grants).
   \item Fuzzy RD as local IV; Dell and Querubín (2018) on bombing in Vietnam.
   \item Extensions: several cutoffs, away from the cutoff, boundaries, kinks, time.
-  \item Two sociological applications.
+  \item A sociological application: policing after police shootings.
 \end{enumerate}
 \end{frame}
 
@@ -231,6 +231,94 @@ RD (today) & just either side of a cutoff in $X$ & continuity at the cutoff \\
 \section[Sharp RD]{Sharp Regression Discontinuity}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Running Example: the U.S. Senate}
+Does winning a Senate seat help the party keep it six years later?
+\srcp{Lee 2008 for the House; Cattaneo, Frandsen, and Titiunik 2015 for the Senate}
+\vskip1pt
+\begin{itemize}\itemsep1pt
+  \item $X_i$: Democratic margin of victory at $t$, in points ($c = 0$);
+        $Y_i$: Democratic vote share in the same seat at $t+6$.
+  \item 1,297 elections, 1914--2010 (595 lost, 702 won).
+\end{itemize}
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.7\linewidth]{figs/senate_rdplot.pdf}
+\end{center}
+\vskip-8pt
+{\footnotesize Dots: means in 5-point bins. Lines: the local linear fits used below
+\srcp{figs/w9\_senate.R}.}
+\end{frame}
+
+\begin{frame}{Winners vs Losers, in Closer and Closer Races}
+Democratic vote share at $t+6$, by result at $t$ \srcp{figs/w9\_estimation.R}:
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+races decided by less than & lost & won & mean, lost & mean, won & difference \\
+\midrule
+any margin (all races) & 595 & 702 & 40.9 & 62.6 & 21.7 \\
+50 points & 565 & 562 & 41.3 & 57.4 & 16.1 \\
+20 points & 389 & 346 & 43.6 & 55.0 & 11.3 \\
+10 points & 245 & 206 & 44.5 & 54.1 & 9.6 \\
+5 points & 128 & 117 & 45.0 & 52.8 & 7.8 \\
+2 points & 49 & 47 & 42.7 & 52.9 & 10.2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{All races}: seats Democrats won were already Democratic; their
+        vote share six years \emph{earlier} was 14.6 points higher. The 21.7
+        mixes the effect of winning with party strength.
+  \item \textbf{Close races}: a 1-point win and a 1-point loss happen in similar
+        places; the gap shrinks. But few races remain, and it bounces.
+  \item Needed: why close races are comparable, and how to use them.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Second Example: Turning 21 \srcp{Carpenter and Dobkin 2009}}
+Does drinking kill young adults? U.S.\ alcohol becomes legal on the 21st birthday.
+Running variable: \alert{age in days}; cutoff: 21.
+\vskip-4pt
+\begin{center}
+\includegraphics[width=0.52\linewidth]{figs/carpenter_dobkin_fig3.png}
+\end{center}
+\vskip-12pt
+{\footnotesize Their Figure 3: U.S.\ deaths 1997--2004 per 100,000 person-years, 30-day bins.}
+\vskip2pt
+Age 20 and 364 days vs.\ 21 and 1 day: alike in almost everything \emph{except} legal alcohol.
+\end{frame}
+
+\begin{frame}{Turning 21: the Jumps}
+Jump at 21 \srcp{Carpenter and Dobkin 2009, Tables 2, 4, 5}:
+\vskip-2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+outcome & jump at 21 & (se) \\
+\midrule
+share of days drinking (8.5\% of days at age 20) & $+1.8$ points, \alert{$+21\%$} & (0.95) \\
+\midrule
+deaths, all causes & \alert{$+8.7\%$} & (1.7) \\
+\quad motor vehicle accidents & $+14.3\%$ & (3.2) \\
+\quad suicides & $+15.4\%$ & (5.9) \\
+\quad deaths mentioning alcohol & $+34.6\%$ & (11.6) \\
+\quad homicides & $+0.2\%$ & (4.5) \\
+\quad internal causes (illness) & $+5.4\%$ & (4.0) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep1pt
+  \item About 10 more deaths per 100,000 person-years, mostly accidents and injuries.
+  \item Sex, race, schooling, employment, and insurance show no jump at 21.
+  \item The law moves drinking; dividing the death jump by the drinking jump is a
+        \textbf{fuzzy RD} (later today).
+\end{itemize}
+\end{frame}
 
 \begin{frame}{Setup and Identification\core}
 A \alert{running variable} (or forcing variable) $X_i$ determines treatment
@@ -290,32 +378,6 @@ Then
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Identification, Step by Step}
-Above the cutoff every unit is treated, so $Y_i = Y_i(1)$ there:
-\begin{align*}
-  \lim_{x\downarrow c}\E[Y_i\mid X_i=x]
-  &= \lim_{x\downarrow c}\E[Y_i(1)\mid X_i=x]
-   && \text{\footnotesize $D_i = 1$ for $x \geq c$; consistency} \\
-  &= \lim_{x\downarrow c} m_1(x) = m_1(c)
-   && \text{\footnotesize continuity of $m_1$ at $c$} \\[3pt]
-  \lim_{x\uparrow c}\E[Y_i\mid X_i=x]
-  &= \lim_{x\uparrow c}\E[Y_i(0)\mid X_i=x]
-   && \text{\footnotesize $D_i = 0$ for $x < c$; consistency} \\
-  &= m_0(c)
-   && \text{\footnotesize continuity of $m_0$ at $c$}
-\end{align*}
-Subtract:
-\begin{align*}
-  \lim_{x\downarrow c}\E[Y_i\mid X_i=x] - \lim_{x\uparrow c}\E[Y_i\mid X_i=x]
-  = m_1(c) - m_0(c) = \E[Y_i(1) - Y_i(0)\mid X_i = c].
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Continuity of $m_1$ is used only from the right and of $m_0$ only
-        from the left: we need the \emph{unseen} side of each curve to meet
-        the seen side at $c$.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{What Continuity Rules Out}
 Continuity fails when something other than $D$ changes at $c$.
 \vskip3pt
@@ -333,30 +395,7 @@ Continuity fails when something other than $D$ changes at $c$.
 \vskip4pt
 Continuity is a statement about $Y_i(0)$ and $Y_i(1)$, so it cannot be tested
 directly. It has \alert{two testable implications}: the density of $X$ and the
-distribution of pre-determined covariates should not jump at $c$. Both come
-from the next frame.
-\end{frame}
-
-\begin{frame}{Why Continuity Should Hold \srcp{Lee 2008}}
-Let $W_i$ be a unit's type (everything fixed before $X$ is realized) and let
-$X_i$ have density $f(x\mid w)$ given $W_i = w$. By Bayes' rule
-\begin{align*}
-  f(w\mid x) &= \frac{f(x\mid w)\,f(w)}{f(x)}
-   && \text{\footnotesize density of types among units with $X_i=x$} \\
-  m_d(x) &= \int \E[Y_i(d)\mid W_i=w]\, f(w\mid x)\,dw
-   && \text{\footnotesize $Y_i(d)$ is a function of type}
-\end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep3pt
-  \item \alert{If every type's density $f(x\mid w)$ is continuous at $c$}, then
-        $f(w\mid x)$ is continuous, so $m_0$, $m_1$, and the mean of any
-        pre-determined covariate are continuous at $c$.
-  \item This is \textbf{imprecise control}: units may influence $X$ (study harder,
-        campaign more), but a random component they cannot steer remains.
-        Near $c$, treatment is as good as randomly assigned.
-  \item It fails when some type can place itself exactly: then $f(x\mid w)$
-        jumps at $c$ for that type, and so does $f(x)$, the density of $X$.
-\end{itemize}
+distribution of pre-determined covariates should not jump at $c$.
 \end{frame}
 
 \begin{frame}{The Estimand Is Local, and That Matters\core}
@@ -378,22 +417,28 @@ $X_i$, then treatment near the cutoff is \emph{as good as randomly assigned}, an
 the design is a local experiment.
 \end{frame}
 
-\begin{frame}{Running Example: the U.S. Senate}
-Does winning a Senate seat help the party keep it six years later?
-\srcp{Lee 2008 for the House; Cattaneo, Frandsen, and Titiunik 2015 for the Senate}
-\vskip1pt
-\begin{itemize}\itemsep1pt
-  \item $X_i$: Democratic margin of victory at $t$, in points ($c = 0$);
-        $Y_i$: Democratic vote share in the same seat at $t+6$.
-  \item 1,297 elections, 1914--2010 (595 lost, 702 won).
-\end{itemize}
-\vskip-2pt
-\begin{center}
-\includegraphics[width=0.7\linewidth]{figs/senate_rdplot.pdf}
+
+\begin{frame}{Identification Is Done. What Is Left?\core}
+\textbf{Target}: $\tau_{RD} = m_1(c) - m_0(c)$, the heights of the two curves
+\emph{exactly at} the cutoff.
+\vskip3pt
+\textbf{Problem}: no unit sits exactly at $c$ (Senate: no race is an exact tie;
+23 of 1,297 are within half a point). Each height must be \alert{predicted from
+units near $c$}. Four choices, each shown first on the Senate data:
+\vskip2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}l>{\raggedright}p{3.1cm}>{\raggedright}p{4.1cm}>{\raggedright\arraybackslash}p{2.5cm}@{}}
+\toprule
+choice & question & what is at stake & standard answer \\
+\midrule
+shape & Mean, line, or curve? & mean: biased if the curve slopes; curve: more variance & a line on each side \\
+weights & Closer units count more? & far units add bias & triangular kernel \\
+bandwidth & How far from $c$? & wider: less variance, more bias & minimize MSE \\
+inference & How sure? & leftover bias: usual interval too short & robust bias-corrected \\
+\bottomrule
+\end{tabular}
 \end{center}
-\vskip-8pt
-{\footnotesize Dots: means in 5-point bins. Lines: the local linear fits used below
-\srcp{figs/w9\_senate.R}.}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -401,48 +446,134 @@ Does winning a Senate seat help the party keep it six years later?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Estimation: Local Linear Regression\core}
-Fit separate linear regressions on each side of the cutoff, using only
-observations within a bandwidth $h$, weighted by a kernel:
-\begin{align*}
-  \hat\tau = \hat\mu_+ - \hat\mu_-,
-  \qquad
-  (\hat\mu_+,\hat\beta_+) = \argmin \sum_{i: c \leq X_i < c+h}
-  K\!\left(\frac{X_i - c}{h}\right)\big(Y_i - \mu - \beta(X_i - c)\big)^2 ,
-\end{align*}
-and symmetrically below.
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item \textbf{Local linear, not global polynomial.} High-order global
-        polynomials give bizarre weights to distant observations and are now
-        strongly discouraged \srcp{Gelman and Imbens 2019}. Use degree 1 or 2.
-  \item \textbf{Triangular kernel} (weights falling linearly to zero at $h$) is
-        the standard choice and is boundary-optimal.
-  \item Always let the slope differ on the two sides; forcing a common slope
-        imposes a restriction you have no reason to believe.
+\begin{frame}{Shape: Two Ways to Use the Races Near the Cutoff\core}
+Keep the 683 races within $h = 17.75$ points of a tie (shaded)
+\srcp{figs/w9\_estimation.R}:
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.78\linewidth]{figs/senate_means_lines.pdf}
+\end{center}
+\vskip-10pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{Left}: average each side. $54.66 - 43.75 = 10.91$.
+  \item \textbf{Right}: fit a line on each side and read off its height at
+        margin 0 (black dots). $52.59 - 45.17 = 7.41$.
 \end{itemize}
 \end{frame}
 
-
-\begin{frame}{The Estimator, Written Out}
-The RD estimate is the treatment coefficient in a \alert{kernel-weighted, fully
-interacted local linear regression} on the observations within the bandwidth:
+\begin{frame}{How Much Comparing Means Overstates: the Algebra}
+\textbf{Goal}: write the difference in means as the line estimate plus an error.
+\vskip3pt
+\textbf{Fact}: an OLS line passes through the point of means $(\bar x, \bar Y)$.
+The normal equation for the intercept says the residuals sum to zero:
 \begin{align*}
-  \min_{\mu,\,\tau,\,\beta_-,\,\beta_+}
-  \sum_{i:\,|X_i - c|\leq h} K\!\left(\frac{X_i-c}{h}\right)
-  \Big(Y_i - \mu - \tau D_i - \beta_-(X_i-c)(1-D_i) - \beta_+(X_i-c)D_i\Big)^2 ,
+  \textstyle\sum_i (Y_i - \hat\mu - \hat\beta x_i) = 0
+  \quad\Rightarrow\quad \bar Y = \hat\mu + \hat\beta\,\bar x .
 \end{align*}
-with $D_i = \mathds 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
+Apply it on each side, with $x_i = X_i - c$ and $\bar x_\pm$ the mean distance
+(uniform kernel):
+\begin{align*}
+  \bar Y_+ &= \hat\mu_+ + \hat\beta_+\,\bar x_+
+   && \text{\footnotesize the line above passes through its means} \\
+  \bar Y_- &= \hat\mu_- + \hat\beta_-\,\bar x_-
+   && \text{\footnotesize the line below, likewise} \\
+  \bar Y_+ - \bar Y_- &= \underbrace{(\hat\mu_+ - \hat\mu_-)}_{\hat\tau_{\text{linear}}}
+     + \hat\beta_+\,\bar x_+ - \hat\beta_-\,\bar x_-
+   && \text{\footnotesize subtract} \\
+  &= \hat\tau_{\text{linear}} + \hat\beta_+\,\bar x_+ + \hat\beta_-\,|\bar x_-|
+   && \text{\footnotesize $\bar x_- < 0$ below the cutoff}
+\end{align*}
+\vskip-2pt
+With upward slopes, both extra terms are positive: the mean above is read to the
+\emph{right} of $c$ (too high), the mean below to the \emph{left} (too low).
+\end{frame}
+
+\begin{frame}{How Much Comparing Means Overstates: the Senate}
+$h = 17.75$, uniform kernel \srcp{figs/w9\_senate.R}: $\bar Y_+ = 54.66$,
+$\bar Y_- = 43.75$; $\bar x_+ = 7.96$, $\bar x_- = -7.75$; $\hat\beta_+ = 0.260$,
+$\hat\beta_- = 0.226$; $\hat\tau_{\text{linear}} = 7.09$.
+\begin{align*}
+  54.66 - 43.75 &= 7.09 + 0.260 \times 7.96 + 0.226 \times 7.75
+   && \text{\footnotesize previous frame} \\
+  10.91 &= 7.09 + 2.07 + 1.75
+\end{align*}
+\textbf{How big in general?} If $X$ is spread evenly inside the window, the means
+sit at the middle of each half: $\bar x_+ \approx h/2$, $\bar x_- \approx -h/2$. Then
+\begin{align*}
+  \bar Y_+ - \bar Y_- - \hat\tau_{\text{linear}}
+  \approx (\hat\beta_+ + \hat\beta_-)\,\frac{h}{2}
+   && \text{\footnotesize grows in proportion to $h$}
+\end{align*}
+(Senate: $h/2 = 8.9$ against the actual 7.96 and 7.75.)
 \vskip3pt
 \begin{itemize}\itemsep2pt
-  \item \alert{Centre the running variable at $c$}, so that the intercept shift
-        $\tau$ is evaluated at the cutoff rather than at $X = 0$.
-  \item \alert{Interact the slope with $D_i$.} Forcing a common slope imposes a
-        restriction you have no reason to believe, and it lets data on one side
-        contaminate the estimate on the other.
-  \item \textbf{Triangular kernel} $K(u) = (1-|u|)_+$ weights observations
-        linearly down to zero at the boundary and is minimax optimal at a
-        boundary point. A uniform kernel is simpler and usually similar.
+  \item \alert{The error of comparing means is of order $h$}; here it inflates the
+        effect by half.
+  \item A line removes this term. What is left comes from curvature and is of
+        order $h^2$ (bandwidth section).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Shape: a Line on Each Side\core}
+\textbf{In words}:
+\begin{enumerate}\itemsep1pt
+  \item Keep the units within $h$ of the cutoff.
+  \item On each side, regress $Y$ on the distance to the cutoff, $X_i - c$.
+  \item Each intercept is the predicted $Y$ \emph{at} the cutoff on that side.
+  \item $\hat\tau$ is the difference between the two intercepts.
+\end{enumerate}
+\vskip2pt
+\begin{center}
+\begin{tikzpicture}[scale=0.8]
+  \draw[->] (-4.4,0) -- (4.6,0) node[right]{\scriptsize $X - c$};
+  \draw[gray,dashed] (0,0) -- (0,3.0);
+  \fill[gray!12] (-3.2,0.02) rectangle (3.2,2.9);
+  \node[gray] at (-3.2,-0.3) {\scriptsize $-h$};
+  \node[gray] at (3.2,-0.3) {\scriptsize $h$};
+  \node[gray] at (0,-0.3) {\scriptsize $0$};
+  \foreach \x/\y in {-3.9/0.55,-3.5/0.95,-2.9/0.75,-2.4/1.05,-1.9/0.85,-1.3/1.15,-0.8/1.0,-0.3/1.3}
+    \fill[dukeblue!50] (\x,\y) circle (1.6pt);
+  \foreach \x/\y in {0.3/1.95,0.8/2.2,1.4/2.0,1.9/2.35,2.5/2.25,3.0/2.55,3.6/2.4,4.1/2.8}
+    \fill[accent!60] (\x,\y) circle (1.6pt);
+  \draw[dukeblue,very thick] (-3.2,0.8) -- (0,1.25);
+  \draw[accent,very thick] (0,1.95) -- (3.2,2.6);
+  \fill (0,1.25) circle (2.4pt); \fill (0,1.95) circle (2.4pt);
+  \node[left] at (-0.1,1.05) {\scriptsize $\hat\mu_-$};
+  \node[left] at (-0.1,2.15) {\scriptsize $\hat\mu_+$};
+  \draw[<->,thick] (0.2,1.28) -- (0.2,1.92);
+  \node[right] at (0.25,1.55) {\scriptsize $\hat\tau$};
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+Senate: below, $45.17$ at margin 0; above, $52.59$; $\hat\tau = 7.41$
+(right panel of the previous frame).
+\end{frame}
+
+\begin{frame}{The Same Line Fits as One Regression}
+On the units with $|X_i - c| \leq h$ (same answer as two separate fits):
+\begin{align*}
+  Y_i = \mu + \tau D_i + \beta_-(X_i-c)(1-D_i) + \beta_+(X_i-c)D_i + \text{error}
+\end{align*}
+\vskip-4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}ll@{}}
+\toprule
+coefficient & meaning \\
+\midrule
+$\mu$ & predicted $Y$ just below the cutoff \\
+$\mu + \tau$ & predicted $Y$ just above the cutoff \\
+$\tau$ & the jump at the cutoff: the RD estimate \\
+$\beta_-$, $\beta_+$ & slopes below and above, free to differ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep1pt
+  \item \alert{Centre the running variable at $c$}, so that $\tau$ is the gap at
+        the cutoff rather than at $X = 0$.
+  \item \alert{Let the slopes differ}: a common slope lets data on one side shape
+        the prediction on the other.
 \end{itemize}
 \end{frame}
 
@@ -454,8 +585,6 @@ with $D_i = \mathds 1\{X_i \geq c\}$ and $\hat\tau$ the estimate.
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}lr@{}}
 \toprule
-weighted \texttt{lm(vote \textasciitilde{} D * margin)}, $|X_i| \leq 17.75$ & \\
-\midrule
 intercept $= \hat\mu_-$ (lost by a hair) & 45.17 \\
 $D$ $= \hat\tau$ & 7.41 \\
 slope below, $\hat\beta_-$ & 0.164 \\
@@ -475,73 +604,113 @@ effective $n$: below, above & 360, \ 323 \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Why Not Compare Means Near the Cutoff?}
-Take the mean of $Y$ within $h$ on each side (a local constant fit). Each OLS
-line passes through its side's means, so with $\bar x_\pm$ the mean distance to $c$:
+\begin{frame}{Shape: Why a Line and Not a Curve?}
+More flexible fits follow the curve better near $c$ but are noisier. Senate,
+same races ($h = 17.75$, triangular weights) \srcp{figs/w9\_estimation.R}:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+fit on each side & estimate & s.e. & problem \\
+\midrule
+mean (degree 0) & 9.68 & 0.80 & biased whenever the curve slopes \\
+\alert{line (degree 1)} & \alert{7.41} & \alert{1.46} & biased only where the curve bends \\
+quadratic (degree 2) & 8.32 & 2.06 & s.e.\ 40\% larger \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item A line removes the slope bias of comparing means and costs a modest
+        amount of precision. A quadratic buys little more and costs a lot.
+  \item The quadratic still has a job: it is how the bias of the line is
+        estimated (inference section).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Weights: Closer Races Count More}
+A race won by 2 points tells us more about a tie than one won by 16. The
+\alert{triangular kernel} weights each unit by how close it is:
+\begin{columns}[T]
+\begin{column}{0.42\textwidth}
+\begin{center}
+\begin{tikzpicture}[scale=0.8]
+  \draw[->] (-2.6,0) -- (2.8,0) node[right]{\scriptsize $X - c$};
+  \draw[->] (0,0) -- (0,1.9) node[above]{\scriptsize weight};
+  \draw[gray,very thick] (-2,0) -- (-2,1.2) -- (2,1.2) -- (2,0);
+  \draw[dukeblue,very thick] (-2,0) -- (0,1.2*1.25) -- (2,0);
+  \node[gray] at (-1.25,1.42) {\scriptsize uniform};
+  \node[dukeblue] at (0.95,1.75) {\scriptsize triangular};
+  \node at (-2,-0.3) {\scriptsize $-h$};
+  \node at (2,-0.3) {\scriptsize $h$};
+  \node at (0,-0.3) {\scriptsize $0$};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.56\textwidth}
 \begin{align*}
-  \bar Y_+ - \bar Y_-
-  &= (\hat\mu_+ + \hat\beta_+ \bar x_+) - (\hat\mu_- + \hat\beta_- \bar x_-)
-   && \text{\footnotesize the line through the means} \\
-  &= \hat\tau_{\text{linear}} + \underbrace{\hat\beta_+\bar x_+ - \hat\beta_-\bar x_-}_{\text{slope}\,\times\,\text{distance}}
-   && \text{\footnotesize regroup}
+  K\!\left(\frac{X_i-c}{h}\right) = 1 - \frac{|X_i - c|}{h}
+\end{align*}
+for $|X_i - c| \leq h$, zero beyond. Senate, $h = 17.75$:
+\begin{itemize}\itemsep1pt
+  \item margin 2: weight 0.89
+  \item margin 9: weight 0.49
+  \item margin 16: weight 0.10
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip0pt
+\begin{itemize}\itemsep1pt
+  \item Fitting the line becomes weighted least squares.
+  \item Races within $h/2$ of a tie are 59\% of the races, 80\% of the weight.
+  \item Uniform weights give 7.09, triangular 7.41. \alert{The kernel matters
+        little; the bandwidth matters much more.}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bandwidth: How Far From the Cutoff to Look?}
+The same local linear fit with three bandwidths (shaded) \srcp{figs/w9\_estimation.R}:
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.84\linewidth]{figs/senate_three_h.pdf}
+\end{center}
+\vskip-10pt
+{\small Races used: 245, 683, 1,127. Standard errors: 2.55, 1.46, 1.00.}
+\begin{itemize}\itemsep1pt
+  \item \textbf{Narrow}: only near-ties, so the line describes the right races,
+        but few of them. The estimate is noisy.
+  \item \textbf{Wide}: many races and a small s.e., but one straight line must now
+        cover landslides too. If the curve bends, the line misses at $c$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bias and Variance: Definitions\core}
+$\hat\tau_h$, the estimate at bandwidth $h$, varies from sample to sample:
+\begin{align*}
+  \text{Bias}(\hat\tau_h) &= \E[\hat\tau_h] - \tau
+   && \text{\footnotesize average estimate minus the truth} \\
+  \Var(\hat\tau_h) &= \E\big[(\hat\tau_h - \E[\hat\tau_h])^2\big]
+   && \text{\footnotesize scatter around that average} \\
+  \text{MSE}(\hat\tau_h) &= \E\big[(\hat\tau_h - \tau)^2\big]
+   && \text{\footnotesize average squared distance from the truth}
 \end{align*}
 \vskip-4pt
-Senate, $h = 17.75$, uniform kernel:
+\textbf{The decomposition}:
+\vskip-9pt
 \begin{align*}
-  10.91 = 7.09 + 0.260 \times 7.96 + 0.226 \times 7.75 = 7.09 + 2.07 + 1.75 .
+  \text{MSE}(\hat\tau_h)
+  &= \E\Big[\big((\hat\tau_h - \E[\hat\tau_h]) + (\E[\hat\tau_h] - \tau)\big)^2\Big]
+   && \text{\footnotesize add and subtract $\E[\hat\tau_h]$} \\
+  &= \E\big[(\hat\tau_h - \E[\hat\tau_h])^2\big] + (\E[\hat\tau_h] - \tau)^2
+   && \text{\footnotesize expand the square;} \\
+  &\quad + 2\,(\E[\hat\tau_h] - \tau)\,\underbrace{\E\big[\hat\tau_h - \E[\hat\tau_h]\big]}_{=\,0}
+   && \text{\footnotesize the bias is a constant} \\
+  &= \Var(\hat\tau_h) + \text{Bias}(\hat\tau_h)^2
 \end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep2pt
-  \item \alert{The bias of comparing means is of order $h$}: the means sit at
-        $\pm h/2$ on average, not at $c$, and any slope turns that distance
-        into a gap. Here it inflates the effect by half.
-  \item A boundary is the worst place for a local mean: data lie on one side
-        only, so the slope cannot cancel. Local linear removes the first-order
-        term.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Bias of Local Linear Is of Order $h^2$}
-Above $c$, write $u_i = (X_i - c)/h \in [0,1]$; take $u$ uniform (a uniform kernel, flat density) and expand
-\begin{align*}
-  m_1(c + hu) &= m_1(c) + m_1'(c)\,hu + \tfrac12 m_1''(c)\,h^2u^2 + \dots
-   && \text{\footnotesize Taylor} .
-\end{align*}
-The line fits the first two terms exactly. The bias is the intercept of the
-best line through $u^2$:
-\begin{align*}
-  \text{slope} &= \frac{\Cov(u,u^2)}{\Var(u)} = \frac{\tfrac14 - \tfrac12\cdot\tfrac13}{\tfrac1{12}} = 1
-   && \text{\footnotesize $\E u^k = 1/(k+1)$} \\
-  \text{intercept} &= \E u^2 - 1\cdot\E u = \tfrac13 - \tfrac12 = -\tfrac16
-   && \text{\footnotesize line through the means} \\
-  \E[\hat\mu_+] - m_1(c) &\approx \tfrac12 m_1''(c)\,h^2 \cdot\big(-\tfrac16\big) = -\tfrac{1}{12}\,m_1''(c)\,h^2
-   && \text{\footnotesize scale by $\tfrac12 m_1''h^2$}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item \alert{Bias $= B h^2$}, with $B$ set by the curvature on each side:
-        $B = -\tfrac1{12}\,(m_1''(c) - m_0''(c))$. Other kernels change only the
-        constant $\tfrac1{12}$.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Variance Is of Order $1/(nh)$}
-With $f(c)$ the density of $X$ at $c$, about $m = n f(c) h$ observations fall
-in $[c, c+h]$. The fitted intercept is a prediction at the \emph{edge} of the data:
-\begin{align*}
-  \Var(\hat\mu_+)
-  &= \frac{\sigma^2}{m}\left(1 + \frac{(0 - \bar u)^2}{\Var(u)}\right)
-   && \text{\footnotesize variance of an OLS prediction at $u=0$} \\
-  &= \frac{\sigma^2}{m}\left(1 + \frac{1/4}{1/12}\right) = \frac{4\,\sigma^2}{m}
-   && \text{\footnotesize $u$ uniform on $[0,1]$} \\
-  \Var(\hat\tau) &= \frac{4\,(\sigma_+^2 + \sigma_-^2)}{n f(c)\, h} \equiv \frac{V}{nh}
-   && \text{\footnotesize two independent sides}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item \alert{Extrapolating to the edge costs a factor of 4}: a mean at the
-        centre of the window would have variance $\sigma^2/m$.
-  \item The variance falls as the window widens, the bias rises: that is the
-        bandwidth problem.
-\end{itemize}
+\vskip-4pt
+In RD, \textbf{bias} grows with $h$ (the line misses the curve at $c$) and
+\textbf{variance} falls with $h$ (more units): \alert{the bandwidth trades one for the other}.
 \end{frame}
 
 \begin{frame}{The Bandwidth Is the Whole Game\core}
@@ -555,11 +724,12 @@ in $[c, c+h]$. The fitted intercept is a prediction at the \emph{edge} of the da
     \draw[accent,very thick,smooth,samples=90,domain=0.4:8.3,variable=\x] plot ({\x},{2.4/\x});
     \draw[black,very thick,smooth,samples=90,domain=0.4:8.3,variable=\x] plot ({\x},{0.0022*\x*\x*\x*\x+2.4/\x});
   \end{scope}
-  \node[dukeblue] at (5.6,2.6) {\scriptsize bias$^2$};
-  \node[accent] at (1.55,2.35) {\scriptsize variance};
-  \node at (4.4,1.35) {\scriptsize MSE};
-  \draw[gray,dashed] (3.9,0) -- (3.9,1.13);
-  \node[gray] at (3.9,-0.35) {\scriptsize $h^{*}$};
+  \node[dukeblue] at (6.5,2.0) {\scriptsize bias$^2$};
+  \node[accent] at (7.6,0.65) {\scriptsize variance};
+  \node at (3.07,1.5) {\scriptsize MSE};
+  \draw[gray,dashed] (3.07,0) -- (3.07,0.977);
+  \fill (3.07,0.977) circle (1.6pt);
+  \node[gray] at (3.07,-0.35) {\scriptsize $h^{*}$};
 \end{tikzpicture}
 \end{center}
 \vskip-10pt
@@ -569,161 +739,218 @@ in $[c, c+h]$. The fitted intercept is a prediction at the \emph{edge} of the da
   \item \textbf{Narrow} $h$: less bias, but few observations, variance.
   \item Choose $h$ by minimizing estimated MSE (Imbens--Kalyanaraman; the
         Calonico--Cattaneo--Titiunik version in \texttt{rdrobust}).
-  \item \alert{The MSE-optimal bandwidth leaves a bias that invalidates the
-        conventional interval.} Use the CCT \emph{robust bias-corrected}
-        interval, which \texttt{rdrobust} reports by default.
+  \item The derivations that follow make each curve precise: bias grows like $h^2$,
+        variance falls like $1/(nh)$, and $h^{*}$ balances them.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The MSE-Optimal Bandwidth}
-Put the two previous frames together:
+\begin{frame}{The Bias of the Line, Step 1: the Picture\core}
+\textbf{Goal}: compute $\text{Bias}(\hat\tau) = \E[\hat\tau] - \tau$, where
+$\tau = m_1(c) - m_0(c)$ and $\hat\tau = \hat\mu_+ - \hat\mu_-$:
 \begin{align*}
-  \text{MSE}(h) &= B^2 h^4 + \frac{V}{nh}
-   && \text{\footnotesize bias$^2$ + variance} \\
-  0 &= 4B^2h^3 - \frac{V}{nh^2}
-   && \text{\footnotesize derivative in $h$ set to zero} \\
-  h^{*} &= \left(\frac{V}{4B^2}\right)^{1/5} n^{-1/5}
-   && \text{\footnotesize solve}
+  \E[\hat\tau] - \tau
+  &= \big(\E[\hat\mu_+] - m_1(c)\big) - \big(\E[\hat\mu_-] - m_0(c)\big)
+   && \text{\footnotesize expectation of a difference}
 \end{align*}
+\vskip-4pt
+Both sides work the same way; \alert{take the side above}: uniform kernel, $X$
+spread evenly, $u_i = (X_i - c)/h \in [0,1]$. OLS is linear in $Y$ and
+$\E[Y_i\mid X_i] = m_1(X_i)$, so $\E[\hat\mu_+]$ is the intercept of the line
+fitted to the curve $m_1$ itself.
+\begin{columns}[T]
+\begin{column}{0.45\textwidth}
+\begin{center}
+\begin{tikzpicture}[xscale=3.4,yscale=1.9]
+  \fill[gray!12] (0,0) rectangle (1,1.65);
+  \draw[->] (-0.05,0) -- (1.12,0) node[right]{\scriptsize $u$};
+  \draw[->] (0,0) -- (0,1.75);
+  \draw[black,very thick,smooth,domain=0:1,samples=40] plot (\x,{0.45-0.1*\x+1.2*\x*\x});
+  \draw[accent,very thick] (0,0.25) -- (1,1.35);
+  \fill (0,0.45) circle (0.7pt);
+  \fill[accent] (0,0.25) circle (0.7pt);
+  \draw[decorate,decoration={brace,amplitude=2pt}] (0.03,0.25) -- (0.03,0.45)
+        node[midway,right=1pt] {\scriptsize bias};
+  \node[left] at (-0.02,0.5) {\scriptsize $m_1(c)$};
+  \node[left,accent] at (-0.02,0.2) {\scriptsize $\E[\hat\mu_+]$};
+  \node at (0.4,1.3) {\scriptsize curve $m_1$};
+  \node[accent] at (0.8,0.6) {\scriptsize fitted line};
+  \node[below] at (0,0) {\scriptsize $c$};
+  \node[below] at (1,0) {\scriptsize $c+h$};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.53\textwidth}
 \begin{itemize}\itemsep3pt
-  \item \textbf{Wider} when the noise $V$ is large or the density $f(c)$ is low;
-        \textbf{narrower} when the curves bend sharply at $c$ ($B$ large).
+  \item The bias is the \alert{gap at $c$} between the curve and the line fitted
+        to it.
+  \item A straight curve: the line lies on it, no gap. A bent curve: the line
+        cuts across the bend and misses at the edge.
+  \item To compute the gap, we need a formula for $m_1$. We do not have one.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{The Bias of the Line, Step 2: Use a Parabola}
+\textbf{Taylor}: near $c$, a smooth curve is close to a parabola built from its
+height, slope, and bend \emph{at} $c$. With $X = c + hu$:
+\begin{align*}
+  m_1(c + hu) &\approx \underbrace{m_1(c)}_{a} + \underbrace{m_1'(c)\,h}_{b}\,u
+     + \underbrace{\tfrac12\, m_1''(c)\,h^2}_{q}\,u^2
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item Why this helps: we cannot fit a line to an unknown curve by hand, but we
+        can fit one to a parabola.
+  \item Why expand at $c$: the target then appears in the formula, $a = m_1(c)$.
+  \item Left out: $\tfrac16 m_1'''(c)\,h^3u^3 + \dots$ We assume this is negligible
+        inside the window: on $[c, c+h]$ the curve is close to a parabola.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Bias of the Line, Step 3: Plug the Parabola Into OLS}
+\textbf{Goal}: $\E[\hat\mu_+] - m_1(c)$. $\E[\hat\mu_+]$ is the intercept of the
+OLS line of $a + bu + qu^2$ on $u$ (Steps 1--2), with $u$ spread evenly on $[0,1]$.
+\begin{align*}
+  \text{slope} &= \frac{\Cov(u,\ a + bu + qu^2)}{\Var(u)}
+   && \text{\footnotesize OLS slope} \\
+  &= \frac{b\Var(u) + q\Cov(u,u^2)}{\Var(u)} = b + q
+   && \text{\footnotesize $a$ is a constant; $\Cov(u,u^2) = \Var(u)$} \\
+  \E[\hat\mu_+] &= \E[a + bu + qu^2] - (b + q)\,\E[u]
+   && \text{\footnotesize the OLS line passes through the means} \\
+  &= a + \tfrac12 b + \tfrac13 q - \tfrac12 b - \tfrac12 q = a - \tfrac16 q
+   && \text{\footnotesize $\E[u] = \tfrac12$, $\E[u^2] = \tfrac13$} \\
+  \E[\hat\mu_+] - m_1(c) &= -\tfrac16 q = -\tfrac1{12}\,m_1''(c)\,h^2
+   && \text{\footnotesize $a = m_1(c)$, $q = \tfrac12 m_1''(c)h^2$}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item $b$ cancels: the line gets the level and the slope right. \alert{Only the bend
+        $q$ leaves a gap at the cutoff.}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Bias of the Line, Step 4: Both Sides Together\core}
+Above the cutoff (Step 3): $\E[\hat\mu_+] - m_1(c) = -\tfrac1{12}\,m_1''(c)\,h^2$.
+\vskip2pt
+Below the cutoff, $u \in [-1, 0]$: the same steps give
+$\E[\hat\mu_-] - m_0(c) = -\tfrac1{12}\,m_0''(c)\,h^2$.
+\begin{align*}
+  \text{Bias}(\hat\tau) &= \big(\E[\hat\mu_+] - m_1(c)\big) - \big(\E[\hat\mu_-] - m_0(c)\big)
+   && \text{\footnotesize Step 1} \\
+  &= \underbrace{-\tfrac1{12}\big(m_1''(c) - m_0''(c)\big)}_{B}\,h^2
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item \alert{Bias $= Bh^2$}: doubling $h$ multiplies it by 4.
+  \item Straight curves ($m'' = 0$) give no bias; equal bends on the two sides cancel.
+  \item A triangular kernel or uneven $X$ changes only the constant $\tfrac1{12}$,
+        not the form $Bh^2$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Variance, Step 1: The Mean and the Slope}
+\textbf{Goal}: $\Var(\hat\mu_+)$, with $m$ units above $c$ and $u$ spread evenly on $[0,1]$.
+\textbf{Assume} $Y_i = m_1(X_i) + \epsilon_i$, independent errors, $\Var(Y_i\mid X_i) = \sigma_+^2$.
+Given $\bm{X} = (X_1,\dots,X_m)$, $m_1(X_i)$ and $u_i$ are fixed; only the $\epsilon_i$ are random.
+\vskip-4pt
+\begin{align*}
+  \Var(\bar Y\mid\bm X) &= \Var\Big(\tfrac1m\textstyle\sum_i \epsilon_i\ \Big|\ \bm X\Big) = \frac{\sigma_+^2}{m}
+   && \text{\footnotesize drop the fixed $m_1(X_i)$; independence} \\
+  \Var(\hat\beta\mid\bm X) &= \Var\Big(\frac{\sum_i (u_i - \bar u)\,\epsilon_i}{\sum_i (u_i - \bar u)^2}\ \Big|\ \bm X\Big)
+   && \text{\footnotesize OLS slope; drop the fixed part} \\
+  &= \frac{\sigma_+^2\sum_i (u_i - \bar u)^2}{\big(\sum_i (u_i - \bar u)^2\big)^2}
+   = \frac{\sigma_+^2}{m\Var(u)}
+   && \text{\footnotesize $\Var(u) = \tfrac1m\textstyle\sum_i (u_i - \bar u)^2$} \\
+  \Cov(\bar Y, \hat\beta\mid\bm X) &= 0
+   && \text{\footnotesize see below}
+\end{align*}
+\vskip-4pt
+\begin{itemize}
+  \item A high error always raises $\bar Y$, but raises the slope if the unit is
+        right of $\bar u$ and lowers it if left. With independent, equal-variance
+        errors, these cancel.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Variance, Step 2: One Side}
+The OLS intercept is $\hat\mu_+ = \bar Y - \hat\beta\,\bar u$, so with Step 1:
+\begin{align*}
+  \Var(\hat\mu_+\mid\bm X) &= \Var(\bar Y\mid\bm X) + \bar u^2\,\Var(\hat\beta\mid\bm X)
+     - 2\bar u\,\Cov(\bar Y, \hat\beta\mid\bm X)
+   && \text{\footnotesize variance of a difference} \\
+  &= \frac{\sigma_+^2}{m} + \bar u^2\,\frac{\sigma_+^2}{m\Var(u)}
+   && \text{\footnotesize Step 1} \\
+  &= \frac{\sigma_+^2}{m}\Big(1 + \frac{1/4}{1/12}\Big) = \frac{4\,\sigma_+^2}{m}
+   && \text{\footnotesize $\bar u = \tfrac12$, $\Var(u) = \tfrac1{12}$}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item \alert{More noise $\sigma_+^2$: larger variance. More units $m$: smaller variance.}
+  \item A wider $h$ brings in more units, so $m$ grows; $\sigma_+^2$ is the noise
+        around the curve and does not depend on $h$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Variance, Step 3: Both Sides Together}
+How many units fall in $[c, c+h]$? With $f$ the density of $X$:
+\begin{align*}
+  m &\approx n \Pr(c \leq X \leq c+h) = n\int_c^{c+h} f(x)\,dx
+   && \text{\footnotesize expected count $=$ $n \times$ probability} \\
+  &\approx n\,f(c)\,h
+   && \text{\footnotesize $f \approx f(c)$ on the window} \\[4pt]
+  \Var(\hat\mu_+) &\approx \frac{4\,\sigma_+^2}{n\,f(c)\,h}
+   && \text{\footnotesize Step 2, substitute $m$} \\
+  \Var(\hat\tau) &= \Var(\hat\mu_+) + \Var(\hat\mu_-)
+   && \text{\footnotesize the two sides use different units} \\
+  &\approx \underbrace{\frac{4\,(\sigma_+^2 + \sigma_-^2)}{f(c)}}_{V}\cdot\frac{1}{nh}
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item \alert{Variance $= V/(nh)$}: doubling $h$ halves it.
+  \item More noise ($\sigma^2$) or fewer units near $c$ ($f(c)$ small): more variance.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The MSE-Optimal Bandwidth: the Derivation}
+\textbf{Goal}: the $h$ that minimizes
+$\text{MSE}(h) = \underbrace{B^2 h^4}_{\text{bias}^2} + \underbrace{V/(nh)}_{\text{variance}}$
+(the two previous derivations).
+\begin{align*}
+  \frac{d}{dh}\,B^2h^4 &= 4B^2h^3
+   && \text{\footnotesize power rule} \\
+  \frac{d}{dh}\,\frac{V}{nh} &= \frac{V}{n}\cdot\frac{d}{dh}h^{-1} = -\frac{V}{nh^2}
+   && \text{\footnotesize $\tfrac{V}{n}$ is a constant} \\
+  0 &= 4B^2h^3 - \frac{V}{nh^2}
+   && \text{\footnotesize at the minimum, the slope of MSE is zero} \\
+  4B^2h^5 &= \frac{V}{n}
+   && \text{\footnotesize multiply by $h^2$, move one term across} \\
+  h^{*} &= \left(\frac{V}{4B^2\,n}\right)^{1/5} = \left(\frac{V}{4B^2}\right)^{1/5} n^{-1/5}
+   && \text{\footnotesize take the fifth root}
+\end{align*}
+\end{frame}
+
+\begin{frame}{The MSE-Optimal Bandwidth: Reading the Formula}
+\begin{align*}
+  h^{*} = \left(\frac{V}{4B^2}\right)^{1/5} n^{-1/5},
+  \qquad V = \frac{4\,(\sigma_+^2 + \sigma_-^2)}{f(c)},
+  \qquad B = -\tfrac1{12}\big(m_1''(c) - m_0''(c)\big)
+\end{align*}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Wider} when the noise $\sigma^2$ is large or few units sit near $c$
+        ($f(c)$ small): more data are needed to tame the variance.
+  \item \textbf{Narrower} when the curves bend sharply at $c$ ($B$ large): a line is
+        only good close to $c$.
   \item $B$ and $V$ are unknown: a pilot fit estimates $m''$, $\sigma^2$, and
         $f(c)$ and plugs them in \srcp{Imbens and Kalyanaraman 2012; Calonico, Cattaneo, and Titiunik 2014}.
-  \item $h^{*}$ shrinks slowly: ten times the data narrows it by $10^{1/5} = 1.6$.
+  \item $h^{*}$ shrinks slowly: ten times the data narrows it by a factor of
+        $10^{1/5} = 1.6$.
   \item Senate: $\hat h^{*} = 17.75$ points on both sides.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Why the Optimal Bandwidth Breaks the Confidence Interval\adv}
-At $h^{*}$, the first-order condition fixes the ratio of bias to standard error:
-\begin{align*}
-  4B^2h^{*5} = \frac{V}{n}
-  \ \ \Longrightarrow\ \
-  \underbrace{B^2 h^{*4}}_{\text{bias}^2} = \frac14\,\underbrace{\frac{V}{n h^{*}}}_{\text{variance}}
-  \ \ \Longrightarrow\ \
-  |\text{bias}| = \tfrac12\,\text{se} .
-  && \text{\footnotesize divide by $4h^{*}$}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item The bias does not vanish relative to the standard error as $n$
-        grows: both shrink like $n^{-2/5}$.
-  \item $\hat\tau \pm 1.96\,\widehat{\text{se}}$ is centred half a standard error
-        off: coverage $\Pr(|N(\tfrac12, 1)| \leq 1.96) = 0.921$, lower when $h$ is
-        estimated. Covering 95\% needs 2.18, not 1.96 \srcp{Armstrong and Kolesár 2020}.
-  \item The best $h$ for a \emph{point estimate} is not the best $h$ for an \emph{interval}.
-\end{itemize}
-\vskip2pt
-\textbf{Repairs}: a smaller $h$ (undersmoothing); subtract an estimate of the
-bias (robust bias correction); or bound the bias and widen by the bound (honest intervals).
-\end{frame}
-
-\begin{frame}{Robust Bias Correction}
-\srct{Calonico, Cattaneo, and Titiunik (2014)}:
-\vskip-9pt
-\begin{align*}
-  \hat\tau^{\,bc} &= \hat\tau_h - \hat B\,h^2
-   && \text{\footnotesize $\hat B$: local quadratic, pilot bandwidth $b$} \\
-  \Var(\hat\tau^{\,bc}) &= \Var(\hat\tau_h) + h^4\Var(\hat B) - 2h^2\Cov(\hat\tau_h,\hat B)
-   && \text{\footnotesize $\hat B$ adds noise}
-\end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep2pt
-  \item The \alert{robust} interval centres on $\hat\tau^{\,bc}$ and uses the second line;
-        ``bias-corrected'' keeps the old standard error and undercovers.
-  \item \textbf{Identity}: with $b = h$, $\hat\tau^{\,bc}$ and its robust s.e. are the local
-        quadratic estimate at $h$ and its s.e.
-\end{itemize}
-\vskip2pt
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{@{}lccc@{}}
-\toprule
-Senate, \texttt{rdrobust} & estimate & s.e. & 95\% interval \\
-\midrule
-conventional, $h = 17.75$ & 7.41 & 1.46 & [4.56, 10.27] \\
-bias-corrected, $b = 28.03$ & 7.51 & 1.46 & [4.65, 10.37] \\
-\alert{robust} & 7.51 & 1.74 & \alert{[4.09, 10.92]} \\
-\midrule
-robust with $b = h$ & 8.3212 & 2.0649 & \\
-local quadratic at $h$, conventional & 8.3212 & 2.0649 & \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{frame}
-
-\begin{frame}{Does the Repair Work? A Simulation}
-The design of \srct{Calonico, Cattaneo, and Titiunik (2014)}: quintic curves
-fitted to Lee's House data, $\tau = 0.04$, 1,000 draws \srcp{figs/w9\_sims.R}.
-\vskip4pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-coverage of a nominal 95\% interval & $n = 500$ & $n = 5{,}000$ \\
-\midrule
-conventional, MSE-optimal $h$ & 0.896 & 0.784 \\
-robust, MSE-optimal $h$ & 0.917 & 0.889 \\
-robust, CER-optimal $h$ & 0.930 & 0.935 \\
-\midrule
-bias / sd of the conventional estimate & 0.31 & 0.80 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item The conventional interval gets \emph{worse} with more data.
-  \item \textbf{CER-optimal bandwidth} \srcp{Calonico, Cattaneo, and Farrell 2020}:
-        a smaller $h$ chosen to minimize the coverage error of the robust interval;
-        $h_{CER} = h_{MSE}\times n^{-1/20}$ for local linear. Senate: $17.75 \times 0.699 = 12.41$.
-  \item Practice: report the point estimate at $h_{MSE}$ and the robust interval
-        at $h_{CER}$ (\texttt{bwselect = "cerrd"}).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Honest Intervals \srcp{Armstrong and Kolesár 2018, 2020}}
-Assume a bound on curvature, $|m_d''(x)| \leq M$ near $c$. For a given $h$ the
-estimator's weights are known, so its \alert{largest possible bias} $\bar b$ is
-computable. Then
-\begin{align*}
-  \hat\tau \pm \text{cv}_{0.95}\!\big(\bar b/\widehat{\text{se}}\big)\cdot\widehat{\text{se}},
-  \qquad
-  \text{cv}_{0.95}(t) = \text{the 95th percentile of } |N(t,1)| .
-\end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep2pt
-  \item Coverage is at least 95\% for every curve with $|m''| \leq M$: the
-        interval is widened by exactly enough to absorb the worst bias.
-  \item $h$ is chosen to make the interval shortest; nothing is bias-corrected.
-  \item The price is choosing $M$. A rule of thumb uses a global quartic fit;
-        report how the interval changes with $M$.
-  \item The same logic handles a \textbf{discrete running variable}, where
-        continuity-based asymptotics do not apply \srcp{Kolesár and Rothe 2018}.
-\end{itemize}
-\vskip2pt
-Senate (\texttt{RDHonest}, $\hat M = 0.114$): $h = 9.84$, estimate 8.03, s.e.
-1.85, $\bar b = 1.13$, $\text{cv} = 2.27$, interval [3.82, 12.24].
-\end{frame}
-
-\begin{frame}{Global Polynomials Weight Distant Races}
-\srct{Gelman and Imbens (2019)}.
-Every estimator of $\mu_+$ is a weighted mean of the $Y_i$ above the cutoff,
-weights $=$ row 1 of $(\bm{X}'\bm{W}\bm{X})^{-1}\bm{X}'\bm{W}$.
-\vskip-6pt
-\begin{center}
-\includegraphics[width=0.66\linewidth]{figs/poly_weights.pdf}
-\end{center}
-\vskip-10pt
-\begin{itemize}\itemsep1pt
-  \item A degree-6 fit gives a race won by 75 points $3.4$ times the average
-        weight; the estimate moves with the degree: $p = 1,\dots,6$ gives
-        6.04, 4.93, 7.32, 9.41, 7.96, 6.63.
-  \item The local linear weights are zero beyond $h$ and largest at the cutoff.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{Bandwidth Sensitivity on the Senate Data}
-Conventional estimate and robust 95\% interval ($b/h$ fixed at the default) \srcp{figs/w9\_senate.R}:
+Conventional estimate and robust bias-corrected 95\% interval \srcp{figs/w9\_senate.R}:
 \vskip4pt
 \begin{center}\small
 \renewcommand{\arraystretch}{1.12}
@@ -745,7 +972,223 @@ $h$ & estimate & robust 95\% interval & effective $n$ (below, above) \\
   \item Stable between $h = 10$ and $50$; every interval excludes zero.
   \item At $h = 5$ the estimate rises, with 245 elections: noise, and the
         interval says so.
+  \item $h_{MSE}$: the MSE-optimal bandwidth. $h_{CER}$: the \textbf{coverage-error-optimal}
+        bandwidth, narrower, chosen so the interval covers $\tau$ as close to 95\% of the
+        time as possible \srcp{Calonico, Cattaneo, and Farrell 2020}.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Inference: the Standard Error}
+\textbf{Goal}: $\text{se}(\hat\tau)$, for the usual interval $\hat\tau \pm 1.96\,\text{se}$.
+Revisit the variance:
+\begin{align*}
+  \Var(\hat\tau\mid\bm X) &= \Var(\hat\mu_+\mid\bm X) + \Var(\hat\mu_-\mid\bm X)
+   && \text{\footnotesize the two sides use different units} \\
+  &= \frac{4\,\sigma_+^2}{m_+} + \frac{4\,\sigma_-^2}{m_-}
+   && \text{\footnotesize Variance, Step 2, on each side} \\
+  \widehat{\text{se}}(\hat\tau) &= \sqrt{\frac{4\,\hat\sigma_+^2}{m_+} + \frac{4\,\hat\sigma_-^2}{m_-}}
+   && \text{\footnotesize $\hat\sigma_\pm^2$: residual variance of each side's line}
+\end{align*}
+\textbf{Senate}, $h = 17.75$ \srcp{figs/w9\_estimation.R}: $\hat\sigma_+ = 9.06$, $m_+ = 323$;
+$\hat\sigma_- = 10.20$, $m_- = 360$.
+\begin{align*}
+  \widehat{\text{se}}(\hat\tau) = \sqrt{\frac{4 \cdot 9.06^2}{323} + \frac{4 \cdot 10.20^2}{360}} = 1.47
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item \texttt{rdrobust} reports 1.46: triangular weights, and each unit's error variance
+        estimated from its 3 nearest neighbours in $X$ (unequal variances allowed).
+  \item Usual interval: $7.41 \pm 1.96 \times 1.46 = [4.56,\ 10.27]$. \alert{It ignores the bias.}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Inference: How Sure? The Problem in One Picture}
+\vskip-4pt
+\begin{center}
+\begin{tikzpicture}[scale=0.68]
+  \draw[->] (-3.4,0) -- (4.6,0) node[right]{\scriptsize $\hat\tau$};
+  \draw[gray,thick,dashed,smooth,samples=80,domain=-3.2:3.2,variable=\x] plot ({\x},{2.2*exp(-\x*\x/2)});
+  \draw[dukeblue,very thick,smooth,samples=80,domain=-2.7:3.7,variable=\x] plot ({\x},{2.2*exp(-(\x-0.5)*(\x-0.5)/2)});
+  \draw (0,0) -- (0,-0.12) node[below left,inner sep=1pt]{\scriptsize $\tau$};
+  \draw (0.5,0) -- (0.5,-0.12) node[below right,inner sep=1pt]{\scriptsize $\tau$ + bias};
+  \draw[<->] (0,2.45) -- (0.5,2.45);
+  \node[above] at (0.25,2.5) {\scriptsize $\tfrac12$ s.e.};
+  \node[gray] at (-2.55,1.25) {\scriptsize no bias};
+  \node[dukeblue] at (2.95,1.25) {\scriptsize at $h^{*}$};
+  % typical intervals
+  \draw[gray,very thick,|-|] (-1.96,-0.75) -- (1.96,-0.75);
+  \node[gray,left] at (-2.1,-0.75) {\scriptsize no bias: $\tau \pm 1.96\,$se};
+  \draw[dukeblue,very thick,|-|] (-1.46,-1.15) -- (2.46,-1.15);
+  \node[dukeblue,right] at (2.6,-1.15) {\scriptsize at $h^{*}$: $(\tau + \text{bias}) \pm 1.96\,$se};
+  \draw[gray,dotted] (0,0) -- (0,-1.3);
+\end{tikzpicture}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item At $h^{*}$ the estimates average $\tau$ + bias, bias $= \tfrac12$ se (next frame).
+        So the interval is shifted up: \alert{both ends are too high}.
+  \item A shifted interval misses $\tau$ more often: it contains $\tau$ in
+        \alert{92\% of samples, not 95\%}.
+  \item Three repairs: undersmooth, robust bias correction, honest intervals.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{At $h^{*}$, the Bias Is Half a Standard Error\adv}
+Start from the first-order condition that defines $h^{*}$:
+\begin{align*}
+  4B^2 h^{*5} &= \frac{V}{n}
+   && \text{\footnotesize the MSE derivation} \\
+  B^2 h^{*4} &= \frac14 \cdot \frac{V}{n h^{*}}
+   && \text{\footnotesize divide both sides by $4h^{*}$} \\
+  \big(\underbrace{Bh^{*2}}_{\text{bias}}\big)^2 &= \frac14\,\underbrace{\frac{V}{nh^{*}}}_{\text{variance}}
+   && \text{\footnotesize recognize the two pieces} \\
+  |\text{bias}| &= \frac12\,\text{se}
+   && \text{\footnotesize square root of both sides}
+\end{align*}
+\vskip-2pt
+\textbf{More data do not help.} With $h^{*} \propto n^{-1/5}$: bias $= Bh^{*2} \propto n^{-2/5}$
+and se $= (V/(nh^{*}))^{1/2} \propto (n \cdot n^{-1/5})^{-1/2} = n^{-2/5}$. Both shrink at
+the same rate, so their ratio stays $\tfrac12$ for every $n$.
+\end{frame}
+
+\begin{frame}{Three Repairs, Side by Side}
+Senate data \srcp{figs/w9\_estimation.R, w9\_senate.R}:
+\vskip0pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l>{\raggedright}p{5.8cm}cc@{}}
+\toprule
+ & what it does about the bias & $h$ & 95\% interval \\
+\midrule
+none (usual interval) & ignores it: covers 92\% at $h_{MSE}$ & 17.75 & [4.56, 10.27] \\
+\textbf{1. undersmooth} & shrinks it: smaller $h$, bias small next to the se & 10 & [4.38, 11.59] \\
+\textbf{2. robust bias correction} & estimates it, subtracts it, widens the se & 17.75 & [4.09, 10.92] \\
+\quad \ldots at $h_{CER}$ & same repair, $h$ chosen for coverage, not MSE & 12.41 & [4.07, 11.29] \\
+\textbf{3. honest interval}\adv & bounds it ($|m''| \leq M$), widens by the worst case & 9.84 & [3.83, 12.23] \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item \texttt{rdrobust}'s ``robust'' interval (and the sensitivity table) is repair 2.
+        $h_{CER}$ is not a fourth repair: it is the bandwidth for repair 2.
+  \item Undersmoothing has no rule for how much smaller; repairs 2 and 3 do.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Repair 2: Robust Bias Correction, the Idea}
+The bias of the line is $B h^2$, and $B$ depends on how much the curves
+\emph{bend} at $c$ \srcp{Calonico, Cattaneo, and Titiunik 2014}. So:
+\vskip3pt
+\begin{enumerate}\itemsep4pt
+  \item \textbf{Estimate the bend.} Fit a quadratic on each side (with a pilot
+        bandwidth $b$, chosen to estimate the bend with minimum MSE; usually wider
+        than $h$). Its curvature gives $\hat B$.
+  \item \textbf{Subtract the estimated bias}: $\hat\tau^{\,bc} = \hat\tau_h - \hat B h^2$.
+  \item \textbf{Widen the interval.} $\hat B$ is itself estimated with noise, so
+        $\hat\tau^{\,bc}$ is noisier than $\hat\tau_h$. The \alert{robust}
+        standard error counts that extra noise.
+\end{enumerate}
+\vskip4pt
+\begin{itemize}\itemsep2pt
+  \item In practice: report the point estimate $\hat\tau_h$ and the robust
+        interval. \texttt{rdrobust} prints both by default.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Repair 2: Robust Bias Correction, the Formulas\adv}
+Write the estimate as truth plus bias plus noise, and subtract an estimate of the bias:
+\begin{align*}
+  \hat\tau_h &= \tau + Bh^2 + \text{noise}
+   && \text{\footnotesize previous derivations} \\
+  \hat\tau^{\,bc} &= \hat\tau_h - \hat B\,h^2
+   && \text{\footnotesize $\hat B$: local quadratic, bandwidth $b$} \\
+  \hat\tau^{\,bc} - \tau &= (B - \hat B)\,h^2 + \text{noise}
+   && \text{\footnotesize $\hat B$'s error replaces the bias}
+\end{align*}
+\textbf{Its s.e.} $\hat B$ adds noise. With $b = h$, the line minus the estimated bend
+is the \alert{local quadratic fit itself}: same s.e.\ formula, a quadratic's edge factor.
+\begin{align*}
+  \text{se}_{\text{robust}} = \sqrt{\frac{9\,\sigma_+^2}{m_+} + \frac{9\,\sigma_-^2}{m_-}}
+   && \text{\footnotesize 9 for a quadratic at the edge, 4 for a line}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item Same $\sigma$ and $m$: $\sqrt{9/4} = 1.5$ times the line's s.e. Senate: $2.21$
+        \srcp{figs/w9\_estimation.R}; \texttt{rdrobust} (triangular weights) 2.06.
+  \item The default $b$ is wider than $h$ (28.03 here): more units estimate the bend,
+        so less extra noise; \texttt{rdrobust} gives 1.74.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Repair 2 on the Senate}
+\texttt{rdrobust} defaults \srcp{figs/w9\_senate.R}:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& estimate & s.e. & 95\% interval \\
+\midrule
+conventional, $h = 17.75$ & 7.41 & 1.46 & [4.56, 10.27] \\
+\alert{robust bias-corrected}, $b = 28.03$ & 7.51 & 1.74 & \alert{[4.09, 10.92]} \\
+\midrule
+robust bias-corrected at $h_{CER} = 12.41$ & 7.68 & 1.84 & [4.07, 11.29] \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip0pt
+\begin{itemize}\itemsep2pt
+  \item The correction moves 7.41 to 7.51: the curves bend little near a tie.
+  \item The robust s.e.\ is 19\% larger ($1.74/1.46$): the price of estimating the bend.
+  \item $h_{MSE}$ is best for the \emph{estimate}. For the \emph{interval}, use
+        \textbf{$h_{CER}$}, the $h$ that makes coverage closest to 95\%
+        \srcp{Calonico, Cattaneo, and Farrell 2020}. It shrinks faster with $n$:
+        like $n^{-1/4}$ instead of $n^{-1/5}$. \texttt{rdrobust} rescales by the ratio
+        of the rates, $n^{-1/4}/n^{-1/5} = n^{-1/20}$ (a rule of thumb):
+        $h_{CER} = 17.75 \times 1297^{-1/20} = 17.75 \times 0.699 = 12.41$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Does Repair 2 Work? A Simulation}
+The design of \srct{Calonico, Cattaneo, and Titiunik (2014)}: quintic curves
+fitted to Lee's House data, $\tau = 0.04$, 1,000 draws \srcp{figs/w9\_sims.R}.
+\vskip4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+coverage of a nominal 95\% interval & $n = 500$ & $n = 5{,}000$ \\
+\midrule
+conventional, MSE-optimal $h$ & 0.896 & 0.784 \\
+robust, MSE-optimal $h$ & 0.917 & 0.889 \\
+robust, CER-optimal $h$ & 0.930 & 0.935 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item The conventional interval gets \emph{worse} with more data.
+  \item Practice: report the point estimate at $h_{MSE}$ and the robust interval
+        at $h_{CER}$ (\texttt{bwselect = "cerrd"}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Estimation in Practice: the Senate in Five Lines\core}
+\begin{enumerate}\itemsep5pt
+  \item \textbf{Plot} binned means of $Y$ against $X$, with the cutoff marked.
+        The jump should be visible before any estimate.
+  \item \textbf{Estimate} with a line on each side, triangular weights,
+        $h_{MSE}$: $\hat\tau = 7.41$ points, $h = 17.75$.
+  \item \textbf{Interval}: robust bias-corrected, [4.09, 10.92] (at $h_{CER}$:
+        [4.07, 11.29]).
+  \item \textbf{Report the units used}: 360 races below, 323 above.
+  \item \textbf{Show the choices do not drive the result}: $h$ from 10 to 50
+        gives 6.5 to 8.0; a quadratic gives 8.32.
+\end{enumerate}
+\vskip6pt
+\texttt{rdrobust(y = vote, x = margin)} gives the estimate, interval, and units;
+\texttt{rdplot(vote, margin)} gives the plot.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -754,103 +1197,58 @@ $h$ & estimate & robust 95\% interval & effective $n$ (below, above) \\
 \begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{Adding Covariates \srcp{Calonico, Cattaneo, Farrell, and Titiunik 2019}}
-Add pre-determined $Z_i$ (lagged vote, say) to the local regression, additively,
-same kernel and bandwidth. By the omitted-variable formula (Week 1):
+Same local regression (units within $h$, kernel weights), plus covariates $Z_i$:
 \begin{align*}
-  \tilde\tau = \hat\tau_Y - \hat\tau_Z'\,\hat\gamma
-   && \text{\footnotesize exact, for weighted least squares}
+  Y_i = \alpha + \tau D_i + \beta_-(X_i - c)(1 - D_i) + \beta_+(X_i - c)D_i
+        + Z_i'\gamma + \epsilon_i
 \end{align*}
-\vskip-4pt
-{\small $\hat\tau_Y$: RD estimate for $Y$;\ \ $\hat\tau_Z$: RD estimates with each $Z$
-as the outcome;\ \ $\hat\gamma$: coefficients on $Z$ in the regression that includes $Z$.}
+$Z_i$ must be \textbf{pre-determined}: fixed before the cutoff is crossed.
+Turning 21: sex, race, schooling.
+\vskip3pt
 \begin{itemize}\itemsep3pt
-  \item If $Z$ is continuous at $c$, $\tau_Z = 0$ and $\tilde\tau$ estimates the
-        \alert{same} $\tau_{RD}$; the gain is precision when $Z$ predicts $Y$.
-  \item If $\tilde\tau$ moves far from $\hat\tau_Y$, then $\hat\tau_Z$ is
-        large: a covariate jumps at the cutoff. \alert{That is a failed balance
-        test, not an improvement.}
-  \item Do not interact $Z$ with $D_i$; never use post-treatment $Z$.
+  \item If $Z$ is continuous at $c$, it is balanced across the cutoff, so
+        \alert{$\hat\tau$ should barely change}. What changes is the s.e.: $Z$
+        explains part of $Y$, so less noise is left.
+  \item If $\hat\tau$ \emph{does} change a lot, $Z$ jumps at $c$: a sign of sorting,
+        not an improvement. (Formal balance test: validity section.)
+  \item Rules: $Z$ enters on its own (no $D \times Z$ interaction); never a
+        post-treatment $Z$ (turning 21: not drinking, not a later arrest).
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Covariates on the Senate Data}
-Four pre-determined covariates, 1,205 complete elections, $h = 17.75$,
-triangular kernel \srcp{figs/w9\_senate.R}:
-\begin{center}\small
-\renewcommand{\arraystretch}{1.12}
-\begin{tabular}{@{}lrr@{}}
-\toprule
-covariate $Z$ & jump $\hat\tau_Z$ & coefficient $\hat\gamma$ \\
-\midrule
-Democratic vote share, $t-6$ & 4.047 & 0.112 \\
-Democratic vote share, $t-12$ & 1.679 & 0.138 \\
-Democratic presidential vote share & $-1.115$ & $-0.019$ \\
-open seat & $-0.139$ & $-1.119$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip2pt
-{\small
-\begin{align*}
-  \tilde\tau = 7.826 - \big(4.047\cdot 0.112 + 1.679\cdot0.138 + (-1.115)(-0.019) + (-0.139)(-1.119)\big) = 6.966
-\end{align*}}
-\begin{itemize}\itemsep2pt
-  \item With \texttt{rdrobust}'s bandwidths: 7.82 $\to$ 6.97; robust interval 2\% shorter.
-  \item The shift comes mostly from the lagged vote, which jumps by 4 points
-        ($p = 0.09$ in the balance test). Report both estimates.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Flexible Covariate Adjustment}
-\textbf{Goal}: more precision from many covariates without adding bias.
-\vskip3pt
-\begin{itemize}\itemsep4pt
-  \item Linear adjustment is one choice of a function $\eta(Z_i)$ subtracted
-        from $Y_i$ before the RD:
-        \begin{align*}
-          \tau_{RD} = \lim_{x\downarrow c}\E[Y_i - \eta(Z_i)\mid X_i=x] - \lim_{x\uparrow c}\E[Y_i - \eta(Z_i)\mid X_i=x],
-        \end{align*}
-        true for \emph{any} $\eta$ when $Z$ is continuous at $c$: the
-        $\eta$ terms cancel at the cutoff.
-  \item So $\eta$ can be estimated by machine learning, on held-out folds,
-        to predict $Y$ as well as possible; the estimand does not change
-        \srcp{Noack, Olma, and Rothe 2026}.
-  \item The precision gain is largest when $Z$ explains much of $Y$ near
-        the cutoff, such as a lagged outcome.
-\end{itemize}
-\vskip3pt
-{\footnotesize Week 13 returns to cross-fitting.}
-\end{frame}
-
-\begin{frame}{Why RD Needs Several Times the Data of an Experiment}
-Compare $\Var(\hat\tau)$ in RD with a coin-flip experiment, same $n$, same
-$\sigma^2$, model $Y_i = \alpha + \tau D_i + \beta X_i + \epsilon_i$:
-\begin{align*}
-  \Var(\hat\tau_{RD}) &= \frac{\sigma^2}{n\Var(D)\,(1-\rho^2_{DX})}
-   && \text{\footnotesize FWL: only the part of $D$ not explained by $X$ counts} \\
-  \Var(\hat\tau_{\text{exp}}) &= \frac{\sigma^2}{n\Var(D)}
-   && \text{\footnotesize $D$ independent of $X$} \\
-  \text{ratio} &= \frac{1}{1-\rho^2_{DX}}
-   && \text{\footnotesize $\rho_{DX} = \text{corr}(\mathds 1\{X\geq c\}, X)$}
-\end{align*}
-\vskip-3pt
+1,205 elections with all four covariates, triangular kernel \srcp{figs/w9\_senate.R}:
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.0}
-\begin{tabular}{@{}lccc@{}}
+\begin{tabular}{@{}lcc@{}}
 \toprule
-$X$ & $\rho^2_{DX}$ & ratio & simulation (20,000 draws) \\
+& jump in $Z$ at $c$, $\hat\tau_Z$ ($p$) & $\tilde\tau$ \\
 \midrule
-uniform, $c$ at the middle & $3/4$ & 4 & 3.98 \\
-normal, $c$ at the mean \srcp{Goldberger 1972} & $2/\pi$ & 2.75 & 2.73 \\
+no covariates & & 8.19 \\
+\midrule
+$+$ Democratic vote share, $t-6$ & \phantom{$-$}3.68 \ (0.20) & 7.72 \\
+$+$ Democratic vote share, $t-12$ & \phantom{$-$}2.12 \ (0.34) & 7.83 \\
+$+$ Democratic presidential vote share & $-0.13$ \ (0.95) & 8.24 \\
+$+$ open seat & $-0.14$ \ (0.10) & 8.15 \\
+\midrule
+all four & & 7.45 \\
 \bottomrule
 \end{tabular}
 \end{center}
+\vskip-4pt
+{\footnotesize Every entry: \texttt{rdrobust} at $h_{CER}$ (each fit selects its own, 12--15 points),
+bias-corrected estimate, robust $p$.}
 \vskip2pt
-{\footnotesize Separate slopes: 4.07 (uniform), 2.73 (normal); local fits use fewer observations still \srcp{figs/w9\_sims.R}.}
+\begin{itemize}\itemsep2pt
+  \item The lagged vote jumps most (3.7 points) and moves $\tilde\tau$ most (8.19 $\to$ 7.72).
+        No jump is significant at 5\%.
+  \item \texttt{rdrobust} selects its own bandwidth for each fit, with and
+        without covariates. Report both estimates.
+\end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Covariates, Power, and What to Report}
-\begin{itemize}\itemsep3pt
+\begin{frame}{Covariates, Power, and What to Report}
+\begin{itemize}\itemsep4pt
   \item \textbf{Covariates are for precision only.} They must be
         \emph{pre-determined}, they should enter additively (not interacted with
         $D$), and the estimate should barely move when you add them. If it moves
@@ -859,14 +1257,7 @@ normal, $c$ at the mean \srcp{Goldberger 1972} & $2/\pi$ & 2.75 & 2.73 \\
   \item \textbf{Effective sample size}: report the number of observations
         \emph{inside the bandwidth} on each side. An RD with $n = 100{,}000$ often
         has 400 observations doing the work, and the standard errors should be
-        read accordingly.
-  \item \textbf{Power}: RD is data-hungry (previous frame); plan with
-        \texttt{rdpower} \srcp{Cattaneo, Titiunik, and Vazquez-Bare 2019}.
-  \item \textbf{Discrete running variables and heaping}: rounded ages, coarse
-        test-score grids, or income bunched at round numbers do not invalidate the
-        design, but they do invalidate the continuous-$X$ asymptotics behind
-        bandwidth selection and bias correction. Use a discrete-score method and
-        say so.
+        read accordingly. Senate: 1,297 races, 683 do the work.
 \end{itemize}
 \end{frame}
 
@@ -896,20 +1287,21 @@ threshold, a firm holding hiring just below a regulatory headcount.
 \end{frame}
 
 \begin{frame}{What Sorting Does}
-Simulation: true effect of crossing $= 0$; 88 of the units landing in $[-2, 0)$,
-those with high unobserved $u$, move to $[0, 2)$ \srcp{figs/w9\_sims.R}.
-\vskip-2pt
+Suppose incumbents with a strong local machine can tip a close race (extra votes, a
+friendly recount, cheating). Simulated, with no true effect \srcp{figs/w9\_sims.R}:
+\vskip-4pt
 \begin{center}
-\includegraphics[width=0.8\linewidth]{figs/manip_density.pdf}
+\includegraphics[width=0.62\linewidth]{figs/manip_density.pdf}
 \end{center}
-\vskip-8pt
-\begin{itemize}\itemsep1pt
-  \item RD estimate (truth 0): 0.04 without sorting, \alert{2.89} with it.
-  \item Density test $p$-value: 0.071 without sorting, 0.00001 with it.
+\vskip-12pt
+\begin{itemize}\itemsep1pt\small
+  \item Rescued races move from just below 0 to just above: barely winning now
+        often means ``has a machine''.
+  \item The machine still works six years later, so part of the jump is
+        \alert{machine capacity, not incumbency}.
+  \item Two traces: a hole below 0 and a spike above it (\textbf{density test});
+        winners who differed before the race (\textbf{balance test}).
 \end{itemize}
-\vskip2pt
-{\footnotesize The movers bring their high $u$ with them: $m_0$ now jumps at $c$, and the
-density shows the hole and the spike that produced it.}
 \end{frame}
 
 \begin{frame}{The Density Test, and the Senate}
@@ -935,53 +1327,33 @@ points, 47 won by less than 2 \srcp{figs/w9\_senate.R}.
 \end{frame}
 
 \begin{frame}{Covariate Balance on the Senate Data}
-Each pre-determined covariate as the outcome, \texttt{rdrobust} defaults, robust
-intervals \srcp{figs/w9\_senate.R}:
-\vskip3pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.08}
+Each covariate as the outcome; \texttt{rdrobust} at $h_{CER}$, bias-corrected jump, robust $p$:
+\vskip-2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
 \begin{tabular}{@{}lrrc@{}}
 \toprule
 covariate & mean below & jump & robust $p$ \\
 \midrule
-Democratic vote share, $t-6$ & 47.86 & 3.88 & 0.09 \\
-Democratic vote share, $t-12$ & 47.29 & 1.72 & 0.27 \\
-Democratic presidential vote share & 43.95 & $-1.14$ & 0.63 \\
-open seat & 0.34 & $-0.14$ & 0.09 \\
-state population (millions) & 3.95 & $-0.18$ & 0.82 \\
-House terms of the candidate & 1.19 & $-0.17$ & 0.56 \\
-Senate terms of the candidate & 3.30 & $-0.19$ & 0.90 \\
-midterm year & 0.51 & 0.08 & 0.21 \\
-Democratic president & 0.47 & $-0.08$ & 0.37 \\
+Democratic vote share, $t-6$ & 48.14 & 3.72 & 0.18 \\
+Democratic vote share, $t-12$ & 47.43 & 2.15 & 0.35 \\
+Democratic presidential vote share & 44.97 & $-0.09$ & 0.96 \\
+open seat & 0.36 & $-0.14$ & 0.09 \\
+state population (millions) & 4.16 & $-0.25$ & 0.77 \\
+House terms of the candidate & 1.23 & $-0.24$ & 0.66 \\
+Senate terms of the candidate & 3.22 & $-0.10$ & 0.90 \\
+midterm year & 0.50 & 0.14 & 0.10 \\
+Democratic president & 0.48 & $-0.07$ & 0.47 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip2pt
-\begin{itemize}\itemsep1pt
-  \item Two of nine at $p < 0.10$; about one expected by chance. The lagged vote
-        is the one to watch: it is what moved the covariate-adjusted estimate.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Close Elections Under Scrutiny}
-\textbf{The challenge} \srcp{Caughey and Sekhon 2011}: in U.S.\ House races
-1942--2008 decided by less than 0.5 points, the party already holding the seat
-won 59 of 85 (69\%). Bare winners also outspent their opponents more often.
-Imbalance \emph{grew} closer to the cutoff, the opposite of what Lee's argument
-predicts.
-\vskip4pt
-\textbf{The reply} \srcp{Eggers, Fowler, Hainmueller, Hall, and Snyder 2015}:
-over 40,000 close races (other House periods, statewide, state-legislative,
-mayoral, and nine other countries), the incumbent-party advantage in bare wins
-\alert{appears nowhere else}.
-\vskip4pt
-\begin{itemize}\itemsep2pt
-  \item Precise control is possible where recounts, lawyers, and
-        certification are contested; such places need balance checks that
-        go beyond the density.
-  \item The lesson is not ``close elections are fine'' or ``are not'': the
-        design is checked application by application, and the checks have
-        found failures.
+\begin{itemize}\itemsep1pt\small
+  \item One of nine at $p < 0.10$; about one expected by chance. Watch the lagged
+        vote: it moved the covariate-adjusted estimate \srcp{figs/w9\_senate.R}.
+  \item If its jump were significant, seats Democrats barely won were already more
+        Democratic before: strong seats tipping close races (the machine story), so
+        part of the jump would be past strength, not winning.
 \end{itemize}
 \end{frame}
 
@@ -1039,31 +1411,31 @@ $\delta$ & dropped & estimate & robust 95\% \\
 
 \begin{frame}{Heaping: a Cautionary Tale}
 \textbf{The design} \srcp{Almond, Doyle, Kowalski, and Williams 2010}: newborns
-under 1,500 g are classified ``very low birth weight'' and get more care.
-One-year mortality just below the cutoff is lower by about 1 point
-($-0.0095$, se $0.0048$; mean 5.5\% just above).
+under 1,500 g are ``very low birth weight'' and get more care. One-year mortality
+just below is about 1 point lower ($-0.0095$, se $0.0048$; 5.5\% just above).
 \vskip3pt
 \textbf{The problem} \srcp{Barreca, Guldi, Lindo, and Waddell 2011}: weights
-\alert{heap} at round numbers (1,500 g; whole ounces), and heaped births are
-disproportionately from poorer, less healthy pregnancies. The heap sits exactly
-at the cutoff, on the treated side.
-\vskip3pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
+\alert{heap} at round numbers, and heaped births are disproportionately poorer and less
+healthy. The heaps at 1,500~g and 53~oz (1,503~g) fall just \emph{above} the cutoff, on the
+\alert{untreated} side: they raise mortality there, so the care below looks better than it is.
+\vskip1pt
+{\footnotesize \textbf{Heap} $=$ pile up: many records land on round values because people
+round (a nurse writes 1,500 g for a baby of 1,497 g).}
+\vskip-6pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
 \begin{tabular}{@{}lc@{}}
 \toprule
 one-year mortality effect (85 g bandwidth) & estimate (se) \\
 \midrule
-original & $-0.0095$ \\
 donut: drop multiples of 100 g & $-0.0054$ \ (0.0031) \\
 donut: drop multiples of 100 g and of an ounce & $\phantom{-}0.0000$ \ (0.0050) \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip2pt
-{\footnotesize Numbers from the working-paper version (IZA DP 5106). The original
-authors reply that the estimates fall but remain large \srcp{Almond et al.\ 2011}.
-Heaping fails the density test for a reason unrelated to sorting.}
+\vskip-2pt
+{\footnotesize IZA DP 5106 numbers; the original authors reply that the estimates fall but
+remain large \srcp{Almond et al.\ 2011}.}
 \end{frame}
 
 \begin{frame}{When Sorting Is Present: Bounds \srcp{Gerard, Rokkanen, and Rothe 2020}}
@@ -1103,6 +1475,31 @@ excess just above $c$, and the excess is the movers:
   \item \alert{Do not report only the conventional interval} at an MSE-optimal
         bandwidth.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Why Not a Global Polynomial: the Huai River}
+Free coal heating only \alert{north of the Huai River}. $X$: degrees north; $Y$: life expectancy.
+\vskip-2pt
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
+\begin{center}
+\includegraphics[width=0.92\linewidth]{figs/huai_ebenstein2017_fig3.png}
+\end{center}
+\vskip-8pt
+{\scriptsize Ebenstein et al.\ (2017), Fig.\ 3: disease-surveillance sites (circle size $=$
+population), local linear fit.}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{itemize}\itemsep3pt\small
+  \item \textbf{Chen et al.\ (2013)}: a \alert{cubic in latitude} over all of China.
+        North: 5.5 years lower (95\% CI 0.8, 10.2).
+  \item A global cubic lets sites 10--15 degrees away (left: 82--84 years) bend the
+        curve, and the bend sets the gap at the river \srcp{Gelman and Imbens 2019}.
+  \item \textbf{Ebenstein et al.\ (2017)}: local linear near the river, newer data:
+        3.1 years lower (95\% CI 1.3, 4.9).
+\end{itemize}
+\end{column}
+\end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1153,10 +1550,79 @@ $\pm 1.000$ & 0.043 & 17 & 25 \\
 \vskip2pt
 \textbf{Test} in $\pm 0.625$: mean vote at $t+6$ is 42.74 below and 52.36 above,
 a difference of \alert{9.62}. Of 5,000 reshufflings of the 17 ``above'' labels
-among the 30 races, 0.12\% give a difference this large: $p = 0.0012$.
+among the 30 races, 0.12\% give a difference this large: $p = 0.0012$ (permutation test).
 \vskip3pt
 {\footnotesize Larger than the continuity estimate (7.41), from 30 races instead
 of 683. \srct{Cattaneo, Frandsen, and Titiunik (2015)} use $\pm 0.75$ (9.69 here).}
+\end{frame}
+
+\begin{frame}{In the Literature: Bol, de Vaan, and van de Rijt (2018)}
+\textbf{The question.} Merton's Matthew effect: does early success cause later
+success, or do repeated winners just have more ability? Cumulative advantage
+is a cornerstone claim of stratification research and hard to separate from
+selection.
+\vskip3pt
+\textbf{The data.} The Dutch science foundation's early-career ``Veni'' grant
+(\texteuro250,000): review scores and decisions for recent PhDs, followed for
+up to 16 years.
+\vskip3pt
+\textbf{The design.} A hard threshold: every winner scored above every
+non-winner. Running variable: the applicant's \alert{rank} relative to the
+funding line in each competition; compare the two ranks just above (+1, +2)
+with the two just below ($-1$, $-2$), with exact tests. A sharp RD with a
+discrete running variable, analysed as a local experiment.
+\vskip3pt
+\textbf{Outcomes.} Later grants (the mid-career ``Vidi'' and three others),
+applications for them, publications and citations, a full professorship.
+\end{frame}
+
+\begin{frame}{Bol, de Vaan, and van de Rijt: Checking the Design}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{10.6cm}@{}}
+\toprule
+No sorting & Applicants cannot place their score; ranks are set by panels. A
+  density test is uninformative: ranks are evenly spaced by construction. \\
+Continuity & Publications, citations, and H-index \emph{before} the competition
+  rise smoothly with rank, with no jump at the line. \\
+Placebo cutoffs & No difference in later outcomes between any other pair of
+  neighbouring ranks. \\
+Specification & A parametric RD (supplement) gives the same size and
+  significance. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item Only rank is used, not the score; the comparison of $\pm 1, 2$ is the
+        local-randomization window, chosen before looking.
+  \item Publications, citations, and H-index \emph{after} the competition also show no
+        jump at the line: the later funding gap is not explained by grant-enabled output.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bol, de Vaan, and van de Rijt: Main Results}
+Ranks $+1/+2$ against $-1/-2$:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+outcome & just below & just above & test \\
+\midrule
+won a mid-career grant & 10\% & 26\% & $P < 0.001$ \\
+applied for a mid-career grant & 40\% & 59\% & $P < 0.001$ \\
+later funding, 4 years on & & $+$\texteuro40,000 & $P < 0.01$ \\
+later funding, 8 years on & & $+$\texteuro180,000 & $P < 0.01$ \\
+full professor in 2018 & 19\% & 28\% & $P < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The near-winners got more than twice the later money of near-losers,
+        excluding the Veni itself; this is 40\% of the gap between best and worst.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1601,7 +2067,7 @@ pass a year later): $\theta_1 = 12 - (-0.4)(10) = 16$. The ITT understates the b
   \item Assumes $\theta_k$ does not depend on a unit's history; \srct{Hsu and Shen (2024)}
         identify the effects under weaker assumptions.
   \item Cumulative effect: $\sum_k \theta_k$. The ITT path is the effect of a close win,
-        retries included; Bol et al.'s \texteuro180,000 below is of that kind.
+        retries included; Bol et al.'s \texteuro180,000 (local randomization section) is of that kind.
 \end{itemize}
 \end{frame}
 
@@ -1609,79 +2075,6 @@ pass a year later): $\theta_1 = 12 - (-0.4)(10) = 16$. The ITT understates the b
 \section[Sociology]{Applications in Sociology}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{In the Literature: Bol, de Vaan, and van de Rijt (2018)}
-\textbf{The question.} Merton's Matthew effect: does early success cause later
-success, or do repeated winners just have more ability? Cumulative advantage
-is a cornerstone claim of stratification research and hard to separate from
-selection.
-\vskip3pt
-\textbf{The data.} The Dutch science foundation's early-career ``Veni'' grant
-(\texteuro250,000): review scores and decisions for recent PhDs, followed for
-up to 16 years.
-\vskip3pt
-\textbf{The design.} A hard threshold: every winner scored above every
-non-winner. Running variable: the applicant's \alert{rank} relative to the
-funding line in each competition; compare the two ranks just above (+1, +2)
-with the two just below ($-1$, $-2$), with exact tests. A sharp RD with a
-discrete running variable, analysed as a local experiment.
-\vskip3pt
-\textbf{Outcomes.} Later grants (the mid-career ``Vidi'' and three others),
-applications for them, publications and citations, a full professorship.
-\end{frame}
-
-\begin{frame}{Bol, de Vaan, and van de Rijt: Checking the Design}
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{10.6cm}@{}}
-\toprule
-No sorting & Applicants cannot place their score; ranks are set by panels. A
-  density test is uninformative: ranks are evenly spaced by construction. \\
-Continuity & Publications, citations, and H-index \emph{before} the competition
-  rise smoothly with rank, with no jump at the line. \\
-Placebo cutoffs & No difference in later outcomes between any other pair of
-  neighbouring ranks. \\
-Specification & A parametric RD (supplement) gives the same size and
-  significance. \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item Only rank is used, not the score; the comparison of $\pm 1, 2$ is the
-        local-randomization window, chosen before looking.
-  \item Productivity \emph{after} the grant also shows no jump: the grant did not
-        buy measurably better science, which rules out one mechanism.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Bol, de Vaan, and van de Rijt: Main Results}
-Ranks $+1/+2$ against $-1/-2$:
-\vskip3pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.12}
-\begin{tabular}{@{}lccc@{}}
-\toprule
-outcome & just below & just above & test \\
-\midrule
-won a mid-career grant & 10\% & 26\% & $P < 0.001$ \\
-applied for a mid-career grant & 40\% & 59\% & $P < 0.001$ \\
-later funding, 4 years on & & $+$\texteuro40,000 & $P < 0.01$ \\
-later funding, 8 years on & & $+$\texteuro180,000 & $P < 0.01$ \\
-full professor in 2018 & 19\% & 28\% & $P < 0.05$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item The near-winners got more than twice the later money of near-losers,
-        excluding the Veni itself; this is 40\% of the gap between best and worst.
-  \item \textbf{Participation}: near-losers stop applying. A critique reran the RD
-        on Vidi applicants only; that conditions on applying, a post-treatment
-        variable (the Week 5 collider). Winning raised applications by about half
-        and wins by 100--150\% \srcp{Bol et al.\ 2019 reply}.
-\end{itemize}
-\end{frame}
 
 \begin{frame}{In the Literature: Legewie (2016)}
 \textbf{The question.} Do salient events trigger periods of more racially
@@ -1806,6 +2199,9 @@ Designs.'' \textit{Econometrica} 82(6): 2295--2326.
 \item Calonico, Sebastian, Matias D. Cattaneo, Max H. Farrell, and
 Roc\'{\i}o Titiunik. 2019. ``Regression Discontinuity Designs Using Covariates.''
 \textit{Review of Economics and Statistics} 101(3): 442--451.
+\item Carpenter, Christopher and Carlos Dobkin. 2009. ``The Effect of Alcohol
+Consumption on Mortality: Regression Discontinuity Evidence from the Minimum
+Drinking Age.'' \textit{American Economic Journal: Applied Economics} 1(1): 164--182.
 \item Card, David, David S. Lee, Zhuan Pei, and Andrea Weber. 2015. ``Inference on
 Causal Effects in a Generalized Regression Kink Design.'' \textit{Econometrica}
 83(6): 2453--2483.
@@ -1841,12 +2237,18 @@ Discontinuity Design.'' \textit{Quarterly Journal of Economics} 125(1): 215--261
 \item Caughey, Devin and Jasjeet S. Sekhon. 2011. ``Elections and the Regression
 Discontinuity Design: Lessons from Close U.S. House Races, 1942--2008.''
 \textit{Political Analysis} 19(4): 385--408.
+\item Chen, Yuyu, Avraham Ebenstein, Michael Greenstone, and Hongbin Li. 2013. ``Evidence
+on the Impact of Sustained Exposure to Air Pollution on Life Expectancy from China's Huai
+River Policy.'' \textit{PNAS} 110(32): 12936--12941.
 \item Dell, Melissa and Pablo Querub\'in. 2018. ``Nation Building Through Foreign
 Intervention: Evidence from Discontinuities in Military Strategies.''
 \textit{Quarterly Journal of Economics} 133(2): 701--764.
 \item Dong, Yingying and Arthur Lewbel. 2015. ``Identifying the Effect of Changing
 the Policy Threshold in Regression Discontinuity Models.'' \textit{Review of
 Economics and Statistics} 97(5): 1081--1092.
+\item Ebenstein, Avraham, Maoyong Fan, Michael Greenstone, Guojun He, and Maigeng Zhou.
+2017. ``New Evidence on the Impact of Sustained Exposure to Air Pollution on Life
+Expectancy from China's Huai River Policy.'' \textit{PNAS} 114(39): 10384--10389.
 \item Eggers, Andrew C., Anthony Fowler, Jens Hainmueller, Andrew B. Hall, and
 James M. Snyder. 2015. ``On the Validity of the Regression Discontinuity Design
 for Estimating Electoral Effects: New Evidence from Over 40,000 Close Races.''
