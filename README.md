@@ -418,7 +418,7 @@ observational design there is.
 ### Materials
 - [Slides: Week 9 — Regression Discontinuity Designs](./Week%209%20Regression%20Discontinuity%20Designs/slides.pdf)
 - [Lab 9: Estimating and Stress-Testing an RD](./Week%209%20Regression%20Discontinuity%20Designs/lab9.pdf)
-- [Problem Set 3](./Homework/homework3/homework3.pdf) — assigned Tue Oct 20, due Mon Nov 2
+- [Problem Set 3](./Homework/homework3/homework3.pdf) — assigned Tue Oct 20, due Tue Nov 3
 
 ### Reading
 *Required*: MHE Ch. 6; Imbens and Lemieux (2008). &nbsp;·&nbsp; *Additional*:

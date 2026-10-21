@@ -1,6 +1,6 @@
 ---
 title: "\\textbf{SOCIOL 723: Problem Set 3}"
-subtitle: "\\textit{Assigned}: Tuesday, October 20 \\quad\\textbullet\\quad \\textit{Due}: Monday, November 2, 11:59PM"
+subtitle: "\\textit{Assigned}: Tuesday, October 20 \\quad\\textbullet\\quad \\textit{Due}: Tuesday, November 3, 11:59PM"
 author: "Your name:"
 format:
   pdf:
