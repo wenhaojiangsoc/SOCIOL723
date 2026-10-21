@@ -18,6 +18,9 @@ format:
         \usepackage{lmodern}
         \usepackage{amsmath,amssymb,bm}
         \usepackage{booktabs}
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+        \fvset{breaklines=true}
         \newcommand{\E}{E}
         \usepackage{setspace}
         \setstretch{1.12}
@@ -33,16 +36,17 @@ editor: visual
 #| include: false
 knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
                       fig.height = 3.3, fig.align = "center", dpi = 200)
-options(digits = 4, scipen = 999)
+options(digits = 4, scipen = 999, width = 76)
 ```
 
 # Goals
 
 1.  Draw the picture first, because in an RD the picture *is* the result.
 2.  Estimate with local linear regression and robust bias-corrected intervals.
-3.  Choose a bandwidth, and see how much the answer depends on it.
-4.  Run every validity check an RD paper should report.
-5.  See in simulation what manipulation of the running variable does.
+3.  Choose a bandwidth and a polynomial order, and see how much the answer depends on them.
+4.  Run every validity check an RD paper should report, including covariate balance.
+5.  Add pre-treatment covariates for precision.
+6.  See in simulation what manipulation of the running variable does.
 
 ```{r}
 #| label: packages
@@ -122,6 +126,22 @@ c(bandwidth_left = rd$bws[1, 1], bandwidth_right = rd$bws[1, 2],
 Note the gap between the nominal sample size and the effective one. An RD with
 1,300 observations may be estimated from 400.
 
+## When the conventional and robust rows disagree
+
+```{r}
+#| label: rd-rows
+## the three rows side by side: estimate, s.e., p-value, 95% interval
+round(cbind(estimate = rd$coef, se = rd$se, p = rd$pv, rd$ci), 3)
+```
+
+The robust row changes two things. Its centre is the bias-corrected estimate,
+and its standard error is larger, because it also counts the noise in the
+estimated bias. In the Senate data every row is far from zero. In smaller or
+noisier applications they can split: the conventional interval excludes zero
+and the robust one does not. Report the robust interval. The conventional one
+ignores the bias at the MSE-optimal bandwidth and covers less than 95%
+(Week 9).
+
 ## Doing it by hand
 
 `rdrobust` is a black box until you have written the estimator once.
@@ -168,6 +188,44 @@ ggplot(sens, aes(h, est)) +
 The dotted red line marks the MSE-optimal bandwidth. The estimate is stable
 across a wide range — this is what a robust RD looks like.
 
+## A coverage-optimal bandwidth
+
+The default bandwidth minimizes the MSE of the estimate. For inference,
+`bwselect = "cerrd"` picks a smaller bandwidth that makes the robust interval's
+coverage error smallest ($h_{\text{CER}}$, Week 9).
+
+```{r}
+#| label: rd-cer
+## same estimator, coverage-optimal bandwidth
+rd_cer <- rdrobust(y = sen$vote, x = sen$margin, c = 0, bwselect = "cerrd")
+## compare bandwidths, bias-corrected estimates, and robust intervals
+round(rbind(mse = c(h = rd$bws[1, 1], estimate = rd$coef[2], rd$ci[3, ]),
+            cer = c(rd_cer$bws[1, 1], rd_cer$coef[2], rd_cer$ci[3, ])), 2)
+```
+
+A smaller window means fewer races, so the interval widens; the estimate should
+not move much. Reporting both is common.
+
+## Local polynomial order
+
+Local linear (`p = 1`) is the default. A local quadratic is the usual check.
+
+```{r}
+#| label: rd-order
+## re-estimate with p = 1 and p = 2; each gets its own MSE-optimal bandwidth
+ord <- sapply(1:2, function(pp) {
+  r <- rdrobust(y = sen$vote, x = sen$margin, c = 0, p = pp)
+  c(p = pp, estimate = r$coef[1], h = r$bws[1, 1],
+    robust_lo = r$ci[3, 1], robust_hi = r$ci[3, 2])
+})
+round(t(ord), 2)
+```
+
+The quadratic chooses a wider bandwidth, because a curve can follow the data
+farther from the cutoff, but its interval is wider: the extra curvature costs
+variance at the edge. A stable estimate across $p = 1, 2$ is what we want.
+Orders above two are rarely used, for the reason in the next section.
+
 ## Why not a global polynomial?
 
 ```{r}
@@ -208,6 +266,31 @@ bunching in the density. In settings where actors *can* manipulate the running
 variable (income thresholds, test retakes) treat it as one weak signal among
 several.
 
+## Covariate balance
+
+Variables fixed before the election cannot be affected by who won it, so they
+should not jump at zero. Run the RD with each one as the outcome.
+
+```{r}
+#| label: balance
+## pre-election covariates: Democratic vote share 6 and 12 years earlier,
+## the presidential vote, and whether the seat was open
+cv <- c("demvoteshlag1", "demvoteshlag2", "presdemvoteshlag1", "dopen")
+bal <- sapply(cv, function(z) {
+  ok <- !is.na(sen[[z]])                        ## drop missing values first
+  r <- rdrobust(y = sen[[z]][ok], x = sen$margin[ok], c = 0,
+                bwselect = "cerrd")
+  ## bias-corrected jump, robust interval and p-value
+  c(estimate = r$coef[2], robust_lo = r$ci[3, 1], robust_hi = r$ci[3, 2],
+    p_robust = r$pv[3])
+})
+round(t(bal), 3)
+```
+
+No covariate jumps at the 5% level. With several covariates, expect about one
+in twenty to "fail" by chance; a large, clearly significant jump in a
+pre-election variable would be the warning sign.
+
 ## Placebo cutoffs
 
 The estimator should find nothing at thresholds where nothing happens.
@@ -240,6 +323,29 @@ donut <- sapply(c(0, 0.25, 0.5, 1), function(dd) {
 })
 round(t(donut), 3) |> `rownames<-`(paste("hole =", c(0, 0.25, 0.5, 1)))
 ```
+
+# Adding covariates
+
+Pre-treatment covariates can soak up variation in the outcome and tighten the
+interval. Because they do not jump at the cutoff, they should barely move the
+estimate. Use the same races with and without them, so the comparison is fair.
+
+```{r}
+#| label: covs
+## keep races with all four covariates observed
+sc <- sen[complete.cases(sen[, cv]), ]
+## without and with covariates, both at the coverage-optimal bandwidth
+r0 <- rdrobust(y = sc$vote, x = sc$margin, c = 0, bwselect = "cerrd")
+rz <- rdrobust(y = sc$vote, x = sc$margin, c = 0, bwselect = "cerrd",
+               covs = as.matrix(sc[, cv]))
+round(rbind(no_covariates = c(estimate = r0$coef[2], robust_se = r0$se[3],
+                              r0$ci[3, ]),
+            covariates = c(rz$coef[2], rz$se[3], rz$ci[3, ])), 2)
+```
+
+Only pre-treatment variables belong in `covs`. A variable the election could
+affect (turnout, spending after the election) would be a bad control. If the
+estimate moves a lot when covariates enter, suspect that one of them jumps.
 
 # What manipulation actually does
 
@@ -322,13 +428,13 @@ inherits the LATE interpretation. Here the estimand is the effect for compliers
     `kernel = "epanechnikov"`. How much does the answer move relative to its
     standard error? Which choice matters more, kernel or bandwidth?
 
-3.  **Local polynomial order.** Compare `p = 1`, `p = 2`, and `p = 3` in
-    `rdrobust`. Note both the estimate and the selected bandwidth. Why does the
-    optimal bandwidth widen with $p$?
+3.  **Local polynomial order.** Add `p = 3` to the comparison in
+    `rd-order`. Note both the estimate and the selected bandwidth. Why does the
+    optimal bandwidth widen with $p$, and why does the interval still widen?
 
-4.  **Covariates.** `rdrobust` accepts a `covs` argument. Add one and see what
-    happens to the standard error and the point estimate. Under what condition is
-    adding covariates to an RD legitimate?
+4.  **Covariates.** Repeat `covs` with one covariate at a time. Which one
+    moves the estimate most, and does it match the covariate with the largest
+    jump in `balance`?
 
 5.  **Detecting your own manipulation.** In `manip-sim`, vary the strength of the
     push (the `u > 0.5` threshold). At what point does the density test start to

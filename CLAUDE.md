@@ -141,7 +141,7 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   on the Senate data (`figs/w9_senate.R`, `figs/w9_sims.R`: bias/variance/h* derivations, RBC, CER,
   honest CIs, Gelman-Imbens weights) -> covariates and power -> validity -> local randomization ->
   fuzzy (AR at the cutoff) -> Dell & Querubin 2018 Vietnam bombing (8 frames, NBER WP numbers) ->
-  extensions -> sociology: Bol et al. 2018 PNAS, Legewie 2016 AJS. Lab 9 not yet aligned.
+  extensions -> sociology: Bol et al. 2018 PNAS, Legewie 2016 AJS. Lab 9 (Senate, 16 pp) extended 2026-10-20 for PS3: conventional-vs-robust rows, h_CER (cerrd), p = 1 vs 2, covariate balance and covs at cerrd (numbers match w9_senate.R 8b/9a), fvextra header added.
 - Week 10 (Panel + DiD, 95 pp, rebuilt 2026-10-08; user frames kept verbatim): panel FE on
   `wooldridge::wagepan` (`figs/w10_panel.R`: marriage premium pooled .108/RE .064/FE .047/FD .038,
   Mundlak, FE variance weights, Imai-Kim DAG, FEIS, impact function; Budig & England 2001; Ludwig &

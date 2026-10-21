@@ -1,0 +1,299 @@
+---
+title: "\\textbf{SOCIOL 723: Problem Set 3}"
+subtitle: "\\textit{Assigned}: Thursday, October 22 \\quad\\textbullet\\quad \\textit{Due}: Thursday, November 5, 11:59PM"
+author: "Your name:"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1.1in, bottom=1.1in, left=1.1in, right=1.1in"
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \usepackage{float}
+        \usepackage{caption}
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+        \fvset{breaklines=true}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.15}
+        \setlength{\parindent}{0pt}
+        \setlength{\parskip}{6pt}
+        \makeatletter
+        \renewcommand{\maketitle}{%
+          \begin{center}
+            {\LARGE \bfseries \@title \par}
+            \vspace{0.7em}%
+            {\large \itshape \@date \par}
+            \vspace{0.7em}%
+            {\large \@author \par}
+          \end{center}\par\vspace{1em}
+        }
+        \makeatother
+execute:
+  echo: true
+  eval: false
+  warning: false
+  message: false
+editor: visual
+---
+
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. Parts 1 and 3 pair a published sociology study, read from its own tables, with an analysis you run yourself on public data; Part 2 asks you to build and defend an IV analysis as if you were writing your own paper. In each, estimate, check the design, and write the result up as you would in a paper. Use the functions from Labs 6, 7, and 9. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` wherever there is randomness.
+
+**Data.** Each part opens with a code chunk that loads its data and packages; copy it into your own file.
+
+```{=latex}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{c l c l l}
+\toprule
+Part & Method & Week & Read & Run \\
+\midrule
+1 & Matching and weighting & 6 & Mazrekaj et al.\ (2020) & GSS extract \\
+2 & Instrumental variables & 7 & --- & Guiso et al.\ (2016) \\
+3 & Regression discontinuity & 9 & Bol et al.\ (2018) & Meyersson (2014) \\
+\bottomrule
+\end{tabular}
+\end{center}
+```
+
+\hrulefill
+
+\newpage
+
+# Part 1: Matching and Weighting
+
+## Read: children of same-sex parents
+
+Mazrekaj, De Witte, and Cabus (2020, *American Sociological Review*) ask whether children raised by same-sex parents do worse in school. They use Dutch registers on every child born 1998--2007 and compare the 1,390 children *born to* same-sex parents with 1.2 million children of different-sex parents. The outcome is a standardized test at age 12 (mean 0, SD 1). Covariates are measured at the child's birth.
+
+```{=latex}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lcc}
+\toprule
+Their Table 1, at the child's birth & different-sex & same-sex, from birth \\
+\midrule
+household net income (EUR)      & 79,300 & 90,779 \\
+at least one parent upper-secondary & .897 & .960 \\
+parents' average age            & 32.7 & 36.1 \\
+\midrule
+children                        & 1,201,721 & 1,390 \\
+\bottomrule
+\end{tabular}
+
+\vspace{8pt}
+\begin{tabular}{lccc}
+\toprule
+Their Table 2, test score & raw & OLS with controls & CEM \\
+\midrule
+same-sex parents & .194 (.024) & .139 (.023) & .147 (.041) \\
+children used    & 1,195,624 & 1,195,624 & 48,388 \\
+\bottomrule
+\end{tabular}
+\end{center}
+```
+
+1.  **Reading the tables.**
+
+    (a) From Table 1, in which direction does selection bias the raw gap of .194? One sentence.
+
+    (b) CEM coarsens the birth covariates (income into deciles, parents' age into six bands, family size into 1, 2, 3+) and matches exactly on them, together with birth year and neighbourhood. It keeps a child of different-sex parents only if a child of same-sex parents shares all of them: 46,998 of the 1.2 million are kept, and every one of the 1,390 treated children finds a match. Is the CEM estimate of .147 an ATT or an ATE? Why could this design not estimate the ATE?
+
+    (c) CEM and OLS both rely on ignorability: given the birth covariates, having same-sex parents is as good as random. Give at least two reasons why the authors still report CEM alongside OLS.
+
+    (d) Why do the authors measure income and education at the child's birth rather than at the test?
+
+## Run: the motherhood wage gap
+
+Sociologists have long documented a wage penalty for mothers (Budig and England 2001, *ASR*). Mothers and childless women differ in many ways besides children, so we match. Use the women in the course's GSS extract (full-time workers aged 25--64): treatment `mother = 1` if she has any children; outcome `lnearn`, log annual earnings.
+
+```{r}
+library(MatchIt); library(cobalt); library(sandwich); library(lmtest)
+url <- paste0("https://raw.githubusercontent.com/wenhaojiangsoc/",
+              "SOCIOL723/main/Data/gss_earnings.rds")
+g <- readRDS(url(url))
+w <- subset(g, female == 1)                      ## 1,690 women
+w$mother <- as.integer(w$childs > 0)             ## 1,220 mothers
+w$year <- factor(w$year)                         ## survey year as categories
+```
+
+2.  **Estimate and check.** Use as covariates `age`, `age^2`, `black`, `otherace`, `pareduc`, `region`, and survey `year`. Ignore the survey weight in this part.
+
+    (a) Report the raw difference in mean `lnearn` between mothers and childless women.
+
+    (b) Match on the propensity score:
+
+        ```{r}
+        f <- mother ~ age + I(age^2) + black + otherace + pareduc +
+                      region + year
+        m <- matchit(f, data = w, method = "nearest", distance = "glm",
+                     replace = TRUE)
+        ```
+
+        `distance = "glm"` (the default) fits a logit of `mother` on the covariates in `f` and saves each woman's fitted probability $\hat e(x)$, her propensity score. `method = "nearest"` then matches each mother to the childless woman with the closest $\hat e(x)$, and `replace = TRUE` lets a childless woman be matched to more than one mother. Show balance on the covariates before and after matching with `bal.tab(m, un = TRUE)`, and estimate the ATT with a robust standard error on `match.data(m)`, using its `weights` column (a childless woman matched to several mothers counts several times).
+
+    (c) Estimate the ATT again by weighting, with the same logit:
+
+        ```{r}
+        ps <- glm(f, data = w, family = binomial)$fitted.values   ## e-hat(x)
+        ```
+
+        Give weight 1 to mothers and $\hat e(x)/(1-\hat e(x))$ to childless women. Compare the matched and weighted ATTs with the raw difference in (a): why do they differ?
+
+3.  **Write it up.**
+
+    (a) Write a short paragraph as you would in a results section. Give the estimate in percent; say whose effect it is (what population the ATT averages over); state the assumption it rests on; and name one unmeasured difference between mothers and childless women that could bias it, with the direction of the bias.
+
+    (b) Why did we leave out the woman's own education (`educ`), which strongly predicts earnings? Add it and report what happens.
+
+\newpage
+
+# Part 2: Instrumental Variables
+
+## Free city-states and civic life in Italy
+
+Putnam's *Making Democracy Work* (1993) argued that northern Italy has more civic life than the South because many northern cities governed themselves as free city-states (communes) in the Middle Ages, an experience of cooperation that persisted for centuries. Guiso, Sapienza, and Zingales (2016, *Journal of the European Economic Association*) test the claim within the North: do towns that were free city-states have more nonprofit organizations today than similar towns that were not? Comparing them directly is suspect, because the towns that became free were older, larger, and better placed. Their instrument is whether the town was the seat of a bishop by the year 1000. Communes began as sworn pacts among leading citizens, and a bishop could guarantee the pact, which made it easier to coordinate and break free.
+
+Suppose you are writing this paper yourself. The data are in the `ivDiag` package (Lal et al. 2024): 5,357 towns in central and northern Italy. Outcome `totassoc_p`: nonprofit organizations per 1,000 inhabitants in 2001. Treatment `libero_comune_allnord`: the town was a free city-state. Instrument `bishopcity`: bishop seat by 1000. Controls: elevation (`altitudine`), the range of elevation (`escursione`), on the coast (`costal`), near the sea (`nearsea`), population in millions and its square (`population`, `pop2`), and land and income inequality (`gini_land`, `gini_income`). As in the paper, weight every regression by population and use the default standard errors.
+
+```{r}
+library(ivreg); library(AER)
+g <- ivDiag::gsz                                 ## 5,357 towns, Center-North
+ctr <- "altitudine + escursione + costal + nearsea + population + pop2 +
+        gini_land + gini_income"
+f_ols <- as.formula(paste("totassoc_p ~ libero_comune_allnord +", ctr))
+```
+
+1.  **Your main table.**
+
+    (a) OLS: `lm(f_ols, data = g, weights = population)`. Interpret the coefficient on `libero_comune_allnord` relative to the baseline: the population-weighted mean of `totassoc_p` among towns that were never free city-states.
+
+    (b) First stage: regress `libero_comune_allnord` on `bishopcity` and the controls. Report the coefficient and its $F$ statistic. Do you think this is a strong instrument? Also show `table(free = g$libero_comune_allnord, bishop = g$bishopcity)`: how many free city-states were bishop seats?
+
+    (c) Reduced form: regress `totassoc_p` on `bishopcity` and the controls. Divide it by the first stage.
+
+    (d) 2SLS:
+
+        ```{r}
+        f_iv <- as.formula(paste("totassoc_p ~ libero_comune_allnord +", ctr,
+                                 "| bishopcity +", ctr))
+        iv <- ivreg(f_iv, data = g, weights = population)
+        ```
+
+        Check that 2SLS equals the ratio in (c). Put OLS, the first stage, the reduced form, and 2SLS in one table (coefficient and standard error), and write a short results paragraph: the 2SLS estimate with its 95% interval, and how it compares with OLS.
+
+2.  **The reviewers respond.** For each comment, run what is needed and write a two- or three-sentence reply.
+
+    (a) *Reviewer 1: "Bishops did not settle at random."* Geography was fixed long before the year 1000. Compare bishop and non-bishop towns on elevation, its range, the coast, and nearness to the sea (means by `bishopcity`). Is the bishop seat as good as random? Which IV condition is at stake?
+
+    (b) *Reviewer 2: "Why do you control for today's population and inequality?"* Re-estimate 2SLS with only the four geographic controls. If the bishop seat is as good as random given geography, is today's population a confounder? What could controlling for it gain, and what could it cost? Compare the two estimates and their standard errors.
+
+    (c) *Reviewer 3: "The Church itself builds civic life. A bishop may raise today's associations directly, not through self-government."* Which condition is this? The authors' reply uses the South, where the Norman kingdom prevented free city-states, so a bishop could not work through self-government there. Run the reduced form in the South, with the provincial-capital indicator `capoluogo` added to the controls as in the paper:
+
+        ```{r}
+        s <- ivDiag::gsz_south                       ## 2,175 southern towns
+        f_s <- as.formula(paste("totassoc_p ~ bishopcity +", ctr,
+                                "+ capoluogo"))
+        ```
+
+        If the exclusion restriction holds, what should you find? Compare the size of the coefficient with the northern reduced form in 1(c). Then drop `capoluogo`: what happens, and what does that tell the reviewer?
+
+    (d) *Reviewer 4: "Your 2SLS estimate is more than twice OLS. That is suspicious."* Give two reasons why 2SLS could legitimately exceed OLS.
+
+\newpage
+
+# Part 3: Regression Discontinuity
+
+## Read: does early success breed later success?
+
+Bol, de Vaan, and van de Rijt (2018, *Proceedings of the National Academy of Sciences*) test Merton's Matthew effect with the Dutch science foundation's early-career grant (EUR 250,000). Review panels rank applicants; everyone above a funding line wins. The authors compare applicants ranked just above the line (+1, +2) with those just below ($-1$, $-2$) and follow them for up to 16 years.
+
+```{=latex}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lccc}
+\toprule
+Their results & just below & just above & test \\
+\midrule
+won a mid-career grant & 10\% & 26\% & $P < 0.001$ \\
+applied for a mid-career grant & 40\% & 59\% & $P < 0.001$ \\
+full professor in 2018 & 19\% & 28\% & $P < 0.05$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+```
+
+Publications and citations *before* the competition rise smoothly with rank, with no jump at the line.
+
+1.  **Reading the design.**
+
+    (a) Why compare only the ranks next to the line, rather than all winners with all losers? One or two sentences.
+
+    (b) What threat does the smooth pre-competition record rule out?
+
+    (c) Write one sentence reporting the mid-career grant result, saying to whom it applies.
+
+## Run: Islamic mayors and girls' schooling
+
+Meyersson (2014, *Econometrica*) asks whether electing an Islamic mayor in Turkey's 1994 municipal elections changed young women's education. Islamic parties won in poorer, more religious places, so he compares municipalities where the Islamic party *barely* won with those where it *barely* lost. The data (2,629 municipalities, from the replication files of Cattaneo, Idrobo, and Titiunik 2020): `X` is the Islamic party's margin of victory in percentage points (positive: it won); `Y` is the share of women aged 15--20 who had completed high school by 2000, in percent; pre-election covariates include `partycount` (number of parties running), `lpop1994` (log population), and `ageshr60` (share over 60).
+
+```{r}
+library(rdrobust); library(rddensity)
+url <- paste0("https://raw.githubusercontent.com/wenhaojiangsoc/",
+              "SOCIOL723/main/Data/meyersson_turkey.csv")
+d <- read.csv(url)                               ## 2,629 municipalities
+Z <- cbind(d$partycount, d$lpop1994, d$ageshr60)  ## pre-election covariates
+```
+
+2.  **Estimate and check.**
+
+    (a) Draw `rdplot(d$Y, d$X)` and say in one sentence what you see at zero.
+
+    (b) Run `rdrobust(d$Y, d$X, covs = Z)`, which controls for the three covariates. Report the estimate, the bandwidth, the number of municipalities used on each side, and the robust 95% interval.
+
+    (c) Run the density test `rddensity(d$X)`, and `rdrobust()` with each of the three covariates as the outcome. What should you find if the design is credible, and what do you find?
+
+    (d) Placebo cutoffs. At a fake cutoff nothing changes, so there should be no jump. Re-run `rdrobust()` at cutoffs of $-10$ and $-5$ using only municipalities the Islamic party lost, and at $5$ and $10$ using only those it won, so that the real cutoff never falls inside the fit:
+
+        ```{r}
+        lost <- d$X < 0
+        rdrobust(d$Y[lost], d$X[lost], c = -10)
+        ```
+
+        Report the four estimates and robust intervals. What do you conclude?
+
+    (e) Polynomial order. Re-estimate with a local quadratic, `rdrobust(d$Y, d$X, covs = Z, p = 2)`, and compare the estimate, bandwidth, and robust interval with the local linear fit in (b). Why do we not go to even higher orders?
+
+3.  **Write it up.** In four sentences, as in a results section: the estimate with its robust interval, the evidence that the design is credible and that the result is robust (for example, to a local quadratic fit), the municipalities to which it applies, and whether you would use it to predict the effect where the Islamic party wins by 30 points.
+
+\newpage
+
+# References
+
+Bol, Thijs, Mathijs de Vaan, and Arnout van de Rijt. 2018. "The Matthew Effect in Science Funding." *Proceedings of the National Academy of Sciences* 115(19): 4887--4890.
+
+Budig, Michelle J., and Paula England. 2001. "The Wage Penalty for Motherhood." *American Sociological Review* 66(2): 204--225.
+
+Cattaneo, Matias D., Nicolás Idrobo, and Rocío Titiunik. 2020. *A Practical Introduction to Regression Discontinuity Designs: Foundations*. Cambridge University Press.
+
+Guiso, Luigi, Paola Sapienza, and Luigi Zingales. 2016. "Long-Term Persistence." *Journal of the European Economic Association* 14(6): 1401--1436.
+
+Lal, Apoorva, Mackenzie Lockhart, Yiqing Xu, and Ziwen Zu. 2024. "How Much Should We Trust Instrumental Variable Estimates in Political Science? Practical Advice Based on 67 Replicated Studies." *Political Analysis* 32: 521--540.
+
+Mazrekaj, Deni, Kristof De Witte, and Sofie Cabus. 2020. "School Outcomes of Children Raised by Same-Sex Parents: Evidence from Administrative Panel Data." *American Sociological Review* 85(5): 830--856.
+
+Meyersson, Erik. 2014. "Islamic Rule and the Empowerment of the Poor and Pious." *Econometrica* 82(1): 229--269.
+
+Putnam, Robert D., with Robert Leonardi and Raffaella Y. Nanetti. 1993. *Making Democracy Work: Civic Traditions in Modern Italy*. Princeton University Press.
