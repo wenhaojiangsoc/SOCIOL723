@@ -130,24 +130,24 @@ one <- t(sapply(cv, function(z) {
   c(tau_Z = rzz$coef[1], p_conv = rzz$pv[1], p_robust = rzz$pv[3],
     tau_tilde = coef(lm(as.formula(paste("vote ~ D * margin +", z)), dd, weights = w))[["D"]]) }))
 print(round(one, 3))
-## slide version: everything at h_CER with robust bias correction (bwselect = "cerrd")
-cat("\n## 8b. covariates at h_CER, bias-corrected estimates, robust p (1,205 complete cases)\n")
+## slide version: everything at h_CER; conventional point estimate (coef[1]), robust p (pv[3])
+cat("\n## 8b. covariates at h_CER, conventional estimates, robust p (1,205 complete cases)\n")
 q0 <- rdrobust(sc$vote, sc$margin, bwselect = "cerrd")
 cerZ <- t(sapply(cv, function(z) {
   qz <- rdrobust(sc[[z]], sc$margin, bwselect = "cerrd")
   qt <- rdrobust(sc$vote, sc$margin, covs = sc[[z]], bwselect = "cerrd")
-  c(tau_Z_bc = qz$coef[2], p_robust = qz$pv[3], h_Z = qz$bws[1, 1], tau_tilde_bc = qt$coef[2], h_tilde = qt$bws[1, 1]) }))
+  c(tau_Z = qz$coef[1], p_robust = qz$pv[3], h_Z = qz$bws[1, 1], tau_tilde = qt$coef[1], h_tilde = qt$bws[1, 1]) }))
 qa <- rdrobust(sc$vote, sc$margin, covs = as.matrix(sc[, cv]), bwselect = "cerrd")
-cat("no covariates: bc estimate", round(q0$coef[2], 2), " h_CER", round(q0$bws[1, 1], 2),
-    "; all four: bc estimate", round(qa$coef[2], 2), " h_CER", round(qa$bws[1, 1], 2), "\n")
+cat("no covariates: estimate", round(q0$coef[1], 2), " h_CER", round(q0$bws[1, 1], 2),
+    "; all four: estimate", round(qa$coef[1], 2), " h_CER", round(qa$bws[1, 1], 2), "\n")
 print(round(cerZ, 3))
 
 ## ---- 9. validity: covariate balance, density, placebo cutoffs, donut ---------------
-cat("\n## 9a. covariates as outcomes (h_CER, bias-corrected jump, robust p)\n")
+cat("\n## 9a. covariates as outcomes (h_CER, conventional jump, robust interval and p)\n")
 bal <- t(sapply(c(cv, "population", "termshouse", "termssenate", "dmidterm", "dpresdem"), function(z) {
   ok <- !is.na(s[[z]]); q <- rdrobust(s[[z]][ok], s$margin[ok], bwselect = "cerrd")
   c(mean_below = mean(s[[z]][ok & s$margin < 0 & s$margin > -q$bws[1, 1]]),
-    coef_bc = q$coef[2], lo = q$ci[3, 1], hi = q$ci[3, 2], p = q$pv[3], h = q$bws[1, 1]) }))
+    jump = q$coef[1], lo = q$ci[3, 1], hi = q$ci[3, 2], p = q$pv[3], h = q$bws[1, 1]) }))
 print(round(bal, 3))
 cat("\n## 9b. density test (Cattaneo, Jansson, Ma)\n")
 dt <- rddensity(x); cat("T =", round(dt$test$t_jk, 3), " p =", round(dt$test$p_jk, 3),

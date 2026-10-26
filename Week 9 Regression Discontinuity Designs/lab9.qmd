@@ -46,8 +46,7 @@ options(digits = 4, scipen = 999, width = 76)
 3.  Choose a bandwidth and a polynomial order, and see how much the answer depends on them.
 4.  Run every validity check an RD paper should report, including covariate balance.
 5.  Add pre-treatment covariates for precision.
-6.  See in simulation what manipulation of the running variable does.
-7.  Estimate a fuzzy RD on real data, step by step: first stage, reduced form,
+6.  Estimate a fuzzy RD on real data, step by step: first stage, reduced form,
     ratio, local 2SLS, checks.
 
 ```{r}
@@ -108,15 +107,20 @@ rd <- rdrobust(y = sen$vote, x = sen$margin, c = 0)
 summary(rd)
 ```
 
-Three numbers to read from that output.
+The summary prints one row, and it mixes two things on purpose
+(Calonico, Cattaneo, and Titiunik 2014):
 
--   **Conventional**: the local linear estimate at the MSE-optimal bandwidth,
-    with a naive standard error.
--   **Bias-Corrected**: the point estimate after subtracting an estimate of the
-    leading bias term.
--   **Robust**: the confidence interval that accounts for the *uncertainty in
-    that bias correction*. **This is the one to report** (Calonico, Cattaneo, and
-    Titiunik 2014).
+-   **Point estimate: conventional.** The local linear jump at the MSE-optimal
+    bandwidth $h$, with no bias adjustment. This is the number you report.
+-   **z, p-value, and 95% interval: robust.** They are built around a different
+    centre, the *bias-corrected* estimate (the conventional one minus an estimate
+    of its leading bias, from a local quadratic at a pilot bandwidth $b$), and use
+    a larger standard error that also counts the noise in that bias estimate.
+
+So report the conventional estimate with the robust interval. The interval is
+not centred on the estimate you report, and that is expected. The bandwidth is
+a separate choice: robust inference works at the default $h_{\text{MSE}}$ or at
+the coverage-optimal $h_{\text{CER}}$ below.
 
 ```{r}
 #| label: rd-eff-n
@@ -128,17 +132,23 @@ c(bandwidth_left = rd$bws[1, 1], bandwidth_right = rd$bws[1, 2],
 Note the gap between the nominal sample size and the effective one. An RD with
 1,300 observations may be estimated from 400.
 
-## When the conventional and robust rows disagree
+## What is inside that row
 
 ```{r}
 #| label: rd-rows
-## the three rows side by side: estimate, s.e., p-value, 95% interval
+## rdrobust stores three rows; summary() prints row 1's estimate with row 3's inference
+##   row 1 Conventional:   estimate tau-hat,          conventional s.e.
+##   row 2 Bias-Corrected: estimate tau-hat - bias,   conventional s.e. (never report)
+##   row 3 Robust:         estimate tau-hat - bias,   robust s.e.
 round(cbind(estimate = rd$coef, se = rd$se, p = rd$pv, rd$ci), 3)
+## the robust interval is centred at the bias-corrected estimate, not at row 1
+round(c(conventional = rd$coef[1], robust_centre = mean(rd$ci[3, ])), 3)
 ```
 
-The robust row changes two things. Its centre is the bias-corrected estimate,
-and its standard error is larger, because it also counts the noise in the
-estimated bias. In the Senate data every row is far from zero. In smaller or
+Row 3 changes two things relative to row 1: its centre is the bias-corrected
+estimate, and its standard error is larger, because it also counts the noise in
+the estimated bias. In code, take the estimate from `coef[1]` and the inference
+from `se[3]`, `pv[3]`, and `ci[3, ]`; this is what `summary()` prints. In the Senate data every row is far from zero. In smaller or
 noisier applications they can split: the conventional interval excludes zero
 and the robust one does not. Report the robust interval. The conventional one
 ignores the bias at the MSE-optimal bandwidth and covers less than 95%
@@ -174,8 +184,8 @@ adds is bandwidth selection and bias correction.
 bws <- seq(3, 40, by = 1)
 sens <- lapply(bws, function(b) {
   r <- rdrobust(y = sen$vote, x = sen$margin, c = 0, h = b)
-  tibble::tibble(h = b, est = r$coef[3],          # bias-corrected point estimate
-                 lo = r$ci[3, 1], hi = r$ci[3, 2]) # matching robust interval
+  tibble::tibble(h = b, est = r$coef[1],          # conventional point estimate
+                 lo = r$ci[3, 1], hi = r$ci[3, 2]) # robust interval
 }) |> bind_rows()
 
 ggplot(sens, aes(h, est)) +
@@ -200,9 +210,9 @@ coverage error smallest ($h_{\text{CER}}$, Week 9).
 #| label: rd-cer
 ## same estimator, coverage-optimal bandwidth
 rd_cer <- rdrobust(y = sen$vote, x = sen$margin, c = 0, bwselect = "cerrd")
-## compare bandwidths, bias-corrected estimates, and robust intervals
-round(rbind(mse = c(h = rd$bws[1, 1], estimate = rd$coef[2], rd$ci[3, ]),
-            cer = c(rd_cer$bws[1, 1], rd_cer$coef[2], rd_cer$ci[3, ])), 2)
+## compare bandwidths, conventional estimates, and robust intervals
+round(rbind(mse = c(h = rd$bws[1, 1], estimate = rd$coef[1], rd$ci[3, ]),
+            cer = c(rd_cer$bws[1, 1], rd_cer$coef[1], rd_cer$ci[3, ])), 2)
 ```
 
 A smaller window means fewer races, so the interval widens; the estimate should
@@ -226,22 +236,7 @@ round(t(ord), 2)
 The quadratic chooses a wider bandwidth, because a curve can follow the data
 farther from the cutoff, but its interval is wider: the extra curvature costs
 variance at the edge. A stable estimate across $p = 1, 2$ is what we want.
-Orders above two are rarely used, for the reason in the next section.
-
-## Why not a global polynomial?
-
-```{r}
-#| label: global-poly
-poly_est <- sapply(1:8, function(p) {
-  m <- lm(vote ~ poly(margin, p, raw = TRUE) * I(margin >= 0), data = sen)
-  coef(m)["I(margin >= 0)TRUE"]
-})
-round(setNames(poly_est, paste0("degree_", 1:8)), 3)
-```
-
-The answer wanders with the polynomial degree, and every one of these estimates
-uses observations 80 points from the cutoff to fit the value *at* the cutoff.
-Gelman and Imbens (2019) explain why the implied weights are indefensible.
+Orders above two are rarely used.
 
 # Validity checks
 
@@ -282,8 +277,8 @@ bal <- sapply(cv, function(z) {
   ok <- !is.na(sen[[z]])                        ## drop missing values first
   r <- rdrobust(y = sen[[z]][ok], x = sen$margin[ok], c = 0,
                 bwselect = "cerrd")
-  ## bias-corrected jump, robust interval and p-value
-  c(estimate = r$coef[2], robust_lo = r$ci[3, 1], robust_hi = r$ci[3, 2],
+  ## conventional jump, robust interval and p-value
+  c(estimate = r$coef[1], robust_lo = r$ci[3, 1], robust_hi = r$ci[3, 2],
     p_robust = r$pv[3])
 })
 round(t(bal), 3)
@@ -340,86 +335,21 @@ sc <- sen[complete.cases(sen[, cv]), ]
 r0 <- rdrobust(y = sc$vote, x = sc$margin, c = 0, bwselect = "cerrd")
 rz <- rdrobust(y = sc$vote, x = sc$margin, c = 0, bwselect = "cerrd",
                covs = as.matrix(sc[, cv]))
-round(rbind(no_covariates = c(estimate = r0$coef[2], robust_se = r0$se[3],
+## conventional estimate, robust s.e. and interval
+round(rbind(no_covariates = c(estimate = r0$coef[1], robust_se = r0$se[3],
                               r0$ci[3, ]),
-            covariates = c(rz$coef[2], rz$se[3], rz$ci[3, ])), 2)
+            covariates = c(rz$coef[1], rz$se[3], rz$ci[3, ])), 2)
 ```
 
 Only pre-treatment variables belong in `covs`. A variable the election could
 affect (turnout, spending after the election) would be a bad control. If the
 estimate moves a lot when covariates enter, suspect that one of them jumps.
 
-# What manipulation actually does
-
-Simulate a world where the treatment has **no effect at all**, but where units
-just below the cutoff can push themselves above it.
-
-```{r}
-#| label: manip-sim
-set.seed(723)
-n <- 4000
-u <- rnorm(n)                              # ability: raises both X and Y
-x_true <- rnorm(n) + 0.8 * u
-
-## units with high u who are just below the cutoff push themselves over
-push <- (x_true > -0.3 & x_true < 0) & (u > 0.5)
-x <- ifelse(push, abs(x_true) + 0.01, x_true)
-
-d <- as.integer(x >= 0)
-y <- 0 * d + u + rnorm(n)                  # TRUE EFFECT IS ZERO
-
-r_bad <- rdrobust(y = y, x = x, c = 0)
-c(estimate = r_bad$coef[1], p_robust = r_bad$pv[3], truth = 0)
-```
-
-```{r}
-#| label: manip-density
-dt <- rddensity(X = x, c = 0)
-c(t_statistic = dt$test$t_jk, p_value = dt$test$p_jk)
-```
-
-The RD finds a large "effect" that does not exist — and **the density test
-catches it**. That is why the test belongs in every RD paper — while remembering
-that manipulation which does *not* produce bunching would slip past it.
-
-```{r}
-#| label: fig-manip
-#| fig-cap: "Histogram of the running variable under manipulation. The excess mass just above zero is the signature."
-tibble::tibble(x) |> filter(abs(x) < 1.5) |>
-  ggplot(aes(x)) +
-  geom_histogram(bins = 60, fill = "navy", alpha = .7) +
-  geom_vline(xintercept = 0, colour = "firebrick", linewidth = .8) +
-  labs(x = "running variable", y = "count") +
-  theme_minimal(base_size = 10)
-```
-
 # Fuzzy RD
 
 When crossing the cutoff changes the *probability* of treatment, `rdrobust`
-takes a `fuzzy` argument and returns the ratio estimate.
-
-## A simulation
-
-```{r}
-#| label: fuzzy-sim
-set.seed(1)
-n <- 3000
-xx <- runif(n, -1, 1)
-takeup <- rbinom(n, 1, ifelse(xx >= 0, 0.75, 0.20))   # jump of 0.55
-yy <- 1.5 * takeup + 0.5 * xx + rnorm(n)               # TRUE effect = 1.5
-
-## sharp (intention-to-treat): attenuated toward zero
-r_itt   <- rdrobust(y = yy, x = xx, c = 0)
-## fuzzy: scaled up by the first stage
-r_fuzzy <- rdrobust(y = yy, x = xx, c = 0, fuzzy = takeup)
-
-c(ITT = r_itt$coef[1], fuzzy = r_fuzzy$coef[1], truth = 1.5)
-```
-
-The sharp estimate is the *intention-to-treat* effect of crossing the cutoff. The
-fuzzy estimate divides it by the jump in take-up, exactly as in Week 7 — and it
-inherits the LATE interpretation. Here the estimand is the effect for compliers
-*at the cutoff*.
+takes a `fuzzy` argument and returns the ratio estimate: the jump in $Y$ divided by
+the jump in take-up, as in Week 7. The estimand is the effect for compliers *at the cutoff*.
 
 ## A real application: financial aid in Colombia
 
@@ -461,9 +391,20 @@ compliers are all the students who received the subsidy near the cutoff.
 #| label: fig-spp-first
 #| fig-cap: "Share receiving SPP against distance to the SISBEN cutoff. Zero on the left by rule; a jump of about 0.6 at the cutoff."
 ## first stage in a picture: binned means of D
-rdplot(y = spp$D, x = spp$X1, c = 0,
-       x.label = "SISBEN distance to cutoff (positive = eligible)",
-       y.label = "received SPP", title = "")
+## rdplot() cannot draw this one: D = 0 for every ineligible student, and
+## when the outcome has no variance on a side, rdplot() uses ONE bin there
+## (whatever nbins says). So bin by hand: 2-point bins of X1, mean of D
+spp |>
+  mutate(bin = floor(X1 / 2) * 2 + 1) |>          # bin midpoint
+  group_by(bin) |>
+  summarise(share = mean(D)) |>
+  ggplot(aes(bin, share, colour = bin >= 0)) +
+  geom_point(size = 1.2) +
+  geom_vline(xintercept = 0, linewidth = .6) +
+  scale_colour_manual(values = c("navy", "firebrick"), guide = "none") +
+  labs(x = "SISBEN distance to cutoff (positive = eligible)",
+       y = "received SPP") +
+  theme_minimal(base_size = 10)
 ```
 
 ```{r}
@@ -508,8 +449,8 @@ summary(fz)
 
 Two blocks in that output. The **first-stage** block is the jump in `D` at the
 fuzzy bandwidth (0.62, not the 0.625 from Step 1, which used its own
-bandwidth). The **treatment-effect** block is the ratio. Read the robust row,
-as in the sharp case.
+bandwidth). The **treatment-effect** block is the ratio. As in the sharp case,
+report its conventional estimate with the robust interval.
 
 ```{r}
 #| label: spp-fuzzy-rows
@@ -572,7 +513,7 @@ cv_spp <- c("icfes_female", "icfes_age", "icfes_urm", "icfes_stratum",
 bal_spp <- sapply(cv_spp, function(z) {
   ok <- !is.na(spp[[z]])
   r <- rdrobust(y = spp[[z]][ok], x = spp$X1[ok], c = 0, bwselect = "cerrd")
-  c(estimate = r$coef[2], robust_lo = r$ci[3, 1], robust_hi = r$ci[3, 2],
+  c(estimate = r$coef[1], robust_lo = r$ci[3, 1], robust_hi = r$ci[3, 2],
     p_robust = r$pv[3])
 })
 round(t(bal_spp), 3)
@@ -585,14 +526,15 @@ sk <- spp[complete.cases(spp[, cv_spp]), ]
 f0 <- rdrobust(y = sk$Y, x = sk$X1, c = 0, fuzzy = sk$D)
 fzz <- rdrobust(y = sk$Y, x = sk$X1, c = 0, fuzzy = sk$D,
                 covs = as.matrix(sk[, cv_spp]))
-round(rbind(no_covariates = c(estimate = f0$coef[2], robust_se = f0$se[3],
+## conventional estimate, robust s.e. and interval
+round(rbind(no_covariates = c(estimate = f0$coef[1], robust_se = f0$se[3],
                               f0$ci[3, ]),
-            covariates = c(fzz$coef[2], fzz$se[3], fzz$ci[3, ])), 3)
+            covariates = c(fzz$coef[1], fzz$se[3], fzz$ci[3, ])), 3)
 ```
 
 ### Reading the result
 
-Receiving SPP raised immediate college enrollment by about 44 percentage points
+Receiving SPP raised immediate college enrollment by about 43 percentage points
 for **compliers at the cutoff**: students just poor enough to qualify who took
 up the subsidy. With one-sided non-compliance these are all the recipients near
 the cutoff, so the estimand is the effect on the treated at the cutoff. It says
@@ -618,15 +560,11 @@ below the exam cutoff, who were never in the sample.
     moves the estimate most, and does it match the covariate with the largest
     jump in `balance`?
 
-5.  **Detecting your own manipulation.** In `manip-sim`, vary the strength of the
-    push (the `u > 0.5` threshold). At what point does the density test start to
-    detect it? What does that tell you about the test's power?
-
-6.  **A real design.** Find an RD in the sociological literature. Identify the
+5.  **A real design.** Find an RD in the sociological literature. Identify the
     running variable, the cutoff, and the estimand in one sentence each. Then
     list which items of the lecture's "Reading and Reporting an RD" checklist the paper reports.
 
-7.  **Fuzzy RD on SPP.** Re-run `spp-fuzzy` with `bwselect = "cerrd"` and
+6.  **Fuzzy RD on SPP.** Re-run `spp-fuzzy` with `bwselect = "cerrd"` and
     compare the bandwidth, estimate, and robust interval. Then name one way
     that being *eligible* could change enrollment other than through receiving
     the subsidy. Which assumption would that violate, and in which direction
