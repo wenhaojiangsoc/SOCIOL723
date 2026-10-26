@@ -47,6 +47,8 @@ options(digits = 4, scipen = 999, width = 76)
 4.  Run every validity check an RD paper should report, including covariate balance.
 5.  Add pre-treatment covariates for precision.
 6.  See in simulation what manipulation of the running variable does.
+7.  Estimate a fuzzy RD on real data, step by step: first stage, reduced form,
+    ratio, local 2SLS, checks.
 
 ```{r}
 #| label: packages
@@ -396,6 +398,8 @@ tibble::tibble(x) |> filter(abs(x) < 1.5) |>
 When crossing the cutoff changes the *probability* of treatment, `rdrobust`
 takes a `fuzzy` argument and returns the ratio estimate.
 
+## A simulation
+
 ```{r}
 #| label: fuzzy-sim
 set.seed(1)
@@ -416,6 +420,184 @@ The sharp estimate is the *intention-to-treat* effect of crossing the cutoff. Th
 fuzzy estimate divides it by the jump in take-up, exactly as in Week 7 — and it
 inherits the LATE interpretation. Here the estimand is the effect for compliers
 *at the cutoff*.
+
+## A real application: financial aid in Colombia
+
+Londoño-Vélez, Rodríguez, and Sánchez (2020, *AEJ: Economic Policy*) study *Ser
+Pilo Paga* (SPP), a Colombian program that paid full tuition at a high-quality
+university for students who were both high-achieving and poor. Two cutoffs
+decide eligibility: a national exam score (top 9%) and a household wealth index,
+SISBEN, which must fall below a regional threshold. We use the replication file
+from Cattaneo, Idrobo, and Titiunik (2024, *A Practical Introduction to RD
+Designs: Extensions*), which keeps only students above the exam cutoff, so
+SISBEN is the single running variable.
+
+| variable | meaning |
+|---|---|
+| `X1` | distance of the household's SISBEN index from its regional cutoff; positive = eligible |
+| `T` | eligible (1 if `X1` $\geq 0$): the instrument |
+| `D` | actually received SPP: the treatment |
+| `Y` | enrolled in a higher-education institution right after the exam |
+| `icfes_*` | pre-determined: female, age, ethnic minority, residential stratum, family size |
+
+The design is fuzzy because eligibility is not receipt: an eligible student
+still had to be admitted to a certified university and enroll there.
+
+```{r}
+#| label: spp-data
+spp <- read.csv("../Data/spp_colombia.csv")
+nrow(spp)
+## who received the subsidy, by eligibility
+with(spp, table(eligible = T, received = D))
+```
+
+No ineligible student received SPP: non-compliance is **one-sided**. There are
+no always-takers and no defiers, so monotonicity holds by construction, and the
+compliers are all the students who received the subsidy near the cutoff.
+
+### Step 1: the first stage
+
+```{r}
+#| label: fig-spp-first
+#| fig-cap: "Share receiving SPP against distance to the SISBEN cutoff. Zero on the left by rule; a jump of about 0.6 at the cutoff."
+## first stage in a picture: binned means of D
+rdplot(y = spp$D, x = spp$X1, c = 0,
+       x.label = "SISBEN distance to cutoff (positive = eligible)",
+       y.label = "received SPP", title = "")
+```
+
+```{r}
+#| label: spp-first
+## first stage as a sharp RD with D as the outcome
+fs <- rdrobust(y = spp$D, x = spp$X1, c = 0)
+round(c(jump_in_D = fs$coef[1], robust_lo = fs$ci[3, 1],
+        robust_hi = fs$ci[3, 2], h = fs$bws[1, 1]), 3)
+```
+
+### Step 2: the reduced form (intention to treat)
+
+```{r}
+#| label: fig-spp-reduced
+#| fig-cap: "College enrollment against distance to the SISBEN cutoff: the effect of being eligible."
+rdplot(y = spp$Y, x = spp$X1, c = 0,
+       x.label = "SISBEN distance to cutoff (positive = eligible)",
+       y.label = "enrolled in college", title = "")
+```
+
+```{r}
+#| label: spp-reduced
+## reduced form as a sharp RD with Y as the outcome
+rf <- rdrobust(y = spp$Y, x = spp$X1, c = 0)
+round(c(jump_in_Y = rf$coef[1], robust_lo = rf$ci[3, 1],
+        robust_hi = rf$ci[3, 2], h = rf$bws[1, 1]), 3)
+## dividing these two is NOT the fuzzy estimate: they use different bandwidths
+round(rf$coef[1] / fs$coef[1], 3)
+```
+
+The reduced form is worth reporting on its own: being eligible raised enrollment
+by about 27 points. It needs no first-stage assumption.
+
+### Step 3: the fuzzy estimate
+
+```{r}
+#| label: spp-fuzzy
+## one bandwidth, chosen for the ratio; both stages run at that bandwidth
+fz <- rdrobust(y = spp$Y, x = spp$X1, c = 0, fuzzy = spp$D)
+summary(fz)
+```
+
+Two blocks in that output. The **first-stage** block is the jump in `D` at the
+fuzzy bandwidth (0.62, not the 0.625 from Step 1, which used its own
+bandwidth). The **treatment-effect** block is the ratio. Read the robust row,
+as in the sharp case.
+
+```{r}
+#| label: spp-fuzzy-rows
+## estimate, s.e., p-value, 95% interval, three rows
+round(cbind(estimate = fz$coef, se = fz$se, p = fz$pv, fz$ci), 3)
+## first stage at the fuzzy bandwidth, and that bandwidth
+round(c(first_stage = fz$tau_T[1], h = fz$bws[1, 1]), 3)
+## strength of the first stage: F = t^2 of the jump in D, as in Week 7
+round((fz$tau_T[1] / fz$se_T[1])^2)
+```
+
+An $F$ above 1,000 is far from weak: the ratio divides by a large, precise number.
+
+### Step 4: the same number two ways, the ratio at one $h$ and local 2SLS
+
+```{r}
+#| label: spp-2sls
+library(ivreg)
+h <- fz$bws[1, 1]
+s <- spp |> filter(abs(X1) <= h) |>
+  mutate(kw = 1 - abs(X1) / h)                  # triangular kernel
+
+## stage 1: D on the instrument T, with a slope on each side
+st1 <- lm(D ~ T + X1 + T:X1, data = s, weights = kw)
+s$Dhat <- fitted(st1)
+## stage 2: Y on predicted D, same slope controls
+st2 <- lm(Y ~ Dhat + X1 + T:X1, data = s, weights = kw)
+## the same in one call, with the 2SLS standard error
+iv <- ivreg(Y ~ D + X1 + T:X1 | T + X1 + T:X1, data = s, weights = kw)
+## Route 1 of the lecture: the reduced form at the SAME h, divided by stage 1
+rf_h <- lm(Y ~ T + X1 + T:X1, data = s, weights = kw)
+
+round(c(first_stage = coef(st1)[["T"]], reduced_form = coef(rf_h)[["T"]],
+        ratio = coef(rf_h)[["T"]] / coef(st1)[["T"]],
+        second_stage = coef(st2)[["Dhat"]],
+        ivreg = coef(iv)[["D"]], rdrobust = fz$coef[1]), 4)
+```
+
+At one bandwidth the ratio of the two jumps (Route 1) and 2SLS (Route 2) agree
+exactly, unlike the ratio in Step 2. The fuzzy RD *is* a kernel-weighted 2SLS inside the bandwidth. Use `rdrobust`
+for the interval: the hand-made second stage treats $\hat D$ as data, and
+neither `lm` nor `ivreg` corrects for the bias of the local line.
+
+### Step 5: checks
+
+The sharp-RD checks apply to the running variable and to the reduced form.
+
+```{r}
+#| label: spp-density
+## can families place themselves just below the SISBEN cutoff?
+dens_spp <- rddensity(X = spp$X1, c = 0)
+round(c(T_robust = dens_spp$test$t_jk, p_robust = dens_spp$test$p_jk), 3)
+```
+
+```{r}
+#| label: spp-balance
+## pre-determined covariates should not jump at the cutoff
+cv_spp <- c("icfes_female", "icfes_age", "icfes_urm", "icfes_stratum",
+            "icfes_famsize")
+bal_spp <- sapply(cv_spp, function(z) {
+  ok <- !is.na(spp[[z]])
+  r <- rdrobust(y = spp[[z]][ok], x = spp$X1[ok], c = 0, bwselect = "cerrd")
+  c(estimate = r$coef[2], robust_lo = r$ci[3, 1], robust_hi = r$ci[3, 2],
+    p_robust = r$pv[3])
+})
+round(t(bal_spp), 3)
+```
+
+```{r}
+#| label: spp-covs
+## fuzzy RD with covariates, on students with all five observed
+sk <- spp[complete.cases(spp[, cv_spp]), ]
+f0 <- rdrobust(y = sk$Y, x = sk$X1, c = 0, fuzzy = sk$D)
+fzz <- rdrobust(y = sk$Y, x = sk$X1, c = 0, fuzzy = sk$D,
+                covs = as.matrix(sk[, cv_spp]))
+round(rbind(no_covariates = c(estimate = f0$coef[2], robust_se = f0$se[3],
+                              f0$ci[3, ]),
+            covariates = c(fzz$coef[2], fzz$se[3], fzz$ci[3, ])), 3)
+```
+
+### Reading the result
+
+Receiving SPP raised immediate college enrollment by about 44 percentage points
+for **compliers at the cutoff**: students just poor enough to qualify who took
+up the subsidy. With one-sided non-compliance these are all the recipients near
+the cutoff, so the estimand is the effect on the treated at the cutoff. It says
+nothing directly about students far below the threshold, or about students
+below the exam cutoff, who were never in the sample.
 
 # Exercises
 
@@ -442,7 +624,13 @@ inherits the LATE interpretation. Here the estimand is the effect for compliers
 
 6.  **A real design.** Find an RD in the sociological literature. Identify the
     running variable, the cutoff, and the estimand in one sentence each. Then
-    list which of the six checks from lecture the paper reports.
+    list which items of the lecture's "Reading and Reporting an RD" checklist the paper reports.
+
+7.  **Fuzzy RD on SPP.** Re-run `spp-fuzzy` with `bwselect = "cerrd"` and
+    compare the bandwidth, estimate, and robust interval. Then name one way
+    that being *eligible* could change enrollment other than through receiving
+    the subsidy. Which assumption would that violate, and in which direction
+    would it bias the fuzzy estimate?
 
 # Session information
 

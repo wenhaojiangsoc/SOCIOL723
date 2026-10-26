@@ -179,11 +179,13 @@ and could not name.
 \end{frame}
 
 \begin{frame}{Plan}
+\small
 \textbf{Goal}: what fixed effects and difference-in-differences estimate, under
 which assumptions, and how to estimate it when the textbook regression fails.
-\begin{enumerate}\itemsep0pt
-  \item \textbf{Panel fixed effects}: what FE removes, what it averages, when it is
-        causal; individual slopes; the marriage wage premium on real data.
+\begin{enumerate}\itemsep-1pt
+  \item \textbf{Fixed and random effects without time}: students in schools; Hausman, Mundlak.
+  \item \textbf{Panel fixed effects}: two-way FE, strict exogeneity, FE vs FD,
+        clustering, dynamic panels; the marriage wage premium on real data.
   \item \textbf{The $2\times2$}: parallel trends, scale, covariates (three
         estimators), inference with serial correlation.
   \item \textbf{Event studies}: what pre-trend tests can and cannot show; base
@@ -201,144 +203,699 @@ Stevenson--Wolfers state panel 1964--96 (\texttt{bacondecomp::divorce}).}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Fixed Effects]{Fixed Effects and Random Effects, Without Time}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Fixed Effects: Goal and Plan}
+\textbf{Goal}: compare each unit only with other units \emph{in the same group}, so
+that nothing the group members share can confound the comparison.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lll@{}}
+\toprule
+group & member & what the group effect absorbs \\
+\midrule
+school & student & resources, teachers, neighborhood \\
+family & sibling & parents, home, family income \\
+firm & worker & pay policy, industry, location \\
+person & year of that person's life & ability, upbringing (next section) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{enumerate}\itemsep0pt
+  \item The model, and why pooled OLS is biased.
+  \item Route 1: a separate intercept for each group. Route 2: subtract group means.
+  \item Why the two routes agree, and which variation they use.
+  \item Random effects, and testing fixed against random.
+\end{enumerate}
+{\footnotesize Data: High School and Beyond, 7,185 students in 160 schools (Week 4)
+\srcp{figs/w10\_fe.R}.}
+\end{frame}
+
+\begin{frame}{Step 1: The Model and the Problem}
+Student $i$ in school $j$; $Y_{ij}$ math score, $X_{ij}$ family SES:
+\begin{align*}
+  Y_{ij} = \beta X_{ij} + \alpha_j + \epsilon_{ij}, \qquad
+  \alpha_j = \text{everything about school $j$ that all its students share.}
+\end{align*}
+Pooled OLS of $Y_{ij}$ on $X_{ij}$ leaves $\alpha_j$ in the error. By the
+omitted-variable formula (Week 1):
+\begin{align*}
+  \plim \hat\beta_{\text{pooled}}
+  &= \beta + \frac{\Cov(X_{ij}, \alpha_j)}{\Var(X_{ij})}
+  && \text{\footnotesize $\alpha_j$ is the omitted variable} .
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item High-SES students attend schools with more resources: $\Cov(X_{ij},\alpha_j) > 0$,
+        so the pooled slope is too large.
+  \item HSB: pooled 3.18 (0.13); comparing students only with schoolmates, 2.19 (0.13).
+        Clustered by school.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Pooled OLS on Four Schools}
+\begin{columns}[c]
+\begin{column}{0.54\linewidth}
+\includegraphics[width=\linewidth]{figs/fe_pooled.pdf}
+\end{column}
+\begin{column}{0.44\linewidth}
+\small
+Four HSB schools, 180 students. School mean SES $-0.76$, $-0.10$, $0.44$,
+$0.75$; mean math 4.2, 9.3, 16.5, 18.5.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item One line through all students mixes two comparisons: students against
+        their schoolmates, and schools against schools.
+  \item The second comparison is driven by $\alpha_j$: the high-SES schools are also
+        the high-math schools.
+  \item Slope 4.97 on these four schools.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Step 2, Route 1: A Separate Intercept for Each School}
+\begin{columns}[c]
+\begin{column}{0.54\linewidth}
+\includegraphics[width=\linewidth]{figs/fe_dummies.pdf}
+\end{column}
+\begin{column}{0.44\linewidth}
+\small
+Treat each $\alpha_j$ as a parameter: one dummy per school.
+\begin{align*}
+  Y_{ij} = \beta X_{ij} + \textstyle\sum_{k} \alpha_k \mathds{1}\{j = k\} + \epsilon_{ij}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Each school gets its own height; all schools share one slope, 1.99.
+  \item Each line passes through its school's means (\textbf{$\times$}):
+        $\hat\alpha_j = \bar Y_j - \hat\beta\bar X_j$, the usual intercept formula,
+        school by school.
+  \item The difference in heights is no longer credited to SES.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Step 2, Route 2: Subtract the School Means}
+Average the model over the $n_j$ students of school $j$, then subtract:
+\begin{align*}
+  Y_{ij} &= \beta X_{ij} + \alpha_j + \epsilon_{ij}
+   && \text{\footnotesize the model} \\
+  \bar Y_j &= \beta \bar X_j + \alpha_j + \bar\epsilon_j
+   && \text{\footnotesize average over $i$ in school $j$; $\alpha_j$ is the same for all $i$} \\
+  Y_{ij} - \bar Y_j &= \beta\,(X_{ij} - \bar X_j) + (\epsilon_{ij} - \bar\epsilon_j)
+   && \text{\footnotesize subtract: $\alpha_j - \alpha_j = 0$}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item $\alpha_j$ is gone without being named or measured.
+  \item OLS of $Y_{ij} - \bar Y_j$ on $X_{ij} - \bar X_j$, no intercept, estimates
+        $\beta$ from within-school differences only.
+  \item The question becomes: is a student with more SES \emph{than her
+        schoolmates} also higher in math \emph{than her schoolmates}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Demeaning Does to the Picture}
+\begin{columns}[c]
+\begin{column}{0.54\linewidth}
+\includegraphics[width=\linewidth]{figs/fe_demeaned.pdf}
+\end{column}
+\begin{column}{0.44\linewidth}
+\small
+Same 180 students after subtracting their school's means.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Every school's $\times$ moves to $(0, 0)$; the four clouds sit on top of
+        each other.
+  \item The between-school spread of the first picture is deleted; only spread
+        \emph{inside} each school is left.
+  \item One line through the origin, slope 1.99: the same number as four
+        intercepts.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Step 3: Why the Two Routes Agree}
+\textbf{FWL (Week 1)}: the coefficient on $X$ in a regression with dummies equals
+the slope from regressing $Y$-net-of-dummies on $X$-net-of-dummies.
+\begin{align*}
+  \text{fit of $X_{ij}$ on dummies}
+  &= \argmin_{c_1,\dots,c_J}\textstyle\sum_j\sum_i (X_{ij} - c_j)^2
+  && \text{\footnotesize one constant per school} \\
+  &= \bar X_j
+  && \text{\footnotesize the mean minimizes squared deviations} \\
+  X_{ij} \text{ net of dummies} &= X_{ij} - \bar X_j
+  && \text{\footnotesize the residual; same for $Y_{ij}$}
+\end{align*}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+HSB, all 160 schools & SES & (se) \\
+\midrule
+160 school dummies, \texttt{lm} & 2.1912 & (0.1086) \\
+demeaned by hand, \texttt{lm} & 2.1912 & (0.1074) \\
+\texttt{feols(math $\sim$ SES | School)}, clustered & 2.1912 & (0.1298) \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize By hand, \texttt{lm} counts $N-1$ degrees of freedom; 160 means were
+estimated, so the truth is $N-1-160$. Small here (1\%); with siblings ($n_j=2$)
+the by-hand s.e.\ is too small by a factor of about $\sqrt2$. Use FE software.}
+\end{frame}
+
+\begin{frame}{Step 3: Which Variation Fixed Effects Uses}
+Split each student's SES into the school's part and her own part:
+\begin{align*}
+  X_{ij} - \bar X
+  &= \underbrace{(\bar X_j - \bar X)}_{\text{between}}
+   + \underbrace{(X_{ij} - \bar X_j)}_{\text{within}}
+   && \text{\footnotesize add and subtract $\bar X_j$} \\
+  \textstyle\sum_{ij}(X_{ij} - \bar X)^2
+  &= \textstyle\sum_{ij}(\bar X_j - \bar X)^2 + \sum_{ij}(X_{ij} - \bar X_j)^2
+   && \text{\footnotesize cross term is 0} \\
+  4{,}364 &= 1{,}229 + 3{,}135
+   && \text{\footnotesize HSB SES}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item FE uses only the 72\% of SES variation that lies within schools; the
+        28\% between schools is discarded.
+  \item A group with no within variation contributes nothing: siblings with the
+        same value, or a school where every student has the same SES.
+  \item Precision depends on within variation. Here FE removes $\alpha_j$ from
+        the error too, so its s.e.\ (0.130) is close to pooled OLS's (0.134).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Fixed Effects Averages the Schools' Own Slopes}
+\begin{columns}[c]
+\begin{column}{0.5\linewidth}
+\includegraphics[width=\linewidth]{figs/fe_weights.pdf}
+\end{column}
+\begin{column}{0.48\linewidth}
+\small
+With $\tilde X_{ij} = X_{ij} - \bar X_j$ and $\tilde Y_{ij} = Y_{ij} - \bar Y_j$:
+\begin{align*}
+  \hat\beta_{FE}
+  = \frac{\sum_j\sum_i \tilde X_{ij}\tilde Y_{ij}}{\sum_j\sum_i \tilde X_{ij}^2}
+  = \sum_j w_j\, b_j
+\end{align*}
+$b_j = \sum_i \tilde X_{ij}\tilde Y_{ij}/\sum_i \tilde X_{ij}^2$ is school $j$'s own
+slope; $w_j = \sum_i \tilde X_{ij}^2/\sum_k\sum_i \tilde X_{ik}^2$ (multiply and
+divide by $\sum_i \tilde X_{ij}^2$).
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item 160 slopes from $-2.02$ to $6.27$; weighted mean 2.19.
+  \item Weight grows with school size and with SES spread inside the school:
+        from 0.22 (20 students) to 1.94 (53 students) times an equal share.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{The Comparison Fixed Effects Throws Away}
+\begin{columns}[c]
+\begin{column}{0.5\linewidth}
+\includegraphics[height=0.52\textheight]{figs/fe_between.pdf}
+\end{column}
+\begin{column}{0.48\linewidth}
+\small
+The \textbf{between} estimator regresses the 160 school means $\bar Y_j$ on $\bar X_j$:
+slope 5.91 (0.37), almost three times the within slope.
+\vskip3pt
+Pooled OLS mixes the two. Let $W$, $B$ be the within and between sums of squares of
+SES (previous frame), and $b_W$, $b_B$ the within and student-weighted between slopes.
+\end{column}
+\end{columns}
+\begin{align*}
+  \hat\beta_{\text{pooled}}
+  &= \frac{W b_W + B b_B}{W + B}
+  && \text{\footnotesize split the covariance, like the variance} \\
+  &= \tfrac{3{,}135(2.19) + 1{,}229(5.72)}{4{,}364} = 3.18
+  && \text{\footnotesize HSB}
+\end{align*}
+\end{frame}
+
+\begin{frame}{What Fixed Effects Cannot Do}
+\begin{itemize}\itemsep5pt
+  \item \textbf{No school-level variables.} Catholic is the same for every student in a
+        school: $\text{Catholic}_j - \overline{\text{Catholic}}_j = 0$. With 160 dummies,
+        \texttt{lm} returns \texttt{NA} for Catholic.
+  \item \textbf{A narrower question.} $\hat\beta_{FE}$ is the SES gap among schoolmates.
+        It says nothing about moving a student to a higher-SES school.
+  \item \textbf{Only what is shared is removed.} A confounder that varies among
+        schoolmates (a parent's involvement) still biases $\hat\beta_{FE}$.
+  \item \textbf{Noise looms larger.} Measurement error in SES is not shared by
+        schoolmates, so it survives demeaning while part of the signal does not:
+        attenuation is worse within than pooled.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Step 4: Random Effects}
+Same equation, but $\alpha_j = \mu + u_j$ is treated as a random draw (Week 4's
+random intercept):
+\begin{align*}
+  Y_{ij} = \mu + \beta X_{ij} + u_j + \epsilon_{ij}, \qquad
+  u_j \sim \mathcal N(0, \tau^2), \qquad
+  \E[u_j \mid X_{1j},\dots,X_{n_j j}] = 0 .
+\end{align*}
+\begin{itemize}\itemsep4pt
+  \item The last condition is the price: the school effect is unrelated to the
+        SES of \emph{every} student in the school. Pooled OLS needs the same.
+  \item If it holds, RE uses between and within variation, so it is more
+        efficient, and it estimates school-level variables: Catholic 2.10 (0.34).
+  \item If it fails, RE is biased, as pooled OLS is.
+  \item Fixed effects asks nothing about $\alpha_j$: it may correlate with SES in
+        any way.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Random Effects Is Partial Demeaning}
+\begin{columns}[c]
+\begin{column}{0.5\linewidth}
+\includegraphics[width=\linewidth]{figs/re_theta.pdf}
+\end{column}
+\begin{column}{0.48\linewidth}
+\small
+RE is OLS after subtracting only a \emph{share} $\theta_j$ of each school mean:
+\begin{align*}
+  Y_{ij} - \theta_j\bar Y_j &= \beta(X_{ij} - \theta_j\bar X_j) + \dots \\
+  \theta_j &= 1 - \sqrt{\frac{\sigma^2}{\sigma^2 + n_j\tau^2}}
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item $\tau^2 = 0$: $\theta_j = 0$, pooled OLS. $n_j\tau^2$ large: $\theta_j \to 1$, FE.
+  \item HSB: $\hat\tau^2 = 4.73$, $\hat\sigma^2 = 37.0$; $\theta_j$ from 0.40
+        ($n_j = 14$) to 0.68 ($n_j = 67$).
+  \item OLS on the quasi-demeaned data: 2.3915 = \texttt{lmer}'s 2.3915.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Four Estimators of One Coefficient}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lllc@{}}
+\toprule
+estimator & subtracts from each school & uses & SES (se) \\
+\midrule
+pooled OLS & nothing & all variation & 3.18 (0.13) \\
+between & (uses the 160 means only) & between schools & 5.91 (0.37) \\
+random effects & $\theta_j$ of the mean, 0.40--0.68 & a weighted mix & 2.39 (0.11) \\
+fixed effects & the whole mean & within schools & 2.19 (0.13) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item The less of the school mean we subtract, the more the estimate leans on
+        the between comparison, and the larger it gets.
+  \item RE sits close to FE here because schools are large ($n_j \approx 45$),
+        so $\theta_j$ is large. With siblings ($n_j = 2$) and the same variances,
+        $\theta = 0.11$: RE would sit close to pooled OLS.
+  \item Is the gap 2.39 vs 2.19 more than noise? That is the test.
+\end{itemize}
+{\footnotesize Pooled, between, FE: clustered by school. RE: model-based, \texttt{lmer}, ML.}
+\end{frame}
+
+\begin{frame}{Step 4: The Hausman Test, the Logic \srcp{Hausman 1978}}
+$H_0$: $\E[u_j \mid X] = 0$.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & $H_0$ true & $H_0$ false \\
+\midrule
+fixed effects & consistent & consistent \\
+random effects & consistent, efficient & inconsistent \\
+\bottomrule
+\end{tabular}
+\end{center}
+A large gap $\hat\beta_{FE} - \hat\beta_{RE}$ is evidence against $H_0$. To scale it:
+\begin{align*}
+  \Var(\hat\beta_{FE})
+  &= \Var\big(\hat\beta_{RE} + (\hat\beta_{FE} - \hat\beta_{RE})\big)
+  && \text{\footnotesize add and subtract $\hat\beta_{RE}$} \\
+  &= \Var(\hat\beta_{RE}) + \Var(\hat\beta_{FE} - \hat\beta_{RE})
+  && \text{\footnotesize under $H_0$, $\hat\beta_{RE}$ is uncorrelated with the gap} \\
+  H &= \frac{(\hat\beta_{FE} - \hat\beta_{RE})^2}{\Var(\hat\beta_{FE}) - \Var(\hat\beta_{RE})}
+   \;\dto\; \chi^2_1
+  && \text{\footnotesize $K$ coefficients: the matrix version, $\chi^2_K$}
+\end{align*}
+{\footnotesize Why uncorrelated: if the gap moved with $\hat\beta_{RE}$, adding a bit
+of the gap to $\hat\beta_{RE}$ would give a consistent estimator with smaller variance,
+so $\hat\beta_{RE}$ was not efficient.}
+\end{frame}
+
+\begin{frame}{The Hausman Test on HSB}
+\begin{align*}
+  \hat\beta_{FE} - \hat\beta_{RE} &= 2.1912 - 2.3915 = -0.2003
+  && \text{\footnotesize the gap} \\
+  \Var(\hat\beta_{FE}) - \Var(\hat\beta_{RE}) &= 0.10865^2 - 0.10569^2 = 0.000633
+  && \text{\footnotesize model-based s.e.s} \\
+  H &= 0.2003^2 / 0.000633 = 63.4, \quad p < 0.001
+  && \text{\footnotesize $\chi^2_1$}
+\end{align*}
+Reject: SES is correlated with the school effect, and RE's 2.39 is biased.
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item The denominator is a small difference between two similar numbers; in
+        other samples it can be negative, and $H$ is then undefined.
+  \item It requires RE to be efficient: homoskedastic errors, no correlation within
+        school beyond $u_j$. Clustered s.e.s break the formula.
+  \item It depends on how $\tau^2$ is estimated: \texttt{plm}'s default RE gives
+        $H = 112$.
+  \item Not rejecting does not show $H_0$ holds; it may be low power.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Robust Version: Mundlak's Regression \srcp{Mundlak 1978}}
+Let the school effect depend on the school's mean SES:
+$\alpha_j = \mu + \gamma \bar X_j + a_j$, $a_j$ unrelated to $X$.
+\begin{align*}
+  Y_{ij} &= \beta X_{ij} + \alpha_j + \epsilon_{ij}
+  && \text{\footnotesize the FE model} \\
+  &= \mu + \beta X_{ij} + \gamma\bar X_j + (a_j + \epsilon_{ij})
+  && \text{\footnotesize substitute $\alpha_j$}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item OLS of this equation gives $\hat\beta = 2.1912$, \alert{exactly the FE slope}
+        (FWL: $X_{ij}$ net of $\bar X_j$ is $X_{ij} - \bar X_j$).
+  \item $\hat\gamma = 3.53 = 5.72 - 2.19$: student-weighted between slope minus
+        within slope.
+  \item Random effects is this model with $\gamma = 0$. Test $\gamma = 0$ with
+        clustered s.e.: $3.53/0.36$, $\chi^2_1 = 96.8$, $p < 0.001$.
+  \item Valid under heteroskedasticity and any within-school correlation, needs
+        no variance difference, and extends to several regressors (add each mean).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Fixed or Random: How to Choose}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.45\linewidth}>{\raggedright\arraybackslash}p{0.45\linewidth}@{}}
+\toprule
+if the question is & use \\
+\midrule
+the effect of a member-level variable, and the group effect may be confounded
+  & fixed effects (or Mundlak: same $\hat\beta$) \\
+the effect of a group-level variable (Catholic)
+  & Mundlak with RE: $\gamma$ protects $\beta$, but Catholic's coefficient still
+    needs $\E[a_j \mid \text{Catholic}] = 0$ \\
+how much variation lies between groups (Week 4's ICC)
+  & random effects \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Run Mundlak's test; report it with clustered s.e.s. Rejection says RE's
+        member-level coefficient is biased.
+  \item Not rejecting does not make FE wrong: FE stays consistent either way.
+  \item Either way, FE is not automatically causal: it removes only what group
+        members share.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{From Schools to Years}
+A panel is the same structure with the person as the group and the years of a
+life as the members:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lll@{}}
+\toprule
+ & schools & panel \\
+\midrule
+group, member & school $j$, student $i$ & person $i$, year $t$ \\
+group effect & $\alpha_j$ & $\alpha_i$ \\
+within comparison & schoolmates & the same person in other years \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+Everything above carries over. Time adds what schoolmates do not have:
+\begin{itemize}\itemsep2pt
+  \item common shocks to all units in a year ($\lambda_t$, two-way fixed effects);
+  \item order: errors correlated over years, past treatment affecting today's
+        outcome, past outcomes affecting today's treatment;
+  \item lagged outcomes as regressors (Nickell bias).
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Panel Data]{Panel Data and Unobserved Heterogeneity}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
+\begin{frame}{Panel Fixed Effects: Goal and Plan}
+\textbf{Goal}: the standard panel toolkit. What each estimator assumes, how to
+check it, and what to do when the outcome depends on its own past.
+\begin{enumerate}\itemsep1pt
+  \item The model and its three assumptions; two-way fixed effects.
+  \item Strict exogeneity: why demeaning needs it, when it is causal, a test.
+  \item First differences, and when FD beats FE.
+  \item Inference: cluster by unit.
+  \item Random effects, Hausman, Mundlak on the marriage data; what FE averages.
+  \item Dynamic panels: Nickell bias, Anderson--Hsiao, Arellano--Bond.
+  \item Random trends and the impact function; two studies.
+\end{enumerate}
+\vskip3pt
+{\footnotesize Data: NLSY men 1980--87, 545 men $\times$ 8 years
+(\texttt{wooldridge::wagepan}) \srcp{figs/w10\_panel.R, figs/w10\_panel\_std.R}.}
+\end{frame}
+
 \begin{frame}{The Error Components Model\core}
-With unit $i$ observed at times $t = 1,\dots,T$:
+Unit $i = 1,\dots,N$, period $t = 1,\dots,T$; $N$ large, $T$ small:
 \begin{align*}
-  Y_{it} = \beta D_{it} + \underbrace{\alpha_i}_{\text{unit effect}}
+  Y_{it} = X_{it}'\beta + \underbrace{\alpha_i}_{\text{unit effect}}
          + \underbrace{\lambda_t}_{\text{time effect}} + \epsilon_{it} .
 \end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item $\alpha_i$ absorbs \emph{every} time-invariant characteristic of unit $i$
-, observed or not, nameable or not.
-  \item Pooled OLS is biased whenever $\Cov(D_{it},\alpha_i)\neq 0$: states that
-        adopt a policy differ persistently from states that do not.
-  \item \textbf{Random effects} assumes $\Cov(D_{it},\alpha_i)=0$ and is more
-        efficient if true. It is almost never true in the settings we care about.
-        The Hausman test compares the two; when in doubt, use fixed effects.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}[allowframebreaks,t]{The Within Transformation, Explicitly\core}
-Average the model within unit and subtract:
-\begin{align*}
-  Y_{it} &= \beta D_{it} + \alpha_i + \lambda_t + \epsilon_{it} \\
-  \bar Y_{i\cdot} &= \beta \bar D_{i\cdot} + \alpha_i + \bar\lambda + \bar\epsilon_{i\cdot} \\[2pt]
-  \Longrightarrow\quad
-  Y_{it} - \bar Y_{i\cdot} &= \beta\big(D_{it}-\bar D_{i\cdot}\big)
-  + (\lambda_t - \bar\lambda) + \big(\epsilon_{it}-\bar\epsilon_{i\cdot}\big) .
-\end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item $\alpha_i$ is gone, \alert{whatever it was}. That is the whole appeal:
-        we never had to name it, measure it, or model it.
-  \item Anything time-invariant is annihilated with it. You cannot estimate the
-        effect of race, sex, or birth cohort in a unit-fixed-effects model, not
-        because they do not matter but because there is no within-unit variation.
-  \item Two-way fixed effects demeans within unit \emph{and} within period,
-        removing common shocks.
-  \item The equivalence with unit dummies is \alert{exactly FWL from Week 1}:
-        regressing on unit dummies partials out the unit means.
-\end{itemize}
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Random Effects, and Why We Usually Do Not Use It}
-Random effects treats $\alpha_i$ as a draw from a distribution and assumes the
-unit effect is unrelated to the regressors. The slogan version is
-$\Cov(D_{it}, \alpha_i) = 0$, but consistency needs the stronger statement
-\begin{align*}
-  \E\big[\alpha_i \mid D_{i1},\dots,D_{iT}\big] = 0 ,
-\end{align*}
-mean independence from the \emph{whole history} of the regressor, together with
-strict exogeneity of the idiosyncratic error, $\E[\epsilon_{it}\mid D_{i1},\dots,D_{iT},\alpha_i]=0$.
-It then estimates by GLS, a matrix-weighted average of the within and between
-estimators.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{If the assumption holds}, RE is more efficient and can identify
-        coefficients on time-invariant covariates. That is a real gain.
-  \item \textbf{The assumption says states that adopt a policy are, on average,
-        no different from states that do not.} In the settings sociologists study
-        it is almost never plausible.
-  \item The \textbf{Hausman test} compares the two: a large difference indicates
-        $\Cov(D,\alpha)\neq 0$ and favours FE. But failing to reject is weak
-        evidence, as usual.
-  \item \alert{The default should be fixed effects}, with random effects reserved
-        for cases where you can defend the exogeneity of the unit effect, or
-        where the multilevel structure is itself the object of interest.
-\end{itemize}
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Nickell Bias and the FE-versus-LDV Choice}
-Sociologists routinely control for last year's outcome, to absorb differences
-between units that are \emph{changing} rather than fixed. It is a reasonable
-instinct. But combining that move with unit fixed effects creates a new bias, and
-it is worth knowing why before you reach for it.
-\vskip3pt
-Add a lagged dependent variable to a fixed-effects model:
-\begin{align*}
-  Y_{it} = \rho Y_{i,t-1} + \beta D_{it} + \alpha_i + \epsilon_{it} .
-\end{align*}
-Demeaning makes $Y_{i,t-1} - \bar Y_{i\cdot}$ mechanically correlated with
-$\epsilon_{it} - \bar\epsilon_{i\cdot}$, because $\bar Y_{i\cdot}$ contains
-$Y_{it}$, which contains $\epsilon_{it}$.
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item The resulting \alert{Nickell bias} is $O(1/T)$: severe in short panels
-        ($T = 3$), negligible in long ones. Arellano--Bond-type GMM instruments
-        the lagged difference with deeper lags.
-  \item \textbf{FE and LDV embody different selection stories}: FE assumes
-        selection on time-invariant traits; LDV assumes selection on prior
-        outcomes. They can both be valid, but they are different assumptions and
-        will generally give different answers.
-  \item \srct{Angrist and Pischke (2009)} suggest running both: under some
-        conditions the two \alert{bracket} the truth, so agreement is reassuring
-        and disagreement tells you how much the selection story matters. Treat
-        that as a heuristic, not a theorem.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Three Ways to Remove $\alpha_i$}
 \begin{center}\small
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{lll}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lll@{}}
 \toprule
-Estimator & Transformation & Note \\
+ & assumption & needed for \\
 \midrule
-Within (fixed effects) & $Y_{it}-\bar Y_i = \beta(D_{it}-\bar D_i) + \tilde\epsilon_{it}$
-  & the default \\
-First difference & $\Delta Y_{it} = \beta \Delta D_{it} + \Delta\epsilon_{it}$
-  & equals within when $T = 2$ \\
-Unit dummies & include $n-1$ indicators & numerically identical to within \\
+FE.1 & strict exogeneity: $\E[\epsilon_{it}\mid X_{i1},\dots,X_{iT},\alpha_i] = 0$ for all $t$
+  & consistency \\
+FE.2 & every column of $X_{it}$ varies over time within some units
+  & identification \\
+FE.3 & $\Var(\epsilon_{it}\mid X_i,\alpha_i) = \sigma^2$, no correlation across $t$
+  & efficiency, usual s.e. \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip5pt
+\vskip2pt
 \begin{itemize}\itemsep2pt
-  \item All three remove $\alpha_i$; the first two are transformations, the
-        third does it with parameters. The costs (previous frames) are shared.
-  \item Within and first differences differ when $T > 2$ and disagree under
-        serial correlation; report which you used and why.
+  \item Nothing is assumed about $\alpha_i$: it may correlate with $X_{it}$ in any way.
+  \item Random effects adds $\E[\alpha_i \mid X_{i1},\dots,X_{iT}] = 0$, as with schools.
+  \item FE.3 is usually false; drop it and cluster (below).
+\end{itemize}
+{\footnotesize Labels as in \srct{Wooldridge (2010, ch.\ 10)}.}
+\end{frame}
+
+\begin{frame}{Two-Way Fixed Effects: Double Demeaning\core}
+In a balanced panel, average the model over $t$, over $i$, and over both:
+\begin{align*}
+  Y_{it} &= X_{it}'\beta + \alpha_i + \lambda_t + \epsilon_{it}
+   && \text{\footnotesize the model} \\
+  \bar Y_{i\cdot} &= \bar X_{i\cdot}'\beta + \alpha_i + \bar\lambda + \bar\epsilon_{i\cdot}
+   && \text{\footnotesize average over $t$} \\
+  \bar Y_{\cdot t} &= \bar X_{\cdot t}'\beta + \bar\alpha + \lambda_t + \bar\epsilon_{\cdot t}
+   && \text{\footnotesize average over $i$} \\
+  \bar Y &= \bar X'\beta + \bar\alpha + \bar\lambda + \bar\epsilon
+   && \text{\footnotesize average over both} \\
+  Y_{it} - \bar Y_{i\cdot} - \bar Y_{\cdot t} + \bar Y
+  &= (X_{it} - \bar X_{i\cdot} - \bar X_{\cdot t} + \bar X)'\beta + \ddot\epsilon_{it}
+   && \text{\footnotesize line 1 $-$ 2 $-$ 3 $+$ 4: $\alpha_i$ and $\lambda_t$ cancel}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item OLS on double-demeaned data = OLS with man and year dummies (FWL).
+        Marriage data: 0.04668 both ways.
+  \item Unbalanced panels have no closed form; software demeans by alternating
+        between unit and period means until nothing changes (\texttt{fixest}).
 \end{itemize}
 \end{frame}
 
-\begin{frame}{What Fixed Effects Costs\core}
+\begin{frame}{Strict Exogeneity: What Demeaning Requires\core}
+With one regressor and unit effects only, the within estimator is
+\begin{align*}
+  \hat\beta_{FE} - \beta
+  &= \frac{\sum_i\sum_t (X_{it} - \bar X_{i\cdot})(\epsilon_{it} - \bar\epsilon_{i\cdot})}
+          {\sum_i\sum_t (X_{it} - \bar X_{i\cdot})^2}
+   && \text{\footnotesize substitute the demeaned model} \\
+  \bar\epsilon_{i\cdot} &= \tfrac1T(\epsilon_{i1} + \dots + \epsilon_{iT})
+   && \text{\footnotesize contains every period's error}
+\end{align*}
+The numerator has mean zero only if $X_{is}$ is uncorrelated with $\epsilon_{it}$
+for \emph{every} pair $s, t$: past, present, and future. That is FE.1.
+\vskip3pt
 \begin{itemize}\itemsep3pt
-  \item \textbf{Precision}. You are using only within-unit variation. If $D_{it}$
-        barely moves within units, the standard error explodes, FWL again.
-  \item \textbf{Measurement error is amplified}. Differencing removes signal and
-        keeps noise, so attenuation bias gets worse.
-  \item \textbf{Nickell bias and the FE-versus-LDV choice}, as on the previous
-        frames: adding a lagged outcome to a fixed-effects model creates its own
-        bias, and FE and LDV embody different selection stories.
-  \item \alert{Always cluster on the unit} (Week 2). Serial correlation within
-        units is the norm.
+  \item $\E[\epsilon_{it}\mid X_{it}] = 0$ alone is not enough.
+  \item It fails under \textbf{feedback}: a wage shock this year ($\epsilon_{it}$)
+        makes marriage next year ($X_{i,t+1}$) more likely.
+  \item If only feedback fails, FE's bias shrinks like $1/T$; FD's does not
+        \srcp{Wooldridge 2010, ch.~10}.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{When Is Fixed Effects Causal? \srcp{Imai and Kim 2019}}
+\begin{columns}[T]
+\begin{column}{0.46\linewidth}
+\begin{center}
+\begin{tikzpicture}[dag,scale=0.9,every node/.append style={transform shape}]
+  \node (U) at (1.6,2.6) {$\alpha_i$};
+  \node (D1) at (0,1.2) {$D_{t-1}$};
+  \node (D2) at (3.2,1.2) {$D_t$};
+  \node (Y1) at (0,-0.6) {$Y_{t-1}$};
+  \node (Y2) at (3.2,-0.6) {$Y_t$};
+  \draw[uarr] (U) -- (D1); \draw[uarr] (U) -- (D2);
+  \draw[uarr] (U) to[bend right=55] (Y1); \draw[uarr] (U) to[bend left=55] (Y2);
+  \draw[arr] (D1) -- (Y1); \draw[arr] (D2) -- (Y2);
+  \draw[bad] (D1) -- (Y2);
+  \draw[bad] (Y1) -- (D2);
+\end{tikzpicture}
+\end{center}
+{\scriptsize Solid: allowed. Dashed orange: ruled out.}
+\end{column}
+\begin{column}{0.52\linewidth}
+\small
+FE removes $\alpha_i$ and nothing else. It needs:
+\begin{itemize}\itemsep3pt
+  \item \textbf{No time-varying confounders} of $D_t$ and $Y_t$.
+  \item \textbf{No carryover}: past treatment does not affect today's outcome
+        ($D_{t-1}\not\to Y_t$).
+  \item \textbf{No feedback}: past outcomes do not affect today's treatment
+        ($Y_{t-1}\not\to D_t$).
+\end{itemize}
+\vskip2pt
+Together: \alert{strict exogeneity}. A man whose wage rises and who then
+marries is feedback; a marriage effect that builds over years is carryover.
+\end{column}
+\end{columns}
+\vskip4pt
+{\footnotesize Relaxing these turns FE into matching on treatment histories
+\srcp{Imai, Kim, and Wang 2023; \texttt{PanelMatch}} or into an event study (below).}
+\end{frame}
+
+\begin{frame}{Testing Strict Exogeneity: Add the Lead}
+Under FE.1, next year's treatment cannot predict this year's outcome once
+$\alpha_i$ and this year's treatment are held fixed:
+\begin{align*}
+  Y_{it} = \beta D_{it} + \delta D_{i,t+1} + X_{it}'\gamma + \alpha_i + \lambda_t + \epsilon_{it},
+  \qquad H_0: \delta = 0 .
+\end{align*}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+marriage data, 1980--86 (lead needs 1987) & estimate & (se) \\
+\midrule
+married this year & 0.048 & (0.025) \\
+married next year & $-0.0005$ & (0.022) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep3pt
+  \item No sign that men marry after a wage jump: $p = 0.98$.
+  \item The s.e.\ (0.022) is as large as the effect: a small feedback would go unseen.
+  \item This is the first pre-period coefficient of an event study (next section).
+\end{itemize}
+{\footnotesize Man and year effects, union, experience$^2$; clustered by man
+\srcp{figs/w10\_panel\_std.R}.}
+\end{frame}
+
+\begin{frame}{First Differences}
+Subtract last year's equation from this year's:
+\begin{align*}
+  Y_{it} - Y_{i,t-1}
+  &= (X_{it} - X_{i,t-1})'\beta + (\lambda_t - \lambda_{t-1})
+     + (\epsilon_{it} - \epsilon_{i,t-1})
+   && \text{\footnotesize difference; $\alpha_i - \alpha_i = 0$} \\
+  \Delta Y_{it} &= \Delta X_{it}'\beta + \Delta\lambda_t + \Delta\epsilon_{it}
+   && \text{\footnotesize $\Delta$ for the change}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Consistent if $\E[\Delta X_{it}\,\Delta\epsilon_{it}] = 0$: only adjacent periods
+        matter, slightly weaker than FE.1.
+  \item $T = 2$: FD and FE are the \alert{same} estimator. Marriage data, 1986--87
+        only: 0.00488 both ways.
+  \item $T > 2$: they differ. Marriage data, all 8 years: FE 0.047 (0.021),
+        FD 0.038 (0.024).
+  \item Both consistent under FE.1. Which is more precise depends on how
+        $\epsilon_{it}$ is correlated over time.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{FE or FD? It Depends on the Serial Correlation}
+If FE.3 holds ($\epsilon_{it}$ uncorrelated over time, variance $\sigma^2$):
+\begin{align*}
+  \Cov(\Delta\epsilon_{it}, \Delta\epsilon_{i,t-1})
+  &= \Cov(\epsilon_{it} - \epsilon_{i,t-1},\; \epsilon_{i,t-1} - \epsilon_{i,t-2}) = -\sigma^2
+   && \text{\footnotesize only $\epsilon_{i,t-1}$ is shared} \\
+  \text{Corr}(\Delta\epsilon_{it}, \Delta\epsilon_{i,t-1}) &= -\sigma^2/2\sigma^2 = -0.5
+   && \text{\footnotesize $\Var(\Delta\epsilon_{it}) = 2\sigma^2$}
+\end{align*}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lll@{}}
+\toprule
+$\epsilon_{it}$ is & $\Delta\epsilon_{it}$ is & efficient \\
+\midrule
+uncorrelated over time & correlated, $-0.5$ & FE \\
+a random walk & uncorrelated, $0$ & FD \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\textbf{Check}: regress the FD residual on its own lag. Marriage data: $-0.40$ (0.02).
+Neither $-0.5$ nor 0: errors are positively correlated over time, short of a random
+walk. Neither estimator is fully efficient; cluster either way.
+\end{frame}
+
+\begin{frame}{Inference: Cluster by Unit\core}
+Errors of the same man are correlated across years (previous frame: FE.3 fails).
+The cluster-robust variance allows any correlation within a unit \srcp{Arellano 1987}:
+\begin{align*}
+  \widehat{\Var}(\hat\beta_{FE})
+  = \Big(\sum_i \ddot{\X}_i'\ddot{\X}_i\Big)^{-1}
+    \Big(\sum_i \ddot{\X}_i'\hat{\bm e}_i\hat{\bm e}_i'\ddot{\X}_i\Big)
+    \Big(\sum_i \ddot{\X}_i'\ddot{\X}_i\Big)^{-1}
+\end{align*}
+$\ddot{\X}_i$: man $i$'s $T$ rows of demeaned regressors; $\hat{\bm e}_i$: his $T$ residuals.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Week 2's sandwich, with a man's $T$ years as one cluster. Valid as
+        $N \to \infty$ with $T$ fixed.
+  \item Marriage data: s.e.\ 0.0183 assuming FE.3, 0.0210 clustered (15\% larger).
+  \item With a treatment that is persistent over time, the gap is much larger:
+        placebo laws in the DiD section.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Random Effects in a Panel}
+As with schools, RE is OLS after subtracting a share $\theta$ of each man's mean.
+In a balanced panel, one $\theta$ for everyone:
+\begin{align*}
+  Y_{it} - \theta\bar Y_{i\cdot} &= (X_{it} - \theta\bar X_{i\cdot})'\beta + \dots,
+  \qquad \theta = 1 - \sqrt{\frac{\sigma_\epsilon^2}{\sigma_\epsilon^2 + T\sigma_\alpha^2}} \\
+  \hat\theta &= 1 - \sqrt{\frac{0.123}{0.123 + 8(0.105)}} = 0.64
+   && \text{\footnotesize marriage data}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item The man effect is 46\% of the error variance; RE removes 64\% of each man's mean.
+  \item RE needs FE.1 \emph{and} $\E[\alpha_i\mid X_{i1},\dots,X_{iT}] = 0$: the man
+        effect unrelated to his whole marriage history.
+  \item RE's 0.064 lies between pooled 0.108 and FE 0.047 (next frame): it partly
+        uses the between-man comparison, and so can estimate education and race.
+\end{itemize}
+{\footnotesize Swamy--Arora variance components, \texttt{plm} \srcp{figs/w10\_panel\_std.R}.}
 \end{frame}
 
 \begin{frame}{The Marriage Wage Premium, Four Ways}
@@ -424,46 +981,144 @@ share of total weight & .08 & .11 & .19 & .15 & .22 & .14 & .12 \\
 Adding year effects: 0.061; wages rise with age for everyone, and marriage comes with age \srcp{figs/w10\_panel.R}.}
 \end{frame}
 
-\begin{frame}{When Is Fixed Effects Causal? \srcp{Imai and Kim 2019}}
-\begin{columns}[T]
-\begin{column}{0.46\linewidth}
-\begin{center}
-\begin{tikzpicture}[dag,scale=0.9,every node/.append style={transform shape}]
-  \node (U) at (1.6,2.6) {$\alpha_i$};
-  \node (D1) at (0,1.2) {$D_{t-1}$};
-  \node (D2) at (3.2,1.2) {$D_t$};
-  \node (Y1) at (0,-0.6) {$Y_{t-1}$};
-  \node (Y2) at (3.2,-0.6) {$Y_t$};
-  \draw[uarr] (U) -- (D1); \draw[uarr] (U) -- (D2);
-  \draw[uarr] (U) to[bend right=55] (Y1); \draw[uarr] (U) to[bend left=55] (Y2);
-  \draw[arr] (D1) -- (Y1); \draw[arr] (D2) -- (Y2);
-  \draw[bad] (D1) -- (Y2);
-  \draw[bad] (Y1) -- (D2);
-\end{tikzpicture}
-\end{center}
-{\scriptsize Solid: allowed. Dashed orange: ruled out.}
-\end{column}
-\begin{column}{0.52\linewidth}
-\small
-FE removes $\alpha_i$ and nothing else. It needs:
+\begin{frame}{What Fixed Effects Costs\core}
 \begin{itemize}\itemsep3pt
-  \item \textbf{No time-varying confounders} of $D_t$ and $Y_t$.
-  \item \textbf{No carryover}: past treatment does not affect today's outcome
-        ($D_{t-1}\not\to Y_t$).
-  \item \textbf{No feedback}: past outcomes do not affect today's treatment
-        ($Y_{t-1}\not\to D_t$).
+  \item \textbf{Precision}. You are using only within-unit variation. If $D_{it}$
+        barely moves within units, the standard error explodes, FWL again.
+  \item \textbf{Measurement error is amplified}. Differencing removes signal and
+        keeps noise, so attenuation bias gets worse.
+  \item \textbf{Nickell bias}: adding a lagged outcome to a fixed-effects model
+        creates its own bias (dynamic panels, below).
+  \item \alert{Always cluster on the unit} (Week 2). Serial correlation within
+        units is the norm.
 \end{itemize}
-\vskip2pt
-Together: \alert{strict exogeneity}. A man whose wage rises and who then
-marries is feedback; a marriage effect that builds over years is carryover.
-\end{column}
-\end{columns}
-\vskip4pt
-{\footnotesize Relaxing these turns FE into matching on treatment histories
-\srcp{Imai, Kim, and Wang 2023; \texttt{PanelMatch}} or into an event study (below).}
 \end{frame}
 
-\begin{frame}{Selection on Growth: Individual Slopes}
+\begin{frame}{Dynamic Panels: Nickell Bias}
+The outcome depends on its own past:
+\begin{align*}
+  Y_{it} = \rho Y_{i,t-1} + X_{it}'\beta + \alpha_i + \epsilon_{it} .
+\end{align*}
+FE.1 fails by construction: $Y_{i,t-1}$ contains $\epsilon_{i,t-1}$, which is in
+$\bar\epsilon_{i\cdot}$. Demeaned lag and demeaned error are correlated
+\srcp{Nickell 1981}:
+\begin{align*}
+  \plim_{N\to\infty}\, \hat\rho_{FE} - \rho \;\approx\; -\frac{1 + \rho}{T - 1}
+   && \text{\footnotesize large-$T$ approximation; exact formula in the script}
+\end{align*}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+simulation, $\rho = 0.5$, $N = 500$, 200 draws & $T = 4$ & $T = 8$ & $T = 16$ \\
+\midrule
+mean of $\hat\rho_{FE}$ & $-0.04$ & 0.27 & 0.40 \\
+Nickell's exact fixed-$T$ value & $-0.04$ & 0.27 & 0.39 \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize Large $N$ does not help; only large $T$ does \srcp{figs/w10\_panel\_std.R}.}
+\end{frame}
+
+\begin{frame}{Anderson--Hsiao: Difference, Then Instrument}
+First-difference to remove $\alpha_i$:
+\begin{align*}
+  \Delta Y_{it} &= \rho\,\Delta Y_{i,t-1} + \Delta X_{it}'\beta + \Delta\epsilon_{it}
+   && \text{\footnotesize $\alpha_i$ gone} \\
+  \Delta Y_{i,t-1} &= Y_{i,t-1} - Y_{i,t-2}, \quad
+  \Delta\epsilon_{it} = \epsilon_{it} - \epsilon_{i,t-1}
+   && \text{\footnotesize both contain $\epsilon_{i,t-1}$: endogenous}
+\end{align*}
+Instrument $\Delta Y_{i,t-1}$ with $Y_{i,t-2}$ \srcp{Anderson and Hsiao 1981}, the
+Week 7 conditions:
+\begin{itemize}\itemsep3pt
+  \item \textbf{Relevance}: $Y_{i,t-2}$ is part of $\Delta Y_{i,t-1}$.
+  \item \textbf{Exogeneity}: $Y_{i,t-2}$ depends on errors up to $t-2$;
+        $\Delta\epsilon_{it}$ on $t$ and $t-1$. Holds \alert{only if $\epsilon_{it}$
+        is serially uncorrelated}.
+\end{itemize}
+\vskip2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+same simulation, $\rho = 0.5$ & $T = 4$ & $T = 8$ & $T = 16$ \\
+\midrule
+mean of $\hat\rho_{AH}$ (sd) & 0.51 (0.13) & 0.51 (0.05) & 0.50 (0.03) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Arellano--Bond: Use Every Valid Lag}
+If $\epsilon_{it}$ is serially uncorrelated, \emph{every} lag from $t-2$ back is a
+valid instrument for period $t$'s differenced equation:
+\begin{align*}
+  \E\big[Y_{i,t-s}\,\Delta\epsilon_{it}\big] = 0, \qquad s \ge 2,\; t = 3,\dots,T .
+\end{align*}
+GMM combines all these moment conditions \srcp{Arellano and Bond 1991}.
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item More instruments, more precision: period $t$ has $t - 2$ of them. With $T = 8$
+        and year effects: 29 instruments.
+  \item \textbf{The key check}: the differenced residuals $\Delta\hat\epsilon_{it}$.
+        First-order correlation is expected ($-0.5$ under no serial correlation,
+        two frames back). \alert{Second-order correlation must be zero}; if it is not,
+        $\epsilon_{it}$ is serially correlated and $Y_{i,t-2}$ is invalid. Start at
+        $Y_{i,t-3}$.
+  \item Too many instruments overfit the first stage and pull GMM toward FE-style
+        bias; report the count \srcp{Roodman 2009}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Dynamic Wage Equation on the Marriage Data}
+$\log$ wage on its lag, married, union; year effects; robust s.e.; \texttt{fixest} (AH),
+\texttt{plm::pgmm} one-step (AB) \srcp{figs/w10\_panel\_std.R}:
+\vskip2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+estimator & lagged wage $\hat\rho$ & married & note \\
+\midrule
+pooled OLS & 0.60 (0.03) & 0.056 (0.015) & $\alpha_i$ in the error: $\hat\rho$ too high \\
+FE & 0.06 (0.02) & 0.062 (0.021) & Nickell: $\hat\rho$ too low \\
+Anderson--Hsiao, $Y_{t-2}$ & 0.12 (0.03) & 0.046 (0.022) & first-stage $F$ = 830 \\
+Arellano--Bond, $Y_{t-2}$ on & 0.16 (0.04) & 0.044 (0.023) & 2nd-order test $z = 2.18$, $p = 0.03$ \\
+Arellano--Bond, $Y_{t-3}$ on & 0.68 (0.14) & 0.031 (0.031) & 2nd-order test $p = 0.01$ \\
+Anderson--Hsiao, $Y_{t-3}$ & 0.81 (0.27) & 0.027 (0.034) & first-stage $F$ = 12 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep1pt
+  \item The second-order test rejects: wage shocks persist, so $Y_{t-2}$ is not a
+        valid instrument, and the rows using it are biased.
+  \item Lag 3 is weak ($F = 12$) and the test still rejects: $\hat\rho$ jumps to
+        0.7--0.8 with large s.e. Persistence is not pinned down in eight years.
+  \item The marriage coefficient, 0.03--0.06, is far less sensitive than $\hat\rho$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[allowframebreaks,t]{Fixed Effects or a Lagged Outcome?}
+Sociologists routinely control for last year's outcome, to absorb differences
+between units that are \emph{changing} rather than fixed. It is a reasonable
+instinct. But combining that move with unit fixed effects creates a new bias, and
+it is worth knowing why before you reach for it.
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item \textbf{FE and LDV embody different selection stories}: FE assumes
+        selection on time-invariant traits; LDV assumes selection on prior
+        outcomes. They can both be valid, but they are different assumptions and
+        will generally give different answers.
+  \item \srct{Angrist and Pischke (2009)} suggest running both: under some
+        conditions the two \alert{bracket} the truth, so agreement is reassuring
+        and disagreement tells you how much the selection story matters. Treat
+        that as a heuristic, not a theorem.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Random Trends: Each Man His Own Slope}
 FE allows men to differ in wage \emph{levels}. If men on steeper wage paths
 marry, FE still mistakes their growth for a marriage effect.
 \begin{align*}
@@ -474,7 +1129,8 @@ marry, FE still mistakes their growth for a marriage effect.
 \end{align*}
 \vskip-2pt
 \begin{itemize}\itemsep3pt
-  \item \textbf{FEIS}, fixed effects with individual slopes: detrend each unit
+  \item The \textbf{random trend model} \srcp{Wooldridge 2010, ch.~11}; sociology calls it
+        \textbf{FEIS}, fixed effects with individual slopes: detrend each unit
         separately, then pool \srcp{Brüderl and Ludwig 2015; Rüttenauer and Ludwig 2023}.
         Needs at least three observations per unit.
   \item Identifies $\beta$ from \emph{departures} from each man's own trajectory
@@ -1782,7 +2438,10 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \begin{itemize}\itemsep2pt
 \item Abadie, Alberto. 2005. ``Semiparametric Difference-in-Differences Estimators.'' \textit{Review of Economic Studies} 72(1): 1--19.
 \item Allison, Paul D. 2009. \textit{Fixed Effects Regression Models}. Sage.
+\item Anderson, T. W. and Cheng Hsiao. 1981. ``Estimation of Dynamic Models with Error Components.'' \textit{Journal of the American Statistical Association} 76(375): 598--606.
 \item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009. \textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 5]
+\item Arellano, Manuel. 1987. ``Computing Robust Standard Errors for Within-Groups Estimators.'' \textit{Oxford Bulletin of Economics and Statistics} 49(4): 431--434.
+\item Arellano, Manuel and Stephen Bond. 1991. ``Some Tests of Specification for Panel Data: Monte Carlo Evidence and an Application to Employment Equations.'' \textit{Review of Economic Studies} 58(2): 277--297.
 \item Athey, Susan and Guido W. Imbens. 2022. ``Design-Based Analysis in Difference-in-Differences Settings with Staggered Adoption.'' \textit{Journal of Econometrics} 226(1): 62--79.
 \item Baker, Andrew, Brantly Callaway, Scott Cunningham, Andrew Goodman-Bacon, and Pedro H.C. Sant'Anna. 2026. ``Difference-in-Differences Designs: A Practitioner's Guide.'' \textit{Journal of Economic Literature} 64(2): 498--557.
 \item Bertrand, Marianne, Esther Duflo, and Sendhil Mullainathan. 2004. ``How Much Should We Trust Differences-in-Differences Estimates?'' \textit{Quarterly Journal of Economics} 119(1): 249--275.
@@ -1806,6 +2465,7 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \item Goodman-Bacon, Andrew. 2021. ``Difference-in-Differences with Variation in Treatment Timing.'' \textit{Journal of Econometrics} 225(2): 254--277.
 \item Harknett, Kristen, Daniel Schneider, and Véronique Irwin. 2021. ``Improving Health and Economic Security by Reducing Work Schedule Uncertainty.'' \textit{Proceedings of the National Academy of Sciences} 118(42): e2107828118.
 \item Heckman, James J., Hidehiko Ichimura, and Petra E. Todd. 1997. ``Matching as an Econometric Evaluation Estimator: Evidence from Evaluating a Job Training Programme.'' \textit{Review of Economic Studies} 64(4): 605--654.
+\item Hausman, Jerry A. 1978. ``Specification Tests in Econometrics.'' \textit{Econometrica} 46(6): 1251--1271.
 \item Imai, Kosuke and In Song Kim. 2019. ``When Should We Use Unit Fixed Effects Regression Models for Causal Inference with Longitudinal Data?'' \textit{American Journal of Political Science} 63(2): 467--490.
 \item Imai, Kosuke, In Song Kim, and Erik H. Wang. 2023. ``Matching Methods for Causal Inference with Time-Series Cross-Sectional Data.'' \textit{American Journal of Political Science} 67(3): 587--605.
 \item Kalil, Ariel, Hope Corman, Dhaval M. Dave, Ofira Schwartz-Soicher, and Nancy E. Reichman. 2023. ``Welfare Reform and the Quality of Young Children's Home Environments.'' \textit{Demography} 60(6): 1791--1813.
@@ -1814,10 +2474,12 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \item Ludwig, Volker and Josef Brüderl. 2021. ``What You Need to Know When Estimating Impact Functions with Panel Data for Demographic Research.'' \textit{Comparative Population Studies} 46.
 \item MacKinnon, James G. and Matthew D. Webb. 2018. ``The Wild Bootstrap for Few (Treated) Clusters.'' \textit{Econometrics Journal} 21(2): 114--135.
 \item Mundlak, Yair. 1978. ``On the Pooling of Time Series and Cross Section Data.'' \textit{Econometrica} 46(1): 69--85.
+\item Nickell, Stephen. 1981. ``Biases in Dynamic Models with Fixed Effects.'' \textit{Econometrica} 49(6): 1417--1426.
 \item Olden, Andreas and Jarle Møen. 2022. ``The Triple Difference Estimator.'' \textit{Econometrics Journal} 25(3): 531--553.
 \item Ortiz-Villavicencio, Marcelo and Pedro H.C. Sant'Anna. 2025. ``Better Understanding Triple Differences Estimators.'' arXiv:2505.09942.
 \item Rambachan, Ashesh and Jonathan Roth. 2023. ``A More Credible Approach to Parallel Trends.'' \textit{Review of Economic Studies} 90(5): 2555--2591.
 \item Rambachan, Ashesh and Jonathan Roth. 2026. ``Design-Based Uncertainty for Quasi-Experiments.'' \textit{Journal of the American Statistical Association} 121(553): 477--491.
+\item Roodman, David. 2009. ``A Note on the Theme of Too Many Instruments.'' \textit{Oxford Bulletin of Economics and Statistics} 71(1): 135--158.
 \item Roth, Jonathan. 2022. ``Pretest with Caution: Event-Study Estimates after Testing for Parallel Trends.'' \textit{American Economic Review: Insights} 4(3): 305--322.
 \item Roth, Jonathan. 2026. ``Interpreting Event-Studies from Recent Difference-in-Differences Methods.'' \textit{Japanese Economic Review} 77(2): 275--288.
 \item Roth, Jonathan and Pedro H.C. Sant'Anna. 2023. ``When Is Parallel Trends Sensitive to Functional Form?'' \textit{Econometrica} 91(2): 737--747.
@@ -1829,6 +2491,7 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \item Sun, Liyang and Sarah Abraham. 2021. ``Estimating Dynamic Treatment Effects in Event Studies with Heterogeneous Treatment Effects.'' \textit{Journal of Econometrics} 225(2): 175--199.
 \item Vella, Francis and Marno Verbeek. 1998. ``Whose Wages Do Unions Raise? A Dynamic Model of Unionism and Wage Rate Determination for Young Men.'' \textit{Journal of Applied Econometrics} 13(2): 163--183.
 \item Wing, Coady, Seth M. Freedman, and Alex Hollingsworth. 2024. ``Stacked Difference-in-Differences.'' NBER Working Paper 32054.
+\item Wooldridge, Jeffrey M. 2010. \textit{Econometric Analysis of Cross Section and Panel Data}. 2nd ed. MIT Press.
 \item Wooldridge, Jeffrey M. 2025. ``Two-Way Fixed Effects, the Two-Way Mundlak Regression, and Difference-in-Differences Estimators.'' \textit{Empirical Economics} 69(5): 2545--2587.
 \end{itemize}
 \end{frame}

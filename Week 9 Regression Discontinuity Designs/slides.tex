@@ -221,9 +221,8 @@ RD (today) & just either side of a cutoff in $X$ & continuity at the cutoff \\
   \item Sharp RD: why continuity identifies the effect at $c$, and only there.
   \item Estimation as four choices: shape, weights, bandwidth, inference.
   \item Covariates and power; validity checks; local randomization (with Dutch science grants).
-  \item Fuzzy RD as local IV; Dell and Querubín (2018) on bombing in Vietnam.
-  \item Extensions: several cutoffs, away from the cutoff, boundaries, kinks, time.
-  \item A sociological application: policing after police shootings.
+  \item Fuzzy RD as local IV; Dell and Querubín (2018): thresholds and a boundary.
+  \item Extensions: RD in time (police shootings), kinks, repeated cutoffs.
 \end{enumerate}
 \end{frame}
 
@@ -1091,8 +1090,12 @@ The bias of the line is $B h^2$, and $B$ depends on how much the curves
 \end{enumerate}
 \vskip4pt
 \begin{itemize}\itemsep2pt
-  \item In practice: report the point estimate $\hat\tau_h$ and the robust
-        interval. \texttt{rdrobust} prints both by default.
+  \item The robust interval is centred on $\hat\tau^{\,bc}$, not on $\hat\tau_h$.
+        Senate: $\hat\tau_h = 7.41$, $\hat\tau^{\,bc} = 7.51$, robust interval
+        [4.09, 10.92], whose midpoint is 7.51.
+  \item Common practice \srcp{Cattaneo, Idrobo, and Titiunik 2020}: report $\hat\tau_h$
+        (smaller MSE, since $\hat B$ adds noise) with the robust interval, and say so.
+        \texttt{rdrobust} prints both rows.
 \end{itemize}
 \end{frame}
 
@@ -1653,46 +1656,138 @@ The fuzzy RD estimator is a ratio of two sharp RD estimates:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{What the Ratio Estimates}
-Let $D_i(1)$, $D_i(0)$ be unit $i$'s treatment just above and just below $c$
-(compliers: $D_i(1)=1$, $D_i(0)=0$). As in Week 7:
-\begin{align*}
-  \text{jump in } Y
-  &= \E\big[Y_i(D_i(1)) - Y_i(D_i(0))\mid X_i = c\big]
-   && \text{\footnotesize continuity, for each type} \\
-  &= \E\big[(D_i(1) - D_i(0))\,(Y_i(1) - Y_i(0))\mid X_i = c\big]
-   && \text{\footnotesize zero unless $D_i(1) \neq D_i(0)$} \\
-  &= \Pr(C\mid c)\,\tau_C(c) - \Pr(\text{defier}\mid c)\,\tau_{\text{def}}(c)
-   && \text{\footnotesize split by type} \\
-  &= \Pr(C\mid c)\,\tau_C(c)
-   && \text{\footnotesize monotonicity: no defiers} \\
-  \text{jump in } D &= \Pr(C\mid c)
-   && \text{\footnotesize same steps with $D$}
-\end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep2pt
-  \item The ratio is $\tau_C(c)$: the effect for \alert{compliers at the cutoff}
-        \srcp{Hahn, Todd, and van der Klaauw 2001}.
-  \item ``Continuity for each type'' is the new assumption: the share of each
-        type and its mean outcomes do not jump at $c$.
+\begin{frame}{The Jump in $D$: Ser Pilo Paga}
+\srct{Londoño-Vélez, Rodríguez, and Sánchez (2020)}, Lab 9: college tuition for poor,
+high-scoring students, eligible below a wealth cutoff. $D_i$ = received it.
+\begin{center}
+\includegraphics[width=0.68\linewidth]{figs/spp_jump_D.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep1pt
+  \item Below the cutoff no one receives it; above, $62\%$ do: the jump in $D$ is
+        $0.62$, not $1$. The denominator of the ratio.
+  \item Local linear, triangular kernel, $h = 9.04$ (dotted): \texttt{rdrobust}'s $h$ for the ratio.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Estimation: Local 2SLS}
-Run the sharp RD twice, same kernel and same $h$, and divide:
+\begin{frame}{The Jump in $Y$: Ser Pilo Paga}
+Same students, same $h$; $Y_i$ = enrolled in college right after the exam.
+\begin{center}
+\includegraphics[width=0.68\linewidth]{figs/spp_jump_Y.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep1pt
+  \item The jump in $Y$ is $0.27$: eligibility raises enrollment by 27 points
+        (intention to treat). The numerator of the ratio.
+  \item $\hat\tau_{FRD} = 0.269 / 0.619 = \alert{0.435}$, the \texttt{rdrobust} fuzzy
+        estimate: receiving SPP raises enrollment by 43 points for compliers at the cutoff.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What the Ratio Estimates: Four Types at the Cutoff}
+Write $D_i(1)$ for the treatment unit $i$ would take just above $c$ and $D_i(0)$
+for the treatment just below. As in Week 7, every unit is one of four types:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lccl}
+\toprule
+Type & $D_i(0)$, just below & $D_i(1)$, just above & \\
+\midrule
+\textbf{Compliers} & 0 & 1 & treated only if above $c$ \\
+Always-takers & 1 & 1 & treated on both sides \\
+Never-takers & 0 & 0 & untreated on both sides \\
+\alert{Defiers} & 1 & 0 & treated only if below $c$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+Three assumptions, each the RD version of a Week 7 one:
+\begin{itemize}\itemsep1pt
+  \item \textbf{Continuity} (replaces independence): the share of each type and
+        each type's mean $Y_i(1)$ and $Y_i(0)$ do not jump at $c$: the same mix of
+        people just below and just above.
+  \item \textbf{Exclusion}: crossing $c$ changes $Y$ only through $D$.
+  \item \textbf{Monotonicity}: no defiers, i.e., no one is treated because they fell below the cutoff.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What the Ratio Estimates: the Numerator}
+Split the jump in $Y$ by type. By continuity, both limits use the same shares
+and means, those at $X_i = c$, written $\Pr(\text{C})$, $\E[Y_i(1)\mid \text{C}]$, and so on:
 \begin{align*}
-  Y_i &= \alpha_Y + \beta_Y Z_i + \gamma_Y (X_i - c) + \eta_Y Z_i (X_i - c) + \epsilon_i \\
-  D_i &= \alpha_D + \beta_D Z_i + \gamma_D (X_i - c) + \eta_D Z_i (X_i - c) + v_i,
-  \qquad \hat\tau = \hat\beta_Y / \hat\beta_D ,
+  &\lim_{x\downarrow c}\E[Y_i\mid X_i=x] - \lim_{x\uparrow c}\E[Y_i\mid X_i=x] \\
+  &\quad= \Pr(\text{AT})\underbrace{\big(\E[Y_i(1)\mid \text{AT}] - \E[Y_i(1)\mid \text{AT}]\big)}_{=\,0} \\
+  &\quad\ + \Pr(\text{NT})\underbrace{\big(\E[Y_i(0)\mid \text{NT}] - \E[Y_i(0)\mid \text{NT}]\big)}_{=\,0} \\
+  &\quad\ + \Pr(\text{C})\ \big(\E[Y_i(1)\mid \text{C}] - \E[Y_i(0)\mid \text{C}]\big) \\
+  &\quad\ - \Pr(\text{D})\ \big(\E[Y_i(1)\mid \text{D}] - \E[Y_i(0)\mid \text{D}]\big) .
 \end{align*}
-with $Z_i = \mathds 1\{X_i \geq c\}$. Numerically the same: 2SLS of $Y$ on $D_i$
-and $D_i(X_i - c)$, instrumented by $Z_i$ and $Z_i(X_i - c)$, controlling for $(X_i - c)$.
+\vskip2pt
+Always- and never-takers take the same treatment on both sides, so \alert{by
+exclusion} they contribute zero. \alert{Monotonicity} removes the last line.
+\end{frame}
+
+\begin{frame}{What the Ratio Estimates: the Denominator}
+Just above $c$ the treated are compliers and always-takers; just below, always-takers
+and defiers:
+\begin{align*}
+  \text{jump in } D
+  &= \big[\Pr(\text{C}) + \Pr(\text{AT})\big] - \big[\Pr(\text{AT}) + \Pr(\text{D})\big]
+     && \text{\footnotesize by type} \\
+  &= \Pr(\text{C}) - \Pr(\text{D}) \\
+  &= \Pr(\text{C})
+     && \text{\footnotesize no defiers}
+\end{align*}
 \vskip3pt
+Dividing:
+\begin{block}{The fuzzy RD estimand \srcp{Hahn, Todd, and van der Klaauw 2001}}
+\begin{align*}
+  \tau_{FRD} = \frac{\text{jump in } Y}{\text{jump in } D}
+  = \E\big[\,Y_i(1) - Y_i(0)\ \big|\ \text{$i$ is a complier},\ X_i = c\,\big] .
+\end{align*}
+\end{block}
+\vskip3pt
+The Week 7 LATE theorem with ``at the cutoff'' added: the effect for
+\alert{compliers whose running variable is at $c$}.
+\end{frame}
+
+\begin{frame}{Estimation, Route 1: Two Sharp RDs and Their Ratio}
+Keep units with $|X_i - c| \leq h$, weight them by the kernel, let
+$Z_i = \mathds 1\{X_i \geq c\}$, and run the \emph{same} sharp RD twice:
+\begin{align*}
+  D_i &= \alpha_D + \beta_D Z_i + \gamma_D (X_i - c) + \eta_D Z_i (X_i - c) + v_i
+   && \text{\footnotesize sharp RD on $D$: jump $\hat\beta_D$} \\
+  Y_i &= \alpha_Y + \beta_Y Z_i + \gamma_Y (X_i - c) + \eta_Y Z_i (X_i - c) + e_i
+   && \text{\footnotesize sharp RD on $Y$: jump $\hat\beta_Y$} \\
+  \hat\tau &= \hat\beta_Y / \hat\beta_D
+   && \text{\footnotesize Wald ratio, Week 7}
+\end{align*}
+\vskip-2pt
 \begin{itemize}\itemsep2pt
-  \item One bandwidth for both regressions; \texttt{rdrobust(y, x, fuzzy = d)}
-        chooses it for the ratio.
-  \item The standard error is the IV standard error of Week 7, computed locally.
-  \item Report $\hat\beta_D$, the first stage, in the main table.
+  \item This is IV with $Z_i$ as the instrument: $\hat\beta_D$ is the first stage,
+        $\hat\beta_Y$ the reduced form.
+  \item Both regressions must use the \alert{same} $h$, kernel, and polynomial;
+        otherwise the ratio is not an IV estimate of anything.
+  \item Ser Pilo Paga, $h = 9.04$: $0.269 / 0.619 = 0.435$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Estimation, Route 2: Local 2SLS}
+Same window, same kernel, same instrument $Z_i$. As in Week 7:
+\begin{align*}
+  \text{Stage 1:}\quad D_i &= \alpha_D + \beta_D Z_i + \gamma_D (X_i - c) + \eta_D Z_i (X_i - c) + v_i
+  \quad\Longrightarrow\quad \hat D_i \\[3pt]
+  \text{Stage 2:}\quad Y_i &= \alpha + \tau\,\hat D_i + \gamma (X_i - c) + \eta\, Z_i (X_i - c) + u_i
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep2pt
+  \item Stage 1 is Route 1's sharp RD on $D$. The two slope terms are
+        controls and enter \emph{both} stages; $Z_i$ is the only excluded instrument.
+  \item One instrument, one endogenous $D$: 2SLS equals the Route 1 ratio exactly.
+        Ser Pilo Paga: \texttt{ivreg} gives $0.435$.
+  \item Do not take the standard error from the second stage by hand (Week 7):
+        use \texttt{rdrobust(y, x, fuzzy = d)}. Report $\hat\beta_D$ in the main table.
+  \item \texttt{rdrobust} picks one MSE-optimal $h$ for the ratio $\hat\tau$ and uses
+        the \emph{same} $h$ in both stages, so ratio $=$ 2SLS still holds.
 \end{itemize}
 \end{frame}
 
@@ -1708,29 +1803,8 @@ and $D_i(X_i - c)$, instrumented by $Z_i$ and $Z_i(X_i - c)$, controlling for $(
         near the cutoff.
   \item \textbf{Weak first stage} is a real risk: if take-up jumps by only a few
         percentage points, you are dividing by a small noisy number and all the
-        Week 7 pathologies return. Report the size of the jump in $D$.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Weak First Stage: Anderson--Rubin at the Cutoff}
-The Week 7 idea carries over. To test $H_0: \tau = \tau_0$, build
-\begin{align*}
-  \tilde Y_i = Y_i - \tau_0 D_i ,
-  \qquad
-  \text{jump in } \tilde Y = \text{jump in } Y - \tau_0\cdot\text{jump in } D ,
-\end{align*}
-which is zero exactly when $\tau_0$ is the ratio. Run a \emph{sharp} RD on
-$\tilde Y_i$; keep every $\tau_0$ it does not reject.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item No division, so a small jump in $D$ does not distort the test; the set
-        can be wide or unbounded, and then it should be.
-  \item \srct{Feir, Lemieux, and Marmer (2016)}: the usual fuzzy-RD $t$-test
-        over-rejects when the jump in take-up is small; invert a test with
-        the null-restricted standard error instead.
-  \item \srct{Noack and Rothe (2024)}: the same construction with the bias of each
-        sharp RD bounded as in honest intervals; valid with weak first stages,
-        discrete running variables, and donuts.
+        Week 7 pathologies return. Check strength with the same first-stage $F$
+        as in Week 7: the jump in $D$ and its $F$ statistic.
 \end{itemize}
 \end{frame}
 
@@ -1771,39 +1845,42 @@ the QJE version is \emph{QJE} 133(2): 701--764.}
   \item The \alert{posterior mean}, a continuous number between 1 and 5, is
         \alert{rounded}: 3.49 becomes C, 3.51 becomes B. Rounded submodel scores
         are combined into one letter grade per hamlet.
-  \item Air strikes were planned weekly by quota, with the hamlet grade among
-        the inputs. Just below a rounding threshold, a hamlet is graded one letter
-        worse than a near-identical one just above.
+  \item Air strikes were planned weekly, with the hamlet grade among the inputs.
+        Just below a threshold, a hamlet is graded one letter worse than a
+        near-identical one just above.
   \item The continuous scores were never printed; the conditional probabilities
         were classified. The authors rebuilt them from archived tapes and
         reproduce every rounded score.
 \end{itemize}
-\vskip1pt
 \textbf{Running variable}: distance from the continuous score to the nearest of
 four thresholds (A/B, B/C, C/D, D/E); \textbf{instrument}: being below it.
 Hamlets near each threshold: 35\%, 46\%, 16\%, 3\%.
+{\footnotesize\textbf{Pooling four thresholds}: the pooled effect is a weighted average of the
+threshold-specific effects, weights $\propto$ hamlets at each threshold, so it
+is mostly about B/C hamlets \srcp{Cattaneo, Keele, Titiunik, and Vazquez-Bare 2016}.}
 \end{frame}
 
 \begin{frame}{Dell and Querubín: the Estimating Equation}
 For hamlet $h$ first near a threshold in quarter $t$ (each hamlet once):
+$Z_{ht} = 1$ if just \emph{below} the threshold (instrument), $D_{ht}$ = bombing
+(treatment), $Y_{h,t+n}$ = outcome $n$ quarters later.
 \begin{align*}
-  y_{h,t+n} = \gamma\,\text{below}_{ht}
-  &+ \sum_{d=1}^{4} \Big(\delta_d D_{htd} + D_{htd}\,f_d(\text{dist}_{ht})
-  + D_{htd}\,f_d(\text{dist}_{ht})\,\text{below}_{ht}\Big) \\
-  &+ \alpha_t + X_{ht}'\beta + \epsilon_{ht}
+  \text{Stage 1:}\quad D_{ht} &= \pi Z_{ht}
+  + \sum_{d=1}^{4} \Big(\delta_d G_{htd} + G_{htd}\,f_d(\text{dist}_{ht})
+  + G_{htd}\,f_d(\text{dist}_{ht})\,Z_{ht}\Big) \\
+  &\quad + \alpha_t + X_{ht}'\beta + v_{ht} \\
+  \text{Stage 2:}\quad Y_{h,t+n} &= \tau \hat D_{ht}
+  + \big(\text{the same threshold terms, } \alpha_t,\ X_{ht}'\beta\big) + \epsilon_{ht}
 \end{align*}
 \vskip-2pt
 \begin{itemize}\itemsep2pt
-  \item $D_{htd} = 1$ if threshold $d$ is the nearest: a separate intercept and
-        separate local linear slopes on each side of each threshold. This is
-        the multi-cutoff pooling of the next section.
-  \item $\alpha_t$: quarter fixed effects; $X_{ht}$: indicators for every
-        answer that entered the score, for precision.
-  \item Local linear, Imbens--Kalyanaraman bandwidth; standard errors clustered
-        by village.
-  \item First stage: $y$ = bombing; second stage instruments bombing with
-        $\text{below}_{ht}$. The estimate is a LATE for hamlets bombed
-        \emph{because} they were rounded down.
+  \item $G_{htd} = 1$ if threshold $d$ is the nearest: its own intercept and
+        local linear slopes on each side of each threshold.
+  \item $\alpha_t$: quarter fixed effects; $X_{ht}$: the answers that entered the
+        score, for precision. IK bandwidth; s.e.\ clustered by village.
+  \item $\hat\pi$ is the first stage; $Y$ on $Z_{ht}$ with the same terms is the
+        reduced form. $\hat\tau$ is a LATE for hamlets bombed \emph{because}
+        they were rounded down.
 \end{itemize}
 \end{frame}
 
@@ -1887,28 +1964,114 @@ civic society index & $-0.523$ (0.248) & 0.69 & $-14$ pts \\
 
 \begin{frame}{Dell and Querubín: a Boundary Design}
 \begin{columns}[T]
-\begin{column}{0.45\linewidth}
+\begin{column}{0.44\linewidth}
 \includegraphics[width=\linewidth]{figs/dq_map.jpg}
-{\scriptsize Their Figure 7: the I/II Corps boundary; hamlets within 25 km.}
+{\scriptsize Their Figure 7: the Corps I/II boundary; hamlets within 25 km.}
 \end{column}
-\begin{column}{0.5\linewidth}
+\begin{column}{0.53\linewidth}
 \small
-Marines (I Corps): small units in villages, ``hearts and minds''; Army
-(II Corps): firepower.
-{\footnotesize
-\begin{align*}
-  y_{hs} = \alpha_0 + \alpha_1\,\text{USMC}_{hs} + f(\text{lat}, \text{lon}) + G_{hs}'\beta + \alpha_s
-\end{align*}}
-\vskip-4pt
+\textbf{The question}: does \emph{how} a war is fought matter, not only how much?
+\vskip3pt
+\textbf{Two doctrines, one line.}
 \begin{itemize}\itemsep1pt
-  \item $f$: local linear in location; $G$: geography; $\alpha_s$: boundary segment.
-  \item 302 hamlets within 25 km, 64 village clusters.
-  \item Results (Table 10): armed VC present $-0.560$ (0.075); VC attacks on
-        hamlets $-0.482$ (0.061); education $0.243$ (0.096); health $0.562$
-        (0.198); security index $0.095$ (0.110).
+  \item Corps I (north), the \textbf{Marines}: ``Civic Action'' (development aid)
+        and ``Combined Action'' (small units living in villages with local forces).
+  \item Corps II (south), the \textbf{Army}: overwhelming firepower,
+        search and destroy, body counts.
 \end{itemize}
+\vskip3pt
+\textbf{Treatment}: being on the Marine side. \textbf{Running variable}: the
+hamlet's location. \textbf{Outcomes}: HES security, insurgency, and public
+goods, averaged up to the Marines' withdrawal (April 1971).
 \end{column}
 \end{columns}
+\end{frame}
+
+\begin{frame}{Geography as a Running Variable}
+The running variable is location $(\text{lat}, \text{lon})$; the cutoff is a
+\emph{line}, not a point \srcp{Keele and Titiunik 2015}.
+\begin{itemize}\itemsep3pt
+  \item \textbf{Assumption}: everything else that affects $Y$ changes smoothly
+        across the line, so hamlets just north and just south are comparable.
+        It is the continuity assumption of the sharp RD, in two dimensions.
+  \item \textbf{Estimand}: a jump $\tau(b)$ at every point $b$ on the line. One
+        number averages them, weighted by where units live along the line.
+  \item \textbf{Checks}: the sharp-RD ones, on a map: balance in terrain and in
+        pre-period outcomes; several bandwidths (km); drop units right at the line
+        if treatment can spill across it.
+  \item \alert{Compound treatment is the rule}: borders separate taxes, schools,
+        police, and history at once. Name the bundle.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: the Specification}
+For hamlet $h$ on boundary segment $s$, within 25 km of the line:
+\begin{align*}
+  Y_{hs} = \alpha_0 + \tau\,\text{Marines}_{hs} + f(\text{lat}_{hs}, \text{lon}_{hs})
+           + G_{hs}'\beta + \alpha_s + \epsilon_{hs}
+\end{align*}
+{\small $f$: local linear in latitude and longitude; $G$: geographic controls;
+$\alpha_s$: two boundary segments; s.e.\ clustered by village; 302 hamlets, 64 villages.}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item $\tau$ is the jump at the line, averaged along it: Marines minus Army for
+        neighbouring hamlets.
+  \item Identifying assumption: ``all other factors change smoothly at the boundary''.
+        The authors do not argue the line was drawn arbitrarily; balance has to
+        carry the argument.
+  \item Bombing, the first design's treatment, is 11 points lower on the
+        Marine side, not significant (s.e.\ 0.10).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: Balance at the Boundary}
+The same regression with a pre-period or fixed characteristic as $Y$ (their Table 9):
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+characteristic & Marines side (se) & mean \\
+\midrule
+VC attacks, 1964 to May 1965 & $0.020$ (0.047) & \\
+elevation (m) & $-78$ (108) & \\
+slope & $-1.55$ (1.50) & \\
+market nearby, 1929 map & $-0.032$ (0.040) & \\
+military post nearby, 1929 map & \alert{$0.300$ (0.160)} & 0.05 \\
+road km, 1929 map & \alert{$2.253$ (0.816)} & 1.63 \\
+paved road km, 1929 map & $-0.109$ (0.710) & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip1pt
+{\small Pre-war violence and terrain are balanced; colonial posts (10\% level) and
+unpaved roads are not.}
+\end{frame}
+
+\begin{frame}{Dell and Querubín: Boundary Results}
+Effect of being on the Marine side (their Table 10):
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+outcome & Marines side (se) & mean \\
+\midrule
+armed Viet Cong present & $-0.560$ (0.075) & 0.32 \\
+VC-initiated attacks on the hamlet & $-0.482$ (0.061) & 0.33 \\
+VC attacks on troops & $-0.191$ (0.071) & 0.18 \\
+health index & $0.562$ (0.198) & 0.36 \\
+education index & $0.243$ (0.096) & 0.25 \\
+security index & $0.095$ (0.110) & 0.35 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt
+  \item The Marine side had far less insurgent presence and more public goods.
+  \item Not just less bombing: bombing did not differ significantly at the line.
+  \item Robust to a quadratic and to 50 km (education loses significance), and
+        to dropping hamlets within 10 km of the line (spillovers).
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Dell and Querubín: What the Boundary Cannot Separate}
@@ -1935,146 +2098,23 @@ on security and on the institutions it meant to build.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Several Cutoffs: What Pooling Estimates}
-Group $j$ faces cutoff $c_j$ (with probability $p_j$). Pool by centring,
-$\tilde X_i = X_i - c_{J_i}$, and run one RD at $\tilde X = 0$:
+\begin{frame}{RD in Time: the Setup}
+\textbf{Goal}: the effect of an event that starts on one date $t^{*}$ for everyone
+\srcp{Hausman and Rapson 2018}. The running variable is the date $t_i$ of
+observation $i$; keep observations with $|t_i - t^{*}| \leq h$ days:
 \begin{align*}
-  \text{jump at } \tilde X = 0
-  &= \sum_j \Pr(J_i = j \mid \tilde X_i = 0)\,\tau_j
-   && \text{\footnotesize group jumps, mixed} \\
-  \Pr(J_i = j\mid\tilde X_i = 0) &= \frac{f_j(c_j)\,p_j}{\sum_k f_k(c_k)\,p_k}
-   && \text{\footnotesize Bayes' rule; $f_j$: density in group $j$}
+  Y_i = \alpha + \tau\,\mathds 1\{t_i \geq t^{*}\} + \beta\,(t_i - t^{*})
+        + \gamma\,\mathds 1\{t_i \geq t^{*}\}(t_i - t^{*}) + \epsilon_i
 \end{align*}
-\begin{itemize}\itemsep3pt
-  \item The pooled effect is a weighted average of cutoff-specific effects,
-        weights $\propto$ how many units sit at each cutoff
-        \srcp{Cattaneo, Keele, Titiunik, and Vazquez-Bare 2016}.
-  \item In Dell and Querubín, 46\% of hamlets sit near the B/C threshold and 3\%
-        near D/E: the pooled estimate is mostly about mid-grade hamlets.
-  \item Report the cutoff-specific estimates when you can; they show whether
-        one $\tau$ is a fair summary.
-\end{itemize}
+$\tau$ is the jump on the day of the event: the sharp RD, with days for $X$.
+\vskip-6pt
+\begin{center}
+\includegraphics[width=0.71\linewidth]{figs/rdtime_concept.pdf}
+\end{center}
+\vskip-8pt
+{\footnotesize Hypothetical data. Unlike turning 21 (each person's own birthday), $t^{*}$ is one
+calendar date for all: anything else that happened that day also jumps.}
 \end{frame}
-
-\begin{frame}{Away From the Cutoff}
-\textbf{Goal}: $\tau(x)$ for $x \neq c$, which continuity alone cannot deliver.
-\vskip2pt
-\textbf{With two cutoffs} $c_1 < c_2$, at $x \in (c_1, c_2)$ group 1 is treated
-and group 2 is not. Assume the two control curves are parallel:
-$m_{0,1}(x) - m_{0,2}(x) = \Delta$ for all $x$.
-\begin{align*}
-  \Delta &= m_{0,1}(c_1) - m_{0,2}(c_1)
-   && \text{\footnotesize both observed untreated at $c_1$ (group 1 from the left)} \\
-  \tau_1(x) &= m_{1,1}(x) - \big(m_{0,2}(x) + \Delta\big)
-   && \text{\footnotesize the unseen $m_{0,1}(x)$ replaced}
-\end{align*}
-\vskip-2pt
-{\footnotesize \srcp{Cattaneo, Keele, Titiunik, and Vazquez-Bare 2021}; the assumption is Week 10's parallel trends, with $x$ for time.}
-\vskip4pt
-\textbf{Other routes}:
-\begin{itemize}\itemsep2pt
-  \item \textbf{Conditional independence}: given other predictors $W$, $Y(d)$
-        does not depend on $X$; then $W$, not $X$, does the work away from $c$,
-        and the assumption is testable on each side \srcp{Angrist and Rokkanen 2015}.
-  \item \textbf{The slope of the effect at $c$}, $\tau'(c)$, is identified from
-        the change in slopes; it answers ``what if the threshold moved a
-        little?'' \srcp{Dong and Lewbel 2015}.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Boundaries and Two Scores}
-\textbf{Geographic RD}: the running variable is location $(\text{lat}, \text{lon})$;
-the cutoff is a line \srcp{Keele and Titiunik 2015}.
-\begin{itemize}\itemsep3pt
-  \item The estimand is $\tau(b)$ at each boundary point $b$; one number pools
-        them, weighted by where units live along the line.
-  \item \textbf{Distance to the boundary} as a single running variable mixes
-        points that are close to the line but far from each other; boundary
-        segment fixed effects, as in Dell and Querubín, compare neighbours.
-  \item Recent work estimates $\tau(b)$ point by point, with location-based or
-        distance-based local polynomials and valid intervals
-        \srcp{Cattaneo, Titiunik, and Yu 2025; \texttt{rd2d}}.
-  \item \alert{Compound treatment is the rule}: borders separate taxes,
-        schools, police, and history at once. Name the bundle.
-\end{itemize}
-\vskip3pt
-\textbf{Two scores} (pass both a reading and a math test): the treated region is
-a corner; each edge of the boundary has its own effect
-\srcp{Papay, Willett, and Murnane 2011; Reardon and Robinson 2012}.
-\end{frame}
-
-\begin{frame}{Regression Kink \srcp{Card, Lee, Pei, and Weber 2015}}
-A benefit $B_i = b(X_i)$ follows a known schedule that is continuous but
-\emph{changes slope} at $c$ (a benefit cap, a tax bracket). With $Y_i = y(B_i, X_i, U_i)$:
-\begin{align*}
-  \frac{d}{dx}\E[Y_i\mid X_i = x]
-  &= \E\Big[\frac{\partial y}{\partial B}\Big|\, x\Big]\, b'(x)
-   + \text{smooth terms}
-   && \text{\footnotesize chain rule} \\
-  \underbrace{\lim_{x\downarrow c}\tfrac{d}{dx}\E[Y\mid x] - \lim_{x\uparrow c}\tfrac{d}{dx}\E[Y\mid x]}_{\text{kink in } Y}
-  &= \E\Big[\frac{\partial y}{\partial B}\Big|\, c\Big]\,
-     \underbrace{\big(b'(c^+) - b'(c^-)\big)}_{\text{kink in } B}
-   && \text{\footnotesize subtract}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Effect $=$ kink in $Y$ / kink in $B$: the RD ratio with slopes for levels.
-  \item Slopes are estimated far less precisely than levels; local quadratic
-        fits and robust intervals are standard.
-  \item Austrian unemployment benefits: higher benefits lengthen joblessness.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{RD in Time}
-The running variable is the date; the treatment starts at $t^{*}$ for everyone
-\srcp{Hausman and Rapson 2018}.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{No one sorts into a date}, but other things happen on dates:
-        holidays, seasons, a second event. Check for coincident events.
-  \item \textbf{Observations are not independent}: one time series,
-        autocorrelated; inference must account for it.
-  \item \textbf{Windows tend to be wide}: daily data with few days near
-        $t^{*}$ invite long windows, and then the RD is an interrupted time
-        series with a polynomial trend.
-  \item \textbf{Effects evolve}: anticipation before $t^{*}$, fading or
-        building after. The jump at $t^{*}$ is the short-run effect only.
-  \item \textbf{Placebo dates} and a comparison group (Week 10) are the main defences.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Repeated Cutoffs: Dynamic RD}
-\textbf{Goal}: the effect of a treatment $k$ years later when units that barely
-miss can try again (a district loses a bond vote, proposes again, passes).
-\vskip2pt
-The RD of ``barely won at $t$'' on $Y_{t+k}$ is an intention-to-treat effect,
-$\text{ITT}_k$. Let $\pi_j$ be the RD jump in the chance of a bond at $t+j$
-($\pi_0 = 1$) and $\theta_k$ the effect of a bond $k$ years after it passes:
-\begin{align*}
-  \text{ITT}_k &= \sum_{j=0}^{k} \pi_j\,\theta_{k-j}
-   && \text{\footnotesize every bond induced at $t+j$ acts for $k-j$ years} \\
-  \theta_k &= \text{ITT}_k - \sum_{j=1}^{k} \pi_j\,\theta_{k-j}
-   && \text{\footnotesize solve from $\theta_0 = \text{ITT}_0$ upward}
-\end{align*}
-\vskip-2pt
-{\small Hypothetical numbers: $\text{ITT}_0 = 10$, $\text{ITT}_1 = 12$, $\pi_1 = -0.4$ (losers
-pass a year later): $\theta_1 = 12 - (-0.4)(10) = 16$. The ITT understates the bond's effect.}
-\end{frame}
-
-\begin{frame}{Dynamic RD: Applications and Assumptions}
-\begin{itemize}\itemsep4pt
-  \item California school bonds and house prices \srcp{Cellini, Ferreira, and Rothstein 2010};
-        Wisconsin operating vs.\ capital referenda \srcp{Baron 2022}.
-  \item Assumes $\theta_k$ does not depend on a unit's history; \srct{Hsu and Shen (2024)}
-        identify the effects under weaker assumptions.
-  \item Cumulative effect: $\sum_k \theta_k$. The ITT path is the effect of a close win,
-        retries included; Bol et al.'s \texteuro180,000 (local randomization section) is of that kind.
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Sociology]{Applications in Sociology}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
 
 \begin{frame}{In the Literature: Legewie (2016)}
 \textbf{The question.} Do salient events trigger periods of more racially
@@ -2121,6 +2161,170 @@ July 2007 & $-0.01$ (0.14) & \alert{0.16 (0.06)} & $0.02$ (0.08) \\
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Regression Kink: the Rule Bends Instead of Jumping}
+\textbf{Austrian unemployment benefits} \srcp{Card, Lee, Pei, and Weber 2015}: the daily benefit is
+55\% of last year's net daily earnings, up to a maximum.
+\vskip2pt
+\begin{columns}[T]
+\begin{column}{0.44\linewidth}
+\begin{tikzpicture}[scale=0.95,>=Stealth]
+  \draw[->] (0,0) -- (4.6,0) node[above left,font=\scriptsize] {earnings $X$};
+  \draw[->] (0,0) -- (0,2.7) node[above right,font=\scriptsize] {benefit $B$};
+  \draw[dukeblue,very thick] (0,0) -- (2.6,1.8) -- (4.4,1.8);
+  \draw[dashed,gray] (2.6,0) node[below,font=\scriptsize,text=black] {$c$: the cap} -- (2.6,1.8);
+  \node[font=\scriptsize,dukeblue,rotate=34] at (1.15,1.15) {slope 0.55};
+  \node[font=\scriptsize,dukeblue] at (3.55,2.05) {slope 0};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.53\linewidth}
+\small
+\begin{itemize}\itemsep2pt
+  \item At the cap, no one's benefit \emph{jumps}: a sharp RD finds nothing to compare.
+  \item The \emph{slope} of benefits in earnings drops from 0.55 to 0.
+  \item If higher benefits lengthen unemployment, unemployment duration plotted
+        against $X$ must bend at the same $c$.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip4pt
+\textbf{Effect of one euro of benefit} $=$ the change in the slope of $Y$
+divided by the change in the slope of $B$.
+\vskip2pt
+{\small Hypothetical: duration rises 0.11 days per euro of earnings below the cap and
+0.01 above. Effect $= (0.01 - 0.11)/(0 - 0.55) = 0.18$ days per euro of benefit.}
+\end{frame}
+
+\begin{frame}{Regression Kink: the Estimator}
+Fit a line on each side of $c$, as in the sharp RD, and keep the change in slope:
+\begin{align*}
+  B_i &= a_B + \beta_B (X_i - c) + \kappa_B\,(X_i - c)\,\mathds 1\{X_i \geq c\} + u_i \\
+  Y_i &= a_Y + \beta_Y (X_i - c) + \kappa_Y\,(X_i - c)\,\mathds 1\{X_i \geq c\} + \epsilon_i,
+  \qquad \hat\tau_{RK} = \hat\kappa_Y / \hat\kappa_B
+\end{align*}
+No jump term: $B$ and $Y$ are continuous at $c$; only their slopes change.
+\vskip3pt
+\begin{itemize}\itemsep1pt
+  \item \textbf{Assumption}: nothing else bends at $c$; the density of $X$ has no kink there (testable).
+  \item It is the fuzzy-RD ratio with slopes for levels: $\kappa_B$ is the first stage.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Regression Kink: What Card, Lee, Pei, and Weber Find}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Data}: about 275,000 Austrian UI claims, 2001--2012, by job losers with a
+        year of work in the past two years. $Y$: days of registered unemployment
+        (capped at one year).
+  \item \textbf{Fuzzy kink}: supplements for dependents are not observed, so the
+        observed benefit does not follow the formula exactly; $\kappa_B$ is estimated.
+  \item \textbf{Result}: the elasticity of unemployment duration with respect to the
+        benefit is \alert{1.4 to 1.9} across estimators at larger bandwidths: a 10\%
+        higher benefit, 14--19\% longer unemployment.
+  \item \textbf{The catch}: slopes are estimated far less precisely than levels. At
+        small bandwidths the estimates are unstable, and only one of three robust
+        intervals excludes zero. Kinks need much more data than jumps.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Repeated Cutoffs: the Problem}
+\textbf{School bonds in California} \srcp{Cellini, Ferreira, and Rothstein 2010}: a
+district borrows for buildings only if voters approve (two-thirds; 55\% from
+2001). Does a new bond raise local house prices?
+\vskip3pt
+A close vote is a sharp RD at the vote threshold. But a district that \emph{barely
+loses} can propose again next year, and many do:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & year $t$ & year $t+1$ & year $t+2$ \\
+\midrule
+barely won at $t$ & bond & bond, 1 year old & bond, 2 years old \\
+barely lost at $t$ & no bond & some pass a bond & more have a bond \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item By $t+2$ we compare ``a 2-year-old bond'' with ``maybe a newer bond'':
+        the gap understates what a bond does.
+  \item The same problem as non-compliance in a fuzzy RD, except that the
+        losers' take-up grows with time.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Repeated Cutoffs: Two Effects}
+Three RD estimates, all at the threshold of the vote in year $t$:
+\vskip2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{5.6cm}l@{}}
+\toprule
+symbol & what it is & estimated by \\
+\midrule
+$\text{ITT}_k$ & total effect of barely winning at $t$ on $Y_{t+k}$, later bonds included & RD of $Y_{t+k}$ \\
+$\pi_j$ & jump in the chance of passing a bond in year $t+j$; $\pi_0 = 1$, $\pi_j < 0$ if losers catch up & RD of ``passed at $t+j$'' \\
+$\theta_k$ & \textbf{direct} effect of one bond, $k$ years after it passes & \textbf{the target} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item $\text{ITT}_k$ answers ``what does winning this vote do?'' (retries
+        included). $\theta_k$ answers ``what does a bond do?''.
+  \item Cellini et al.\ call $\theta_k$ the TOT and $\text{ITT}_k$ the ITT.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Repeated Cutoffs: Peeling the ITT, Year by Year}
+Each bond induced in year $t+j$ has acted for $k-j$ years by $t+k$:
+\begin{align*}
+  \text{ITT}_0 &= \theta_0
+   && \text{\footnotesize no time to retry} \\
+  \text{ITT}_1 &= \theta_1 + \pi_1\theta_0
+   && \text{\footnotesize winners' bond is 1 year old; losers' new bonds are 0} \\
+  \text{ITT}_2 &= \theta_2 + \pi_1\theta_1 + \pi_2\theta_0
+   && \text{\footnotesize bonds passed at $t+1$ are now 1 year old} \\
+  \theta_k &= \text{ITT}_k - \textstyle\sum_{j=1}^{k} \pi_j\,\theta_{k-j}
+   && \text{\footnotesize solve from $\theta_0$ upward}
+\end{align*}
+\vskip-2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+hypothetical & $k = 0$ & $k = 1$ & $k = 2$ \\
+\midrule
+$\text{ITT}_k$ (\% house prices) & 10 & 12 & 11 \\
+$\pi_k$ & 1 & $-0.4$ & $-0.1$ \\
+$\theta_k$ & 10 & $12 + 0.4(10) = 16$ & $11 + 0.4(16) + 0.1(10) = 18.4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+The ITT falls after year 1 while the bond's own effect keeps rising: losers are catching up.
+\end{frame}
+
+\begin{frame}{Repeated Cutoffs: Assumptions and Results}
+\textbf{Assumptions} of the recursion:
+\begin{itemize}\itemsep2pt
+  \item Each close vote is a valid RD (continuity at its threshold).
+  \item $\theta_k$ is the same for a bond passed at the first try and one passed
+        after a loss, whatever the district's history; effects of several bonds add up.
+        \srct{Hsu and Shen (2024)} drop the first part, allow heterogeneous effects, and
+        find much larger long-run direct effects on capital spending.
+\end{itemize}
+\vskip3pt
+\textbf{Results}:
+\begin{itemize}\itemsep2pt
+  \item Cellini et al.: prices rise soon after a bond passes and stay up; homebuyers
+        pay \$1.50 or more per \$1 of school capital spending.
+  \item \srct{Baron (2022)}, Wisconsin, separate votes on operating and capital
+        budgets: operating money raises test scores and college enrollment;
+        buildings do little.
+\end{itemize}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Practice]{Practice}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2155,8 +2359,8 @@ July 2007 & $-0.01$ (0.14) & \alert{0.16 (0.06)} & $0.02$ (0.08) \\
 \end{itemize}
 \vskip4pt
 \begin{block}{Problem sets}
-Problem Set 3 is due Monday October 19. Problem Set 4 will be assigned next
-Tuesday (October 27) and is due Monday November 9; it covers Weeks 7 and 9.
+Problem Set 3 is assigned today and is due Tuesday, November 3. It covers
+matching (Week 6), instrumental variables (Week 7), and regression discontinuity (Week 9).
 \end{block}
 \end{frame}
 
@@ -2170,9 +2374,6 @@ Tuesday (October 27) and is due Monday November 9; it covers Weeks 7 and 9.
 ``The Role of Hospital Heterogeneity in Measuring Marginal Returns to Medical
 Care: A Reply to Barreca, Guldi, Lindo, and Waddell.'' \textit{Quarterly Journal
 of Economics} 126(4): 2125--2131.
-\item Angrist, Joshua D. and Miikka Rokkanen. 2015. ``Wanna Get Away? Regression
-Discontinuity Estimation of Exam School Effects Away from the Cutoff.''
-\textit{Journal of the American Statistical Association} 110(512): 1331--1344.
 \item Armstrong, Timothy B. and Michal Kolesár. 2018. ``Optimal Inference in a
 Class of Regression Models.'' \textit{Econometrica} 86(2): 655--683.
 \item Armstrong, Timothy B. and Michal Kolesár. 2020. ``Simple and Honest
@@ -2221,16 +2422,9 @@ Association} 115(531): 1449--1455.
 \item Cattaneo, Matias D., Luke Keele, Roc\'{\i}o Titiunik, and Gonzalo
 Vazquez-Bare. 2016. ``Interpreting Regression Discontinuity Designs with
 Multiple Cutoffs.'' \textit{Journal of Politics} 78(4): 1229--1248.
-\item Cattaneo, Matias D., Luke Keele, Roc\'{\i}o Titiunik, and Gonzalo
-Vazquez-Bare. 2021. ``Extrapolating Treatment Effects in Multi-Cutoff
-Regression Discontinuity Designs.'' \textit{Journal of the American Statistical
-Association} 116(536): 1941--1952.
 \item Cattaneo, Matias D., Roc\'{\i}o Titiunik, and Gonzalo Vazquez-Bare. 2019.
 ``Power Calculations for Regression-Discontinuity Designs.'' \textit{Stata
 Journal} 19(1): 210--245.
-\item Cattaneo, Matias D., Roc\'{\i}o Titiunik, and Ruiqi Rae Yu. 2025.
-``Estimation and Inference in Boundary Discontinuity Designs: Location-Based
-Methods.'' arXiv:2505.05670.
 \item Cellini, Stephanie Riegg, Fernando Ferreira, and Jesse Rothstein. 2010. ``The
 Value of School Facility Investments: Evidence from a Dynamic Regression
 Discontinuity Design.'' \textit{Quarterly Journal of Economics} 125(1): 215--261.
@@ -2243,9 +2437,6 @@ River Policy.'' \textit{PNAS} 110(32): 12936--12941.
 \item Dell, Melissa and Pablo Querub\'in. 2018. ``Nation Building Through Foreign
 Intervention: Evidence from Discontinuities in Military Strategies.''
 \textit{Quarterly Journal of Economics} 133(2): 701--764.
-\item Dong, Yingying and Arthur Lewbel. 2015. ``Identifying the Effect of Changing
-the Policy Threshold in Regression Discontinuity Models.'' \textit{Review of
-Economics and Statistics} 97(5): 1081--1092.
 \item Ebenstein, Avraham, Maoyong Fan, Michael Greenstone, Guojun He, and Maigeng Zhou.
 2017. ``New Evidence on the Impact of Sustained Exposure to Air Pollution on Life
 Expectancy from China's Huai River Policy.'' \textit{PNAS} 114(39): 10384--10389.
@@ -2253,9 +2444,6 @@ Expectancy from China's Huai River Policy.'' \textit{PNAS} 114(39): 10384--10389
 James M. Snyder. 2015. ``On the Validity of the Regression Discontinuity Design
 for Estimating Electoral Effects: New Evidence from Over 40,000 Close Races.''
 \textit{American Journal of Political Science} 59(1): 259--274.
-\item Feir, Donna, Thomas Lemieux, and Vadim Marmer. 2016. ``Weak Identification in
-Fuzzy Regression Discontinuity Designs.'' \textit{Journal of Business \&
-Economic Statistics} 34(2): 185--196.
 \item Gelman, Andrew and Guido Imbens. 2019. ``Why High-Order Polynomials Should
 Not Be Used in Regression Discontinuity Designs.'' \textit{Journal of Business \&
 Economic Statistics} 37(3): 447--456.
@@ -2293,20 +2481,16 @@ in Economics.'' \textit{Journal of Economic Literature} 48(2): 281--355.
 \item Legewie, Joscha. 2016. ``Racial Profiling and Use of Force in Police Stops:
 How Local Events Trigger Periods of Increased Discrimination.'' \textit{American
 Journal of Sociology} 122(2): 379--424.
+\item Londoño-Vélez, Juliana, Catherine Rodríguez, and Fabio Sánchez. 2020. ``Upstream
+and Downstream Impacts of College Merit-Based Financial Aid for Low-Income Students:
+Ser Pilo Paga in Colombia.'' \textit{American Economic Journal: Economic Policy}
+12(2): 193--227.
 \item McCrary, Justin. 2008. ``Manipulation of the Running Variable in the
 Regression Discontinuity Design: A Density Test.'' \textit{Journal of
 Econometrics} 142(2): 698--714.
 \item Noack, Claudia, Tomasz Olma, and Christoph Rothe. 2026. ``Flexible Covariate
 Adjustments in Regression Discontinuity Designs.'' \textit{Journal of
 Econometrics} 257: 106298.
-\item Noack, Claudia and Christoph Rothe. 2024. ``Bias-Aware Inference in Fuzzy
-Regression Discontinuity Designs.'' \textit{Econometrica} 92(3): 687--711.
-\item Papay, John P., John B. Willett, and Richard J. Murnane. 2011. ``Extending
-the Regression-Discontinuity Approach to Multiple Assignment Variables.''
-\textit{Journal of Econometrics} 161(2): 203--207.
-\item Reardon, Sean F. and Joseph P. Robinson. 2012. ``Regression Discontinuity
-Designs with Multiple Rating-Score Variables.'' \textit{Journal of Research on
-Educational Effectiveness} 5(1): 83--104.
 \item Sekhon, Jasjeet S. and Roc\'{\i}o Titiunik. 2017. ``On Interpreting the
 Regression Discontinuity Design as a Local Experiment.'' \textit{Advances in
 Econometrics} 38: 1--28.
