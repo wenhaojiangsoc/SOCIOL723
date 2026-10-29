@@ -93,6 +93,9 @@ print(round(rbind(AH_lag3 = coeftable(d_ah3)[c("fit_d(l(lwage))", "d(married)"),
                   AB_lag3 = sab3$coefficients[c("lag(lwage, 1)", "married"), 1:2]), 3))
 cat("AH lag-3 first stage F:\n"); print(fitstat(d_ah3, ~ ivf1))
 cat("AB lag 3+: m2 p =", round(sab3$m2$p.value, 3), "\n")
+## with MA(1) errors the AR(2) test rejects even when lag-3 instruments are valid; AR(3) is the check
+m3 <- mtest(ab3, order = 3, vcov = vcovHC(ab3))
+cat("AB lag 3+: m3 z =", round(m3$statistic, 2), " p =", round(m3$p.value, 3), "\n")
 
 ## ---- 9. Nickell's exact fixed-T formula vs the large-T approximation ------------------
 cat("\n## 9. Nickell (1981) fixed-T bias, T = periods in the regression (Tt - 1)\n")

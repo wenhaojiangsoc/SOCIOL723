@@ -161,26 +161,20 @@
 \begin{frame}{A Third Source of Variation}
 So far: adjust for observables (Week 6), find an instrument (Week 7), find a
 threshold (Week 9). Today: use \alert{variation over time within the same unit}.
-\vskip2pt
-With $Y_{it} = \alpha_i + \lambda_t + \tau D_{it} + \epsilon_{it}$, observe a treated unit $i$ and an
-untreated unit $j$ before and after:
-\begin{align*}
-  Y_{i,\text{after}} - Y_{i,\text{before}} &= \tau + (\lambda_{\text{after}} - \lambda_{\text{before}}) + \Delta\epsilon_i
-   && \text{\footnotesize treated: its stable traits $\alpha_i$ cancel} \\
-  Y_{j,\text{after}} - Y_{j,\text{before}} &= (\lambda_{\text{after}} - \lambda_{\text{before}}) + \Delta\epsilon_j
-   && \text{\footnotesize untreated: only the common change} \\
-  \text{(first)} - \text{(second)} &= \tau + (\Delta\epsilon_i - \Delta\epsilon_j)
-   && \text{\footnotesize the common change cancels}
-\end{align*}
-\vskip-2pt
+\vskip6pt
+\begin{block}{The core idea}
+Observe the same unit before and after treatment.
 \begin{itemize}\itemsep2pt
-  \item What is \textbf{stable} about a unit (ability, upbringing) is differenced away,
-        measured or not: \textbf{fixed effects}.
-  \item What \textbf{changes for everyone} (a recession, getting older) is not, but the
-        untreated units measure it: \textbf{difference-in-differences}.
-  \item One idea, one assumption: nothing changes differently for the treated
-        (parallel trends).
+  \item What is \textbf{stable} about the unit (ability, upbringing) is the same in both
+        periods, so the before--after change removes it, measured or not:
+        \textbf{fixed effects}.
+  \item What \textbf{changes for everyone} (a recession, getting older) does not cancel,
+        but units that were not treated went through it too, so their change measures
+        it: \textbf{difference-in-differences}.
 \end{itemize}
+\end{block}
+\vskip6pt
+One idea, one assumption: nothing else changes differently for the treated units.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,7 +182,7 @@ untreated unit $j$ before and after:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Example: Does Marriage Raise Men's Wages?}
+\begin{frame}{The Example: Does Marriage Raise Men's Wages?\core}
 \textbf{The question.} Married men earn more than unmarried men. Is it marriage
 (specialization at home, employers' favour), or do men with high earning potential marry?
 \vskip3pt
@@ -209,165 +203,157 @@ mean log wage, 1980 $\to$ 1987 & 1.39 $\to$ 1.87 \\
 \bottomrule
 \end{tabular}
 \end{center}
-{\footnotesize \srcp{figs/w10\_panel\_slow.R}}
+\textbf{Start simple}: 1980 and 1987 only; the 528 men who married or did not change
+(17 who left marriage set aside). All men and years come later \srcp{figs/w10\_panel\_slow.R}.
 \end{frame}
 
-\begin{frame}{Step 1: Pooled OLS}
-Treat the 4,360 person-years as if they were 4,360 different men:
+\begin{frame}{Pooled OLS\core}
+Treat the 1,056 person-years (528 men, 1980 and 1987) as if they were 1,056 different men:
 \begin{align*}
-  Y_{it} &= a + \beta D_{it} + u_{it}, \qquad \hat\beta = \alert{0.220}\ (0.026)
-   && \text{\footnotesize married men earn about 22\% more} \\
+  Y_{it} &= a + \beta D_{it} + u_{it}, \qquad \hat\beta = \alert{0.358}\ (0.031)
+   && \text{\footnotesize married men earn about 43\% more} \\
   \plim \hat\beta &= \beta + \frac{\Cov(D_{it}, u_{it})}{\Var(D_{it})}
    && \text{\footnotesize omitted variables (Week 2)}
 \end{align*}
 \begin{itemize}\itemsep3pt
-  \item $u_{it}$ holds everything else that sets a man's wage: ability, ambition,
-        schooling, family background.
-  \item Most of it is \emph{stable} over these eight years. If the same traits make a
-        man more likely to marry, $\Cov(D_{it}, u_{it}) > 0$ and $0.220$ is too big.
+  \item $u_{it}$ holds everything else that sets man $i$'s wage in year $t$:
+  \begin{itemize}\itemsep1pt
+    \item \emph{stable} traits: ability, ambition, schooling, family background;
+    \item what \emph{changes over time}: experience, seniority, prices, the economy.
+  \end{itemize}
+  \item Both can move with marriage: men with high-wage traits may marry more, and
+        men marry as they age while every man's wage grows. Either way
+        $\Cov(D_{it}, u_{it}) > 0$ and $0.358$ is too big.
   \item We cannot measure all of them. But we see each man more than once.
 \end{itemize}
 {\footnotesize Standard errors clustered by man throughout \srcp{figs/w10\_panel\_slow.R}.}
 \end{frame}
 
-\begin{frame}{Step 2: Compare Each Man With Himself}
-Split the error: $u_{it} = \alpha_i + \epsilon_{it}$, with $\alpha_i$ the man's stable wage level.
-Take two years:
+\begin{frame}{Compare Each Man With Himself\core}
+Split the error in three: $u_{it} = \alpha_i + \lambda_t + \epsilon_{it}$.
+\begin{itemize}\itemsep2pt
+  \item $\alpha_i$: the combined effect on his wage of \emph{everything stable} about
+        man $i$ (ability, ambition, schooling, family background), measured or not.
+  \item $\lambda_t$: what changes for \emph{every} man in year $t$ (experience, prices).
+  \item $\epsilon_{it}$: the rest.
+\end{itemize}
+Take 1987 and 1980:
 \begin{align*}
-  Y_{i,87} &= \alpha_i + \beta D_{i,87} + \epsilon_{i,87}
+  Y_{i,87} &= \alpha_i + \lambda_{87} + \beta D_{i,87} + \epsilon_{i,87}
    && \text{\footnotesize 1987} \\
-  Y_{i,80} &= \alpha_i + \beta D_{i,80} + \epsilon_{i,80}
+  Y_{i,80} &= \alpha_i + \lambda_{80} + \beta D_{i,80} + \epsilon_{i,80}
    && \text{\footnotesize 1980} \\
-  Y_{i,87} - Y_{i,80} &= \beta\,(D_{i,87} - D_{i,80}) + (\epsilon_{i,87} - \epsilon_{i,80})
+  Y_{i,87} - Y_{i,80} &= \underbrace{(\lambda_{87} - \lambda_{80})}_{\text{intercept}}
+   + \beta\,(D_{i,87} - D_{i,80}) + (\epsilon_{i,87} - \epsilon_{i,80})
    && \text{\footnotesize subtract: $\alpha_i$ cancels}
 \end{align*}
 \textbf{First differences}: regress each man's wage growth on his change in marital
-status. $\hat\beta = 0.445$ (0.043).
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Ability and ambition are gone, measured or not.
-  \item But $0.445$ is twice the pooled estimate. It is close to the wage growth of
-        the 251 men who married between 1980 and 1987: 0.488. Something else
-        changed in those seven years (Step 5).
-\end{itemize}
+status, with an intercept. \alert{Idea 1: compare each man with himself.} Every stable
+trait is gone, measured or not.
 \end{frame}
 
-\begin{frame}{Step 3: A Separate Intercept for Each Man}
-All eight years, $Y_{it} = \alpha_i + \beta D_{it} + \epsilon_{it}$: one dummy per man (545), one common slope. Four of the men:
-\begin{columns}[c]
-\begin{column}{0.56\linewidth}
-\includegraphics[width=\linewidth]{figs/pan_intercepts.pdf}
-\end{column}
-\begin{column}{0.42\linewidth}
-\small
-\begin{itemize}\itemsep3pt
-  \item The pooled line (slope 0.56 for these four) mostly compares \emph{men}: the
-        high-wage men are the married ones.
-  \item Each man's line (common slope 0.13) compares him only with himself.
-  \item All 545 men: $\hat\beta = \alert{0.243}$ (0.022).
-\end{itemize}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{The Error Components Model\core}
-The pooled model with its error split in two \srcp{labels as in Wooldridge 2010, ch.~10}:
-\vskip-6pt
-\begin{align*}
-  Y_{it} = \beta D_{it} + \underbrace{\alpha_i}_{\text{stable: the man}}
-         + \underbrace{\epsilon_{it}}_{\text{changes year to year}} .
-\end{align*}
-\vskip-4pt
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{5.4cm}l>{\raggedright\arraybackslash}p{2.6cm}@{}}
-\toprule
- & assumption & needed for & marriage data \\
-\midrule
-FE.1 & strict exogeneity: $\E[\epsilon_{it}\mid D_{i1},\dots,D_{iT},\alpha_i] = 0$, all $t$
-  & consistency & tested below \\
-FE.2 & $D_{it}$ varies over time within some units & identification & 310 of 545 men \\
-FE.3 & $\Var(\epsilon_{it}\mid D_i,\alpha_i) = \sigma^2$, no correlation across $t$
-  & usual s.e. & false: cluster by man \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item Nothing is assumed about $\alpha_i$: it may correlate with $D_{it}$ in any way.
-  \item Random effects adds $\E[\alpha_i \mid D_{i1},\dots,D_{iT}] = \E[\alpha_i]$ (next section).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Step 4: Or Subtract Each Man's Mean}
-\begin{columns}[c]
-\begin{column}{0.5\linewidth}
-\includegraphics[width=\linewidth]{figs/pan_demeaned.pdf}
-\end{column}
-\begin{column}{0.48\linewidth}
-\small
-\vskip-6pt
-\begin{align*}
-  Y_{it} &= \alpha_i + \beta D_{it} + \epsilon_{it} \\
-  \bar Y_{i} &= \alpha_i + \beta \bar D_{i} + \bar\epsilon_{i} \\
-  Y_{it} - \bar Y_{i} &= \beta(D_{it} - \bar D_{i}) + (\epsilon_{it} - \bar\epsilon_{i})
-\end{align*}
-{\footnotesize Average each man's eight years, subtract: $\alpha_i$ cancels.}
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item OLS on the demeaned data $=$ OLS with 545 dummies: 0.2427 both ways (FWL).
-  \item The 235 men whose status never changes sit at $D_{it} - \bar D_i = 0$: they
-        add nothing to $\hat\beta$.
-\end{itemize}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Step 5: Why 0.24 Is Still Too Big: Time}
-\begin{center}
-\includegraphics[width=0.8\linewidth]{figs/pan_time.pdf}
-\end{center}
-\vskip-6pt
-\begin{itemize}\itemsep3pt
-  \item Every man's wage grows (experience, seniority, prices), and men marry as they age.
-  \item A man's married years are his \emph{later} years. Comparing them with his
-        own earlier single years credits marriage with growth every man gets.
-  \item $\alpha_i$ cannot absorb this: it is the same for all men but changes over
-        time. Call it $\lambda_t$.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Step 5: A Control Group Measures the Growth}
-Back to 1980 and 1987, now with a year effect $\lambda_t$:
-\begin{align*}
-  Y_{i,87} - Y_{i,80} = (\lambda_{87} - \lambda_{80}) + \beta\,(D_{i,87} - D_{i,80}) + \Delta\epsilon_i
-   && \text{\footnotesize $\alpha_i$ cancels; $\lambda$ does not}
-\end{align*}
-\vskip-4pt
+\begin{frame}{Men Who Did Not Change Are the Control Group\core}
 \begin{center}\small
 \renewcommand{\arraystretch}{1.1}
 \begin{tabular}{@{}lcc@{}}
 \toprule
 change in married, 1980 $\to$ 1987 & men & mean wage growth \\
 \midrule
-married ($+1$) & 251 & 0.488 \\
-no change ($0$) & 277 & 0.476 \\
-left marriage ($-1$) & 17 & 0.200 \\
+married ($\Delta D = 1$) & 251 & 0.488 \\
+no change ($\Delta D = 0$) & 277 & 0.476 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip2pt
-OLS with an intercept: $\hat\lambda_{87} - \hat\lambda_{80} = 0.451$ (0.033), \ $\hat\beta = \alert{0.051}$ (0.047).
+OLS: $\hat\lambda_{87} - \hat\lambda_{80} = 0.476$ (0.037), \ $\hat\beta = \alert{0.012}$ (0.053).
 \vskip3pt
-\begin{itemize}\itemsep2pt
-  \item The intercept is the growth every man gets, measured mostly by the 277 men
-        whose status did not change: a control group.
-  \item $\hat\beta$ is the \emph{extra} growth of men who married: difference-in-differences.
+\begin{itemize}\itemsep3pt
+  \item The intercept is the year effect, $\lambda_{87} - \lambda_{80}$, estimated from the 277 men
+        whose status did not change. \alert{Idea 2: the year fixed effect makes them the
+        control group.}
+  \item $\hat\beta = 0.488 - 0.476$ is the \emph{extra} growth of men who married:
+        difference-in-differences. If the timing of marriage were random, this is
+        the comparison an experiment would make.
+  \item Pooled OLS said 0.358. Most of it was stable traits and common growth.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Step 6: Two-Way Fixed Effects\core}
-All eight years, an intercept for each man \emph{and} each year. In a balanced panel:
+\begin{frame}{All Men, All Years: The Model\core}
+Now all 545 men (the 17 who left marriage too) and every year, $t = 1980, \dots, 1987$:
+\begin{align*}
+  Y_{it} = \underbrace{\alpha_i}_{\text{who he is}}
+         + \underbrace{\lambda_t}_{\text{what year it is}}
+         + \underbrace{\beta D_{it}}_{\text{marriage}}
+         + \underbrace{\epsilon_{it}}_{\text{everything else}} .
+\end{align*}
+\begin{itemize}\itemsep4pt
+  \item $\alpha_i$: one number per man, for everything stable about him (ability,
+        ambition, family background), measured or not: man fixed effects.
+  \item $\lambda_t$: one number per year, for what happens to every man that year
+        (the economy, a year more experience): year fixed effects.
+  \item With both sets of fixed effects in the model, people call it two-way fixed
+        effects (TWFE).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Man Fixed Effects: Each Man His Own Line}
+$Y_{it} = \alpha_i + \beta D_{it} + \epsilon_{it}$: one dummy per man, one common slope. Four of the men:
+\begin{columns}[c]
+\begin{column}{0.58\linewidth}
+\includegraphics[width=\linewidth]{figs/pan_man_lines.pdf}
+\end{column}
+\begin{column}{0.40\linewidth}
+\small
+\begin{itemize}\itemsep3pt
+  \item The pooled line (slope 0.66 for these four) mostly compares \emph{different}
+        men: the high-wage men are the married ones.
+  \item Each colored line is one man at his own height $\hat\alpha_i$. Its slope (0.31 for
+        these four) compares him only with himself: married years vs.\ unmarried years.
+  \item All 545 men: $\hat\beta = \alert{0.243}$ (0.022). But a man's married years are
+        also his later years, when every wage is higher.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Year Fixed Effects: One Common Year Path}
+$Y_{it} = a + \lambda_t + \beta D_{it} + \epsilon_{it}$: one dummy per year, the same for every man.
+\begin{columns}[c]
+\begin{column}{0.58\linewidth}
+\includegraphics[width=\linewidth]{figs/pan_paths_year.pdf}
+\end{column}
+\begin{column}{0.40\linewidth}
+\small
+\begin{itemize}\itemsep3pt
+  \item Dashed: $\hat a + \hat\lambda_t$, the wage of an unmarried man in year $t$. It
+        rises 0.41 from 1980 to 1987: growth every man gets, married or not.
+  \item Solid: the same path plus $\hat\beta = \alert{0.150}$ (0.028) in married years.
+  \item But every man shares one line: the red man is high in every year, married or
+        not, so $\hat\beta$ still compares different men.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Two-Way FE: Own Level, Common Year Path\core}
+$Y_{it} = \alpha_i + \lambda_t + \beta D_{it} + \epsilon_{it}$. Fitted on all 545 men; four of them shown:
+\begin{columns}[c]
+\begin{column}{0.58\linewidth}
+\includegraphics[width=\linewidth]{figs/pan_twoway_paths.pdf}
+\end{column}
+\begin{column}{0.40\linewidth}
+\small
+\begin{itemize}\itemsep3pt
+  \item Every man follows the same year path, shifted to his own level.
+  \item Marriage lifts him off his own path: the gap between solid and dashed.
+  \item $\hat\beta = \alert{0.061}$ (0.022). Filled points: married years.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Two-Way FE Can Be Demeaned: the Algebra\adv}
+Subtract the man's mean \emph{and} the year's mean. In a balanced panel:
 \begin{align*}
   Y_{it} &= \alpha_i + \lambda_t + \beta D_{it} + \epsilon_{it}
    && \text{\footnotesize the model} \\
@@ -386,29 +372,277 @@ All eight years, an intercept for each man \emph{and} each year. In a balanced p
   \item \textbf{Double demeaning}: subtract the man's mean and the year's mean, add back
         the grand mean (subtracted twice). Same $\hat\beta$ as man and year dummies:
         0.0606 both ways.
-  \item Pooled 0.220 $\to$ man effects 0.243 $\to$ man and year effects \alert{0.061} (0.022).
+  \item With only 1980 and 1987 (528 men) it gives 0.012, the same as first differences.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Strict Exogeneity: What Demeaning Requires\core}
-With one regressor and unit effects only, the within estimator is
+\begin{frame}{How Software Does It: Dummies, or Means}
+Man 1 marries in 1982; man 2 never does. Omitted dummies: man 2 and 1980.
+\begin{columns}[t]
+\begin{column}{0.53\linewidth}
+\centering\footnotesize
+\textbf{The data}\\[2pt]
+\renewcommand{\arraystretch}{1.0}\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}cc|cc|ccc@{}}
+\toprule
+man & year & $Y$ & $D$ & man 1 & 1981 & 1982 \\
+\midrule
+1 & 1980 & 1.5 & 0 & 1 & 0 & 0 \\
+1 & 1981 & 1.8 & 0 & 1 & 1 & 0 \\
+1 & 1982 & 2.4 & 1 & 1 & 0 & 1 \\
+2 & 1980 & 1.2 & 0 & 0 & 0 & 0 \\
+2 & 1981 & 1.5 & 0 & 0 & 1 & 0 \\
+2 & 1982 & 1.8 & 0 & 0 & 0 & 1 \\
+\bottomrule
+\end{tabular}
+\end{column}
+\begin{column}{0.45\linewidth}
+\centering\footnotesize
+\textbf{The man's mean of each column}\\[2pt]
+\renewcommand{\arraystretch}{1.0}\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}cc|ccc@{}}
+\toprule
+$Y$ & $D$ & man 1 & 1981 & 1982 \\
+\midrule
+1.9 & $\tfrac13$ & 1 & $\tfrac13$ & $\tfrac13$ \\
+1.9 & $\tfrac13$ & 1 & $\tfrac13$ & $\tfrac13$ \\
+1.9 & $\tfrac13$ & 1 & $\tfrac13$ & $\tfrac13$ \\
+1.5 & 0 & 0 & $\tfrac13$ & $\tfrac13$ \\
+1.5 & 0 & 0 & $\tfrac13$ & $\tfrac13$ \\
+1.5 & 0 & 0 & $\tfrac13$ & $\tfrac13$ \\
+\bottomrule
+\end{tabular}
+\end{column}
+\end{columns}
+\vskip1pt
+\begin{itemize}\itemsep1pt
+  \item Subtract right from left, row by row: the man 1 column becomes all 0, so
+        subtracting means does the man dummies' job.
+  \item What is left of $Y$ is each man's distance from his own average:
+        \alert{TWFE compares each man with himself over time.}
+  \item Man 2 gives the year path ($+0.3$, $+0.6$); man 1 grew 0.9: $\hat\beta = 0.3$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Fixed Effects Averages: One Man's Own Estimate}
+Man effects only, binary $D$. Run the within regression for \emph{one} man:
 \begin{align*}
-  \hat\beta_{FE} - \beta
-  &= \frac{\sum_i\sum_t (D_{it} - \bar D_{i\cdot})(\epsilon_{it} - \bar\epsilon_{i\cdot})}
-          {\sum_i\sum_t (D_{it} - \bar D_{i\cdot})^2}
-   && \text{\footnotesize substitute the demeaned model} \\
-  \bar\epsilon_{i\cdot} &= \tfrac1T(\epsilon_{i1} + \dots + \epsilon_{iT})
-   && \text{\footnotesize contains every period's error}
+  b_i = \text{(his mean wage in married years)} - \text{(his mean wage in unmarried years)},
 \end{align*}
-The numerator has mean zero only if $D_{is}$ is uncorrelated with $\epsilon_{it}$
-for \emph{every} pair $s, t$: past, present, and future. That is FE.1.
-\vskip3pt
+because a regression on one 0/1 variable with an intercept is a difference in means (Week 1).
+\textbf{Example} (hypothetical): married in 3 of 8 years.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & log wages & mean \\
+\midrule
+5 unmarried years & 1.50, 1.55, 1.60, 1.62, 1.63 & 1.58 \\
+3 married years & 1.70, 1.75, 1.80 & 1.75 \\
+\midrule
+$b_i$ & & $1.75 - 1.58 = 0.17$ \\
+\bottomrule
+\end{tabular}
+\end{center}
 \begin{itemize}\itemsep3pt
-  \item $\E[\epsilon_{it}\mid D_{it}] = 0$ alone is not enough.
-  \item It fails under \textbf{feedback}: a wage shock this year ($\epsilon_{it}$)
-        makes marriage next year ($D_{i,t+1}$) more likely.
-  \item If only feedback fails, FE's bias shrinks like $1/T$; FD's does not
-        \srcp{Wooldridge 2010, ch.~10}.
+  \item A man who never changes status has no $b_i$: he adds nothing.
+  \item Fixed effects combines the 310 men's $b_i$ into one number. The question is
+        how it weights them.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Weights, Step 1: Fixed Effects Is an Average of the $b_i$}
+Tilde: minus the man's own mean. Write man $i$'s piece of the fixed-effects formula as
+$N_i = \sum_t \tilde D_{it}\tilde Y_{it}$ (numerator) and $S_i = \sum_t \tilde D_{it}^2$ (denominator):
+\begin{align*}
+  \hat\beta_{FE} &= \frac{\sum_i\sum_t \tilde D_{it}\tilde Y_{it}}{\sum_i\sum_t \tilde D_{it}^2}
+   = \frac{N_1 + N_2 + \dots}{S_1 + S_2 + \dots}
+   && \text{\footnotesize add up man by man} \\
+  b_i &= N_i / S_i, \quad\text{so } N_i = S_i\, b_i
+   && \text{\footnotesize man $i$'s own regression} \\
+  \hat\beta_{FE} &= \frac{S_1 b_1 + S_2 b_2 + \dots}{S_1 + S_2 + \dots}
+   = \sum_i w_i\, b_i, \qquad w_i = \frac{S_i}{S_1 + S_2 + \dots}
+   && \text{\footnotesize substitute}
+\end{align*}
+\begin{itemize}\itemsep4pt
+  \item Fixed effects is a weighted average of the men's own estimates $b_i$.
+  \item Man $i$'s weight is his $S_i$, the variation in his own marriage status, as a
+        share of everyone's.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Weights, Step 2: What a Man's $S_i$ Is}
+Man $i$ is married in $m_i$ of $T$ years, so $\bar D_i = m_i/T = p_i$. His demeaned 0/1 values:
+\begin{align*}
+  \tilde D_{it} &= 1 - p_i
+   && \text{\footnotesize in his $m_i$ married years} \\
+  \tilde D_{it} &= -p_i
+   && \text{\footnotesize in his $T - m_i$ unmarried years} \\
+  S_i &= m_i(1-p_i)^2 + (T-m_i)\,p_i^2
+   && \text{\footnotesize square and add} \\
+  &= Tp_i(1-p_i)^2 + T(1-p_i)\,p_i^2 = T\,p_i(1-p_i)
+   && \text{\footnotesize $m_i = Tp_i$; factor out $Tp_i(1-p_i)$}
+\end{align*}
+\textbf{Check}: $T = 8$, married 2 years, $p = 0.25$: $2(0.75)^2 + 6(0.25)^2 = 1.125 + 0.375 = 1.5
+= 8(0.25)(0.75)$.
+\vskip2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+years married, of 8 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+weight per man, $8p(1-p)$ & 0.88 & 1.50 & 1.88 & 2.00 & 1.88 & 1.50 & 0.88 \\
+share of total weight & .08 & .11 & .19 & .15 & .22 & .14 & .12 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+Largest for men married half the time; a man married 1 of 8 years counts less than half as much.
+\end{frame}
+
+\begin{frame}{The Weights, Step 3: Two Men}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & married & own estimate $b_i$ & weight $S_i = 8p(1-p)$ \\
+\midrule
+man A & 4 of 8 years & 0.10 & 2.000 \\
+man B & 1 of 8 years & 0.40 & 0.875 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{align*}
+  \hat\beta_{FE} &= \frac{2.000 \times 0.10 + 0.875 \times 0.40}{2.000 + 0.875} = \frac{0.55}{2.875} = 0.19 \\
+  \text{plain average} &= \frac{0.10 + 0.40}{2} = 0.25
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Fixed effects leans toward man A, whose status varies more, not toward the
+        typical man. If effects differ across men, FE is not the average effect.
+\end{itemize}
+\vskip2pt
+{\footnotesize man effects only: $\hat\beta_{FE} = 0.243$ = weighted mean of 310 men's $b_i$ (unweighted 0.255).
+Adding year effects: 0.061; wages rise with age for everyone, and marriage comes with age \srcp{figs/w10\_panel.R}.}
+{\footnotesize Toy numbers \srcp{figs/w10\_toy\_staggered.R}.}
+\end{frame}
+
+\begin{frame}{In the Literature: Budig and England (2001)}
+\textbf{The question.} Why do mothers earn less? Does motherhood lower wages, or do women
+with lower earning potential have more children?
+\vskip3pt
+\textbf{The data.} NLSY79 women 1982--93: 5,287 women, 41,842 person-years.
+\vskip3pt
+\textbf{Their model} (p.~213), ``effects are fixed for years and persons'':
+\begin{align*}
+  \ln w_{it} = \beta\,\text{children}_{it} + X_{it}'\gamma + u_i + v_t + e_{it}
+\end{align*}
+\vskip-6pt
+\begin{itemize}\itemsep2pt
+  \item $\text{children}_{it}$: number of children (0, 1, 2, \dots), not a 0/1 treatment.
+  \item $u_i$: person effects (aptitude, preferences, early socialization); $v_t$: year effects.
+  \item $X_{it}$ added in blocks: marital status; human capital (education, seniority,
+        experience, breaks in employment); job characteristics.
+  \item No age: person and year effects already fix it (age $=$ year $-$ birth year).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Budig and England: Results}
+Each row adds a block of controls; person and year effects in every fixed-effects model.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+penalty per child, their Table 2 & fixed effects & pooled OLS \\
+\midrule
+person and year effects only & $-0.068$ (0.004) & $-0.081$ (0.002) \\
++ marital status & $-0.073$ & $-0.081$ \\
++ experience, seniority, education & $-0.047$ & $-0.018$ \\
++ job characteristics & $-0.037$ & $-0.012$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep2pt
+  \item About 7\% per child within women, close to OLS: little selection of
+        lower-wage women into motherhood on fixed traits.
+  \item Experience (lost years at work) explains about a third of the FE
+        penalty; the rest remains. Note that experience is \emph{post}-birth,
+        a mediator: controlling for it answers a different question.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Two-Way FE Assumes\core}
+The model, with the textbook's three assumptions \srcp{Wooldridge 2010, ch.~10}:
+\vskip-6pt
+\begin{align*}
+  Y_{it} = \beta D_{it} + \underbrace{\alpha_i}_{\text{stable: the man}}
+         + \underbrace{\lambda_t}_{\text{common: the year}}
+         + \underbrace{\epsilon_{it}}_{\text{the rest}} .
+\end{align*}
+\vskip-4pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{5.4cm}l>{\raggedright\arraybackslash}p{2.6cm}@{}}
+\toprule
+ & assumption & needed for & marriage data \\
+\midrule
+FE.1 & strict exogeneity: $\E[\epsilon_{it}\mid D_{i1},\dots,D_{iT},\alpha_i] = 0$, all $t$
+  & unbiased, consistent & tested below \\
+FE.2 & $D_{it}$ varies over time within some units & identification & 310 of 545 men \\
+FE.3 & $\Var(\epsilon_{it}\mid D_{i1},\dots,D_{iT},\alpha_i) = \sigma^2$ and
+  $\Cov(\epsilon_{it},\epsilon_{is}\mid D_{i1},\dots,D_{iT},\alpha_i) = 0$, $t \ne s$
+  & usual s.e. & false: cluster by man \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item Nothing is assumed about $\alpha_i$: it may correlate with $D_{it}$ in any way.
+  \item Random effects adds $\Cov(\alpha_i, D_{it}) = 0$, all $t$: men who marry, early
+        or late, have the same stable traits on average as men who do not.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Strict Exogeneity, in Words\core}
+Two-way FE compares each man's married years with his \emph{own average over all years}.
+So FE.1 asks: is a man's marriage in any year unrelated to his wage shocks in \emph{every}
+year, past, present, and future?
+\vskip4pt
+\begin{itemize}\itemsep5pt
+  \item \textbf{Feedback} breaks it. A raise in 1983 ($\epsilon_{i,83}$ high) makes a man
+        more likely to marry in 1984. The raise sits in his \emph{unmarried} years and lifts
+        his own baseline, so FE understates the effect; if men marry after a bad year,
+        FE overstates it.
+  \item \textbf{Something else changing at the same time} breaks it. A man who moves
+        for a better job and marries that year: FE credits marriage with the new job.
+  \item What it does \emph{not} require: anything about $\alpha_i$. Stable traits may be
+        related to marriage in any way.
+\end{itemize}
+\vskip4pt
+Feedback leaves a trace we can test: future marriage predicting today's wage.
+\end{frame}
+
+\begin{frame}{Strict Exogeneity, Step by Step: The Estimator's Error\adv}
+Man effects only, one regressor, $T$ years. Tilde: minus the man's own mean.
+\begin{align*}
+  Y_{it} &= \alpha_i + \beta D_{it} + \epsilon_{it}
+   && \text{\footnotesize the model} \\
+  \bar Y_{i} &= \alpha_i + \beta \bar D_{i} + \bar\epsilon_{i}
+   && \text{\footnotesize average over man $i$'s $T$ years} \\
+  \tilde Y_{it} &= \beta \tilde D_{it} + \tilde\epsilon_{it}
+   && \text{\footnotesize line 1 $-$ line 2: $\alpha_i$ cancels} \\
+  \hat\beta_{FE} &= \frac{\sum_i\sum_t \tilde D_{it}\tilde Y_{it}}{\sum_i\sum_t \tilde D_{it}^2}
+   && \text{\footnotesize OLS on the demeaned data} \\
+  &= \beta + \frac{\sum_i\sum_t \tilde D_{it}\,\tilde\epsilon_{it}}{\sum_i\sum_t \tilde D_{it}^2}
+   && \text{\footnotesize substitute line 3 for $\tilde Y_{it}$}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item Unbiased if the last fraction averages to zero: $\tilde D_{it}$ unrelated to
+        $\tilde\epsilon_{it}$.
+  \item But $\tilde\epsilon_{it} = \epsilon_{it} - \bar\epsilon_i$, and
+        $\bar\epsilon_i = (\epsilon_{i1} + \dots + \epsilon_{iT})/T$ holds \emph{every} year's
+        shock. So marriage in one year meets shocks from all years.
 \end{itemize}
 \end{frame}
 
@@ -440,142 +674,24 @@ married next year & $-0.0005$ & (0.022) \\
 \srcp{figs/w10\_panel\_std.R}.}
 \end{frame}
 
-\begin{frame}{The Marriage Wage Premium, Four Ways}
-NLSY men observed every year 1980--87 (545 men, 4,360 person-years; Vella
-and Verbeek 1998). Log hourly wage on married, union, and year effects;
-standard errors clustered by man \srcp{figs/w10\_panel.R}.
-\vskip3pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.12}
-\begin{tabular}{@{}llcc@{}}
-\toprule
-estimator & uses & married & (se) \\
-\midrule
-pooled OLS (+ education, race, experience) & all variation & 0.108 & (0.026) \\
-random effects & a GLS mix & 0.064 & (0.017) \\
-fixed effects & within-man change & 0.047 & (0.021) \\
-first differences & year-to-year change & 0.038 & (0.024) \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item The premium falls by more than half once each man is compared with
-        himself: men with higher earning potential are more likely to marry.
-  \item Hausman test of FE against RE: $\chi^2_{10} = 37.0$, $p < 0.001$.
-  \item 310 of 545 men change marital status; the other 235 contribute nothing
-        to the FE estimate of the marriage effect (next frames).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{What Fixed Effects Averages}
-Binary $D$, unit $i$ treated in $m_i$ of $T$ periods, $p_i = m_i/T$. With
-tildes for deviations from unit means:
-\begin{align*}
-  \hat\beta_{FE}
-  &= \frac{\sum_i\sum_t \tilde D_{it}\tilde Y_{it}}{\sum_i\sum_t \tilde D_{it}^2}
-   = \sum_i \underbrace{\frac{\sum_t\tilde D_{it}^2}{\sum_j\sum_t\tilde D_{jt}^2}}_{w_i}\;
-     \underbrace{\frac{\sum_t\tilde D_{it}\tilde Y_{it}}{\sum_t\tilde D_{it}^2}}_{b_i}
-   && \text{\footnotesize multiply and divide by $\textstyle\sum_t\tilde D_{it}^2$} \\
-  \textstyle\sum_t \tilde D_{it}^2 &= T\,p_i(1-p_i)
-   && \text{\footnotesize variance of a 0/1 variable}
-\end{align*}
-$b_i$ is unit $i$'s own before--after difference. \alert{Units are weighted by
-how much their treatment varies}, not by their number.
-\vskip3pt
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{@{}lccccccc@{}}
-\toprule
-years married, of 8 & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
-weight per man, $8p(1-p)$ & 0.88 & 1.50 & 1.88 & 2.00 & 1.88 & 1.50 & 0.88 \\
-share of total weight & .08 & .11 & .19 & .15 & .22 & .14 & .12 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip1pt
-{\footnotesize Man effects only: $\hat\beta_{FE} = 0.243$ = weighted mean of 310 men's $b_i$ (unweighted 0.255).
-Adding year effects: 0.061; wages rise with age for everyone, and marriage comes with age \srcp{figs/w10\_panel.R}.}
-\end{frame}
-
-\begin{frame}{What Fixed Effects Costs\core}
+\begin{frame}{When Men on Steeper Paths Marry}
+Hypothetical, no noise, and \alert{marriage has no effect at all}. Fitted by two-way FE:
+\begin{columns}[c]
+\begin{column}{0.54\linewidth}
+\includegraphics[width=\linewidth]{figs/pan_slopes.pdf}
+\end{column}
+\begin{column}{0.44\linewidth}
+\small
 \begin{itemize}\itemsep3pt
-  \item \textbf{Precision}. You are using only within-unit variation. If $D_{it}$
-        barely moves within units, the standard error explodes, FWL again.
-  \item \textbf{Measurement error is amplified}. Differencing removes signal and
-        keeps noise, so attenuation bias gets worse.
-  \item \textbf{Nickell bias}: adding a lagged outcome to a fixed-effects model
-        creates its own bias (dynamic panels, below).
-  \item \alert{Always cluster on the unit} (Week 2). Serial correlation within
-        units is the norm.
+  \item Steep wage paths (0.08 a year) marry; flat paths (0.02) never do.
+  \item $\alpha_i$: each man his own \emph{level}. $\lambda_t$: one \emph{common} year path.
+        No man gets his own growth.
+  \item The common path is too flat for the steep men: after marriage they run above it,
+        and FE calls the gap marriage, $\hat\beta = \alert{0.22}$.
+  \item Parallel trends fails. Own slopes: $\hat\beta = 0$ \srcp{figs/w10\_slopes.R}.
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Random Trends: Each Man His Own Slope}
-FE allows men to differ in wage \emph{levels}. If men on steeper wage paths
-marry, FE still mistakes their growth for a marriage effect.
-\begin{align*}
-  Y_{it} &= \alpha_i + \gamma_i\,x_{it} + \beta D_{it} + \epsilon_{it}
-   && \text{\footnotesize own intercept $\alpha_i$, own slope $\gamma_i$ in experience $x$} \\
-  \ddot Y_{it} &= \beta \ddot D_{it} + \ddot\epsilon_{it}
-   && \text{\footnotesize double dots: residuals from man $i$'s own regression on $(1, x_{it})$}
-\end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep3pt
-  \item The \textbf{random trend model} \srcp{Wooldridge 2010, ch.~11}; sociology calls it
-        \textbf{FEIS}, fixed effects with individual slopes: detrend each unit
-        separately, then pool \srcp{Brüderl and Ludwig 2015; Rüttenauer and Ludwig 2023}.
-        Needs at least three observations per unit.
-  \item Identifies $\beta$ from \emph{departures} from each man's own trajectory
-        at marriage: a jump, not a steeper path.
-  \item Our 8-year panel: FE 0.047 (0.021), FEIS 0.055 (0.024). Eight years
-        per man is short for estimating a slope; the NLSY79 over 34 years
-        (next frames) tells a different story.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Impact Function: an Event Study Around Marriage}
-Men who marry once in 1981--87 (239) and men never married in the panel (162);
-event-time dummies, man and year effects, $k = -1$ omitted \srcp{figs/w10\_panel.R}:
-\vskip-2pt
-\begin{center}
-\includegraphics[width=0.72\linewidth]{figs/marriage_impact.pdf}
-\end{center}
-\vskip-8pt
-\begin{itemize}\itemsep1pt
-  \item Before marriage: $-0.008$, $0.006$, $-0.010$. After: 0.04--0.05, each
-        within noise.
-  \item The impact function shows what one coefficient hides: anticipation,
-        build-up, fade-out \srcp{Ludwig and Brüderl 2021}. It is a DiD event
-        study with marriage as the event (DiD section).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{In the Literature: Budig and England (2001)}
-\textbf{The question.} Why do mothers earn less? NLSY79 women 1982--93: 5,287
-women, 41,842 person-years; log hourly wage on number of children.
-\vskip3pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.12}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-penalty per child, their Table 2 & fixed effects & pooled OLS \\
-\midrule
-no controls & $-0.068$ (0.004) & $-0.081$ (0.002) \\
-+ marital status & $-0.073$ & $-0.081$ \\
-+ experience, seniority, education & $-0.047$ & $-0.018$ \\
-+ job characteristics & $-0.037$ & $-0.012$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item About 7\% per child within women, close to OLS: little selection of
-        lower-wage women into motherhood on fixed traits.
-  \item Experience (lost years at work) explains about a third of the FE
-        penalty; the rest remains. Note that experience is \emph{post}-birth,
-        a mediator: controlling for it answers a different question.
-\end{itemize}
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}{In the Literature: Ludwig and Brüderl (2018)}
@@ -605,6 +721,41 @@ FEIS & level and own wage growth & 0.5\% (n.s.) \\
 year of experience; never-married men's, 3\%.}
 \end{frame}
 
+\begin{frame}{Random Trends: Each Man His Own Slope}
+FE allows men to differ in wage \emph{levels}. If men on steeper wage paths
+marry, FE still mistakes their growth for a marriage effect. Give each man his own line:
+\begin{align*}
+  Y_{it} &= \alpha_i + \gamma_i\,x_{it} + \lambda_t + \beta D_{it} + \epsilon_{it}
+   && \text{\footnotesize own intercept $\alpha_i$, own slope $\gamma_i$ in experience $x$}
+\end{align*}
+Year effects stay: own lines absorb differences in \emph{growth} between men; $\lambda_t$ absorbs
+shocks common to a year (a recession), which lie on no one's line.
+\par\vskip2pt
+Estimate $\beta$ in three steps:
+\begin{enumerate}\itemsep4pt
+  \item For each man, regress his wages on $(1, x_{it})$ using only his own years.
+        Keep the residuals $\ddot Y_{it}$: his departures from his own line.
+  \item Do the same for marriage, giving $\ddot D_{it}$, and for each year dummy.
+  \item Pool all men and regress $\ddot Y_{it}$ on $\ddot D_{it}$ and the detrended year dummies.
+\end{enumerate}
+\vskip3pt
+Fixed effects is the same recipe with a line of slope zero: step 1 subtracts only his mean.
+\end{frame}
+
+\begin{frame}{Random Trends: What Changes}
+\begin{itemize}\itemsep3pt
+  \item The \textbf{random trend model} \srcp{Wooldridge 2010, ch.~11}; sociology calls it
+        \textbf{FEIS}, fixed effects with individual slopes: detrend each unit
+        separately, then pool \srcp{Brüderl and Ludwig 2015; Rüttenauer and Ludwig 2023}.
+        Needs at least three observations per unit.
+  \item Identifies $\beta$ from \emph{departures} from each man's own trajectory
+        at marriage: a jump, not a steeper path.
+  \item Our 8-year panel: FE 0.047 (0.021), FEIS 0.055 (0.024). Eight years
+        per man is short for estimating a slope; the NLSY79 over 34 years
+        (next frames) tells a different story.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Ludwig and Brüderl: the Premium Over Time}
 \begin{columns}[T]
 \begin{column}{0.5\linewidth}
@@ -626,21 +777,64 @@ year of experience; never-married men's, 3\%.}
 \end{columns}
 \end{frame}
 
+\begin{frame}{Two-Way Fixed Effects: Strengths and Weaknesses\core}
+\begin{columns}[T]
+\begin{column}{0.48\linewidth}
+\textbf{Strengths}
+\begin{itemize}\itemsep3pt
+  \item Removes every stable trait of the unit, \emph{measured or not}.
+  \item Removes everything common to a year.
+  \item Simple and transparent: a difference-in-differences with many units and
+        periods.
+  \item Testable in part: leads (no feedback), event studies.
+\end{itemize}
+\end{column}
+\begin{column}{0.50\linewidth}
+\textbf{Weaknesses}
+\begin{itemize}\itemsep3pt
+  \item Needs strict exogeneity: no feedback, nothing else changing at the same time.
+  \item Misses differences in \emph{growth}: men on steeper paths (FEIS).
+  \item Only units whose treatment changes identify $\beta$, weighted by how much
+        it varies.
+  \item Less precise; measurement error grows. \alert{Cluster by unit.}
+  \item With a lagged outcome: Nickell bias (below).
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Why Put Last Year's Outcome in a Fixed-Effects Model?}
+Marriage can follow wages, not only the other way round: a good year makes a man more
+likely to marry next year, and wages persist. So control for last year's wage:
+\begin{align*}
+  Y_{it} = \rho\, Y_{i,t-1} + \beta D_{it} + \alpha_i + \epsilon_{it}
+\end{align*}
+This compares men who start the year at the same wage, one who marries and one who does not;
+$\alpha_i$ still removes everything stable about the man.
+\vskip4pt
+\textbf{Other questions where the outcome feeds back into the treatment:}
+\begin{itemize}\itemsep2pt
+  \item \textbf{Health and employment}: illness leads to job loss; job loss worsens health.
+  \item \textbf{Parental help and test scores}: parents step in after a bad report card.
+  \item \textbf{Policing and crime}: cities hire police after a crime spike; crime persists.
+\end{itemize}
+\vskip4pt
+The catch: with $\alpha_i$ in the model, a lagged outcome breaks strict exogeneity.
+\end{frame}
+
 \begin{frame}[allowframebreaks,t]{Fixed Effects or a Lagged Outcome?}
-Sociologists routinely control for last year's outcome, to absorb differences
-between units that are \emph{changing} rather than fixed. It is a reasonable
-instinct. But combining that move with unit fixed effects creates a new bias, and
-it is worth knowing why before you reach for it.
+Sociologists often control for last year's outcome, to absorb differences
+between units that are \emph{changing} rather than fixed. Combining it with unit
+fixed effects creates a new bias (Nickell, next frame).
 \vskip3pt
 \begin{itemize}\itemsep2pt
   \item \textbf{FE and LDV embody different selection stories}: FE assumes
         selection on time-invariant traits; LDV assumes selection on prior
         outcomes. They can both be valid, but they are different assumptions and
         will generally give different answers.
-  \item \srct{Angrist and Pischke (2009)} suggest running both: under some
-        conditions the two \alert{bracket} the truth, so agreement is reassuring
-        and disagreement tells you how much the selection story matters. Treat
-        that as a heuristic, not a theorem.
+  \item \textbf{Bracketing} \srcp{Angrist and Pischke 2009, sec.~5.4}: for a
+        positive effect, if LDV is the right model, FE overstates it; if FE is
+        the right model, LDV understates it. Run both: the truth lies between.
 \end{itemize}
 \end{frame}
 
@@ -715,15 +909,15 @@ GMM combines all these moment conditions \srcp{Arellano and Bond 1991}.
         First-order correlation is expected: $\Delta\epsilon_{it}$ and
         $\Delta\epsilon_{i,t-1}$ share $\epsilon_{i,t-1}$. \alert{Second-order correlation must be zero}; if it is not,
         $\epsilon_{it}$ is serially correlated and $Y_{i,t-2}$ is invalid. Start at
-        $Y_{i,t-3}$.
+        $Y_{i,t-3}$ and check \emph{third}-order correlation instead.
   \item Too many instruments overfit the first stage and pull GMM toward FE-style
         bias; report the count \srcp{Roodman 2009}.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{A Dynamic Wage Equation on the Marriage Data}
-$\log$ wage on its lag, married, union; year effects; robust s.e.; \texttt{fixest} (AH),
-\texttt{plm::pgmm} one-step (AB) \srcp{figs/w10\_panel\_std.R}:
+$\log$ wage on its lag, married, union (both treated as strictly exogenous); year effects;
+robust s.e.; \texttt{fixest} (AH), \texttt{plm::pgmm} one-step (AB) \srcp{figs/w10\_panel\_std.R}:
 \vskip2pt
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.1}
@@ -735,7 +929,7 @@ pooled OLS & 0.60 (0.03) & 0.056 (0.015) & $\alpha_i$ in the error: $\hat\rho$ t
 FE & 0.06 (0.02) & 0.062 (0.021) & Nickell: $\hat\rho$ too low \\
 Anderson--Hsiao, $Y_{t-2}$ & 0.12 (0.03) & 0.046 (0.022) & first-stage $F$ = 830 \\
 Arellano--Bond, $Y_{t-2}$ on & 0.16 (0.04) & 0.044 (0.023) & 2nd-order test $z = 2.18$, $p = 0.03$ \\
-Arellano--Bond, $Y_{t-3}$ on & 0.68 (0.14) & 0.031 (0.031) & 2nd-order test $p = 0.01$ \\
+Arellano--Bond, $Y_{t-3}$ on & 0.68 (0.14) & 0.031 (0.031) & 3rd-order test $p = 0.97$ \\
 Anderson--Hsiao, $Y_{t-3}$ & 0.81 (0.27) & 0.027 (0.034) & first-stage $F$ = 12 \\
 \bottomrule
 \end{tabular}
@@ -744,8 +938,8 @@ Anderson--Hsiao, $Y_{t-3}$ & 0.81 (0.27) & 0.027 (0.034) & first-stage $F$ = 12 
 \begin{itemize}\itemsep1pt
   \item The second-order test rejects: wage shocks persist, so $Y_{t-2}$ is not a
         valid instrument, and the rows using it are biased.
-  \item Lag 3 is weak ($F = 12$) and the test still rejects: $\hat\rho$ jumps to
-        0.7--0.8 with large s.e. Persistence is not pinned down in eight years.
+  \item Lag 3 passes the third-order test but is weak ($F = 12$): $\hat\rho$ of 0.7--0.8,
+        above pooled OLS (an upper bound). Eight years do not pin down persistence.
   \item The marriage coefficient, 0.03--0.06, is far less sensitive than $\hat\rho$.
 \end{itemize}
 \end{frame}
@@ -768,18 +962,18 @@ siblings in a family, workers in a firm, the years of one life):
  & assumption on $\alpha_j$ & uses \\
 \midrule
 fixed effects & none: $\alpha_j$ may covary with $X$ & within groups only \\
-random effects & $\E[\alpha_j \mid X_{1j},\dots,X_{nj}] = \E[\alpha_j]$: unrelated to $X$ & within and between \\
+random effects & $\Cov(\alpha_j, X_{ij}) = 0$, all $i$: unrelated to $X$ & within and between \\
 \bottomrule
 \end{tabular}
 \end{center}
 \begin{itemize}\itemsep1pt
-  \item Both let $\alpha_j$ vary across groups. The names mislead: the one difference is
+  \item Both let $\alpha_j$ vary across groups. The names mislead: the key difference is
         whether $\alpha_j$ may covary with $X$ \srcp{Wooldridge 2010, ch.~10}.
   \item If it may not, random effects is more precise and estimates group-level variables.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Step 1: Two Worlds in a Picture}
+\begin{frame}{Two Worlds in a Picture}
 Six groups, $\beta = 1$; same $\Var(\alpha_j)$ in both worlds, only its covariance with $X$ differs
 \srcp{figs/w10\_fe\_sim.R}:
 \begin{center}
@@ -792,14 +986,18 @@ Six groups, $\beta = 1$; same $\Var(\alpha_j)$ in both worlds, only its covarian
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Step 2: Three Estimators, One Formula}
-Subtract a share $\theta$ of each group's mean, then run OLS:
+\begin{frame}{Three Estimators, One Formula}
+Start from the model, average it over the group's members, and subtract a share $\theta$
+of that average:
 \begin{align*}
+  Y_{ij} &= \beta X_{ij} + \alpha_j + \epsilon_{ij}
+   && \text{\footnotesize the model} \\
+  \bar Y_j &= \beta \bar X_j + \alpha_j + \bar\epsilon_j
+   && \text{\footnotesize average over group $j$'s members} \\
   Y_{ij} - \theta\bar Y_j
   &= \beta(X_{ij} - \theta\bar X_j) + (1-\theta)\,\alpha_j + (\epsilon_{ij} - \theta\bar\epsilon_j)
-   && \text{\footnotesize model minus $\theta \times$ group mean}
+   && \text{\footnotesize line 1 minus $\theta \times$ line 2}
 \end{align*}
-\vskip-4pt
 \begin{center}\small
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}lll@{}}
@@ -807,24 +1005,44 @@ Subtract a share $\theta$ of each group's mean, then run OLS:
 $\theta$ & estimator & share of $\alpha_j$ left in the error \\
 \midrule
 $0$ & pooled OLS & all \\
-$1 - \sqrt{\sigma^2 / (\sigma^2 + n\tau^2)}$ & random effects (GLS) & $1 - \theta$ \\
+between 0 and 1 & random effects & $1 - \theta$ \\
 $1$ & fixed effects & none \\
 \bottomrule
 \end{tabular}
 \end{center}
-{\footnotesize $\tau^2 = \Var(\alpha_j)$, $\sigma^2 = \Var(\epsilon_{ij})$, $n$ members per group.}
-\vskip2pt
 \begin{itemize}\itemsep2pt
   \item For $\theta < 1$ a share $(1-\theta)$ of $\alpha_j$ stays in the error. That is
         harmless only if $\alpha_j$ is unrelated to $X$: the random-effects assumption.
-  \item Simulation below: $n = 4$, $\sigma = 1.5$, $\tau = 2$, so
-        $\theta = 1 - \sqrt{2.25/(2.25 + 4 \cdot 4)} = 0.65$.
-  \item Large groups ($n\tau^2 \gg \sigma^2$) push $\theta$ to 1: random effects
-        approaches fixed effects.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Step 3: 1,000 Samples in Each World}
+\begin{frame}{What $\theta$ Is: How Much to Trust the Group Mean}
+Random effects picks $\theta$ from two variances, $\tau^2 = \Var(\alpha_j)$ and $\sigma^2 = \Var(\epsilon_{ij})$,
+with $n$ members per group:
+\begin{align*}
+  \theta = 1 - \sqrt{\frac{\sigma^2}{\sigma^2 + n\tau^2}}
+  \qquad \text{\footnotesize (GLS; Wooldridge 2010, ch.~10)} .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item The group mean $\bar Y_j$ carries $\alpha_j$ plus noise of variance $\sigma^2/n$.
+  \item Many members or large group differences ($n\tau^2 \gg \sigma^2$): the group mean is
+        mostly $\alpha_j$, so remove nearly all of it, $\theta \to 1$, like fixed effects.
+  \item Few members or small group differences: the group mean is mostly noise, so
+        remove little of it, $\theta \to 0$, like pooled OLS.
+\end{itemize}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+$\sigma = 1.5$, $\tau = 2$ & $n = 1$ & $n = 4$ (simulation) & $n = 20$ \\
+\midrule
+$\theta$ & 0.40 & $1 - \sqrt{2.25/18.25} = 0.65$ & 0.84 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{1,000 Samples in Each World}
 100 groups of 4, $\beta = 1$:
 \begin{center}
 \includegraphics[width=0.72\linewidth]{figs/fere_sims.pdf}
@@ -846,35 +1064,24 @@ B: rise with $X$ & 1.790 (0.105) & \alert{1.348} (0.094) & 1.003 (0.087) \\
 $1 - \theta = 35\%$ of $\alpha_j$ and is biased; fixed effects is not.}
 \end{frame}
 
-\begin{frame}{Step 4: Testing Fixed Against Random}
-$H_0$: $\alpha_j$ is unrelated to $X$ \srcp{Hausman 1978; Mundlak 1978}. Fixed effects is consistent either way; random
-effects is consistent and efficient under $H_0$, inconsistent otherwise.
+\begin{frame}{Testing Fixed Against Random: Hausman}
+$H_0$: $\alpha_j$ is unrelated to $X$ \srcp{Hausman 1978}. Fixed effects is consistent either way;
+random effects is consistent and more precise under $H_0$, inconsistent otherwise.
 \begin{align*}
   H &= \frac{(\hat\beta_{FE} - \hat\beta_{RE})^2}{\Var(\hat\beta_{FE}) - \Var(\hat\beta_{RE})}
    \;\dto\; \chi^2_1
-   && \text{\footnotesize Hausman: is the gap more than noise?} \\
-  Y_{ij} &= \mu + \beta X_{ij} + \gamma \bar X_j + (a_j + \epsilon_{ij}),
-   \quad H_0: \gamma = 0
-   && \text{\footnotesize Mundlak: $\alpha_j = \mu + \gamma\bar X_j + a_j$}
 \end{align*}
-\vskip-2pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-rejection rate at 5\% & A: unrelated & B: rise with $X$ \\
-\midrule
-Hausman & 0.056 & 1.00 \\
-Mundlak, clustered s.e. & 0.061 & 1.00 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip-4pt
-\begin{itemize}\itemsep0pt
-  \item Mundlak's $\hat\beta$ equals the fixed-effects $\hat\beta$ (FWL). Its test survives
-        heteroskedasticity and clustering; Hausman's needs random effects to be efficient.
-  \item On the marriage data: Hausman $\chi^2 = 37.0$; Mundlak $\hat\gamma = 0.094$ (next two frames).
+\begin{itemize}\itemsep3pt
+  \item \textbf{Numerator}: how far apart the two estimates are. Under $H_0$ both are right,
+        so they should differ only by noise.
+  \item \textbf{Denominator}: how much noise to expect. Under $H_0$ random effects is the
+        most precise, so $\Var(\hat\beta_{FE} - \hat\beta_{RE}) = \Var(\hat\beta_{FE}) - \Var(\hat\beta_{RE})$.
+  \item Large $H$: the gap is more than noise, so reject random effects. In the 1,000
+        simulated samples it rejects 5.6\% of the time in world A, 100\% in world B.
 \end{itemize}
+\vskip2pt
+{\small Marriage data: $\chi^2_{10} = 37.0$, $p < 0.001$. Caveat: the denominator assumes random
+effects is fully efficient, which fails when errors are serially correlated.}
 \end{frame}
 
 \begin{frame}{On the Marriage Data: Random Effects}
@@ -888,37 +1095,12 @@ In a balanced panel, one $\theta$ for everyone:
 \end{align*}
 \begin{itemize}\itemsep3pt
   \item The man effect is 46\% of the error variance; RE removes 64\% of each man's mean.
-  \item RE needs FE.1 \emph{and} $\E[\alpha_i\mid X_{i1},\dots,X_{iT}] = 0$: the man
-        effect unrelated to his whole marriage history.
-  \item RE's 0.064 lies between pooled 0.108 and FE 0.047 (``Four Ways'' table): it partly
+  \item RE needs FE.1 \emph{and} $\Cov(\alpha_i, X_{it}) = 0$, all $t$: the man effect
+        unrelated to his whole marriage history.
+  \item RE's 0.064 lies between pooled OLS with controls (0.108) and FE (0.047): it partly
         uses the between-man comparison, and so can estimate education and race.
 \end{itemize}
 {\footnotesize Swamy--Arora variance components, \texttt{plm} \srcp{figs/w10\_panel\_std.R}.}
-\end{frame}
-
-\begin{frame}{On the Marriage Data: Mundlak \srcp{Mundlak 1978}}
-Suppose the unit effect depends on the regressors only through their mean,
-$\alpha_i = \gamma\bar D_i + a_i$ with $a_i$ unrelated to $D_{i1},\dots,D_{iT}$:
-\begin{align*}
-  Y_{it} &= \beta D_{it} + \alpha_i + \epsilon_{it}
-   && \text{\footnotesize the FE model} \\
-  &= \beta D_{it} + \gamma \bar D_i + (a_i + \epsilon_{it})
-   && \text{\footnotesize substitute $\alpha_i$} \\
-  &= \beta (D_{it} - \bar D_i) + (\beta + \gamma)\bar D_i + (a_i + \epsilon_{it})
-   && \text{\footnotesize regroup: within and between parts}
-\end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep2pt
-  \item Pooled OLS of this equation gives \alert{exactly} the FE $\hat\beta$
-        (FWL: $D_{it}$ net of $\bar D_i$ is $D_{it} - \bar D_i$). Marriage data:
-        0.0467 both ways.
-  \item $\gamma$ is the between-minus-within gap: 0.094 (0.045) here. Random
-        effects is this model with $\gamma = 0$; testing $\gamma = 0$ is a
-        Hausman test that works with clustered errors.
-  \item Sociology's \textbf{hybrid model} \srcp{Allison 2009} is the last line plus
-        time-invariant covariates, which FE cannot estimate; their coefficients
-        are not causal merely because the model is FE-consistent.
-\end{itemize}
 \end{frame}
 
 \begin{frame}{Fixed or Random: How to Choose}
@@ -929,10 +1111,10 @@ $\alpha_i = \gamma\bar D_i + a_i$ with $a_i$ unrelated to $D_{i1},\dots,D_{iT}$:
 if the question is & use \\
 \midrule
 the effect of a member-level variable, and the group effect may be confounded
-  & fixed effects (or Mundlak: same $\hat\beta$) \\
+  & fixed effects \\
 the effect of a group-level variable (school sector)
-  & Mundlak with random effects: $\gamma$ protects $\beta$, but the group-level
-    coefficient still needs $a_j$ unrelated to it \\
+  & random effects (fixed effects cannot estimate it), which needs $\alpha_j$
+    unrelated to every regressor \\
 how much variation lies between groups (Week 4's ICC)
   & random effects \\
 \bottomrule
@@ -973,6 +1155,8 @@ Control & $\E[Y\mid g{=}0,t{=}1]$ & $\E[Y\mid g{=}0,t{=}2]$ & $\Delta_0$ \\
   \item Equivalent regression:
         $Y_{it} = \alpha + \gamma\,\text{treated}_i + \delta\,\text{post}_t
         + \tau\,(\text{treated}_i \times \text{post}_t) + \epsilon_{it}$.
+  \item Example from the panel section: wage growth 1980--87 was 0.488 for men who
+        married and 0.476 for men who did not change, so $\tau = 0.012$.
 \end{itemize}
 \end{frame}
 
@@ -1006,15 +1190,15 @@ change & $-2.16$ (1.25) & 0.59 (0.54) & \alert{2.76 (1.36)} \\
 
 
 
-\begin{frame}[allowframebreaks,t]{The $2\times2$ in Regression Form}
-Write $g_i \in\{0,1\}$ for group and $t\in\{1,2\}$ for period:
+\begin{frame}{The $2\times2$ in Regression Form}
+Group $g_i \in\{0,1\}$, period $t\in\{1,2\}$; the four cell means follow:
 \begin{align*}
   Y_{it} = \alpha + \gamma\, g_i + \delta\, \text{post}_t
          + \tau\,\big(g_i \times \text{post}_t\big) + \epsilon_{it} .
 \end{align*}
-Read off the four cell means:
+\vskip-4pt
 \begin{center}\small
-\renewcommand{\arraystretch}{1.25}
+\renewcommand{\arraystretch}{1.1}
 \begin{tabular}{lccc}
 \toprule
  & Before & After & Difference \\
@@ -1026,17 +1210,17 @@ Control ($g=0$) & $\alpha$ & $\alpha+\delta$ & $\delta$ \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip4pt
 \begin{itemize}\itemsep2pt
   \item $\gamma$ absorbs fixed differences in level; $\delta$ absorbs the common
         time trend; $\tau$ is what is left.
-  \item With unit and period fixed effects instead of $g_i$ and $\text{post}_t$;
-        this is the two-way fixed-effects model, \alert{identical when there are
-        two groups and two periods}, and, as we will see, not identical otherwise.
+  \item Card and Krueger: $\alpha = 23.33$ (PA, February), $\gamma = -2.89$ (NJ minus PA
+        in February), $\delta = -2.16$ (PA's change), $\tau = 2.76$.
+  \item Unit and period fixed effects in place of $g_i$ and $\text{post}_t$: two-way FE,
+        \alert{identical with two groups and two periods}, not otherwise.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Parallel Trends\core}
+\begin{frame}{Parallel Trends\core}
 \begin{block}{The identifying assumption}
 \begin{align*}
   \E[Y_{i2}(0) - Y_{i1}(0) \mid g_i = 1] = \E[Y_{i2}(0) - Y_{i1}(0)\mid g_i = 0] .
@@ -1051,15 +1235,34 @@ parallel.
   \item \alert{Untestable}: it concerns a counterfactual trend. Pre-treatment
         parallelism is suggestive evidence, not proof.
   \item \textbf{Not scale-free}: parallel trends in levels and parallel trends in
-        logs are different assumptions, and both cannot generally hold. The next
-        slide shows why this is a real choice and not a technicality.
+        logs are different assumptions, and both cannot generally hold.
   \item Needs \textbf{no anticipation}: units must not change behaviour before
         treatment in expectation of it.
 \end{itemize}
 \end{frame}
-\begin{frame}[allowframebreaks,t]{What the Double Difference Identifies, Exactly\core}
+\begin{frame}{Parallel Trends in a Picture: Card and Krueger}
+\begin{columns}[c]
+\begin{column}{0.58\linewidth}
+\includegraphics[width=\linewidth]{figs/ck_parallel.pdf}
+\end{column}
+\begin{column}{0.40\linewidth}
+\small
+\begin{itemize}\itemsep3pt
+  \item The assumption: without the law, NJ stores would have lost 2.16 workers,
+        as PA stores did.
+  \item Dashed: $20.44 - 2.16 = 18.28$, NJ without the law.
+  \item Effect: $21.03 - 18.28 \approx 2.76$.
+  \item Levels may differ (NJ started 2.89 lower); only the change must match.
+\end{itemize}
+\end{column}
+\end{columns}
+{\footnotesize Their Table 3; 2.75 from the rounded means \srcp{figs/w10\_ck\_parallel.R}.}
+\end{frame}
+
+\begin{frame}{What the Double Difference Identifies, Exactly\core}
 Decompose the treated group's observed change. Its period-2 outcome is
-$Y_{i2}(1)$; add and subtract the counterfactual $Y_{i2}(0)$:
+$Y_{i2}(1)$, its period-1 outcome is $Y_{i1}(0)$ (no anticipation); add and
+subtract the counterfactual $Y_{i2}(0)$:
 \begin{align*}
   \Delta_1 = \E[Y_{i2}(1) - Y_{i1}(0)\mid g_i{=}1]
   = \underbrace{\E[Y_{i2}(1) - Y_{i2}(0)\mid g_i{=}1]}_{\text{ATT}}
@@ -1071,20 +1274,26 @@ $\Delta_0 = \E[Y_{i2}(0) - Y_{i1}(0)\mid g_i{=}0]$. Subtracting,
   \boxed{\;\Delta_1 - \Delta_0 \;=\; \text{ATT}
   \;+\; \underbrace{\E[\Delta Y(0)\mid g{=}1] - \E[\Delta Y(0)\mid g{=}0]}_{\text{differential trend; } =\,0 \text{ under parallel trends}}\;}
 \end{align*}
-\vskip2pt
-\begin{itemize}\itemsep3pt
+\end{frame}
+
+\begin{frame}{Reading the Double Difference\core}
+$\Delta_1 - \Delta_0 = \text{ATT} + \text{differential trend}$, so:
+\vskip4pt
+\begin{itemize}\itemsep6pt
   \item The estimand is the \alert{ATT}, not the ATE: we borrowed a
         counterfactual trend \emph{for the treated group}. Nothing in the design
         identifies what treatment would have done to the controls.
   \item The bias term \emph{is} the parallel-trends violation, exactly. Every
         diagnostic in this lecture (pre-trends, placebos, Rambachan--Roth
         bounds) is aimed at that one object.
-  \item Note also what was \emph{not} assumed: no restriction on the level
-        difference $\gamma$, and no randomization anywhere.
+  \item Card and Krueger: NJ's change $0.59 = \text{ATT} +$ NJ's untreated trend. PA says
+        that trend is $-2.16$, so ATT $= 2.76$. Had NJ's untreated trend really been
+        $-1.00$, the DiD would still say 2.76 but the ATT would be $0.59 + 1.00 = 1.59$:
+        the bias term is $-1.00 - (-2.16) = 1.16$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}[allowframebreaks,t]{Parallel Trends Is Not Scale-Free\core}
+\begin{frame}{Parallel Trends Is Not Scale-Free\core}
 Suppose untreated outcomes would have grown by $10\%$ in both groups, from a base
 of $20$ in the treated group and $40$ in the control group.
 \vskip3pt
@@ -1104,34 +1313,116 @@ Control & 40 & 44 & $+4$ \\
   \item Parallel trends holds \alert{in logs} (both $+10\%$) but \alert{fails in
         levels} ($+2$ versus $+4$). A DID in levels would report a spurious
         $-2$.
-  \item The two assumptions are mutually exclusive unless base levels are equal.
-        \alert{There is no neutral choice}, and the transformation is part of the
-        identifying assumption, not a presentational detail.
-  \item Choose on substantive grounds, is the intervention plausibly additive
-        or multiplicative?, and \emph{before} looking at the results.
-  \item One diagnostic: if pre-treatment levels are far apart, be especially
-        careful. If they are similar, the choice matters less.
+  \item Here both hold only if base levels are equal or nothing grows.
+        \alert{There is no neutral choice}: the transformation is part of the
+        identifying assumption.
+  \item Choose before looking at results: would untreated outcomes grow by the same
+        amount, or the same percentage? It matters most when levels are far apart.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{When Does the Scale Not Matter? \srcp{Roth and Sant'Anna 2023}}
+\begin{frame}{When Does the Scale Not Matter? \srcp{Roth and Sant'Anna 2023a}}
 Parallel trends in levels, in logs, in ranks: when can all hold at once?
 \vskip3pt
 \begin{block}{Result}
 Parallel trends holds for \emph{every} monotone transformation of $Y$ if and only if
 the whole \emph{distribution} of $Y(0)$ satisfies a parallel-trends condition.
-Essentially only two cases deliver that: treatment is as good as random, or
-$Y(0)$'s distribution does not change over time for the groups that differ.
+In practice: the population splits into a part where treatment is as good as
+random and a part whose $Y(0)$ distribution does not change over time.
 \end{block}
 \vskip4pt
 \begin{itemize}\itemsep3pt
   \item In any real DiD the scale is therefore part of the assumption. Choose it
         before seeing results, on substantive grounds (previous frame).
-  \item The distributional condition is testable in the pre-period: compare
-        the groups' outcome distributions, not only means.
+  \item The condition can be falsified in the pre-period: compare the groups'
+        outcome distributions, not only means.
   \item For effects on whole distributions under weaker assumptions:
         \srct{Callaway and Li (2019)} (later frame).
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Why Control for Covariates in a DiD?}
+Fixed effects already remove every \emph{level} difference between units. A covariate $X$
+matters only if it predicts the \emph{trend}:
+\vskip3pt
+\begin{itemize}\itemsep4pt
+  \item treated and control units differ in $X$, and
+  \item units with different $X$ would have changed differently even without treatment.
+\end{itemize}
+Then parallel trends fails for the groups as a whole but can hold \emph{within} levels of $X$:
+\begin{align*}
+  \E[\Delta Y(0) \mid X = x,\, D = 1] = \E[\Delta Y(0) \mid X = x,\, D = 0]
+  \qquad \text{for each } x .
+\end{align*}
+\textbf{Examples}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Minimum wage}: NJ and PA have different mixes of store types, and the types
+        were shrinking at different rates.
+  \item \textbf{Job training}: trainees are younger, and younger workers' wages grow faster anyway.
+  \item \textbf{Marriage}: college men marry later and have steeper wage growth.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why Condition on $X$: A Worked Example}
+Hypothetical: two kinds of stores. Without the law, type A loses 3 workers and type B
+loses 1. The law adds 2 to every NJ store. NJ is mostly type B, PA mostly type A.
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lcccc|c@{}}
+\toprule
+ & share in NJ & share in PA & NJ change & PA change & DiD \\
+\midrule
+type A & 0.2 & 0.8 & $-3 + 2 = -1$ & $-3$ & 2 \\
+type B & 0.8 & 0.2 & $-1 + 2 = \phantom{-}1$ & $-1$ & 2 \\
+\midrule
+all stores & & & $0.6$ & $-2.6$ & \alert{3.2} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item NJ all: $0.2(-1) + 0.8(1) = 0.6$. PA all: $0.8(-3) + 0.2(-1) = -2.6$.
+  \item The plain DiD says 3.2, not 2: PA declines faster because it has more type A
+        stores. Parallel trends fails for all stores but holds within each type.
+  \item Compare within type, then average with NJ's shares: $0.2(2) + 0.8(2) = 2$.
+        That is the regression estimator; weighting and doubly robust do the same.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Estimator 1, Regression: Predict NJ's Untreated Change}
+Same hypothetical stores. Learn the untreated change by type from PA, then predict it for NJ:
+\vskip4pt
+\begin{enumerate}\itemsep5pt
+  \item From PA stores: untreated change $m(\text{A}) = -3$, $m(\text{B}) = -1$.
+  \item Predict each NJ store's untreated change from its type, and average over NJ:
+        $0.2(-3) + 0.8(-1) = -1.4$.
+  \item ATT $=$ NJ's actual change $-$ predicted untreated change
+        $= 0.6 - (-1.4) = \alert{2.0}$.
+\end{enumerate}
+\vskip6pt
+This is g-computation (Week 6) on the change $\Delta Y$; with discrete $X$ and one cell per value,
+it is cell-by-cell matching. In symbols, with $m_{0,\Delta}(x) = \E[\Delta Y \mid X = x, D = 0]$:
+\begin{align*}
+  \text{ATT} = \E[\Delta Y_i \mid D_i = 1] - \E[m_{0,\Delta}(X_i) \mid D_i = 1] .
+\end{align*}
+\end{frame}
+
+\begin{frame}{Estimator 2, Weighting: Make PA Look Like NJ}
+Say 100 stores in each state: type A is 20 NJ and 80 PA stores, type B is 80 NJ and 20 PA.
+\vskip4pt
+\begin{enumerate}\itemsep5pt
+  \item Propensity score: share in NJ within each type, $e(\text{A}) = 20/100 = 0.2$,
+        $e(\text{B}) = 0.8$.
+  \item Weight each PA store by $e/(1-e)$: type A $0.2/0.8 = 0.25$, type B $0.8/0.2 = 4$.
+  \item Weighted PA now has $80 \times 0.25 = 20$ type A and $20 \times 4 = 80$ type B
+        stores: NJ's mix.
+  \item Weighted PA change $= (20 \cdot (-3) + 80 \cdot (-1))/100 = -1.4$, so
+        ATT $= 0.6 - (-1.4) = \alert{2.0}$.
+\end{enumerate}
+\vskip6pt
+\textbf{Doubly robust} combines the two: right if either the predictions $m$ or the
+weights $e$ are right.
 \end{frame}
 
 \begin{frame}{Parallel Trends Given Covariates: Three Estimators}
@@ -1147,10 +1438,37 @@ with $w_1 = D/\E[D]$ and $w_0 \propto e(X)(1-D)/(1-e(X))$, normalized to mean on
 \srcp{Heckman, Ichimura, and Todd 1997; Abadie 2005; Sant'Anna and Zhao 2020}.
 \vskip3pt
 \begin{itemize}\itemsep2pt
-  \item This is Week 6 applied to $\Delta Y$: matching and weighting on the
-        \emph{change}, not the level.
+  \item This is Week 6 with $\Delta Y$ as the outcome: compare treated and control
+        units with the same pre-treatment $X$. Needs overlap, $e(x) < 1$.
   \item The DR version is consistent if either $e$ or $m_{0,\Delta}$ is right
         (\texttt{DRDID}); it is what \texttt{did} uses inside each $ATT(g,t)$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Covariates in TWFE: What Works}
+Same hypothetical stores, 100 per state, two periods \srcp{figs/w10\_did\_cov.R}:
+\vskip3pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & effect $+2$ for both types & effect A $+4$, B $+1$ \\
+\midrule
+true ATT & 2.00 & 1.60 \\
+\midrule
+TWFE & 3.20 & 2.80 \\
+TWFE $+$ type dummy & 3.20 & 2.80 \\
+TWFE $+$ type $\times$ period effects & \alert{2.00} & 2.50 \\
+regression (g-computation) & \alert{2.00} & \alert{1.60} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt
+  \item A type dummy does nothing: type never changes, so the store effects absorb it.
+  \item Type $\times$ period effects give each type its own year path: the TWFE way to compare
+        within type. Right when the effect is the same for every type.
+  \item When it differs, TWFE weights each type by its treatment variance (here equal, so
+        $(4 + 1)/2 = 2.5$); the ATT weights by NJ's mix: $0.2 \times 4 + 0.8 \times 1 = 1.6$.
 \end{itemize}
 \end{frame}
 
@@ -1160,11 +1478,12 @@ is the default. Even with two periods it fails when
 \srcp{Caetano and Callaway 2024}:
 \vskip3pt
 \begin{enumerate}\itemsep3pt
-  \item $X_{it}$ is affected by treatment (a ``bad control'', Week 5);
+  \item $X_{it}$ is affected by treatment (a ``bad control'', Week 5). Example: hours
+        per worker after a minimum-wage rise;
   \item trends depend on the \emph{level} of $X$, not only its change: the
-        within transformation keeps only changes;
+        within transformation keeps only changes. Example: large stores shrink faster;
   \item trends depend on time-invariant $X$ (region, education), which the
-        unit effects absorb;
+        unit effects absorb, unless interacted with period (previous table);
   \item effects vary with $X$, so the regression weights the subgroups in its
         own way (Week 6's regression weights again);
   \item the linear form is wrong.
@@ -1174,45 +1493,14 @@ Fix: use pre-treatment $X$ (or $X$ at a baseline period) in one of the three
 estimators on the previous frame; never post-treatment $X$.
 \end{frame}
 
-\begin{frame}{Inference: Placebo Laws on Real Data}
-\srct{Bertrand, Duflo, and Mullainathan (2004)}: give fake laws to random
-states in CPS wage data, 1979--99. Ordinary standard errors on the micro data
-reject ``no effect'' 67.5\% of the time at 5\%; 44\% even after aggregating to
-a state-year panel.
-\vskip3pt
-\textbf{Same experiment on our state panel} (female suicides, 51 states,
-1964--96): 25 random states get a fake law from a random year, 1,000 times
-\srcp{figs/w10\_placebo.R}.
-\vskip2pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}lc@{}}
-\toprule
-standard error & share of fake laws ``significant'' at 5\% \\
-\midrule
-assumes independent state-years & \alert{0.477} \\
-clustered by state & 0.049 \\
-clustered by state, only 3 treated states & 0.139 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip2pt
-\begin{itemize}\itemsep1pt
-  \item Residuals are serially correlated (lag-1 correlation 0.36): 33 years of one
-        state are far fewer than 33 independent observations.
-  \item With few \emph{treated} clusters, clustering also fails; use randomization
-        inference or methods built for it \srcp{Conley and Taber 2011; MacKinnon and Webb 2018}.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{Event Studies\core}
-Generalize to many periods by estimating an effect for each period relative to
-treatment:
+Many periods: one effect for each period relative to treatment:
 \begin{align*}
   Y_{it} = \alpha_i + \lambda_t
-  + \sum_{k \neq -1} \tau_k \cdot \mathds{1}\{t - g_i = k\} + \epsilon_{it} ,
+  + \sum_{k \neq -1} \tau_k \cdot \mathds{1}\{t - G_i = k\} + \epsilon_{it} ,
 \end{align*}
-where $g_i$ is unit $i$'s treatment date and $k = -1$ is the omitted reference.
+where $G_i$ is unit $i$'s treatment date (for example, the year a man marries) and
+$k = -1$ is the omitted reference.
 \vskip3pt
 \begin{itemize}\itemsep2pt
   \item \textbf{Pre-period coefficients} ($k<0$) are the parallel-trends check.
@@ -1221,12 +1509,37 @@ where $g_i$ is unit $i$'s treatment date and $k = -1$ is the omitted reference.
         grow, fade, or appear only after a lag?
   \item \alert{Caution}: a flat pre-trend is weak evidence. The test often has low
         power, and conditioning your analysis on passing it distorts inference
-        \srcp{Roth 2022}. Report the power of your pre-trend test.
+        \srcp{Roth 2022}.
+  \item With staggered $G_i$ and effects that differ by cohort, these TWFE leads
+        are contaminated by post-period effects (Staggered section).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reading the Event-Study Equation}
+One man married in 1984 ($G_i = 1984$), observed 1980--87. $k = t - G_i$ is years since marriage:
+\vskip4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+year $t$ & 1980 & 1981 & 1982 & 1983 & 1984 & 1985 & 1986 & 1987 \\
+$k = t - 1984$ & $-4$ & $-3$ & $-2$ & $-1$ & 0 & 1 & 2 & 3 \\
+dummy that is 1 & $\tau_{-4}$ & $\tau_{-3}$ & $\tau_{-2}$ & none & $\tau_0$ & $\tau_1$ & $\tau_2$ & $\tau_3$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep4pt
+  \item Each year switches on exactly one dummy, except $k = -1$, the reference: every
+        $\tau_k$ compares year $k$ with the year before marriage.
+  \item A man who never marries has every dummy 0: he only helps estimate $\alpha_i$ and
+        $\lambda_t$.
+  \item $\tau_{-4}, \tau_{-3}, \tau_{-2}$: marriage cannot have caused anything yet, so they
+        should be near 0.
 \end{itemize}
 \end{frame}
 \begin{frame}[allowframebreaks,t]{Event Studies: Specification Details That Matter}
-That specification looks innocent. Three choices inside it change the picture,
-and each must be reported.
+Three choices inside the specification change the picture; report each.
 \vskip4pt
 \begin{itemize}\itemsep3pt
   \item \textbf{Normalization}: one lead must be omitted (here $k=-1$). Every
@@ -1236,8 +1549,9 @@ and each must be reported.
         lags are estimated off few units. Bin them ($k \leq -5$, $k \geq 5$) or
         restrict to a balanced window, and say which.
   \item \textbf{Never-treated units} anchor the time effects $\lambda_t$. If there
-        are none, the $\lambda_t$ are identified only off variation in timing, and
-        the contamination problem below is unavoidable.
+        are none, the fully dynamic TWFE specification is not identified (a linear
+        trend in $k$ is indistinguishable from $\alpha_i + \lambda_t$): drop a second
+        lead or bin \srcp{Borusyak, Jaravel, and Spiess 2024}.
 \end{itemize}
 \end{frame}
 
@@ -1276,8 +1590,24 @@ per period relative to controls; treatment starts at $r = 0$.
   \text{varying base, } r \geq 0:&\quad \hat\beta_r = \gamma\,(r+1)
    && \text{\footnotesize compares } r \text{ with } -1
 \end{align*}
-\vskip-2pt
-\begin{itemize}\itemsep3pt
+\vskip-4pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+$\gamma = 0.1$, $r =$ & $-4$ & $-3$ & $-2$ & $-1$ & 0 & 1 & 2 \\
+\midrule
+universal base & $-0.3$ & $-0.2$ & $-0.1$ & 0 & 0.1 & 0.2 & 0.3 \\
+varying base & 0.1 & 0.1 & 0.1 & 0.1 & 0.1 & 0.2 & 0.3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Base Periods: Reading the Two Plots}
+Same setup: no effect, the treated group drifts by $\gamma = 0.1$ per period:
+\vskip4pt
+\begin{itemize}\itemsep6pt
   \item Callaway--Sant'Anna's default (``varying'') draws a flat pre-period and
         a rising post-period: a \alert{kink at zero that looks like an effect}.
         The imputation estimator's default draws a jump.
@@ -1323,7 +1653,7 @@ mothers and fathers, with age and year dummies:
    + \sum_y \gamma_y^g\,\mathds 1\{y = s\} + \nu_{ist}^g \\
   P_t &= \big(\hat\alpha_t^{m} - \hat\alpha_t^{w}\big)\big/\E[\tilde Y_{ist}^{w}\mid t]
 \end{align*}
-with $t$ event time, $s$ year, and $\tilde Y$ the prediction from age and year
+with $g \in \{m, w\}$ men or women, $t$ event time, $s$ year, and $\tilde Y$ the prediction from age and year
 alone. $P_t$ is the \textbf{child penalty}: the gap that opens, as a share of
 women's counterfactual earnings.
 \vskip3pt
@@ -1331,6 +1661,23 @@ women's counterfactual earnings.
   \item No control group of non-parents: identification is smoothness, the
         same argument as RD in time, with fathers as a check.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Kleven, Landais, and Søgaard: Reading the Child Penalty}
+$P_t = \big(\hat\alpha_t^{m} - \hat\alpha_t^{w}\big)\big/\E[\tilde Y_{ist}^{w}\mid t]$, step by step,
+with round numbers (hypothetical, in DKK):
+\vskip4pt
+\begin{enumerate}\itemsep5pt
+  \item Fathers, five years after the first birth: earnings at their $t = -1$ level,
+        so $\hat\alpha_5^m = 0$.
+  \item Mothers: 40,000 below their $t = -1$ level, so $\hat\alpha_5^w = -40{,}000$.
+  \item Gap: $\hat\alpha_5^m - \hat\alpha_5^w = 0 - (-40{,}000) = 40{,}000$.
+  \item Scale by what mothers would have earned without children (age and year
+        alone predict 200,000): $P_5 = 40{,}000 / 200{,}000 = 0.20$.
+\end{enumerate}
+\vskip4pt
+$P_5 = 0.20$: five years on, children have opened a gap of 20\% of women's counterfactual
+earnings.
 \end{frame}
 
 \begin{frame}{Kleven, Landais, and Søgaard: Results}
@@ -1360,13 +1707,13 @@ Units adopt the policy at \emph{different times}: states pass a law in 1995,
 2001, 2008. The standard specification is
 \begin{align*}
   Y_{it} = \alpha_i + \lambda_t + \beta\, D_{it} + \epsilon_{it},
-  \qquad D_{it} = \mathds{1}\{t \geq g_i\} .
+  \qquad D_{it} = \mathds{1}\{t \geq G_i\} .
 \end{align*}
 \vskip3pt
 For thirty years this was assumed to estimate ``the'' treatment effect. It does
-when the effect is \alert{constant across units and over time since treatment}
-, but with heterogeneous or dynamic effects it need not estimate any sensible
-average at all.
+when the effect is \alert{constant across units and over time since treatment}.
+With heterogeneous or dynamic effects it need not estimate any sensible
+average.
 \vskip4pt
 \begin{alertblock}{Goodman-Bacon (2021)}
 The TWFE estimate is a weighted average of \emph{all possible} $2\times2$ DID
@@ -1422,14 +1769,14 @@ Data: \texttt{bacondecomp::divorce}, crude rates \srcp{figs/w10\_divorce.R}.}
   \item In the shaded window, TWFE uses the \emph{early-treated} unit as a control
         for the late-treated one.
   \item If the early unit's effect is still evolving, that evolution is subtracted
-        from the late unit's effect, and enters with a \alert{negative weight}.
+        from the late unit's effect: it enters with a \alert{minus sign}.
   \item With dynamic effects, TWFE can be the wrong \emph{sign} even when every
         unit-level effect is positive.
 \end{itemize}
 \end{frame}
 
 
-\begin{frame}[allowframebreaks,t]{The Forbidden Comparison, in Algebra\core}
+\begin{frame}{The Forbidden Comparison, in Algebra\core}
 Take the late-versus-early $2\times2$ from the shaded window: late switches from
 untreated to treated, early is \emph{treated throughout}. Suppose parallel
 trends holds exactly and untreated outcomes are flat, so every change in $Y$ is
@@ -1439,8 +1786,16 @@ a treatment effect. Then
   = \underbrace{\text{ATT}_{\text{late}}(\text{post})}_{\text{what we want}}
   \;-\; \underbrace{\Big[\text{ATT}_{\text{early}}(\text{post}) - \text{ATT}_{\text{early}}(\text{pre})\Big]}_{\alert{\text{the \emph{growth} in early's effect over the window}}} .
 \end{align*}
-\vskip2pt
-With numbers; no noise, no trends, every true effect positive:
+\vskip4pt
+\begin{itemize}\itemsep4pt
+  \item The first term is what we want: late's effect after it switches.
+  \item The second term is \emph{early's} effect growing over the same window. The
+        comparison treats that growth as if it were a trend, and subtracts it.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Forbidden Comparison, in Numbers\core}
+No noise, no trends, every true effect positive:
 \begin{center}\small
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{lccc}
@@ -1473,7 +1828,7 @@ $2\times2$ comparison in the data:
 \end{align*}
 where the weights $s_{ab}$ depend on group sizes and on the \emph{variance of
 treatment} within each pair, largest for pairs whose treatment switches
-mid-window. (The next frame writes them out.)
+mid-window.
 \vskip3pt
 Three kinds of comparison arise:
 \begin{enumerate}\itemsep1pt
@@ -1537,8 +1892,7 @@ window}:
   \item Every weight has the $\bar D(1-\bar D)$ shape of a Bernoulli variance,
         so \alert{groups treated near the middle of the panel dominate}: the
         weights come from OLS mechanics, not from group sizes alone and not from
-        any estimand you chose. Compare Week 1's variance-weighting result: same
-        phenomenon, new costume.
+        any estimand you chose (Week 1's variance weighting).
   \item The forbidden weight $s^{\,l}_{kl}$ is not negligible in general: it
         grows with $\bar D_k$, i.e.\ with how long the early group has already
         been treated when the late group switches.
@@ -1559,8 +1913,9 @@ unit, period, and grand means of $D_{it}$:
   \tilde D_{it} = D_{it} - \bar D_i - \bar D_t + \bar D .
 \end{align*}
 Substitute $Y_{it} = \alpha_i + \lambda_t + \tau_{it} D_{it} + \epsilon_{it}$:
-the fixed effects are annihilated because $\tilde D$ has zero unit and period
-sums, and $\sum_{it}\tilde D_{it}^2 = \sum_{(i,t):D_{it}=1}\tilde D_{it}$, so
+the fixed effects drop out because $\tilde D$ has zero unit and period
+sums, $\sum_{it}\tilde D_{it}\epsilon_{it}/NT \to 0$ under parallel trends, and
+$\sum_{it}\tilde D_{it}^2 = \sum_{(i,t):D_{it}=1}\tilde D_{it}$, so
 \begin{align*}
   \plim\,\hat\beta^{\text{TWFE}}
   = \sum_{(i,t):\,D_{it}=1} w_{it}\,\tau_{it},
@@ -1595,8 +1950,7 @@ that negative weights are the rule in staggered designs, not a corner case.
         $n\to\infty$, because the weights, not the noise, are at fault.
   \item By the formula, the negative weights fall on units treated \emph{early}
         and observed over a \emph{long} post-period, exactly the units carrying
-        the most information about long-run effects. TWFE quietly discounts, and
-        then inverts, the long run.
+        the most information about long-run effects.
   \item \textbf{Diagnostic}: compute the weights
         (\texttt{TwoWayFEWeights::twowayfeweights}) and report how many are
         negative and what share of the total mass they carry. Small negative
@@ -1605,8 +1959,8 @@ that negative weights are the rule in staggered designs, not a corner case.
         one diagnostic, not a validity test.
   \item \srct{Sun and Abraham (2021)} show the same contamination in event-study
         coefficients: with staggered timing, the TWFE $\hat\tau_k$ at lag $k$ is
-        a weighted combination of \emph{every} cohort's effects at \emph{every}
-        lag, with weights that need not be positive or sum to one lag by lag. So
+        the cohorts' effects at lag $k$ (weights sum to one) \emph{plus} their
+        effects at other lags (weights sum to zero, some negative). So
         apparent pre-trends can be artefacts of post-treatment dynamics, and a
         clean pre-trend plot from raw TWFE proves nothing.
 \end{itemize}
@@ -1645,7 +1999,7 @@ years & 1974--1996 \\
 
 
 
-\begin{frame}[allowframebreaks,t]{Callaway--Sant'Anna: Build Clean Blocks, Then Aggregate}
+\begin{frame}{Callaway--Sant'Anna: Build Clean Blocks}
 Define the \alert{group-time average treatment effect} for cohort $g$ at time $t$:
 \begin{align*}
   ATT(g,t) = \E\big[Y_t(g) - Y_t(\infty) \mid G_i = g\big] ,
@@ -1661,6 +2015,12 @@ a clean $2\times2$. The baseline $g-1$ predates cohort $g$'s treatment, the
 comparison group has not started treatment by $t$, and no already-treated unit
 is ever used as a control.
 \vskip3pt
+\textbf{Toy example} (the forbidden-comparison numbers, plus a never-treated unit with $Y = 0$):
+late's block at $t = 4$ is $ATT(4,4) = (1 - 0) - (0 - 0) = 1$, its true effect. The early unit
+is never used as a control \srcp{figs/w10\_toy\_staggered.R}.
+\end{frame}
+
+\begin{frame}{Callaway--Sant'Anna: Then Aggregate}
 \begin{itemize}\itemsep2pt
   \item Under \emph{conditional} parallel trends, each block can be estimated by
         IPW, outcome regression, or a doubly robust estimator, \alert{Week 6,
@@ -1699,6 +2059,32 @@ Use only untreated cells to learn the untreated model, then fill in:
   \item \srct{Gardner (2022)}'s two-stage DiD is the same idea as two regressions
         (\texttt{did2s}).
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Imputation on the Toy Example}
+Untreated outcome 0 everywhere; bold cells are treated:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+$Y_{it}$ & $t=1$ & $t=2$ & $t=3$ & $t=4$ \\
+\midrule
+never treated & 0 & 0 & 0 & 0 \\
+early (from $t = 2$; effects 1, 2, 3) & 0 & \textbf{1} & \textbf{2} & \textbf{3} \\
+late (from $t = 4$; effect 1) & 0 & 0 & 0 & \textbf{1} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{enumerate}\itemsep3pt
+  \item Fit $\alpha_i + \lambda_t$ on the 8 untreated cells. All are 0, so every
+        $\hat\alpha_i = \hat\lambda_t = 0$.
+  \item Impute $\hat Y_{it}(0) = 0$ in the 4 treated cells.
+  \item $\hat\tau_{it} = Y_{it} - 0$: 1, 2, 3 and 1. Average: $7/4 = \alert{1.75}$, the true
+        average effect on the treated cells.
+\end{enumerate}
+\vskip2pt
+TWFE on the same 12 cells: 1.10; without the never-treated unit: 0.50
+\srcp{figs/w10\_toy\_staggered.R}.
 \end{frame}
 
 \begin{frame}{Extended TWFE: the Regression Was Not the Problem \srcp{Wooldridge 2025}}
@@ -1755,8 +2141,7 @@ choose.
 \toprule
 Method & Idea & \texttt{R} \\
 \midrule
-Callaway--Sant'Anna (2021) & group-time ATT$(g,t)$, never- or
-  not-yet-treated controls & \texttt{did} \\
+Callaway--Sant'Anna (2021) & ATT$(g,t)$; never- or not-yet-treated controls & \texttt{did} \\
 Sun--Abraham (2021) & interaction-weighted event study & \texttt{fixest::sunab} \\
 de Chaisemartin--D'Haultf\oe uille & clean comparisons at switch dates &
   \texttt{DIDmultiplegt} \\
@@ -1766,10 +2151,6 @@ Stacked / cohort DID & one clean event window per cohort & manual \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip4pt
-Callaway--Sant'Anna also allows \textbf{conditional} parallel trends: trends
-parallel only after adjusting for covariates, estimated by IPW, regression, or
-doubly robust, Week 6, reappearing.
 \end{frame}
 
 \begin{frame}{Six Estimators, One Dataset}
@@ -1795,8 +2176,8 @@ imputation $=$ extended TWFE & not yet treated, all pre-years & $-4.85$ & (2.97)
 \begin{itemize}\itemsep2pt
   \item The robust estimators agree on the sign and say TWFE understates the effect.
   \item They differ in size because they assume parallel trends over different
-        windows: from $g-1$ only, or over every pre-period. Next frame shows
-        why that matters here.
+        windows ($g-1$ only, or every pre-period) and weight the $(g,t)$ cells
+        differently.
 \end{itemize}
 \end{frame}
 
@@ -1835,7 +2216,7 @@ inference & cluster; bootstrap; randomization & few treated cohorts need care \\
 \end{center}
 \vskip3pt
 {\footnotesize Efficiency when adoption timing is as good as random:
-\srct{Roth and Sant'Anna (2023)} (\texttt{staggered}). A design-based reading of
+\srct{Roth and Sant'Anna (2023b)} (\texttt{staggered}). A design-based reading of
 TWFE under random timing: \srct{Athey and Imbens (2022)}.}
 \end{frame}
 
@@ -1847,11 +2228,10 @@ Rather than testing pre-trends and proceeding as if they had passed,
 fail.
 \vskip4pt
 \begin{itemize}\itemsep3pt
-  \item Their ``relative magnitudes'' restriction bounds how much the
-        \emph{change} in the trend violation after treatment can exceed the
-        largest change observed before it, by a factor $\bar M$, and the
-        resulting confidence sets account for sampling uncertainty in the
-        pre-period estimates rather than treating them as known.
+  \item Their ``relative magnitudes'' restriction: after treatment, the
+        violation of parallel trends may change from one period to the next by
+        at most $\bar M$ times the largest such change before treatment. The
+        confidence sets account for sampling error in the pre-period estimates.
   \item Report the \emph{breakdown value}: how large $\bar M$ would have to be
         before your conclusion reverses.
   \item This turns an untestable assumption into a quantitative claim, exactly
@@ -1888,8 +2268,7 @@ $\bar M = 1$ & $[-55.1,\ 55.1]$ \\
   \item \alert{Breakdown below $\bar M = 0.05$}: allowing post-period violations
         one-twentieth the size of the largest pre-period swing erases the sign.
   \item The pre-period swings are large (leads near $-7.6$), so relative
-        magnitudes give little room. The estimate is honest about what these
-        data can say.
+        magnitudes give little room.
 \end{itemize}
 \end{frame}
 
@@ -1904,8 +2283,8 @@ $\bar M = 1$ & $[-55.1,\ 55.1]$ \\
 Units receive dose $d$ (minimum-wage increase in dollars, hours of a program);
 some get $d = 0$. Two different questions:
 \begin{align*}
-  \text{ATT}(d\mid d) &= \E[Y_t(d) - Y_t(0)\mid D = d]
-   \qquad \text{\footnotesize effect of dose $d$ on those who got $d$} \\
+  \text{ATT}(a\mid d) &= \E[Y_t(a) - Y_t(0)\mid D = d]
+   \qquad \text{\footnotesize effect of dose $a$ on those who got $d$} \\
   \text{ATT}(d\mid d) - \text{ATT}(d'\mid d') &= \underbrace{\text{ATT}(d\mid d) - \text{ATT}(d'\mid d)}_{\text{causal: more dose, same units}}
    + \underbrace{\text{ATT}(d'\mid d) - \text{ATT}(d'\mid d')}_{\text{selection: different units}}
 \end{align*}
@@ -2004,8 +2383,8 @@ large metros with above-federal minimum wages. 17,689 responses in all.
    + \text{city and wave effects} + X_{ict}'\delta + \epsilon_{ict} ,
 \end{align*}
 linear probability models, weighted to the American Community Survey.
-Same firms on both sides holds employer practices fixed, as Card and Krueger
-held the industry fixed.
+Same firms on both sides narrows differences in business model and jobs, as
+Card and Krueger held the industry fixed.
 \end{frame}
 
 \begin{frame}{Harknett, Schneider, and Irwin: Checking the Design}
@@ -2054,7 +2433,7 @@ psychological distress & n.s. \\
 \end{tabular}
 \end{center}
 \vskip3pt
-{\footnotesize The law changed schedules first; well-being followed. An IV extension uses the law
+{\footnotesize The law moved schedules and well-being. An IV extension uses the law
 as an instrument for predictability (first-stage $F = 17.1$).}
 \end{frame}
 
@@ -2113,6 +2492,7 @@ Goodman-Bacon, and Sant'Anna (2026)}.
 \begin{enumerate}\itemsep2pt
   \item State the estimand: ATT for whom, over which post-treatment window?
   \item Plot the raw group means over time. Before any regression.
+  \item Date treatment and defend no anticipation; if in doubt, shift $G_i$ earlier.
   \item Is timing staggered? If so, \alert{do not use plain TWFE}. Use a modern
         estimator, and report the TWFE estimate only for comparison.
   \item Report an event-study plot with pre-period coefficients, using
@@ -2120,15 +2500,14 @@ Goodman-Bacon, and Sant'Anna (2026)}.
   \item Justify the scale (levels or logs) on substantive grounds.
   \item Cluster on the treatment-assignment unit; report the number of clusters.
   \item Report a sensitivity analysis for parallel trends.
-  \item Placebo: a pre-treatment outcome, or an untreated outcome that the policy
-        should not affect.
+  \item Placebo: a fake treatment date, or an outcome the policy should not affect.
 \end{enumerate}
 \end{frame}
 
 \begin{frame}{Looking Ahead}
 \begin{itemize}\itemsep4pt
-  \item Fixed effects difference away time-invariant confounders, a real gain,
-        bought with precision and with a new assumption about trends.
+  \item Fixed effects difference away time-invariant confounders, bought with
+        precision and with strict exogeneity; DiD adds parallel trends.
   \item The staggered-adoption literature is a case study in how a method can be
         standard for decades and still be wrong. Read papers published before
         2021 with this in mind, including your own field's classics.
@@ -2149,7 +2528,6 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \footnotesize
 \begin{itemize}\itemsep2pt
 \item Abadie, Alberto. 2005. ``Semiparametric Difference-in-Differences Estimators.'' \textit{Review of Economic Studies} 72(1): 1--19.
-\item Allison, Paul D. 2009. \textit{Fixed Effects Regression Models}. Sage.
 \item Anderson, T. W. and Cheng Hsiao. 1981. ``Estimation of Dynamic Models with Error Components.'' \textit{Journal of the American Statistical Association} 76(375): 598--606.
 \item Angrist, Joshua D. and J\"orn-Steffen Pischke. 2009. \textit{Mostly Harmless Econometrics}. Princeton University Press. [Ch.\ 5]
 \item Arellano, Manuel and Stephen Bond. 1991. ``Some Tests of Specification for Panel Data: Monte Carlo Evidence and an Application to Employment Equations.'' \textit{Review of Economic Studies} 58(2): 277--297.
@@ -2167,7 +2545,6 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \item Cengiz, Doruk, Arindrajit Dube, Attila Lindner, and Ben Zipperer. 2019. ``The Effect of Minimum Wages on Low-Wage Jobs.'' \textit{Quarterly Journal of Economics} 134(3): 1405--1454.
 \item Chiu, Albert, Xingchen Lan, Ziyi Liu, and Yiqing Xu. 2026. ``Causal Panel Analysis under Parallel Trends: Lessons from a Large Reanalysis Study.'' \textit{American Political Science Review} 120(1): 245--266.
 \item Choper, Joshua, Clemens Lehner, and Zachary Parolin. 2026. ``Countervailing Powers: Labor Unions Against the Buyer Power of Walmart Supercenters.'' \textit{American Sociological Review} 91(3): 435--463.
-\item Conley, Timothy G. and Christopher R. Taber. 2011. ``Inference with `Difference in Differences' with a Small Number of Policy Changes.'' \textit{Review of Economics and Statistics} 93(1): 113--125.
 \item de Chaisemartin, Cl\'ement and Xavier D'Haultf\oe uille. 2020. ``Two-Way Fixed Effects Estimators with Heterogeneous Treatment Effects.'' \textit{American Economic Review} 110(9): 2964--2996.
 \item de Chaisemartin, Cl\'ement and Xavier D'Haultf\oe uille. 2026. ``Difference-in-Differences Estimators of Intertemporal Treatment Effects.'' \textit{Review of Economics and Statistics} 108(4): 863--880.
 \item Freyaldenhoven, Simon, Christian Hansen, Jorge Pérez Pérez, and Jesse M. Shapiro. 2025. ``Visualization, Identification, and Estimation in the Linear Panel Event-Study Design.'' Pp.\ 225--268 in \textit{Advances in Economics and Econometrics: Twelfth World Congress}, Vol.\ 2. Cambridge University Press.
@@ -2182,9 +2559,6 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \item Kalil, Ariel, Hope Corman, Dhaval M. Dave, Ofira Schwartz-Soicher, and Nancy E. Reichman. 2023. ``Welfare Reform and the Quality of Young Children's Home Environments.'' \textit{Demography} 60(6): 1791--1813.
 \item Kleven, Henrik, Camille Landais, and Jakob Egholt Søgaard. 2019. ``Children and Gender Inequality: Evidence from Denmark.'' \textit{American Economic Journal: Applied Economics} 11(4): 181--209.
 \item Ludwig, Volker and Josef Brüderl. 2018. ``Is There a Male Marital Wage Premium? New Evidence from the United States.'' \textit{American Sociological Review} 83(4): 744--770.
-\item Ludwig, Volker and Josef Brüderl. 2021. ``What You Need to Know When Estimating Impact Functions with Panel Data for Demographic Research.'' \textit{Comparative Population Studies} 46.
-\item MacKinnon, James G. and Matthew D. Webb. 2018. ``The Wild Bootstrap for Few (Treated) Clusters.'' \textit{Econometrics Journal} 21(2): 114--135.
-\item Mundlak, Yair. 1978. ``On the Pooling of Time Series and Cross Section Data.'' \textit{Econometrica} 46(1): 69--85.
 \item Nickell, Stephen. 1981. ``Biases in Dynamic Models with Fixed Effects.'' \textit{Econometrica} 49(6): 1417--1426.
 \item Olden, Andreas and Jarle Møen. 2022. ``The Triple Difference Estimator.'' \textit{Econometrics Journal} 25(3): 531--553.
 \item Ortiz-Villavicencio, Marcelo and Pedro H.C. Sant'Anna. 2025. ``Better Understanding Triple Differences Estimators.'' arXiv:2505.09942.
@@ -2193,8 +2567,8 @@ Assigned today, due Monday November 9. Covers Weeks 7 and 9.
 \item Roodman, David. 2009. ``A Note on the Theme of Too Many Instruments.'' \textit{Oxford Bulletin of Economics and Statistics} 71(1): 135--158.
 \item Roth, Jonathan. 2022. ``Pretest with Caution: Event-Study Estimates after Testing for Parallel Trends.'' \textit{American Economic Review: Insights} 4(3): 305--322.
 \item Roth, Jonathan. 2026. ``Interpreting Event-Studies from Recent Difference-in-Differences Methods.'' \textit{Japanese Economic Review} 77(2): 275--288.
-\item Roth, Jonathan and Pedro H.C. Sant'Anna. 2023. ``When Is Parallel Trends Sensitive to Functional Form?'' \textit{Econometrica} 91(2): 737--747.
-\item Roth, Jonathan and Pedro H.C. Sant'Anna. 2023. ``Efficient Estimation for Staggered Rollout Designs.'' \textit{Journal of Political Economy Microeconomics} 1(4): 669--709.
+\item Roth, Jonathan and Pedro H.C. Sant'Anna. 2023a. ``When Is Parallel Trends Sensitive to Functional Form?'' \textit{Econometrica} 91(2): 737--747.
+\item Roth, Jonathan and Pedro H.C. Sant'Anna. 2023b. ``Efficient Estimation for Staggered Rollout Designs.'' \textit{Journal of Political Economy Microeconomics} 1(4): 669--709.
 \item Roth, Jonathan, Pedro H.C. Sant'Anna, Alyssa Bilinski, and John Poe. 2023. ``What's Trending in Difference-in-Differences?'' \textit{Journal of Econometrics} 235(2): 2218--2244.
 \item Rüttenauer, Tobias and Volker Ludwig. 2023. ``Fixed Effects Individual Slopes: Accounting and Testing for Heterogeneous Effects in Panel Data or Other Multilevel Models.'' \textit{Sociological Methods \& Research} 52(1): 43--84.
 \item Sant'Anna, Pedro H.C. and Jun Zhao. 2020. ``Doubly Robust Difference-in-Differences Estimators.'' \textit{Journal of Econometrics} 219(1): 101--122.
