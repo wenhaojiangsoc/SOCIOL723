@@ -1,5 +1,5 @@
 ---
-title: "\\textbf{Lab 10: Fixed Effects, Random Effects, and Difference-in-Differences}"
+title: "\\textbf{Lab 10: Fixed Effects, Difference-in-Differences, and Event Studies}"
 subtitle: "SOCIOL 723, Social Statistics II, Thursday, October 29"
 author: "Wenhao Jiang"
 format:
@@ -41,587 +41,426 @@ options(digits = 4, scipen = 999, width = 76)
 
 # Goals
 
-Parts 1 and 2 follow the lecture through the Kleven et al. slides, on the same
-marriage data. Every number below should match a slide.
+Every number below should match a slide.
 
-1.  Show that in a $2\times2$, the difference in differences of four means, the
-    interaction regression, two-way fixed effects (TWFE), and first differences
-    are **the same number**.
-2.  Estimate TWFE with `feols()` (and `felm()`), three ways to the same number,
-    and cluster the standard errors by man.
-3.  Check strict exogeneity with a lead.
-4.  Estimate random effects, compare it with fixed effects, and **justify** the
-    choice with the Hausman test.
-
-Part 3 (staggered adoption) goes with the slides after Kleven et al.
+1.  **Panel data, quickly** (Parts 1--2): in a $2\times2$, four routes give the
+    same DiD; on all years, two-way fixed effects (TWFE) with clustered
+    standard errors; random effects and the Hausman test in one step.
+2.  **Staggered adoption, one number** (Part 3): see TWFE fail on the toy,
+    decompose it on the divorce data, then get a clean single estimate with
+    Callaway--Sant'Anna, Sun--Abraham, and imputation.
+3.  **Event studies** (Part 4): see that each $\tau_k$ is a $2\times2$, see the
+    TWFE event study fail when cohorts differ, and run the clean event studies.
 
 ```{r}
 #| label: packages
-## install.packages(c("wooldridge", "plm", "fixest", "lfe", "stargazer")) once, if needed
+## install.packages(c("wooldridge", "plm", "fixest", "bacondecomp", "did",
+##                    "didimputation")) once, if needed
 library(dplyr)
 library(ggplot2)
-library(fixest)     ## feols(): fixed effects, clustered standard errors (our default)
-library(lfe)        ## felm(): the same, with fixed effects, IV, and clusters in one formula
-library(stargazer)  ## formatted regression tables (reads felm, lm, plm; not feols)
-library(plm)        ## plm(): random effects, Hausman test
-library(wooldridge) ## the wagepan data
-
-## plm also has functions called lag() and lead(); we use dplyr's
-lag <- dplyr::lag; lead <- dplyr::lead
+library(fixest)        ## feols(): fixed effects, clustered SEs, event studies, sunab()
+library(plm)           ## plm(): random effects, Hausman test
+library(wooldridge)    ## the wagepan data
+library(bacondecomp)   ## bacon(): Goodman-Bacon decomposition; the divorce data
+library(did)           ## att_gt(), aggte(): Callaway-Sant'Anna
+library(didimputation) ## did_imputation(): Borusyak-Jaravel-Spiess
 ```
 
 # Part 1: The $2\times2$
-
-## The data
 
 ```{r}
 #| label: data
 data(wagepan)
 w <- wagepan
-## one row per man per year: 545 men x 8 years (1980-87) = 4,360 rows
+## one row per man per year: 545 men x 8 years (1980-87); nr = man id,
+## lwage = log hourly wage, married = 1 if married that year
 c(men = n_distinct(w$nr), years = n_distinct(w$year), rows = nrow(w))
-## the variables we use: nr = man id, lwage = log hourly wage,
-## married = 1 if married that year
-head(w[, c("nr", "year", "lwage", "married")], 3)
 ```
-
-The panel is **balanced**: every man appears in every year. That is what lets
-double demeaning equal the dummies later on.
-
-## Build the $2\times2$ sample
 
 As in the lecture: 1980 and 1987 only, and the men who married in between or
 did not change (the 17 who left marriage are set aside).
 
 ```{r}
-#| label: two-by-two-sample
-## each man's status and wage in 1980 and in 1987, side by side
-d80 <- w |> filter(year == 1980) |> select(nr, y80 = lwage, D80 = married)
-d87 <- w |> filter(year == 1987) |> select(nr, y87 = lwage, D87 = married)
-wide <- inner_join(d80, d87, by = "nr") |>
-  mutate(dD = D87 - D80,       ## change in marital status: -1, 0, or 1
-         dy = y87 - y80)       ## wage growth, 1980 to 1987
-table(wide$dD)
+#| label: two-by-two
+## each man's wage and status in 1980 and 1987, side by side
+wide <- inner_join(w |> filter(year == 1980) |> select(nr, y80 = lwage, D80 = married),
+                   w |> filter(year == 1987) |> select(nr, y87 = lwage, D87 = married),
+                   by = "nr") |>
+  mutate(dD = D87 - D80, dy = y87 - y80)       ## change in status, wage growth
+keep <- wide |> filter(dD %in% c(0, 1))         ## married in between, or no change
 
-## keep the men who married (dD = 1) or did not change (dD = 0)
-keep <- wide |> filter(dD %in% c(0, 1))
-nrow(keep)
-
-## back to long form: two rows per man; treated = married in between
+## long form: two rows per man; treated = married in between
 long22 <- w |>
   filter(year %in% c(1980, 1987), nr %in% keep$nr) |>
   mutate(treated = as.integer(nr %in% keep$nr[keep$dD == 1]),
          post    = as.integer(year == 1987))
-nrow(long22)
-```
 
-## Pooled OLS
-
-```{r}
-#| label: pooled-22
-## treats the 1,056 person-years as 1,056 different men
-round(coeftable(feols(lwage ~ married, long22, cluster = ~nr)), 3)
-```
-
-0.358: the slide's pooled estimate. It mixes the marriage effect with
-everything stable that differs between men who marry and men who do not.
-
-## Four routes to one number
-
-```{r}
-#| label: four-routes
 ## Route 1: difference in differences of the four cell means
 cm <- long22 |> group_by(treated, post) |> summarise(m = mean(lwage), .groups = "drop")
-cm
 m <- function(g, p) cm$m[cm$treated == g & cm$post == p]
-did_hand <- (m(1, 1) - m(1, 0)) - (m(0, 1) - m(0, 0))
-
-## Route 2: the interaction regression, Y = a + g*treated + d*post + tau*treated*post
-did_int <- coef(lm(lwage ~ treated * post, long22))[["treated:post"]]
-
-## Route 3: TWFE, a dummy for each man and each year
-twfe22 <- coef(feols(lwage ~ married | nr + year, long22))[["married"]]
-
-## Route 4: first differences, wage growth on change in status, with an intercept
-fd22 <- coef(lm(dy ~ dD, keep))[["dD"]]
-
-round(c(DiD_by_hand = did_hand, interaction = did_int,
-        TWFE = twfe22, first_diff = fd22), 5)
+## Route 2: interaction regression; Route 3: TWFE; Route 4: first differences
+round(c(DiD_by_hand = (m(1, 1) - m(1, 0)) - (m(0, 1) - m(0, 0)),
+        interaction = coef(lm(lwage ~ treated * post, long22))[["treated:post"]],
+        TWFE        = coef(feols(lwage ~ married | nr + year, long22))[["married"]],
+        first_diff  = coef(lm(dy ~ dD, keep))[["dD"]]), 4)
 ```
 
-All four are 0.0125, the slide's 0.012. Why they must agree:
-
--   In the interaction regression, `treated` plays the role of the man
-    dummies (it absorbs the level difference between the two groups) and `post`
-    plays the role of the year dummy.
--   With two years, subtracting each man's mean is the same as taking his
-    change (his two demeaned values are $-\Delta/2$ and $+\Delta/2$), so TWFE is
-    first differences.
--   First differences with an intercept and a 0/1 regressor is a difference in
-    means: married men's growth minus the others' growth.
-
-```{r}
-#| label: growth-check
-## the last point, directly: mean growth by group
-keep |> group_by(dD) |> summarise(men = n(), mean_growth = mean(dy))
-```
-
-$0.488 - 0.476 = 0.012$.
+All four are 0.0125, the slide's 0.012. With two periods, TWFE **is** the
+difference in differences: the man dummies remove each man's level, the year
+dummy removes the common change.
 
 # Part 2: All Men, All Years
 
-## Pooled, man FE, year FE, two-way FE
-
-`feols()` is our default. The part after `|` lists the fixed effects, and
-`cluster = ~nr` clusters the standard errors by man.
+## TWFE, clustered by man
 
 ```{r}
 #| label: four-models
-## all 545 men (including the 17 who left marriage), all eight years
+## all 545 men, all eight years; cluster = ~nr clusters the SEs by man
 pool   <- feols(lwage ~ married,             w, cluster = ~nr)
 fe_man <- feols(lwage ~ married | nr,        w, cluster = ~nr)  ## man FE only
 fe_yr  <- feols(lwage ~ married | year,      w, cluster = ~nr)  ## year FE only
 twfe   <- feols(lwage ~ married | nr + year, w, cluster = ~nr)  ## both: TWFE
-round(c(pooled = coef(pool)[["married"]], man_FE = coef(fe_man)[["married"]],
-        year_FE = coef(fe_yr)[["married"]], TWFE = coef(twfe)[["married"]]), 3)
+etable(pool, fe_man, fe_yr, twfe, keep = "married", fitstat = "n",
+       headers = c("pooled", "man FE", "year FE", "TWFE"))
 ```
 
-The slides' four numbers: 0.220, 0.243, 0.150, 0.061. `stargazer` cannot read
-`feols` objects, so for a formatted table we fit the same four models with
-`felm()` from the `lfe` package. Its formula has four parts separated by `|`:
-`y ~ x | fixed effects | instruments | cluster` (0 means none).
+The slides' four numbers: 0.220, 0.243, 0.150, 0.061. Always cluster by the
+unit: a man's wage shocks are correlated across his eight years.
+
+## Random effects, and the Hausman test
 
 ```{r}
-#| label: four-models-felm
-#| results: asis
-p_l  <- felm(lwage ~ married | 0         | 0 | nr, data = w)
-m_l  <- felm(lwage ~ married | nr        | 0 | nr, data = w)
-y_l  <- felm(lwage ~ married | year      | 0 | nr, data = w)
-tw_l <- felm(lwage ~ married | nr + year | 0 | nr, data = w)
-stargazer(p_l, m_l, y_l, tw_l, type = "latex", header = FALSE, float = FALSE,
-          keep = "married", keep.stat = "n",
-          column.labels = c("pooled", "man FE", "year FE", "two-way FE"),
-          add.lines = list(c("Man FE", "", "Yes", "", "Yes"),
-                           c("Year FE", "", "", "Yes", "Yes")),
-          notes = "Standard errors clustered by man.")
-```
-
-## Three routes to the TWFE estimate
-
-```{r}
-#| label: three-routes
-## Route 1: dummies. lm() drops one year automatically (collinearity)
-b_dummies <- coef(lm(lwage ~ married + factor(nr) + factor(year), w))[["married"]]
-
-## Route 2: double demeaning by hand
-w <- w |>
-  group_by(nr)   |> mutate(y_man = mean(lwage), D_man = mean(married)) |>
-  group_by(year) |> mutate(y_yr  = mean(lwage), D_yr  = mean(married)) |>
-  ungroup() |>
-  mutate(y_dd = lwage   - y_man - y_yr + mean(lwage),     ## minus man mean, minus year
-         D_dd = married - D_man - D_yr + mean(married))   ## mean, plus grand mean
-## no intercept: every double-demeaned variable has mean zero
-b_demeaned <- coef(lm(y_dd ~ 0 + D_dd, w))[["D_dd"]]
-
-## Route 3: feols
-b_fixest <- coef(twfe)[["married"]]
-
-round(c(dummies = b_dummies, double_demeaned = b_demeaned, feols = b_fixest), 6)
-```
-
-Identical to six decimals: two-way fixed effects **is** a comparison of each
-man with himself, net of what happened to every man that year.
-
-## How to cluster by man
-
-```{r}
-#| label: clustering
-## feols: add cluster = ~nr (the default in this lab); vcov = "iid" turns it off
-tw_iid <- feols(lwage ~ married | nr + year, w, vcov = "iid")
-## felm: put the cluster variable in the fourth part of the formula
-tw_felm <- felm(lwage ~ married | nr + year | 0 | nr, data = w)
-round(c(feols_iid = se(tw_iid)[["married"]],
-        feols_cluster = se(twfe)[["married"]],
-        felm_cluster = tw_felm$cse[["married"]]), 4)
-```
-
-Same coefficient; the clustered standard error is larger (0.0215 vs 0.0184).
-`feols` and `felm` agree up to a small-sample correction in the fourth decimal.
-A man's wage shocks are correlated across his eight years, so eight years of one
-man are worth less than eight independent observations: always cluster by the
-unit.
-
-## Strict exogeneity: add the lead
-
-```{r}
-#| label: lead-test
-## f(married) = next year's married; needs panel.id so feols knows the order.
-## 1987 rows are dropped (no next year).
-lead_fit <- feols(lwage ~ married + f(married) + union + expersq | nr + year,
-                  w, panel.id = ~nr + year, cluster = ~nr)
-round(coeftable(lead_fit), 4)
-```
-
-Next year's marriage does not predict this year's wage ($p = 0.98$): no sign of
-feedback. But its standard error (0.022) is as large as the effect itself.
-
-## Random effects
-
-```{r}
-#| label: random-effects
+#| label: re-hausman
 ## plm needs the panel structure declared: id first, then time
 pw <- pdata.frame(as.data.frame(wagepan), index = c("nr", "year"))
-
-## the slides' specification: married, union, experience, education, race, years
-re <- plm(lwage ~ married + union + educ + black + hisp + exper + expersq + factor(year),
-          data = pw, model = "random")
-round(coef(re)[c("married", "union", "educ")], 4)
-
-## the variance components and theta
-ercomp(re)
-```
-
-Random effects can estimate `educ` (fixed over time); fixed effects cannot.
-Check $\theta$ by hand from the two variances:
-
-```{r}
-#| label: theta
-s2_e <- ercomp(re)$sigma2[["idios"]]   ## variance of epsilon (within)
-s2_a <- ercomp(re)$sigma2[["id"]]      ## variance of the man effect alpha (between)
-c(theta = 1 - sqrt(s2_e / (s2_e + 8 * s2_a)))   ## T = 8 years per man
-```
-
-Random effects subtracts 64% of each man's mean; fixed effects subtracts all of
-it; pooled OLS, none.
-
-## Comparing: pooled, RE, FE
-
-```{r}
-#| label: compare
-#| results: asis
-## pooled and FE with felm (clustered by man), RE with plm
-pool_c <- felm(lwage ~ married + union + educ + black + hisp + exper + expersq | year | 0 | nr,
-               data = w)
-fe_c   <- felm(lwage ~ married + union + expersq | nr + year | 0 | nr, data = w)
-stargazer(pool_c, re, fe_c, type = "latex", header = FALSE, float = FALSE,
-          keep = c("married", "union", "educ"), keep.stat = "n",
-          column.labels = c("pooled", "random effects", "fixed effects"),
-          model.names = FALSE,
-          notes = "Pooled and FE: clustered by man. All include year effects.")
-```
-
-0.108, 0.064, 0.047. Random effects sits between pooled and fixed: it partly
-uses the comparison between men. Only pooled and RE can estimate education.
-
-## Justifying the choice: Hausman
-
-```{r}
-#| label: hausman
-## the same regressors in both (FE cannot estimate educ or race)
-fe_plm <- plm(lwage ~ married + union + expersq + factor(year), pw, model = "within")
-re_plm <- plm(lwage ~ married + union + expersq + factor(year), pw, model = "random")
+f  <- lwage ~ married + union + expersq + factor(year)
+fe_plm <- plm(f, pw, model = "within")   ## fixed effects
+re_plm <- plm(f, pw, model = "random")   ## random effects
+round(c(FE = coef(fe_plm)[["married"]], RE = coef(re_plm)[["married"]]), 3)
 phtest(fe_plm, re_plm)
 ```
 
-$\chi^2 = 37.0$: the FE and RE coefficients differ by more than noise, so the
-random-effects assumption (man effects unrelated to the regressors) is
-rejected. One caveat to report with it: the test assumes random effects is
-fully efficient, which fails when errors are serially correlated.
+$\chi^2 = 37.0$: FE and RE differ by more than noise, so the random-effects
+assumption (man effects unrelated to marriage) is rejected. Report fixed
+effects.
 
-::: callout-note
-**How to write the justification.** "We estimate the marriage premium with man
-and year fixed effects, so stable differences between men who marry and men who
-do not cannot bias the estimate. A random-effects model would also use
-comparisons between men; a Hausman test rejects its assumption that the man
-effects are unrelated to the regressors ($\chi^2_{10} = 37.0$, $p < 0.001$), and the
-married coefficient falls from 0.064 (RE) to 0.047 (FE). We therefore report
-fixed effects, with standard errors clustered by man."
-:::
+# Part 3: Staggered Adoption, One Number
 
-# Part 3: Staggered Adoption (after the Kleven et al. slides)
+## The toy: TWFE gets 1.10, the truth is 1.75
 
-This part goes with the next section of the lecture.
+The lecture's toy: three units, four periods, untreated outcome 0 everywhere.
+Early is treated from $t = 2$ (effects 1, 2, 3); late from $t = 4$ (effect 1).
 
 ```{r}
-#| label: stagg-packages
-library(did)
-library(bacondecomp)
+#| label: toy
+toy <- data.frame(unit = rep(c("never", "early", "late"), each = 4), t = rep(1:4, 3),
+                  Y = c(0, 0, 0, 0,  0, 1, 2, 3,  0, 0, 0, 1),
+                  D = c(0, 0, 0, 0,  0, 1, 1, 1,  0, 0, 0, 1))
+y <- function(u, tt) toy$Y[toy$unit == u & toy$t == tt]
 
-data(base_stagg, package = "fixest")
-stg <- base_stagg |> as.data.frame() |>
-  mutate(D = as.integer(time_to_treatment >= 0),
-         cohort = year_treated) |>            # 10000 codes never-treated
-  select(id, year, y, D, cohort, time_to_treatment, x1, treatment_effect_true)
+## the forbidden 2x2: late (treated) vs early (control), t = 2 -> 4
+c(forbidden = (y("late", 4) - y("late", 2)) - (y("early", 4) - y("early", 2)))
 
-c(units = n_distinct(stg$id), periods = n_distinct(stg$year),
-  cohorts = n_distinct(stg$cohort),
-  never_treated_units = sum(!duplicated(stg$id) & stg$cohort == 10000))
-```
-
-The simulated panel has 100 units over 10 periods. Half are never treated; the
-other half adopt in staggered fashion, one cohort per period.
-
-
-## The staggered problem
-
-`base_stagg` is simulated, so we know the answer. The column
-`treatment_effect_true` records each observation's true effect.
-
-```{r}
-#| label: truth
-true_att <- mean(stg$treatment_effect_true[stg$D == 1])
-c(true_ATT = true_att)
+## TWFE, and the true average effect on the four treated cells
+c(TWFE = coef(feols(Y ~ D | unit + t, toy))[["D"]], truth = mean(toy$Y[toy$D == 1]))
 ```
 
 ```{r}
-#| label: fig-truth
-#| fig-cap: "The true effect by time since treatment. It grows in magnitude with exposure — exactly the dynamic pattern that breaks TWFE."
-stg |> filter(D == 1) |>
-  group_by(time_to_treatment) |>
-  summarise(truth = mean(treatment_effect_true)) |>
-  ggplot(aes(time_to_treatment, truth)) +
-  geom_line(colour = "navy", linewidth = .9) + geom_point(colour = "navy") +
-  labs(x = "periods since treatment", y = "true effect") +
-  theme_minimal(base_size = 10)
+#| label: toy-bacon
+## Goodman-Bacon: TWFE = weighted average of every 2x2
+## (bacon wants numeric ids, and a treatment not named D)
+bt <- bacon(Y ~ post, data = data.frame(id = as.integer(factor(toy$unit)), t = toy$t,
+                                        Y = toy$Y, post = toy$D),
+            id_var = "id", time_var = "t", quietly = TRUE)
+bt
+sum(bt$estimate * bt$weight)
 ```
 
-### What TWFE reports
+The `Later vs Earlier Treated` row is the forbidden comparison: $-0.5$ (GB's
+window means) with weight 0.2, pulling TWFE down to 1.10.
 
 ```{r}
-#| label: twfe-fail
-m_twfe <- feols(y ~ D | id + year, data = stg, cluster = ~ id)
-c(TWFE = coef(m_twfe)["D"], truth = true_att)
+#| label: toy-cs
+## Callaway-Sant'Anna by hand: each block = cohort's change since g - 1 minus the
+## change of units not yet treated at t
+blk <- function(u, tt, base, ctrl)
+  (y(u, tt) - y(u, base)) - mean(sapply(ctrl, function(cc) y(cc, tt) - y(cc, base)))
+att <- c(`ATT(2,2)` = blk("early", 2, 1, c("late", "never")),
+         `ATT(2,3)` = blk("early", 3, 1, c("late", "never")),
+         `ATT(2,4)` = blk("early", 4, 1, "never"),       ## late is treated at t = 4
+         `ATT(4,4)` = blk("late",  4, 3, "never"))
+c(att, average = mean(att))
 ```
 
-::: callout-important
-The true ATT is $-1$. TWFE reports roughly $-3.5$ — **three and a half times too
-large**. Nothing is misspecified in the usual sense: there is no omitted
-variable, no functional-form error, no measurement problem. The failure comes
-entirely from using already-treated units as controls while their own effects are
-still growing.
-:::
+Every block recovers its true effect; their average is the truth, 1.75.
 
-### Where the damage comes from
+## The divorce data
+
+Unilateral divorce and female suicide (Stevenson and Wolfers 2006): 50 states +
+DC, 1964--96. `divyear` is the adoption year; 1950 means adopted before 1964
+(always treated), 2000 means never adopted in the sample.
 
 ```{r}
-#| label: bacon
-bd <- bacon(y ~ D, data = stg, id_var = "id", time_var = "year")
+#| label: divorce
+data(divorce, package = "bacondecomp")
+dv <- divorce |> filter(sex == 2) |>            ## women
+  transmute(st, year, divyear,
+            y  = suiciderate_jag * 1e6,           ## suicides per million women
+            D  = as.integer(year >= divyear),     ## 1 from the adoption year on
+            id = as.integer(factor(st)))
+table(adoption_year = dv$divyear[dv$year == 1964])
 
+## TWFE on all 51 states, clustered by state
+tw_all <- feols(y ~ D | st + year, dv, cluster = ~st)
+round(coeftable(tw_all), 2)
+```
+
+TWFE: $-3.05$, the slide's number.
+
+```{r}
+#| label: divorce-bacon
+## where the -3.05 comes from: the 2x2s by type
+bd <- bacon(y ~ post, data = data.frame(st = dv$st, year = dv$year, y = dv$y, post = dv$D),
+            id_var = "st", time_var = "year", quietly = TRUE)
 bd |> group_by(type) |>
-  summarise(total_weight = sum(weight),
-            weighted_estimate = sum(estimate * weight) / sum(weight),
-            n_comparisons = n(), .groups = "drop") |>
-  knitr::kable(digits = 4)
+  summarise(avg_2x2 = round(sum(estimate * weight) / sum(weight), 2),
+            total_weight = round(sum(weight), 3))
 ```
 
-Read the `Earlier vs Later Treated` and `Later vs Earlier Treated` rows. The
-second is the **forbidden comparison** — already-treated units serving as
-controls. Its weight tells you how much of the TWFE estimate is contaminated.
+The `Later vs Always Treated` and `Later vs Earlier Treated` rows use
+already-treated states as controls: 67% of the weight. The clean
+`Treated vs Untreated` comparisons average $-5.2$; TWFE reports $-3.05$.
+
+## Clean blocks, then one average
+
+Drop the 9 always-treated states (no pre-period). The packages want a cohort
+variable: the adoption year, with a code for never treated (`0` for `did` and
+`didimputation`, a year beyond the sample for `sunab`).
 
 ```{r}
-#| label: fig-bacon
-#| fig-cap: "Goodman-Bacon decomposition: each point is a 2x2 comparison, positioned by its weight and its estimate."
-ggplot(bd, aes(weight, estimate, colour = type, shape = type)) +
-  geom_point(size = 2, alpha = .8) +
-  geom_hline(yintercept = coef(m_twfe)["D"], linetype = 2) +
-  geom_hline(yintercept = true_att, colour = "firebrick") +
-  labs(x = "weight", y = "2x2 DID estimate", colour = NULL, shape = NULL) +
-  theme_minimal(base_size = 9) + theme(legend.position = "bottom")
+#| label: clean-setup
+ds <- dv |> filter(divyear >= 1964) |>
+  mutate(g0  = ifelse(divyear == 2000, 0, divyear),       ## did, didimputation
+         coh = ifelse(divyear == 2000, 10000, divyear))   ## fixest::sunab
+tw_42 <- feols(y ~ D | st + year, ds, cluster = ~st)      ## TWFE, same 42 states
 ```
-
-The dashed line is the TWFE estimate — a weighted average of everything shown.
-The red line is the truth.
-
-## Estimators that work
-
-### Sun–Abraham
-
-```{r}
-#| label: sunab
-m_sa <- feols(y ~ sunab(cohort, year) | id + year,
-              data = stg, cluster = ~ id)
-summary(m_sa, agg = "att")
-```
-
-```{r}
-#| label: fig-sunab
-#| fig-cap: "Sun–Abraham event study. Pre-period coefficients hover around zero; post-period coefficients trace the true dynamic path."
-iplot(m_sa, main = "", xlab = "periods since treatment")
-```
-
-### Callaway–Sant'Anna
 
 ```{r}
 #| label: cs
-set.seed(723)
-cs <- att_gt(yname = "y", tname = "year", idname = "id",
-             gname = "cohort", data = stg,
-             control_group = "notyettreated", bstrap = TRUE, cband = FALSE)
-cs_att <- aggte(cs, type = "simple", na.rm = TRUE)
-summary(cs_att)
+## Callaway-Sant'Anna: every ATT(g,t) from its own clean 2x2, then aggregate
+cs_never <- att_gt(yname = "y", tname = "year", idname = "id", gname = "g0", data = ds,
+                   control_group = "nevertreated", bstrap = FALSE, cband = FALSE)
+cs_notyet <- att_gt(yname = "y", tname = "year", idname = "id", gname = "g0", data = ds,
+                    control_group = "notyettreated", bstrap = FALSE, cband = FALSE)
+## "simple": average over all treated (g, t) cells, one number
+a_never  <- aggte(cs_never,  type = "simple", bstrap = FALSE)
+a_notyet <- aggte(cs_notyet, type = "simple", bstrap = FALSE)
+round(c(never = a_never$overall.att, not_yet = a_notyet$overall.att), 2)
 ```
 
 ```{r}
-#| label: fig-cs-dyn
-#| fig-cap: "Callaway–Sant'Anna dynamic effects, aggregated across cohorts by time since treatment."
-cs_dyn <- aggte(cs, type = "dynamic", na.rm = TRUE)
-ggdid(cs_dyn) + theme_minimal(base_size = 9)
+#| label: other-estimators
+## Sun-Abraham: the same blocks as one regression (cohort x event-time dummies)
+sa <- feols(y ~ sunab(coh, year) | st + year, ds, cluster = ~st)
+## imputation: fit unit + year effects on untreated cells, impute Y(0), average
+imp <- did_imputation(ds, yname = "y", gname = "g0", tname = "year", idname = "id")
 ```
-
-### The scoreboard
 
 ```{r}
 #| label: scoreboard
-tibble::tibble(
-  estimator = c("Truth", "TWFE", "Sun-Abraham", "Callaway-Sant'Anna"),
-  estimate = c(true_att, coef(m_twfe)["D"],
-               summary(m_sa, agg = "att")$coeftable[1, 1],
-               cs_att$overall.att)
-) |> knitr::kable(digits = 4)
+data.frame(
+  estimator = c("TWFE, all 51 states", "TWFE, 42 states",
+                "Callaway-Sant'Anna, never treated", "Callaway-Sant'Anna, not yet treated",
+                "Sun-Abraham", "imputation"),
+  ATT = c(coef(tw_all), coef(tw_42), a_never$overall.att, a_notyet$overall.att,
+          coef(summary(sa, agg = "ATT"))[["ATT"]], imp$estimate),
+  se  = c(se(tw_all), se(tw_42), a_never$overall.se, a_notyet$overall.se,
+          se(summary(sa, agg = "ATT"))[["ATT"]], imp$std.error)) |>
+  knitr::kable(digits = 2)
 ```
 
-Sun–Abraham and Callaway–Sant'Anna land near the truth of $-1$. TWFE does not,
-and TWFE is the specification that appears in thousands of published papers.
+The slide's "The Estimators on One Dataset" table, plus Sun--Abraham. The
+clean estimators agree on the sign and say TWFE understates the effect.
+Callaway--Sant'Anna and Sun--Abraham with never-treated controls give the same
+$-10.56$; imputation uses every untreated year as the baseline, so it differs.
 
-(The two modern estimators are not exactly $-1$ because the "simple" aggregation
-weights cohorts and periods differently from a naive average over treated
-observations. That is a choice of estimand, not an error — see Exercise 3.)
+## Covariates inside each block
 
-## A real application
-
-`did::mpdta` contains county-level teen employment and the timing of minimum-wage
-increases, 2003--2007.
+Southern and non-Southern states may trend differently. `xformla` adjusts each
+block by regression (`"reg"`), weighting (`"ipw"`), or both (`"dr"`):
 
 ```{r}
-#| label: mpdta
-data(mpdta, package = "did")
-c(counties = n_distinct(mpdta$countyreal), years = n_distinct(mpdta$year),
-  cohorts = paste(sort(unique(mpdta$first.treat)), collapse = ", "))
+#| label: cs-cov
+## census region from the state abbreviation (DC counts as South)
+ab <- c(state.abb, "DC"); rg <- c(as.character(state.region), "South")
+ds$south <- as.integer(rg[match(ds$st, ab)] == "South")
+
+cs_x <- sapply(c("reg", "ipw", "dr"), function(m) {
+  cs <- att_gt(yname = "y", tname = "year", idname = "id", gname = "g0", data = ds,
+               xformla = ~ south, est_method = m, control_group = "notyettreated",
+               bstrap = FALSE, cband = FALSE)
+  aggte(cs, type = "simple", bstrap = FALSE)$overall.att
+})
+round(c(no_covariates = a_notyet$overall.att, cs_x), 2)
+```
+
+Region is one 0/1 variable, so both models are saturated and all three agree
+(as on the slide's hypothetical block). Adjusting for region moves the
+estimate from $-8.7$ to $-3.7$.
+
+# Part 4: Event Studies
+
+## Each $\tau_k$ is a $2\times2$
+
+One adoption date: 2 treated and 2 control units, periods 1--6, treated from
+$t = 4$; the effect grows 1, 2, 3 (the lecture's event-study toy).
+
+```{r}
+#| label: es-toy
+es <- expand.grid(id = 1:4, t = 1:6)
+es$treated <- as.integer(es$id <= 2)
+es$k <- es$t - 4                                        ## periods since the start
+es$Y <- c(1, 2, 0, 0.5)[es$id] + 0.5 * (es$t - 1) +     ## untreated outcome
+        es$treated * (es$t >= 4) * c(0, 0, 0, 1, 2, 3)[es$t]
+## the event study: one dummy per k for treated units, k = -1 (t = 3) omitted
+round(coef(feols(Y ~ i(k, treated, ref = -1) | id + t, es)), 2)
+
+## two of them by hand, each against t = 3
+mm <- function(g, tt) mean(es$Y[es$treated == g & es$t == tt])
+c(tau_minus2 = (mm(1, 2) - mm(1, 3)) - (mm(0, 2) - mm(0, 3)),
+  tau_0      = (mm(1, 4) - mm(1, 3)) - (mm(0, 4) - mm(0, 3)),   ## t = 4: already treated
+  tau_1      = (mm(1, 5) - mm(1, 3)) - (mm(0, 5) - mm(0, 3)))
+```
+
+## The event study on the staggered toy
+
+Back to the staggered toy (early 1, 2, 3; late 1). The static TWFE gave 1.10.
+The event study gives one coefficient per $k$:
+
+```{r}
+#| label: es-staggered
+G <- c(never = NA, early = 2, late = 4)[toy$unit]
+toy$k <- ifelse(is.na(G), -1000, toy$t - G)             ## -1000 codes never treated
+round(coef(feols(Y ~ i(k, ref = c(-1, -1000)) | unit + t, toy)), 2)
+
+## the forbidden 2x2, late vs early, t = 3 -> 4
+c(forbidden = (y("late", 4) - y("late", 3)) - (y("early", 4) - y("early", 3)))
+```
+
+Exactly 0, 0, 1, 2, 3. The forbidden $2\times2$ is 0. Static TWFE reads it as
+$\beta = 0$; the event study reads it as $\tau_0 - (\tau_2 - \tau_1)$, subtracts
+early's growth ($3 - 2 = 1$), and gets $\tau_0 = 1$.
+
+## What the event study still assumes
+
+One path $\tau_k$ for every cohort. Break it: late's effect at $t = 4$ is 3,
+not 1. The truth by $k$ is 0, 0, 2, 2, 3.
+
+```{r}
+#| label: es-fail
+toy2 <- toy
+toy2$Y[toy2$unit == "late" & toy2$t == 4] <- 3
+m_toy2 <- feols(Y ~ i(k, ref = c(-1, -1000)) | unit + t, toy2)
+round(coef(m_toy2), 2)
+round(fixef(m_toy2)$unit, 2)                             ## late's level: 0.75, not 0
+```
+
+$-0.75, -0.25, 2.00, 2.75, 3.25$: a fake pre-trend and wrong post effects,
+from treatment effects alone. Late jumps 3 but the shared $\hat\tau_0$ is 2, so
+OLS raises late's level to 0.75 and the leads go negative to pull its
+before-years back to 0.
+
+## Five event studies on the divorce data
+
+Event time $k$ = year $-$ adoption year, binned at $-10$ and $15$ for the TWFE
+version; never-treated states as controls (CS also with not-yet-treated).
+
+```{r}
+#| label: es-divorce
+ds$kb <- pmin(pmax(ds$year - ds$divyear, -10), 15)
+ds$kb[ds$divyear == 2000] <- -1000                      ## never treated
+## 1. TWFE event study
+m_tw <- feols(y ~ i(kb, ref = c(-1, -1000)) | st + year, ds, cluster = ~st)
+## 2. Sun-Abraham
+m_sa <- feols(y ~ sunab(coh, year, ref.p = c(-1, -10000)) | st + year, ds, cluster = ~st)
+## 3. Callaway-Sant'Anna, averaged by k ("dynamic"), one base year g - 1
+cs_u <- att_gt(yname = "y", tname = "year", idname = "id", gname = "g0", data = ds,
+               control_group = "nevertreated", base_period = "universal",
+               bstrap = FALSE, cband = FALSE)
+cs_d <- aggte(cs_u, type = "dynamic", min_e = -10, max_e = 15, bstrap = FALSE, cband = FALSE)
+## 3b. the same with not-yet-treated controls
+cs_n <- att_gt(yname = "y", tname = "year", idname = "id", gname = "g0", data = ds,
+               control_group = "notyettreated", base_period = "universal",
+               bstrap = FALSE, cband = FALSE)
+cs_nd <- aggte(cs_n, type = "dynamic", min_e = -10, max_e = 15, bstrap = FALSE, cband = FALSE)
+## 4. imputation, effect by k
+m_im <- did_imputation(ds, yname = "y", gname = "g0", tname = "year", idname = "id",
+                       horizon = 0:15, pretrends = -10:-1, cluster_var = "id")
 ```
 
 ```{r}
-#| label: fig-rawmeans
-#| fig-cap: "Raw group means of log teen employment by treatment cohort. Always draw this before any regression."
-mpdta |>
-  group_by(first.treat, year) |>
-  summarise(y = mean(lemp), .groups = "drop") |>
-  ggplot(aes(year, y, colour = factor(first.treat))) +
-  geom_line(linewidth = .8) + geom_point() +
-  labs(x = NULL, y = "mean log teen employment", colour = "cohort") +
-  theme_minimal(base_size = 10)
+#| label: es-collect
+## one data frame: method, k, estimate, se
+grab <- function(k, est, se, m) data.frame(m = m, k = as.numeric(k), est = est, se = se)
+all <- rbind(
+  grab(c(sub("kb::", "", names(coef(m_tw))), -1), c(coef(m_tw), 0), c(se(m_tw), 0), "TWFE"),
+  grab(sub("year::", "", names(coef(m_sa))), coef(m_sa), se(m_sa), "Sun-Abraham"),
+  grab(cs_d$egt, cs_d$att.egt, cs_d$se.egt, "CS, never treated"),
+  grab(cs_nd$egt, cs_nd$att.egt, cs_nd$se.egt, "CS, not yet treated"),
+  grab(m_im$term, m_im$estimate, m_im$std.error, "imputation")) |>
+  filter(k >= -10, k <= 15)
+
+## average effect over k = 0..10, by method
+all |> filter(k >= 0, k <= 10) |> group_by(m) |>
+  summarise(avg_k0_10 = round(mean(est), 2))
 ```
 
 ```{r}
-#| label: mpdta-compare
-## `treat` in mpdta is a time-invariant cohort flag; build the time-varying
-## treatment indicator ourselves
-mp <- mpdta |> mutate(D = as.integer(first.treat > 0 & year >= first.treat))
-
-m_twfe_mp <- feols(lemp ~ D | countyreal + year, data = mp,
-                   cluster = ~ countyreal)
-
-set.seed(723)
-cs_mp <- att_gt(yname = "lemp", tname = "year", idname = "countyreal",
-                gname = "first.treat", xformla = ~ lpop, data = mp,
-                control_group = "notyettreated", bstrap = TRUE)
-cs_mp_att <- aggte(cs_mp, type = "simple", na.rm = TRUE)
-
-c(TWFE = coef(m_twfe_mp)["D"], CS = cs_mp_att$overall.att)
+#| label: fig-es
+#| fig-cap: "Five event studies on the divorce data (95% intervals). Grey: the TWFE event study, repeated in every panel."
+#| fig-height: 4.2
+all$m <- factor(all$m, levels = c("TWFE", "Sun-Abraham", "CS, never treated",
+                                  "CS, not yet treated", "imputation"))
+ghost <- all |> filter(m == "TWFE") |> select(-m)
+ggplot(all, aes(k, est)) +
+  geom_hline(yintercept = 0, colour = "gray55") +
+  geom_vline(xintercept = -0.5, linetype = 2, colour = "gray55") +
+  geom_line(data = ghost, colour = "gray70") +
+  geom_ribbon(aes(ymin = est - 1.96 * se, ymax = est + 1.96 * se), alpha = .15, fill = "navy") +
+  geom_line(colour = "navy") + geom_point(colour = "navy", size = .8) +
+  facet_wrap(~ m, ncol = 3) + coord_cartesian(ylim = c(-35, 20)) +
+  labs(x = "years since unilateral divorce (k)", y = "suicides per million women") +
+  theme_minimal(base_size = 9)
 ```
 
-```{r}
-#| label: fig-mpdta-dyn
-#| fig-cap: "Event-study estimates for the minimum-wage application, with conditional parallel trends adjusting for county population."
-ggdid(aggte(cs_mp, type = "dynamic", na.rm = TRUE)) + theme_minimal(base_size = 9)
-```
-
-Note the `xformla = ~ lpop` argument: this is **conditional** parallel trends,
-with the adjustment done by a doubly robust estimator. Week 6 has reappeared
-inside a DID.
-
-## How bad could parallel trends be?
-
-Rather than testing pre-trends and proceeding, bound the violation.
-
-```{r}
-#| label: honest-manual
-## A crude linear-extrapolation diagnostic -- NOT a Rambachan-Roth bound.
-## It ignores sampling uncertainty and assumes the violation stays linear.
-dyn <- aggte(cs_mp, type = "dynamic", na.rm = TRUE)
-pre <- data.frame(e = dyn$egt, att = dyn$att.egt) |> filter(e < 0)
-post_mean <- mean(dyn$att.egt[dyn$egt >= 0])
-
-## slope of the estimated pre-trend
-pre_slope <- if (nrow(pre) > 1) coef(lm(att ~ e, data = pre))["e"] else NA
-c(pre_trend_slope = pre_slope, mean_post_effect = post_mean,
-  periods_to_explain = post_mean / pre_slope)
-```
-
-Interpretation: if the untreated potential outcome had continued drifting at the
-estimated pre-trend slope, how many periods of drift would it take to account for
-the whole post-treatment effect? A small number means the design is fragile.
-
-::: callout-warning
-This is a back-of-envelope diagnostic, not a formal sensitivity analysis. It
-treats the estimated pre-trend as if it were known, ignores uncertainty in both
-pieces, and assumes any violation is linear. For the real thing, use `HonestDiD`
-and report the **breakdown value** $\bar M$, how large the post-treatment
-violation may be, relative to the largest violation seen before treatment, before
-your conclusion reverses.
-:::
+Sun--Abraham and Callaway--Sant'Anna (never treated) give the **same** path
+($-6.53$ on average over $k = 0$--10); the TWFE event study gives $-3.09$.
+CS with not-yet-treated controls gives $-3.10$: later adopters are controls
+early on, and by $k = 15$ only never-treated states remain ($-14.82$ vs.
+$-14.85$). Imputation uses every untreated year as the baseline and gives $-0.97$. The
+leads are not flat, so that choice matters.
 
 # Exercises
 
-**Parts 1 and 2**
+1.  **The $2\times2$ with the 17 men who left marriage.** Put them back (`dD`
+    in $\{-1, 0, 1\}$) and run first differences with an intercept. You should
+    get 0.051. Why is it not $0.488 - 0.476$?
 
-1.  **The $2\times2$ with the 17 men who left marriage.** Put them back
-    (`dD` in $\{-1, 0, 1\}$). The interaction regression needs a 0/1
-    `treated`, so run first differences with an intercept instead. You should get 0.051. Explain in one sentence why it is
-    not $0.488 - 0.476$.
+2.  **Constant effects.** Change the staggered toy so every treated cell's
+    effect is 2. Show that TWFE, the forbidden $2\times2$, and Callaway--Sant'Anna
+    all give 2. In one sentence: what does the forbidden comparison need in
+    order to go wrong?
 
-2.  **Two packages, one answer.** Re-estimate the pooled-RE-FE comparison's
-    fixed-effects column with `feols(... | nr + year, cluster = ~nr)` and with
-    `felm(... | nr + year | 0 | nr)`. Confirm the coefficients agree, and say
-    where the standard errors differ and why.
+3.  **Event study vs. clean blocks.** For `toy2` (late's effect 3), compute the
+    clean blocks for each $k$ by hand (cohort vs. never, base $g - 1$) and
+    check they give 0, 0, 2, 2, 3.
 
-3.  **Random trends.** Estimate `feols(lwage ~ married | nr[exper] + year, w,
-    cluster = ~nr)`: each man gets his own experience slope. Compare with TWFE
-    and say what the difference means.
+4.  **Not yet vs. never treated.** Compare the two Callaway--Sant'Anna
+    estimates in the scoreboard. Which uses more control states, and what
+    extra assumption does it need?
 
-4.  **Write the justification for your own data.** For a panel you use, say
-    which unit-level traits could be related to the treatment, and whether you
-    would report fixed or random effects. Name the test you would run.
-
-**Part 3**
-
-5.  **Build the failure yourself.** Simulate a staggered design with three
-    cohorts and a *constant* treatment effect of 2. Show that TWFE recovers it.
-    Then make the effect grow with exposure and show that TWFE does not. Explain
-    the difference in one sentence.
-
-6.  **Not-yet-treated versus never-treated.** Re-run `att_gt()` with
-    `control_group = "nevertreated"`. Compare with the not-yet-treated version.
-    Which is more efficient, and under what assumption is each valid?
-
-7.  **Aggregation choices.** From the same `att_gt` object, compute
-    `aggte(type = "group")` and `aggte(type = "calendar")`. These are three
-    different estimands built from the same group-time effects. Write one sentence
-    describing each in words.
-
-8.  **Pre-trend power.** For the `mpdta` application, simulate what a linear
-    pre-trend of a given slope would do to the estimated pre-period coefficients.
-    How large would the slope have to be before your pre-trend test detects it
-    80% of the time?
-
-9.  **Levels or logs?** `mpdta` supplies only log employment, so construct
-    `emp <- exp(lemp)` and re-run the minimum-wage analysis in levels. Do the
-    conclusions change? Which scale would you have pre-committed to, and why?
-    (Recall from lecture that parallel trends in levels and in logs are different
-, and generally incompatible, assumptions.)
-
-10.  **Clustering.** Re-estimate the `mpdta` TWFE model clustering on state
-    (`countyreal %/% 1000` gives the state FIPS code) rather than county. How many clusters are there, and what does Week 2 say you should
-    do about it?
+5.  **Aggregation choices.** From `cs_never`, compute `aggte(type = "group")`
+    and `aggte(type = "calendar")`. Describe each estimand in one sentence.
 
 # Session information
 

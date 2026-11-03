@@ -47,6 +47,9 @@ cat("treated cells:", sum(tr), " negative weights:", sum(w < 0), " sum of negati
 neg <- d[tr, ][w < 0, ]
 cat("negative-weight cells: adoption years", paste(sort(unique(neg$divyear)), collapse = ","), "; years",
     paste(range(neg$year), collapse = "-"), "\n")
+grp3 <- ifelse(d$divyear[tr] < 1964, "before 1964", ifelse(d$divyear[tr] <= 1970, "1969-70", "1971-85"))
+print(data.frame(neg_cells = tapply(w < 0, grp3, sum), sum_neg = round(tapply(pmin(w, 0), grp3, sum), 3),
+                 net = round(tapply(w, grp3, sum), 3)))   # always treated: Dt = mean(D) - mean_t(D), sums to 0
 
 ## ---- 4. event studies: TWFE, Sun-Abraham, Callaway-Sant'Anna, imputation --------------
 cat("\n## 4. event studies (k = year - adoption year)\n")
