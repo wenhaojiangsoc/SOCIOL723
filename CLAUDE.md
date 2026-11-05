@@ -32,6 +32,7 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
 - Never add `Co-Authored-By` lines to commits. Push only when the user says so.
 
 ## How the user wants slides written
+- No 'Step N:' in frame titles (user 2026-10-27).
 - Succinct. No chatty asides, no "next frame will..." narration, no metaphors that overstate math.
 - Goal first, then a numbered plan, then one step per frame; every equality in an `align*`
   annotated with `&& \text{\footnotesize reason}`.
@@ -143,8 +144,8 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   fuzzy (AR at the cutoff) -> Dell & Querubin 2018 Vietnam bombing (8 frames, NBER WP numbers) ->
   extensions -> sociology: Bol et al. 2018 PNAS, Legewie 2016 AJS. Lab 9 (Senate, 16 pp) extended 2026-10-20 for PS3: conventional-vs-robust rows, h_CER (cerrd), p = 1 vs 2, covariate balance and covs at cerrd (numbers match w9_senate.R 8b/9a), fvextra header added. 2026-10-25: fuzzy LATE written out in 3 frames (types / numerator / denominator, Week 7 style); 'Estimation, Route 1: Two Sharp RDs and Their Ratio' (added 2026-10-25, user; same h/kernel/polynomial, SPP .269/.619 = .435) then 'Estimation, Route 2: Local 2SLS' (ivreg on SPP .435, figs/w9_fuzzy.R section 3) = Stage 1 D-hat + Stage 2 (slope terms X-c and Z(X-c) in both stages; the old D(X-c)-endogenous version was not the ratio); 'Fuzzy RD: Choosing the Bandwidth' frame and both Lab 9 simulation bullets DROPPED by user 2026-10-25; Local 2SLS ends with one bullet: rdrobust picks one MSE-optimal h for the ratio, same h in both stages; 'Weak First Stage: Anderson--Rubin at the Cutoff' frame DROPPED 2026-10-25 (user), weak-first-stage bullet now says use the Week 7 first-stage F; Feir et al. 2016 and Noack-Rothe 2024 refs removed; 2026-10-25 (user): two picture frames after 'When the Rule Is Not Followed': 'The Jump in D' / 'The Jump in Y' on Ser Pilo Paga (figs/w9_fuzzy.R section 3 -> spp_jump_D.pdf, spp_jump_Y.pdf; h 9.04, jumps .619/.269, ratio .435 = rdrobust); 2026-10-25 (user): 'Geography as a Running Variable: Three Specifications' DROPPED (with refs Dell 2010, CTY 2025, Papay et al. 2011, Reardon-Robinson 2012) and the 'Specification 1 of the previous slide' bullet on 'the Specification'. Lab 9 adds a real fuzzy RD: Ser Pilo Paga (Londono-Velez et al. 2020) from the CIT 2024 Extensions replication file, saved as Data/spp_colombia.csv (in the CSV T = 1 iff X1 >= 0, sign opposite to the book's text); first stage .625, RF .269, fuzzy .435 [robust .366,.524], one-sided non-compliance. 2026-10-25: lab aligned with slides: Step 3 prints first-stage F = 1288 (rdrobust tau_T/se_T squared); Step 4 shows Route 1 (same-h reduced form .269 / first stage .619 = .435) next to 2SLS; exercise 6 points to the 'Reading and Reporting an RD' checklist (7 items, not 'six checks'). 2026-10-25 (user): Dell-Querubin boundary now 5 frames (setup+map / Geography as a Running Variable: assumption, estimand, checks, compound treatment / Three Specifications: lat-lon polynomial + segment FE (Dell 2010 cubic, DQ local linear 25 km), distance to line, point-by-point rd2d; two scores / Specification / Balance (Table 9) / Boundary Results (Table 10)) + 'What the Boundary Cannot Separate'; NBER WP 22395 numbers. Several Cutoffs, Away From the Cutoff, Boundaries and Two Scores frames DROPPED (pooling-weights point moved to 'The Score Nobody Saw'). Extensions (RD in Time moved FIRST 2026-10-25, then kink, then repeated cutoffs) = Regression Kink (3 frames: Austrian UI picture + hypothetical 0.18, estimator kappa_Y/kappa_B (chain-rule derivation DROPPED 2026-10-25, user explains in lecture), CLPW 2015 elasticity 1.4-1.9) -> RD in Time (setup with formula + conceptual sharp-RD-in-calendar-time figure figs/w9_rdtime.R -> rdtime_concept.pdf, hypothetical; turning-21 table DROPPED 2026-10-25, user: turning 21 IS RD in time once realigned to own birthday, the difference is one common calendar date; Legewie 2 frames MOVED here, 'Applications in Sociology' section removed; 'What to Watch' frame DROPPED 2026-10-25 by user) -> Repeated Cutoffs (Problem / Two Effects / Peeling the ITT with hypothetical 10,12,11 / Assumptions and Results: CFR 2010 $1.50 per $1, Hsu-Shen 2024, Baron 2022) -> FEMA design exercise DROPPED 2026-10-25 by user (3 frames + Garrett-Sobel 2003, Howell-Elliott 2019 refs).
 - Week 10 (Panel + DiD, 110 pp, rebuilt 2026-10-08; user frames kept verbatim): opens with 'A Third Source of Variation'
-  (2026-10-25 rewrite, user: treated minus untreated before/after algebra; stable traits differenced away = FE, common
-  change measured by untreated units = DiD; NO 'Two Kinds' frame, NO Plan frames anywhere: user never talks about them)
+  (2026-10-26, user: INTUITION ONLY, NO FORMULAS; one 'core idea' block: stable traits removed by the before-after
+  change = FE, common change measured by untreated units = DiD; one-assumption line; NO 'Two Kinds' frame, NO Plan frames anywhere: user never talks about them)
   -> PANEL SECTION REBUILT SLOW 2026-10-25 (user: start with alpha_i only, no time; FD before FE; examples inside the
   theory; `figs/w10_panel_slow.R` -> pan_intercepts.pdf, pan_demeaned.pdf, pan_time.pdf): The Example (data first) ->
   Step 1 pooled .220 -> Step 2 FD 1980-87 no intercept .445 -> Step 3 man intercepts (four men; pooled .56 vs within .13;
@@ -164,20 +165,209 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   FE vs FD + FD-residual AR -0.40, clustering, RE theta .64, Nickell sim, Anderson-Hsiao, Arellano-Bond + AR(2); DiD untouched) on
   `wooldridge::wagepan` (`figs/w10_panel.R`: marriage premium pooled .108/RE .064/FE .047/FD .038,
   Mundlak, FE variance weights, Imai-Kim DAG, FEIS, impact function; Budig & England 2001; Ludwig &
-  Bruderl 2018 FE 8.3% -> FEIS 0.5%) -> 2x2 (Card-Krueger 2.76; Roth-Sant'Anna scale; OR/IPW/DR;
+  Bruderl 2018 FE 8.3% -> FEIS 0.5%) -> 2x2 (Card-Krueger 2.76 + ck_parallel.pdf from figs/w10_ck_parallel.R (2026-10-28: DiD frames carry worked examples: CK numbers in regression form, parallel-trends picture, double difference split in two with CK bias example, hypothetical two-store-type covariate example, base-period table gamma .1; allowframebreaks removed from DiD frames, they were spilling); Roth-Sant'Anna scale; OR/IPW/DR;
   covariates in TWFE; placebo laws `figs/w10_placebo.R` iid .477 vs cluster .049) -> event studies
   (Roth 2022, base periods, plotting, Kleven et al. 2019 child penalty) -> staggered on
   `bacondecomp::divorce` (`figs/w10_divorce.R`: TWFE -3.05; Bacon table; 267 negative weights;
   CS/SA/ETWFE-never -10.56, imputation = ETWFE-notyet -4.85; HonestDiD breakdown < .05) ->
   beyond (dose, on/off, DDD, distributions, design-based) -> sociology (Harknett et al. 2021;
-  Choper et al. 2026 ASR; Kalil et al. 2023) -> Chiu et al. 2026 lessons. Lab 10 not yet aligned.
-- Week 11 (SC, 50 pp, rebuilt 2026-10-08; user frames kept): Prop 99 rebuilt from tidysynth::smoking
-  (`figs/w11_prop99.R`: weights Utah .342/Nevada .238/Montana .209/Colorado .149/CT .062, gap -18.8,
-  placebo rank 1/39, in-time placebo -3.4, leave-one-out, min-norm regression weights 17 negative,
-  DiD/SC/SDiD -27.3/-19.6/-15.6, ASCM -16.0, conformal p .097); factor-model bias + simulation
-  (`figs/w11_sims.R`); Basque two specs and gsynth EDR turnout (`figs/w11_more.R`: TWFE .78 vs IFE r=2
-  4.90); German reunification (ADH 2015); penalized/augmented/SDiD/MC/IFE/staggered/recent;
-  Bartos & Kubrin 2018 Prop 47. synthdid + augsynth are GitHub-only. Lab 11 not yet aligned.
+  Choper et al. 2026 ASR; Kalil et al. 2023) -> Chiu et al. 2026 lessons. Lab 10 aligned 2026-10-28 (see below).
+  2026-10-27 Codex review applied (see napkin): AB lag-3 row now reports the AR(3) test (p .97), event-study date = G_i. 'Step N:' prefixes DROPPED from all Week 10 titles
+  (user 2026-10-27: steps are confusing); pooled-OLS u_it = stable traits + what changes over time; alpha_i = combined effect of everything stable.
+  2026-10-28 PANEL SECTION REBUILT AROUND TWO IDEAS (user accepted my outline): Idea 1 = compare each man with himself
+  (removes alpha_i), Idea 2 = compare with men who did not change (removes lambda_t). ACT 1 (2x2, 528 men, 1980/87, blue
+  stars): Example -> Pooled .358 -> Compare Each Man With Himself (Idea 1) -> Control Group .012 (Idea 2). ACT 2 (545 men,
+  1980-87): 'All Men, All Years: The Model' (alpha_i who he is, lambda_t what year it is) -> 'Idea 1 Only' (pan_paths_man.pdf,
+  .243) -> 'Idea 2 Only' (pan_paths_year.pdf, .150 (.028), two black lines) -> 'Both Ideas' (pan_twoway_paths.pdf, .061) ->
+  'How Software Does It' (toy 2 men x 3 years: Y 1.5/1.8/2.4, 1.2/1.5/1.8; man 1 marries 1982; beta .3) -> 'Two-Way FE Can Be
+  Demeaned: the Algebra' (adv) -> 'Scoreboard' (all six estimates). ACT 3: Budig & England spec (TWFE, p. 213 'fixed for
+  years and persons'; no age: person + year fix it) + Results. ACT 4: 'What Two-Way FE Assumes' (FE.1-3 table) -> 'Strict
+  Exogeneity, in Words' (feedback; something else changing) -> algebra (adv) -> lead test -> Ludwig & Bruderl -> Random Trends
+  -> Impact Function -> L&B over time -> What FE Averages -> 'TWFE: Strengths and Weaknesses'. DROPPED: 2x2 picture, Why One Year
+  Is Dropped, Four Ways, What FE Costs (folded into strengths/weaknesses), old 2x2 dummy tables. figs/w10_panel_slow.R cleaned
+  (a splice had duplicated sections 3-5).
+  2026-10-28 (user: 'expand equations slowly'): theta split (derivation line by line + 'What theta Is' with n = 1/4/20 ->
+  .40/.65/.84); Mundlak add-and-subtract step; What FE Averages split (one man's b_i example 1.75 - 1.58 = .17, then the
+  weights with the 0/1-variance step); Random Trends = 3-step recipe + 'What Changes'; DiD covariates: 'Estimator 1,
+  Regression' and 'Estimator 2, Weighting' worked on the two-store toy (both 2.0); 'Reading the Event-Study Equation' (man
+  married 1984, k table); Kleven 'Reading the Child Penalty' (hypothetical 40,000/200,000 = .20); Forbidden Comparison split
+  Algebra / Numbers; CS split 'Build Clean Blocks' (toy ATT(4,4) = 1) / 'Then Aggregate'; 'Imputation on the Toy Example'
+  (1.75; TWFE 1.10, 0.50 without never-treated). Toy + theta numbers: figs/w10_toy_staggered.R. Deck 122 pp. Still spilling
+  (pre-existing, adv): GB Weights Explicitly, Where the Negative Weights Come From, Negative Weights: Consequences, Honest
+  Inference About Pre-Trends.
+  2026-10-28 round 3 (user): Model slide has no bold, ends 'people call it TWFE'; 'Man Fixed Effects: Each Man His Own Line'
+  uses pan_man_lines.pdf (MARRIED ON THE X AXIS, same four men as the calendar figures; pooled .66, within .31; all men
+  .243); 'Year Fixed Effects: One Common Year Path' (pan_paths_year.pdf with the +0.41 common-growth arrow); 'Two-Way FE: Own
+  Level, Common Year Path'; algebra (adv) BEFORE the toy 'How Software Does It: Dummies, or Means' (right table = each man's
+  MEAN, not demeaned; bullet: TWFE compares each man with himself over time); Scoreboard DROPPED. Strict exogeneity: 'in
+  Words' corrected (a raise before marriage lifts the UNMARRIED baseline -> FE understates); algebra now two adv frames
+  (estimator's error step by step; T = 2 = FD with same-year vs across-year products, raise example). FE weights now
+  three frames (Step 1 N_i = S_i b_i; Step 2 S_i = Tp(1-p) with T=8, m=2 check; Step 3 two men 2.0/0.875 -> .19 vs .25,
+  numbers in figs/w10_toy_staggered.R). Deck 124 pp.
+  2026-10-28 round 4: a two-way (double-dot, rows-indexed-by-r) strict-exogeneity version was tried and REVERTED
+  2026-10-29 by the user: the two adv frames are man effects only (tilde, no lambda_t), 'Two Years' = FD without
+  intercept. 2026-10-29 (user): FE-averages block (one man's b_i + Weights Steps 1-3) MOVED right after the toy 'How
+  Software Does It'; 'Strict Exogeneity, Step by Step: Two Years' and 'The Impact Function' DROPPED (Ludwig-Bruderl 2021
+  ref removed); NEW 'When Men on Steeper Paths Marry' before Ludwig & Bruderl (figs/w10_slopes.R -> pan_slopes.pdf:
+  hypothetical, true effect 0, steep men marry, TWFE .216, FEIS 0). Slide 8 bullet: the year FE makes the stayers the
+  control group. NEW 'Why Put Last Year's Outcome in a Fixed-Effects Model?' opens the lagged-outcome block
+  (marriage follows wages; examples: health and employment, parental help and test scores, policing and crime).
+  2026-10-29 (user): MUNDLAK DROPPED from slides and lab (FE vs RE uses Hausman only: 'Testing Fixed
+  Against Random: Hausman' explains numerator/denominator, sim 5.6%/100%, marriage chi2 37.0 + efficiency caveat;
+  'On the Marriage Data: Mundlak' frame, hybrid-model bullet, Mundlak 1978 and Allison 2009 refs removed; How to
+  Choose table rewritten). FEIS slide equation now includes lambda_t. Deck 122 pp; lecture stops at 'Kleven:
+  Results' (p. 71).
+  Lab 10 (2026-10-29, user): feols(..., cluster = ~nr) is the default; felm() (lfe: y ~ x | FE | IV | cluster) shown to
+  match (clustered se .0215 vs .0215, small-sample correction differs in the 4th decimal); stargazer tables built from
+  felm/plm objects (stargazer cannot read feols) for the four-model table and pooled/RE/FE; decomposition and
+  event-study sections DROPPED from the lab; 3.3 = 'How to cluster by man'. 20 pp.
+  2026-10-29: 'Inference: Placebo Laws on Real Data' DROPPED (Conley-Taber, MacKinnon-Webb refs removed; figs/w10_placebo.R
+  unused). NEW 'Why Control for Covariates in a DiD?' (X matters only if it predicts the trend; examples minimum wage, job
+  training, marriage) and 'Covariates in TWFE: What Works' (figs/w10_did_cov.R: TWFE 3.20, + type dummy 3.20 absorbed,
+  + type x period 2.00, regression 2.00; heterogeneous A+4/B+1: ATT 1.60, type x period TWFE 2.50 = equal variance
+  weights). Estimator 1 = g-computation on Delta Y. Deck 123 pp; lecture stops at 'Kleven: Results' (p. 72).
+  Pushed 4e98cc5 (slides, lab, scripts, used figures).
+  Lab 10 Part 3 (2026-10-30, user): DiD covariate adjustments on unilateral divorce, by hand + DRDID. 2x2 = 11 states
+  adopting 1969-71 vs 11 not treated by 1976 (adopt 1977+ or never); pre 1964-68, post 1972-76; X = South (census region,
+  DC = South) and 1964 persincome. Unadjusted = TWFE = TWFE + south dummy -0.32; regression = IPW = DR (region) 0.947;
+  region + income OR 1.01 / IPW 0.38 / DR 0.52 (se 2.5); TWFE + south x period 1.16 (variance weights) vs ATT weights
+  0.947. Design chosen by principle (most not-yet-treated controls), not by result; other windows give -6.7 to +5.8.
+  Staggered part is now Part 4. Lab 26 pp.
+  2026-10-31 (user: slower, examples first): DiD covariates now = Why Control -> worked example -> 'The Usual Fix: Add X
+  to the Regression' (naive; X fixed per store is absorbed: types 3.20 -> 3.20, size -0.04 -> -0.04) -> 'What Else Goes
+  Wrong' (Caetano-Callaway list) -> G-Computation Step by Step (store rows) / in a Picture (figs/w10_gcomp.R ->
+  gcomp_picture.pdf: continuous size, plain -0.04, g-comp 2.01, shaded extrapolation) / in Code -> Weighting -> In General
+  -> 'Back to TWFE: Interact X With Period'. Event studies: equation -> reading -> Kleven x3 -> 'Questions to Ask of Any
+  Event Study' -> spec details, pre-trend power, base periods, drawing. Staggered: forbidden-comparison figure REDRAWN in R
+  (figs/w10_forbidden.R -> forbidden.pdf; the tikz version hid the late jump); toy decomposition (2.0/1.0/1.5/-0.5, weights
+  .3/.3/.2/.2 = 1.10) and toy negative weights (.3/.3/-.1/.5) from figs/w10_toy_staggered.R via bacondecomp::bacon();
+  GB weights, negative weights, consequences split (no allowframebreaks left except References). Beyond: Doses x2
+  (hypothetical .5/1.4, .9 = .6 causal + .3 selection), on/off history table, DDD 3 - 1 = 2, Distributions and Uncertainty
+  split; Honest Inference with round-number M-bar. Deck 130 pp.
+  2026-11-01 (user): order is now DID (2x2 + covariates) -> NEW section 'Many Periods: Two-Way Fixed Effects' (common
+  adoption date; 'From Two Periods to Many', 'What One Number Hides': toy growing/fading 2.0/2.0, window to t5 1.5, pre-trend
+  no effect 1.2; figs/w10_twfe_many.R) -> NEW section 'Event Studies' (opens with 'Event Studies', then 'The Event Study on the
+  Toy Example' twfe_many_es.pdf: more transparent, not more causal; then reading, Kleven, critiques) -> Staggered. Deck 137 pp.
+  2026-11-01 later (user): DiD COVARIATE BLOCK DROPPED from slides (too abstract; restorable from scratchpad copy / git; refs
+  Abadie 2005, Caetano-Callaway, HIT 1997, Sant'Anna-Zhao removed; gcomp_picture.pdf unused; Lab 10 Part 3 still has it).
+  Many Periods now adds 'TWFE Gets Run on Any Treatment' (four conditions for the per-unit reading) + Doses x3 (new 'Doses:
+  What TWFE Reports': 0.7 = .5(.5) + .5(.9), figs/w10_twfe_many.R) + On/Off, all MOVED from Beyond (now 'Beyond the Basic
+  Design': DDD, distributions, uncertainty). Deck 126 pp.
+  2026-11-01 (user): Running Example = text intro (policy, question, data, adoption-cohort table 9/14/20/3/5), divorce_raw
+  figure dropped from it. Forbidden comparison = Toy Panel table -> 'Late vs. Early, t = 2-4' picture (forbidden.pdf redrawn:
+  before t=2,3 / after t=4 windows, early's before-mean 1.5) -> 'the Numbers' table (1 - 1.5 = -0.5; the old t=3-vs-4 'in
+  Numbers' frame giving 0 was INCONSISTENT and dropped) -> Algebra (+ toy line). User rule: whenever a 2x2 is named, state
+  its before and after periods; decomposition table now has a 'before -> after' column. Deck 127 pp.
+  Then (user): forbidden-comparison picture/numbers/algebra use ONLY t = 2 -> t = 4 (late 0->1, early 1->3, 2x2 = 1 - 2 = -1);
+  decomposition table keeps GB's window means (-0.5) with a footnote saying why it differs from -1.
+  'Forbidden Comparison, in Algebra' DROPPED (user: too complex). GB Decomposition frame now links to the panel FE weights
+  (T p(1-p) per man <-> size x Dbar(1-Dbar) per 2x2 pair). Deck 126 pp.
+  2026-11-01 STAGGERED REORDERED (user): section renamed 'Staggered Adoption'. Order: Setting -> NEW 'The Marriage Data Are a
+  Staggered Design' (162 never / 73 always / 239 staggered 51,33,40,27,30,27,31 / 71 switch off) -> Running Example -> forbidden
+  x3 -> GB decomposition, toy, weights explicit, what they imply -> divorce decomposition -> NEW 'Decomposition on the Marriage
+  Data' (474 absorbing men, TWFE .065: never .48/.041, earlier-vs-later .14/.043, later-vs-always .21/.133, later-vs-earlier
+  .17/.068; figs/w10_marriage_timing.R) -> negative weights (where, toy, intuition, divorce, consequences, diagnostics) ->
+  Modern Estimators overview -> CS x2, imputation x2, ETWFE, stacked -> six estimators, event studies side by side ->
+  Honest Inference + Sensitivity -> Choices (summary). Deck 128 pp.
+  2026-11-01: 'The Event Studies, Side by Side' = figs/w10_divorce_es.R -> divorce_es5.pdf (ggplot, 5 panels: TWFE, Sun-Abraham,
+  CS never, imputation, ETWFE never; SA = CS = ETWFE: avg k 0-10 -6.53, k15 -14.85; TWFE -3.09; imputation -0.97) + NEW
+  [fragile] 'How to Run Them in R'. didimputation + etwfe installed to user lib; DIDmultiplegtDYN 2.4.0 needs polars <2
+  (polars 2.0 dev breaks it; removed), so no dCDH panel.
+  Later 2026-11-01 (user): CS split into 'Cohorts and Blocks' (figs/w10_cs_blocks.R -> cs_blocks.pdf) + 'Every Block on the
+  Toy' (1,2,3,1 -> 1.75) + 'Then Aggregate'; NEW 'Covariates Inside Each Block' (hypothetical South block: unadjusted 2.0,
+  OR = IPW = 1) and 'Sun-Abraham: the Same Blocks, as One Regression' (SA vs CS table). 'How to Run Them in R' DROPPED.
+  BEYOND SECTION DROPPED (DDD, distributions, uncertainty; refs Olden-Moen, Ortiz-Villavicencio-Sant'Anna, Rambachan-Roth
+  2026 removed). Deck 128 pp.
+  2026-11-01 REORDER (user): Many Periods section DROPPED ('From Two Periods to Many', 'What One Number Hides' cut: multi-period
+  TWFE is already in the panel section). Order now DID -> Event Studies (D binary 0/1, said on the slide; toy ES figure kept)
+  -> Staggered -> NEW section 'TWFE Beyond a One-Time 0/1 Treatment' (TWFE Gets Run on Any Treatment w/ sociology examples:
+  number of children, hours, neighborhood poverty; married/union on-off; four conditions) -> Doses x3 -> NEW 'Doses With
+  Staggered Timing: What to Do Instead' (CGS 2025 ATT(d|g,t), contdid; dCDH 2026) -> On/Off -> Sociology -> Practice. 127 pp.
+  2026-11-02 REORDER (user): DID -> Staggered (static TWFE = 'the 2x2 with many periods'; forbidden comparison, GB,
+  negative weights) -> Event Studies (D binary; static beta vs one tau_k per period; 'Each tau_k Is a 2x2 Against
+  k = -1' by plug-in with G = 0; toy ES; reading; Kleven x3; spec details; NEW 'The Event Study Has the Same Problem':
+  toy with late effect 3, TWFE ES -0.75/-0.25/2.00/2.75/3.25 vs truth 0/0/2/2/3, figs/w10_toy_staggered.R) -> NEW
+  section 'Clean Comparisons: the Modern Estimators' (CS ... ES side by side, Choices) -> Beyond 0/1. DROPPED: Questions
+  to Ask, Pre-Trend Power, Base Periods x2, Drawing, Honest Inference, Sensitivity (refs Roth 2022/2026, Freyaldenhoven
+  x2, Rambachan-Roth, BDM removed). Deck 122 pp.
+  Then (user): 'Modern' section DISSOLVED. Staggered ends with the single-number fix ('The Fix: Clean 2x2s, Then One
+  Average' table, CS x4, imputation x2, ETWFE, stacked, Six Estimators); Event Studies ends with Same Problem ->
+  Sun-Abraham -> Event Studies Side by Side -> Choices. Deck 121 pp.
+  [MOVED, see below] 'Why Not Just Run an Event Study?' after 'CS: Every Block on the Toy' (p. 79): TWFE ES exact on the toy (effects
+  depend only on k), wrong when late's effect is 3 (-0.75/-0.25/2.00/2.75/3.25); figs/w10_toy_staggered.R. Deck 122 pp.
+  Then (user: p. 79 used the event study before it was introduced): slide 79 DROPPED; 'Same Problem' REPLACED by two
+  event-study frames: 'A Staggered Event Study, in 2x2s' (plug Y = a + l + tau_{t-G}; early vs never 1->2 = tau_0, late vs
+  never 3->4 = tau_0, late vs early 3->4 = tau_0 - (tau_2 - tau_1) = 0 on the toy: forbidden 2x2 still in the regression,
+  harmless only if cohorts share the path) and 'When Cohorts Differ, the 2x2s Disagree' (late effect 3: 1, 3, 2; TWFE ES
+  -0.75/-0.25/2.00/2.75/3.25 vs truth and clean blocks 0/0/2/2/3). Deck 122 pp.
+  2026-11-03 (user): 'The Marriage Data Are MOSTLY a Staggered Design' (p. 58): 71 men leave marriage = on/off, not
+  staggered; 474 of 545 absorbing; new bullet points to the Beyond 0/1 section.
+  2026-11-03 (user): 'Negative Weights on the Divorce Data' splits the 267 cells: always treated 207 / -0.36 (net
+  weight 0: controls only), 1969-70 60 / -0.02 (figs/w10_divorce.R section 3). STACKED DiD DROPPED (frame, table row,
+  Cengiz et al. 2019 and Wing et al. 2024 refs); sociology frames still say the papers used stacking. Deck 120 pp.
+  2026-11-03 (user): EXTENDED TWFE (Wooldridge 2025) DROPPED from slides and lab (frame, ref, etwfe panel; SA = ETWFE-never
+  in the event study). Event-study figure now figs/divorce_es4.pdf (4 panels; divorce_es5.pdf unused). Staggered
+  scoreboard 'The Estimators on One Dataset' has no SA row (SA is introduced in Event Studies; its frame says overall
+  -10.56 = CS never); Fix table SA row = 'CS's blocks as one regression (Event Studies)'. Deck 119 pp.
+  2026-11-03 (user): SOCIOLOGY (Harknett x3, two recent studies) and PRACTICE (Chiu et al. 49 studies, DiD checklist)
+  sections DROPPED; refs Harknett, Choper, Kalil, Chiu, Baker removed. Kleven 'non-parents' bullet dropped; spec-details
+  never-treated bullet cut to one line. t = 0 column added to 'Each tau_k Is a 2x2'; toy ES slide links to Ludwig-Bruderl.
+  Deck 110 pp, ends Beyond 0/1 -> Looking Ahead.
+  2026-11-03 (user): ES 2x2 frames rewritten on the ORIGINAL toy: 'The Event Study on the Staggered Toy' (forbidden
+  2x2 late vs early 3->4 = 0: static reads beta = 0 -> 1.10; ES reads tau_0 - (tau_2 - tau_1) -> tau_0 = 1, exact 1,2,3)
+  and 'What the Event Study Still Assumes' (one path for all cohorts; break it with late = 3 -> -0.75/-0.25/2/2.75/3.25).
+  2026-11-03 (user): Side by Side figure back to figs/divorce_es5.pdf = TWFE, SA, CS never, CS NOT YET (avg k0-10 -3.10,
+  k15 -14.82), imputation (divorce_es4.pdf unused). Slide 94 bullet: why leads move (alpha_late 0.75).
+  2026-11-03 (user): Side by Side = one row of 5 panels, no legend. Doses: ATT(a|d) = E[Y(a)-Y(0)|D=d] defined (a = d
+  observed only); 'What TWFE Reports' = three 2x2s before->after ($1 vs $0 0.5, $2 vs $1 0.9, $2 vs $0 1.4 over $2 = 0.7).
+  2026-11-03 (user): ES forbidden comparison clarified: 'Staggered Toy' says the forbidden 2x2 is still in the regression but
+  corrected, harmless if every cohort shares one path; 'Still Assumes' says the late = 3 distortion comes from cohort
+  differences alone, plus a three-cohort contamination line (all 1 at k = 0, later paths differ: tau0-hat 1.05, leads
+  -0.02/-0.21, clean 1/0/0; figs/w10_toy_staggered.R end). Lab text matched (no new chunk). Then (user): framed as 'an implicit forbidden comparison'; assumption =
+  each cohort's effect at k is the same (may grow with k, not differ by start date).
+  2026-11-03: Lab 10 Part 4 aligned (tau_0 in the 2x2 check; ES on original toy exact + forbidden 3->4 = 0; toy2 with
+  late alpha 0.75; five divorce ES incl. CS not yet). 15 pp. Pushed 62068a2 (slides, lab, scripts, used figs).
+  LAB 10 REWRITTEN 2026-11-02 (user: FE/RE quick; staggered + modern + dynamic ES matter most): Part 1 2x2 four routes
+  (.0125); Part 2 four feols models via etable (felm/stargazer/lfe DROPPED), RE + Hausman in one chunk (37.0); Part 3
+  staggered one number: toy (forbidden -1, TWFE 1.10, bacon, CS blocks 1.75), divorce TWFE -3.05 + bacon by type,
+  scoreboard (CS never/notyet -10.56/-8.69, SA -10.56, imputation -4.85, ETWFE -10.56), CS xformla ~south reg=ipw=dr -3.68;
+  Part 4 ES: toy tau_k as 2x2, ES fails on toy2, five divorce ES (avg k0-10 -6.53 x3, TWFE -3.09, imp -0.97) + facet fig.
+  Old DiD-covariate (DRDID) part, theta, lead test, three routes, base_stagg/mpdta parts DROPPED. 5 exercises.
+  Dropbox gotcha: figure files can turn 'dataless' (online-only) and pdflatex hangs or fails reading them; check
+  `ls -lO figs | grep dataless` and `cat` the files to materialize. LAB 10 REBUILT for slides 1-73 on wooldridge::wagepan (installed to user lib 2026-10-28):
+  2x2 four routes (cell means, interaction, TWFE, FD = .0125), pooled/man/year/TWFE, three routes to TWFE, iid vs
+  clustered se, FE decomposition man by man (one-way .2427 vs plain .2547; two-way .0606 vs .0656), lead test, event
+  study (i(k)), RE via plm + theta by hand .643, pooled/RE/FE .108/.064/.047, Hausman 37.0, Mundlak (F 22.7) +
+  justification paragraph; old staggered sections kept as Part 3 (after Kleven). 23 pp.
+- Week 11 (SC, 38 pp, reworked 2026-11-04 with the user; all frames SCALAR). Order: naive donor average -> two donors,
+  one weight -> many donors (outcome-only weights, -19.5) -> constraints -> predictors + v (slide 13: X_jk = one number
+  per state over a researcher-chosen window; outer step uses EVERY pre-year 1970-88) -> 'Two Steps on Two Donors' with two
+  COVARIATES (price 1980-88, beer 1984-88; w = Utah's weight; v_price .768, w .574; figs/w11_scalar.R 2b) -> Synthetic
+  California (ADH predictors: Utah .342/Nevada .238/Montana .209/Colorado .149/CT .062, gap -18.8, RMSPE 1.78) -> searching
+  for v -> What Have We Assumed -> 'SC Is a 2x2 With a Built Control' + 'The Two 2x2s on Prop 99' (figs/w11_2x2.R ->
+  prop99_2x2.pdf: donor avg gap -14.4/-41.7 = -27.3 = TWFE; synthetic 0.2/-18.8 = -19.1; period means, not single years)
+  -> 'When Parallel Trends Fails After Weighting' (6 intuitive failures, incl. spillover direction and Prop 99 = tax +
+  program) -> 'What to Check, What to Do' (donor pool first, pre-fit plot + RMSPE, in-time 1981, LOO, anticipation at the
+  vote) -> 'Inference: the Placebo Test' (rank p = 1/39 IS reported as the permutation p-value; state the floor) ->
+  placebos figure -> 'A Standard Error From the Placebos' (synthdid placebo SE: SC -19.6, SE 11.1, CI [-41.4, 2.1]) ->
+  in-time + LOO with ADH predictors (in-time fit 1970-80, covariates 1972-80 + sales 1970/75/80: -2.9, RMSPE .89; LOO
+  -17.6 to -20.6; figs/w11_prop99.R 3b, identical to the lab) -> German reunification -> Prop 47 (Bartos & Kubrin x2) ->
+  Extensions: penalized SC (scalar sums, argmin; toy X1=5, A4 B6 C0 D10, penalty 1 vs 25; pensynth) / augmented SC (T =
+  one post year; ridge of Y_jT on the donor's own 19 pre-period outcomes, pooled donors, no FE; effect = SC gap - gap the
+  pasts predict: -19.5 - (-3.6) = -16.0) / SDiD x2 (why: free constant c, match trend not level; then weights + 2x2:
+  gaps -25.4/-41.0 = -15.6) -> Choosing -> Looking Ahead.
+  DROPPED 2026-11-04 (user): factor-model frames (fixed gap, one factor, several traits, simulation), Four Tries of v,
+  Relation to DiD, Diagnostics and Failure Modes, Spillovers frame (merged into slide 20), Basque, Reporting, Bartos-Kubrin
+  Reading It Critically, interactive FE (gsynth), Many Treated Units; refs Abadie-Gardeazabal, Xu, BFR 2022, Doudchenko-
+  Imbens, Ferman-Pinto, Kubrin-Bartos 2020 removed. figs/w11_sims.R and figs/w11_more.R are now unused (kept).
+  Lab 11 (16 pp, aligned 2026-11-05): fvextra header + width 76, ## notes, optimizer settings as in w11_prop99.R; 'two
+  kinds of years' callout; 2x2 section DROPPED (user; only exercise 4 asks for it); section 5 Inference adds a placebo CI
+  (sd of the 38 placebo average gaps: -18.8, se 13.8, [-46.0, 8.3]; 14 well-fitting placebos: se 8.3, [-35.1, -2.6]);
+  in-time and LOO as on slide 25; section 7 Synthetic DiD via synthdid (set.seed(723) before vcov(method = "placebo")
+  reproduces slide 24: SC 11.1, SDiD 8.9; weights; synthdid_plot); section 6 penalized SC via
+  pensynth (CRAN; toy .5/.5; lambda 0 = classic SC; cv_pensynth picks ~1e-4; silence solver with
+  clarabel::clarabel_control(verbose = FALSE)); exercises: predictor sensitivity, windows, spillovers via Nevada,
+  single-year 2x2s, random treated unit. synthdid + augsynth are GitHub-only (reinstalled to the system R lib 2026-11-04).
 - Week 12 (ML, 69 pp, rebuilt 2026-10-08; user asked to merge 690S Weeks 2+3: trees AND neural nets
   and beyond): bias-variance proof, optimism 2p sigma^2/n, CV (Bates et al.), ridge SVD/Hoerl-Kennard,
   soft thresholding, trees/pruning, RF variance, boosting = gradient descent, stacking, classification;
@@ -218,6 +408,9 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
 ## Gotchas
+- FEMA RD paper (Week 9 figs/fema): raw + derived DATA live in `figs/fema/data/` (gitignored), scripts in `figs/fema/pipeline/code/`
+  (data/code is a symlink to it), rebuild with `pipeline/download_raw.sh` then `pipeline/rebuild.sh`. The session scratchpad is wiped
+  on restart (2026-10-26): never leave data only there.
 - Proportional odds is tested against the cumulative logit with cut-specific slopes
   (generalized ordered logit), NOT against the multinomial (different family, not nested).
   Tools: `brant::brant(polr_fit)` (Wald) and `VGAM::vglm(..., cumulative(parallel = FALSE ~ x))`

@@ -21,6 +21,9 @@ format:
         \newcommand{\E}{E}
         \usepackage{setspace}
         \setstretch{1.12}
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},breaklines,breakanywhere,breaksymbolleft={},breaksymbolright={}}
+        \RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines,breakanywhere,breaksymbolleft={},breaksymbolright={}}
 execute:
   echo: true
   warning: false
@@ -33,22 +36,29 @@ editor: visual
 #| include: false
 knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
                       fig.height = 3.4, fig.align = "center", dpi = 200)
-options(digits = 4, scipen = 999)
+options(digits = 4, scipen = 999, width = 76)
 ```
 
 # Goals
 
 1.  Construct a synthetic control and read the weight table.
 2.  Judge the design by pre-treatment fit, not by the size of the gap.
-3.  Run placebo inference in space and in time.
+3.  Run placebo inference in space and in time; build a placebo confidence
+    interval.
 4.  Check robustness by leaving donors out.
+5.  Run penalized synthetic control and synthetic DiD.
 
 ```{r}
 #| label: packages
 library(dplyr)
 library(ggplot2)
 library(tidysynth)
+library(pensynth)   # penalized synthetic control (Abadie and L'Hour 2021)
+## synthdid is on GitHub only:
+## remotes::install_github("synth-inference/synthdid")
+library(synthdid)
 
+## the ADH (2010) panel: 39 states (California + 38 donors), 1970-2000
 data("smoking", package = "tidysynth")
 c(rows = nrow(smoking), states = n_distinct(smoking$state),
   years = paste(range(smoking$year), collapse = "-"))
@@ -56,23 +66,18 @@ c(rows = nrow(smoking), states = n_distinct(smoking$state),
 
 # The design
 
-**Question.** What did California's Proposition 99 (1988) do to cigarette
-consumption?
+**Question.** What did California's Proposition 99 (1988) do to cigarette consumption?
 
-**Treated unit.** California. **Donor pool.** 38 states that adopted no
-comparable programme. **Outcome.** Per-capita cigarette sales.
-**Pre-period.** 1970–1988.
+**Treated unit.** California. **Donor pool.** 38 states that adopted no comparable programme. **Outcome.** Per-capita cigarette sales. **Pre-period.** 1970–1988.
 
 ::: callout-note
-The donor pool was restricted *on substantive grounds before estimating*: states
-with their own large tobacco taxes or control programmes are excluded, because
-they are treated too. That decision is part of the design, not a robustness
-check.
+The donor pool was restricted *on substantive grounds before estimating*: states with their own large tobacco taxes or control programmes are excluded, because they are treated too. That decision is part of the design, not a robustness check.
 :::
 
 ```{r}
 #| label: fig-raw
 #| fig-cap: "Raw trajectories. California is one line among 39; the eye cannot pick out a treatment effect."
+## one line per state; California in red
 smoking |>
   mutate(ca = state == "California") |>
   ggplot(aes(year, cigsale, group = state, colour = ca, linewidth = ca)) +
@@ -88,49 +93,59 @@ smoking |>
 
 ```{r}
 #| label: build
+## declare outcome, unit, time, treated unit, last pre-treatment year;
+## generate_placebos = TRUE also fits a synthetic control for every donor
 sc <- smoking |>
   synthetic_control(outcome = cigsale, unit = state, time = year,
                     i_unit = "California", i_time = 1988,
                     generate_placebos = TRUE) |>
-  # predictors measured over the pre-period
+  ## covariates averaged over the pre-period (the v step weights these)
   generate_predictor(time_window = 1980:1988,
                      ln_income = mean(lnincome, na.rm = TRUE),
                      ret_price = mean(retprice, na.rm = TRUE),
                      youth     = mean(age15to24, na.rm = TRUE)) |>
   generate_predictor(time_window = 1984:1988,
                      beer_sales = mean(beer, na.rm = TRUE)) |>
-  # lagged outcomes: these do most of the work
+  ## ADH also use three pre-period years of the outcome as predictors
   generate_predictor(time_window = 1975, cigsale_1975 = cigsale) |>
   generate_predictor(time_window = 1980, cigsale_1980 = cigsale) |>
   generate_predictor(time_window = 1988, cigsale_1988 = cigsale) |>
-  generate_weights(optimization_window = 1970:1988) |>
+  ## outer step: choose v so that w(v) fits the 1970-88 outcomes best
+  ## (optimizer settings as in the lecture script figs/w11_prop99.R)
+  generate_weights(optimization_window = 1970:1988,
+                   margin_ipop = .02, sigf_ipop = 7, bound_ipop = 6) |>
+  ## build synthetic California for every year with the chosen w
   generate_control()
 ```
+
+::: callout-note
+**Two kinds of years.** Each predictor is *one number per state*: the mean of price, income, and the youth share over 1980--88, mean beer sales over 1984--88 (beer is only recorded from 1984), and sales in 1975, 1980, and 1988. The inner step matches these numbers. The outer step, `optimization_window = 1970:1988`, then fits sales in *every* pre-year. Averaging the covariates is a choice: they move slowly, so a mean captures each state's level, and matching every year of four covariates would mean 76 predictors for 38 donors. The 1980--88 window is ADH's choice, not a rule; exercise 2 asks how much it matters.
+:::
 
 ## Who is synthetic California?
 
 ```{r}
 #| label: weights
+## w: the donor weights (they are >= 0 and sum to 1)
 sc |> grab_unit_weights() |> filter(weight > 0.001) |>
   arrange(desc(weight)) |> knitr::kable(digits = 3)
 ```
 
 ```{r}
 #| label: predweights
+## v: the predictor weights (a tuning knob, not importance)
 sc |> grab_predictor_weights() |> arrange(desc(weight)) |> knitr::kable(digits = 3)
 ```
 
 ::: callout-important
-**Print the weight table.** It is the single most informative output of a
-synthetic control study: readers can decide for themselves whether a weighted
-average of these states is a plausible California. No regression coefficient
-offers that.
+**Print the weight table.** It is the single most informative output of a synthetic control study: readers can decide for themselves whether a weighted average of these states is a plausible California. No regression coefficient offers that.
 :::
 
 ## Balance
 
 ```{r}
 #| label: balance
+## each predictor: California, synthetic California, plain donor average
 sc |> grab_balance_table() |> knitr::kable(digits = 2)
 ```
 
@@ -139,17 +154,20 @@ sc |> grab_balance_table() |> knitr::kable(digits = 2)
 ```{r}
 #| label: fig-trend
 #| fig-cap: "California and synthetic California. The pre-1988 lines nearly coincide, which is what licenses reading the post-1988 gap as an effect."
+## actual vs synthetic California, all years
 plot_trends(sc)
 ```
 
 ```{r}
 #| label: fig-diff
 #| fig-cap: "The gap between California and its synthetic control."
+## the gap: actual minus synthetic
 plot_differences(sc)
 ```
 
 ```{r}
 #| label: effect-size
+## the year-by-year gap; the effect is its average after 1988
 gaps <- sc |> grab_synthetic_control() |>
   mutate(gap = real_y - synth_y)
 c(mean_gap_post = mean(gaps$gap[gaps$time_unit > 1988]),
@@ -157,8 +175,7 @@ c(mean_gap_post = mean(gaps$gap[gaps$time_unit > 1988]),
   rmspe_pre = sqrt(mean(gaps$gap[gaps$time_unit <= 1988]^2)))
 ```
 
-The pre-treatment RMSPE is the number to look at first. If it were large relative
-to the post-treatment gap, there would be nothing to report.
+The pre-treatment RMSPE is the number to look at first. If it were large relative to the post-treatment gap, there would be nothing to report.
 
 # Inference
 
@@ -167,64 +184,111 @@ to the post-treatment gap, there would be nothing to report.
 ```{r}
 #| label: fig-placebo
 #| fig-cap: "Each grey line is a donor state treated as if it had adopted Proposition 99. California is in black."
+## every donor's gap when it is treated as the treated unit
 plot_placebos(sc)
 ```
 
-`plot_placebos()` drops donors whose pre-treatment fit is much worse than
-California's — otherwise states the method could never match would dominate the
-picture for reasons unrelated to treatment.
+`plot_placebos()` drops donors whose pre-treatment fit is much worse than California's — otherwise states the method could never match would dominate the picture for reasons unrelated to treatment.
 
 ## The RMSPE ratio
 
 ```{r}
 #| label: fig-mspe
 #| fig-cap: "Ratio of post- to pre-treatment RMSPE. California is the largest of all 39 units."
+## post/pre ratio: a big post gap counts only if the pre fit was good
 plot_mspe_ratio(sc)
 ```
 
 ```{r}
 #| label: pvalue
+## rank of each unit by its ratio; p = rank / 39
 sig <- sc |> grab_significance()
 sig |> select(unit_name, type, mspe_ratio, rank, fishers_exact_pvalue) |>
   head(6) |> knitr::kable(digits = 3)
 ```
 
-The `fishers_exact_pvalue` column is the unit's rank divided by the number of
-units. With 38 donors the smallest attainable value is $1/39 \approx 0.026$ — a
-hard floor worth stating when you report it. Strictly this is a *placebo rank*
-rather than an exact test: exactness would require treatment to have been
-randomly assigned among these 39 states.
+The `fishers_exact_pvalue` column is the unit's rank divided by the number of units. This is a permutation test, and it is what you report as the $p$-value: if the law did nothing and California were one of 39 interchangeable states, a ratio this large would come up 1 time in 39. With 38 donors the smallest attainable value is $1/39 \approx 0.026$, a floor worth stating when you report it. It is exact only if the treated state had been picked at random.
+
+## A confidence interval from the placebos
+
+The rank gives a $p$-value but no interval. A second option (lecture: *A
+Standard Error From the Placebos*): treat the placebo states' "effects" as draws
+of what the estimator produces when nothing happened, and use their standard
+deviation as the standard error.
+
+```{r}
+#| label: placebo-ci
+## every unit's fit (California and the 38 placebo states), all years
+pl <- sc |> grab_synthetic_control(placebo = TRUE)
+
+## each unit's "effect": its average gap after 1988
+eff <- pl |> filter(time_unit > 1988) |>
+  group_by(.id, .placebo) |>
+  summarise(effect = mean(real_y - synth_y), .groups = "drop")
+est <- eff$effect[eff$.placebo == 0]          # California
+se  <- sd(eff$effect[eff$.placebo == 1])      # spread of the 38 placebos
+round(c(estimate = est, se = se, lo = est - 1.96 * se, hi = est + 1.96 * se), 1)
+```
+
+Placebo states the method fits badly have large "effects" for reasons that have
+nothing to do with a law, and they inflate the standard error. Keep only the
+placebos that fit about as well as California (pre-period RMSPE at most twice
+California's, the rule `plot_placebos()` uses):
+
+```{r}
+#| label: placebo-ci-pruned
+## pre-period RMSPE for every unit
+fit_pre <- pl |> filter(time_unit <= 1988) |>
+  group_by(.id) |> summarise(rmspe = sqrt(mean((real_y - synth_y)^2)))
+ca_rmspe <- fit_pre$rmspe[fit_pre$.id == "California"]
+good <- fit_pre$.id[fit_pre$rmspe <= 2 * ca_rmspe & fit_pre$.id != "California"]
+
+## the same interval from the well-fitting placebos only
+se_good <- sd(eff$effect[eff$.id %in% good])
+round(c(placebos = length(good), se = se_good,
+        lo = est - 1.96 * se_good, hi = est + 1.96 * se_good), 1)
+```
+
+With all 38 placebos the interval includes 0; with the 14 that fit well it does
+not. Say which placebos you used. The rank $p$-value (0.026) does this
+discounting automatically, through the RMSPE ratio.
 
 ## A placebo in time
 
-Pretend the programme began in 1980, eight years early. Nothing should happen.
+Pretend the programme began in 1981, eight years early, and refit using only 1970--1988. ADH's predictors are moved back to the fake date: covariates averaged over 1972--80 (income starts in 1972; beer is not recorded yet) and sales in 1970, 1975, and 1980. Nothing should happen in 1981--88.
 
 ```{r}
 #| label: intime
+## keep only pre-law years; the last "pre" year is now 1980
 sc_1980 <- smoking |>
   filter(year <= 1988) |>
   synthetic_control(outcome = cigsale, unit = state, time = year,
                     i_unit = "California", i_time = 1980,
                     generate_placebos = FALSE) |>
-  generate_predictor(time_window = 1970:1980,
+  generate_predictor(time_window = 1972:1980,
                      ln_income = mean(lnincome, na.rm = TRUE),
-                     ret_price = mean(retprice, na.rm = TRUE)) |>
+                     ret_price = mean(retprice, na.rm = TRUE),
+                     youth     = mean(age15to24, na.rm = TRUE)) |>
+  generate_predictor(time_window = 1970, cigsale_1970 = cigsale) |>
   generate_predictor(time_window = 1975, cigsale_1975 = cigsale) |>
-  generate_weights(optimization_window = 1970:1980) |>
+  generate_predictor(time_window = 1980, cigsale_1980 = cigsale) |>
+  generate_weights(optimization_window = 1970:1980,
+                   margin_ipop = .02, sigf_ipop = 7, bound_ipop = 6) |>
   generate_control()
 
+## the fake effect: average gap 1981-88 (should be near 0)
 g80 <- sc_1980 |> grab_synthetic_control() |> mutate(gap = real_y - synth_y)
 c(mean_gap_1981_1988 = mean(g80$gap[g80$time_unit > 1980]),
   rmspe_pre = sqrt(mean(g80$gap[g80$time_unit <= 1980]^2)))
 ```
 
-A gap near zero after the fake intervention is reassuring. A large one would mean
-the method manufactures effects.
+The fake gap is about $-2.9$ packs, roughly 15% of the real effect: California was already pulling slightly away in the 1980s. Report it. A fake gap as large as the real one would mean the method manufactures effects.
 
 ## Leave-one-donor-out
 
 ```{r}
 #| label: loo
+## donors that carry weight
 donors <- sc |> grab_unit_weights() |> filter(weight > 0.01) |> pull(unit)
 
 ## refit the EXACT original pipeline after dropping each donor, so that any
@@ -243,8 +307,10 @@ loo <- lapply(donors, function(dd) {
     generate_predictor(time_window = 1975, cigsale_1975 = cigsale) |>
     generate_predictor(time_window = 1980, cigsale_1980 = cigsale) |>
     generate_predictor(time_window = 1988, cigsale_1988 = cigsale) |>
-    generate_weights(optimization_window = 1970:1988) |>
+    generate_weights(optimization_window = 1970:1988,
+                     margin_ipop = .02, sigf_ipop = 7, bound_ipop = 6) |>
     generate_control()
+  ## the estimate without donor dd
   g <- s |> grab_synthetic_control() |> mutate(gap = real_y - synth_y)
   tibble::tibble(dropped = dd, mean_gap = mean(g$gap[g$time_unit > 1988]))
 }) |> bind_rows()
@@ -252,31 +318,131 @@ loo <- lapply(donors, function(dd) {
 knitr::kable(loo, digits = 2)
 ```
 
-If dropping any single donor moved the estimate substantially, the result would
-rest on one state rather than on a comparison group.
+If dropping any single donor moved the estimate substantially, the result would rest on one state rather than on a comparison group.
+
+# Penalized synthetic control
+
+`pensynth` implements the penalized estimator from lecture: it adds $\lambda \sum_j w_j \sum_k (X_{1k} - X_{jk})^2$, the distance to each donor used, to the usual predictor fit. `lambda = 0` is plain synthetic control.
+
+```{r}
+#| label: pen-toy
+## the lecture's toy: one predictor, California = 5, donors A 4, B 6, C 0, D 10
+## X1: the treated unit's predictors (K x 1); X0: the donors' (K x J)
+quiet <- clarabel::clarabel_control(verbose = FALSE)   # silence the solver
+toy <- pensynth(X1 = matrix(5), X0 = matrix(c(4, 6, 0, 10), nrow = 1),
+                lambda = 0.1, standardize = FALSE, verbose = FALSE,
+                opt_pars = quiet)
+round(toy$w, 3)   ## all weight on the nearby donors A and B
+```
+
+On Prop 99 we reuse the predictors and the predictor weights $v$ from the `tidysynth` fit above, so that `lambda = 0` reproduces synthetic California.
+
+```{r}
+#| label: pen-prop99
+## predictors: one column per state (California; the 38 donors)
+X1 <- as.matrix(grab_predictors(sc, type = "treated")[, -1])
+X0 <- as.matrix(grab_predictors(sc, type = "controls")[, -1])
+v  <- grab_predictor_weights(sc)$weight     # the v chosen by tidysynth
+
+## outcomes as a state x year matrix, for the gaps
+Y <- smoking |> select(state, year, cigsale) |>
+  tidyr::pivot_wider(names_from = year, values_from = cigsale)
+Y <- as.matrix(tibble::column_to_rownames(Y, "state"))
+pre <- as.character(1970:1988); post <- as.character(1989:2000)
+
+## fit for several lambdas; report donors used, average gap, pre-period RMSPE
+pen_row <- function(lam) {
+  w <- pensynth(X1, X0, v = v, lambda = lam, verbose = FALSE,
+                opt_pars = quiet)$w
+  g <- Y["California", ] - colSums(w * Y[colnames(X0), ])
+  top <- sort(setNames(w, colnames(X0)), decreasing = TRUE)[1:2]
+  tibble::tibble(lambda = lam, donors = sum(w > 0.005),
+                 gap_post = round(mean(g[post]), 1),
+                 rmspe_pre = round(sqrt(mean(g[pre]^2)), 2),
+                 top_two = paste(names(top), round(top, 2), collapse = ", "))
+}
+lapply(c(0, 0.001, 0.01, 0.1, 1), pen_row) |> bind_rows() |>
+  knitr::kable()
+```
+
+Larger $\lambda$ pulls the weights toward the states closest to California on the predictors, and the pre-period fit gets worse. `cv_pensynth()` picks $\lambda$ by how well the weights fit the pre-period *outcomes* (`Z1`, `Z0`):
+
+```{r}
+#| label: pen-cv
+## Z1, Z0: California's and the donors' sales in 1970-88 (years in rows)
+cv <- cv_pensynth(X1, X0, Z1 = matrix(Y["California", pre]),
+                  Z0 = t(Y[colnames(X0), pre]), v = v,
+                  verbose = FALSE, opt_pars = quiet)
+signif(cv$l_opt, 2)   ## the chosen lambda
+w_cv <- setNames(cv$w_opt, colnames(X0))
+round(sort(w_cv[w_cv > 0.005], decreasing = TRUE), 3)
+```
+
+The chosen $\lambda$ is close to 0 and the weights are those of synthetic California: here the classic fit already uses nearby donors, so the penalty has nothing to fix. It matters when many different mixes fit equally well, as in the toy, or when there are many treated units, each needing its own weights.
+
+# Synthetic DiD
+
+`synthdid` (Arkhangelsky et al. 2021) needs a balanced panel with a 0/1
+treatment column. `panel.matrices()` turns it into an outcome matrix with the
+treated unit last.
+
+```{r}
+#| label: sdid
+## treated = 1 for California from 1989 on
+panel <- smoking |>
+  transmute(state, year, cigsale,
+            treated = as.integer(state == "California" & year >= 1989)) |>
+  as.data.frame()
+setup <- panel.matrices(panel)      # Y (39 x 31), N0 = 38 donors, T0 = 19 years
+
+## the three estimators on the same matrix
+fits <- list(DiD  = did_estimate(setup$Y, setup$N0, setup$T0),
+             SC   = sc_estimate(setup$Y, setup$N0, setup$T0),
+             SDiD = synthdid_estimate(setup$Y, setup$N0, setup$T0))
+
+## placebo standard errors: refit with a donor as the "treated" unit, many
+## times, and take the sd of those estimates (random draws, so set a seed)
+set.seed(723)
+se_p <- sapply(fits, function(f) sqrt(vcov(f, method = "placebo")))
+est_p <- sapply(fits, c)
+round(cbind(estimate = est_p, se = se_p,
+            lo = est_p - 1.96 * se_p, hi = est_p + 1.96 * se_p), 1)
+```
+
+These are the numbers on the lecture slides. SDiD's two sets of weights:
+
+```{r}
+#| label: sdid-weights
+w_sdid <- attr(fits$SDiD, "weights")
+## donor weights omega (fitted with a free constant, so levels need not match)
+omega <- setNames(w_sdid$omega, rownames(setup$Y)[1:setup$N0])
+round(head(sort(omega, decreasing = TRUE), 5), 3)
+## pre-year weights lambda: which years form the "before" period
+lambda <- setNames(w_sdid$lambda, colnames(setup$Y)[1:setup$T0])
+round(lambda[lambda > 0.01], 3)
+```
+
+```{r}
+#| label: fig-sdid
+#| fig-cap: "Synthetic DiD: California and its weighted control (parallel, not equal, before 1989). The shaded area at the bottom shows the pre-year weights (1986-88)."
+## synthdid's own plot of the weighted 2x2
+synthdid_plot(fits$SDiD) + theme_minimal(base_size = 10)
+```
 
 # Exercises
 
-1.  **Predictor sensitivity.** Re-estimate using only lagged outcomes as
-    predictors (drop income, price, beer, youth). How much do the weights and the
-    estimate move? What does that tell you about how much work the covariates are
-    doing?
+1.  **Predictor sensitivity.** Re-estimate using only lagged outcomes as predictors (drop income, price, beer, youth). How much do the weights and the estimate move? What does that tell you about how much work the covariates are doing?
 
-2.  **Pre-period length.** Re-estimate using only 1980–1988 to fit the weights.
-    Does the pre-treatment fit worsen? Does the estimate change? Connect this to
-    the factor-model justification from lecture.
+2.  **Windows.** (a) Change the covariate window from 1980–88 to 1972–88 (the years income is recorded). Do the weights or the estimate move? (b) Re-estimate using only 1980–1988 to fit the weights. Does the pre-treatment fit worsen? Does the estimate change? Connect this to "the fit was luck" on the lecture slide *When Parallel Trends Fails After Weighting*.
 
-3.  **A bad donor pool.** Deliberately include a state with its own tobacco
-    programme. How does that contaminate the comparison, and would any diagnostic
-    catch it?
+3.  **Spillovers.** Nevada borders California and carries about a quarter of the weight. If Californians crossed the border to buy cigarettes, would the estimate be too large or too small? Use the leave-one-out table to see what happens without Nevada, and explain why that check cannot rule out spillovers into the other donors.
 
-4.  **DID for comparison.** Estimate a plain 2×2 DID comparing California to the
-    unweighted average of all donors, before and after 1988. How does it differ
-    from the synthetic control estimate, and why?
+4.  **DiD as a 2×2.** Compute the 2×2 comparing California with the plain
+    average of the 38 donors, using the means for 1970–88 and 1989–2000
+    (lecture: $-27.3$). Redo it with single years (1980 → 2000,
+    1988 → 1995). Why does the answer depend on the years chosen?
 
-5.  **A different treated unit.** Using `set.seed(723)`, pick a donor state at
-    random, treat it as treated, and run the whole pipeline. Write the paragraph you would write if
-    this were your result — then explain what stops you from believing it.
+5.  **A different treated unit.** Using `set.seed(723)`, pick a donor state at random, treat it as treated, and run the whole pipeline. Write the paragraph you would write if this were your result — then explain what stops you from believing it.
 
 # Session information
 

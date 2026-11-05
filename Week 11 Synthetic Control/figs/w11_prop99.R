@@ -67,6 +67,35 @@ top <- names(sort(w_out[w_out > 0.01], decreasing = TRUE))
 loo <- sapply(top, function(d) { Yd <- Y0[rownames(Y0) != d, ]; wd <- sc_w(y1, Yd, pre); mean((y1 - colSums(wd * Yd))[post]) })
 cat("leave-one-out average post gap:\n"); print(round(loo, 1))
 
+## ---- 3b. the same checks with the ADH predictors (what Lab 11 runs; slide 25 reports these) ----
+cat("\n## 3b. in-time placebo and leave-one-out, ADH predictors\n")
+## in-time: last pre-year 1980; predictors = ADH's recipe shifted to the fake date
+s80 <- sm %>% filter(year <= 1988) %>%
+  synthetic_control(outcome = cigsale, unit = state, time = year, i_unit = "California", i_time = 1980, generate_placebos = FALSE) %>%
+  generate_predictor(time_window = 1972:1980, ln_income = mean(lnincome, na.rm = TRUE),
+                     ret_price = mean(retprice, na.rm = TRUE), youth = mean(age15to24, na.rm = TRUE)) %>%
+  generate_predictor(time_window = 1970, cigsale_1970 = cigsale) %>%
+  generate_predictor(time_window = 1975, cigsale_1975 = cigsale) %>%
+  generate_predictor(time_window = 1980, cigsale_1980 = cigsale) %>%
+  generate_weights(optimization_window = 1970:1980, margin_ipop = .02, sigf_ipop = 7, bound_ipop = 6) %>% generate_control()
+g80a <- grab_synthetic_control(s80) %>% mutate(gap = real_y - synth_y)
+cat("in-time placebo (fit 1970-80): average gap 1981-88 =", round(mean(g80a$gap[g80a$time_unit > 1980]), 2),
+    "; pre RMSPE", round(sqrt(mean(g80a$gap[g80a$time_unit <= 1980]^2)), 2), "\n")
+## leave-one-out: refit the section-1 pipeline without each donor with weight > .01
+loo_adh <- sapply(w$unit[w$weight > 0.01], function(dd) {
+  s <- sm %>% filter(state != dd) %>%
+    synthetic_control(outcome = cigsale, unit = state, time = year, i_unit = "California", i_time = 1988, generate_placebos = FALSE) %>%
+    generate_predictor(time_window = 1980:1988, ln_income = mean(lnincome, na.rm = TRUE),
+                       ret_price = mean(retprice, na.rm = TRUE), youth = mean(age15to24, na.rm = TRUE)) %>%
+    generate_predictor(time_window = 1984:1988, beer_sales = mean(beer, na.rm = TRUE)) %>%
+    generate_predictor(time_window = 1975, cigsale_1975 = cigsale) %>%
+    generate_predictor(time_window = 1980, cigsale_1980 = cigsale) %>%
+    generate_predictor(time_window = 1988, cigsale_1988 = cigsale) %>%
+    generate_weights(optimization_window = 1970:1988, margin_ipop = .02, sigf_ipop = 7, bound_ipop = 6) %>% generate_control()
+  g <- grab_synthetic_control(s); mean((g$real_y - g$synth_y)[g$time_unit > 1988]) })
+names(loo_adh) <- w$unit[w$weight > 0.01]
+cat("leave-one-out average post gap (ADH predictors):\n"); print(round(loo_adh, 1))
+
 ## ---- 4. regression weights extrapolate ----------------------------------------------------
 cat("\n## 4. regression (minimum-norm, sum to one) weights on the same pre-period outcomes\n")
 A <- rbind(1, t(Y0[, pre])); bvec <- c(1, y1[pre])            # rows: adding-up + 19 pre-periods
@@ -85,17 +114,35 @@ e_sdid <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
 e_sc <- sc_estimate(setup$Y, setup$N0, setup$T0)
 e_did <- did_estimate(setup$Y, setup$N0, setup$T0)
 se <- function(e) sqrt(vcov(e, method = "placebo"))
-print(round(rbind(DiD = c(e_did, se(e_did)), SC = c(e_sc, se(e_sc)), SDiD = c(e_sdid, se(e_sdid))), 1))
+est <- rbind(DiD = c(e_did, se(e_did)), SC = c(e_sc, se(e_sc)), SDiD = c(e_sdid, se(e_sdid)))
+print(round(est, 1))
+cat("95% CI = estimate +/- 1.96 x placebo SE (SE = sd of placebo estimates):\n")
+print(round(cbind(lo = est[, 1] - 1.96 * est[, 2], hi = est[, 1] + 1.96 * est[, 2]), 1))
 ws <- attr(e_sdid, "weights")
 om <- ws$omega; names(om) <- rownames(setup$Y)[1:setup$N0]
 la <- ws$lambda; names(la) <- colnames(setup$Y)[1:setup$T0]
 cat("SDiD unit weights > .05:\n"); print(round(sort(om[om > 0.05], decreasing = TRUE), 3))
 cat("SDiD time weights > .05:\n"); print(round(la[la > 0.05], 3))
+## 5b. SDiD written as a weighted 2x2: (CA after - CA lambda-weighted before) - sum_j omega_j (same for donor j)
+Ypre <- setup$Y[, 1:setup$T0]; Ypost <- setup$Y[, (setup$T0 + 1):ncol(setup$Y)]
+yca <- setup$Y[setup$N0 + 1, ]; Yd <- setup$Y[1:setup$N0, ]
+ca_b <- sum(la * yca[1:setup$T0]); ca_a <- mean(yca[(setup$T0 + 1):ncol(setup$Y)])
+co_b <- sum(om * (Yd[, 1:setup$T0] %*% la)); co_a <- sum(om * rowMeans(Yd[, (setup$T0 + 1):ncol(setup$Y)]))
+cat("SDiD as a 2x2: CA before (lambda-weighted)", round(ca_b, 1), " after", round(ca_a, 1),
+    "; control before", round(co_b, 1), " after", round(co_a, 1),
+    "; gap before", round(ca_b - co_b, 1), " after", round(ca_a - co_a, 1), "; 2x2", round((ca_a - co_a) - (ca_b - co_b), 2),
+    "; synthdid", round(c(e_sdid), 2), "\n")
 asc <- augsynth(cigsale ~ trt, state, year, transform(sm, trt = as.integer(state == "California" & year >= 1989)),
                 progfunc = "Ridge", scm = TRUE)
 sa <- summary(asc, inf_type = "jackknife+")
 cat("augmented SC (ridge): average ATT", round(sa$average_att$Estimate, 1), "; L2 imbalance", round(sa$l2_imbalance, 2),
     "; scaled", round(sa$scaled_l2_imbalance, 3), "\n")
+## the same call without the outcome model: the SC part alone; the difference is the average correction
+asc0 <- augsynth(cigsale ~ trt, state, year, transform(sm, trt = as.integer(state == "California" & year >= 1989)),
+                 progfunc = "None", scm = TRUE)
+sc_part <- summary(asc0, inf_type = "jackknife+")$average_att$Estimate
+cat("augsynth SC part alone:", round(sc_part, 1), "; average ridge correction:", round(sa$average_att$Estimate - sc_part, 1),
+    "; ridge penalty:", round(asc$lambda, 1), "\n")
 
 ## ---- 6. conformal inference (Chernozhukov, Wuthrich, Zhu 2021), sharp null tau_t = 0 ------
 cat("\n## 6. conformal test of H0: no effect in any post-year\n")
