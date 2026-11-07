@@ -498,6 +498,7 @@ checkable procedure.
 ### Materials
 - [Slides: Week 11 — Synthetic Control](./Week%2011%20Synthetic%20Control/slides.pdf)
 - [Lab 11: Synthetic Control](./Week%2011%20Synthetic%20Control/lab11.pdf)
+- [Problem Set 4](./Homework/homework4/homework4.pdf) — assigned Fri Nov 6, due Fri Nov 20 (difference-in-differences and synthetic control)
 
 ### Reading
 *Required*: Abadie, Diamond, and Hainmueller (2010). &nbsp;·&nbsp;

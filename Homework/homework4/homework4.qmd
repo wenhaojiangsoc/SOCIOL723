@@ -1,0 +1,241 @@
+---
+title: "\\textbf{SOCIOL 723: Problem Set 4}"
+subtitle: "\\textit{Assigned}: Friday, November 6 \\quad\\textbullet\\quad \\textit{Due}: Friday, November 20, 11:59PM"
+author: "Your name:"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1.1in, bottom=1.1in, left=1.1in, right=1.1in"
+    colorlinks: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \usepackage{float}
+        \usepackage{caption}
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+        \fvset{breaklines=true}
+        \DeclareMathOperator{\Cov}{Cov}
+        \DeclareMathOperator{\Var}{Var}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.15}
+        \setlength{\parindent}{0pt}
+        \setlength{\parskip}{6pt}
+        \makeatletter
+        \renewcommand{\maketitle}{%
+          \begin{center}
+            {\LARGE \bfseries \@title \par}
+            \vspace{0.7em}%
+            {\large \itshape \@date \par}
+            \vspace{0.7em}%
+            {\large \@author \par}
+          \end{center}\par\vspace{1em}
+        }
+        \makeatother
+execute:
+  echo: true
+  eval: false
+  warning: false
+  message: false
+editor: visual
+---
+
+**Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. Each part pairs a published study, read from its own results, with an analysis you run yourself on public data. In each, estimate, check the design, and write the result up as you would in a paper. Use the functions from Labs 10 and 11. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` wherever there is randomness.
+
+**Data.** Each part opens with a code chunk that loads its data and packages; copy it into your own file.
+
+```{=latex}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{c l c l l}
+\toprule
+Part & Method & Week & Read & Run \\
+\midrule
+1 & Difference-in-differences & 10 & Mark and Wu (2022) & U.S. counties, 2003--2017 \\
+2 & Synthetic control & 11 & Abadie and Gardeazabal (2003) & Spanish regions, 1955--1997 \\
+\bottomrule
+\end{tabular}
+\end{center}
+```
+
+\hrulefill
+
+\newpage
+
+# Part 1: Difference-in-Differences
+
+## Read: sex education and teen births
+
+**The policy question.** Starting with the 1996 welfare reform, federal money for sex education in the United States went to *abstinence-only* programs, which had to follow a strict eight-point definition: teach that teens should not have sex before marriage, and say little or nothing about contraception. In 2010 the federal government changed course. Its new Teen Pregnancy Prevention (TPP) program funded *more comprehensive* sex education, mostly programs that earlier evaluations had found effective. These programs dropped the abstinence-only requirement: they could still teach abstinence, but also taught about contraception. Mark and Wu (2022, *Proceedings of the National Academy of Sciences*) ask whether this comprehensive sex education lowered teen births.
+
+**The data.** TPP grants went to local organizations, so the authors work with U.S. counties, 1996--2017. A county counts as treated from the year *after* its first TPP grant, to allow for pregnancy. Treated counties: 36 counties first funded in 2010 (so treated from 2011), and 19 more first funded in 2015 (treated from 2016), 55 in all. Comparison counties: about 2,900 counties that never received a TPP grant. Counties that ever received *abstinence-only* grants (173) are dropped. The outcome is the log teen birth rate (births per 1,000 women aged 14--19), from restricted birth-certificate data. All models include county fixed effects and state-by-year fixed effects, and cluster by county.
+
+```{=latex}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lcc}
+\toprule
+Their Figure 2: effect on the teen birth rate & estimate & 95\% interval \\
+\midrule
+TWFE                                            & $-8.1\%$ & $(-11.3, -4.9)$ \\
+TWFE with covariates                            & $-8.6\%$ & $(-11.3, -5.9)$ \\
+Callaway--Sant'Anna, unconditional              & $-3.6\%$ & $(-6.1, -1.1)$ \\
+Callaway--Sant'Anna, conditional on 2010 covariates & $-3.3\%$ & $(-6.3, -0.3)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+```
+
+1.  **Reading the design.**
+
+    (a) The treated counties received comprehensive sex education. What did the comparison counties receive? Why would keeping the abstinence-only counties in the comparison group change the question the paper answers?
+
+    (b) There are two groups of treated counties: treated from 2011 and treated from 2016. Inside the TWFE regression, one $2\times2$ uses the 2011 counties as the "control" for the 2016 counties. Why is this a forbidden comparison? In what way could it give a biased, or even opposite-signed, estimate of the true effect?
+
+    (c) The preferred estimate conditions on covariates measured in 2010. State the parallel-trends assumption it rests on, in words. Why measure the covariates in 2010 rather than in each year?
+
+## Run: TPP funding on public data
+
+The birth-certificate data are restricted, so we replace the outcome with the CDC's public county teen birth rates (births per 1,000 women aged 15--19, 2003--2017), merged with the authors' public funding and covariate file. These CDC rates are *model-based*: for each county the CDC combines the county's own births with information from neighbouring counties and adjacent years. Keep this in mind; it matters in question 3.
+
+```{r}
+library(dplyr); library(ggplot2)
+library(fixest); library(bacondecomp); library(did)
+url <- paste0("https://raw.githubusercontent.com/wenhaojiangsoc/",
+              "SOCIOL723/main/Data/sexed_county.csv")
+sx <- read.csv(url)                  ## 2,926 counties x 15 years
+sx$lrate <- log(sx$birth_rate)       ## log teen birth rate
+```
+
+Variables: `fips` (county), `state_fips`, `year`; `birth_rate`; `funded` (1 from the year after the first grant); `first_funded` (first treated year: 2011 or 2016; 0 = never funded); `teen_pop` (population aged 14--19); and, measured in 2010, `pop_2010` (population aged 14--19), `med_hhinc_2010` (median household income), `pct_pov_2010` (percent in poverty), `pct_black_2010` and `pct_hisp_2010` (shares of teens). Effects on `lrate` are approximately proportional changes; report them as percentages with $100(e^{b}-1)$.
+
+2.  **The full sample.**
+
+    (a) One $2\times2$ by hand. Take the counties treated from 2011 and the never-funded counties, in 2010 (before) and 2013 (after). Compute the four means of `lrate` and the difference in differences.
+
+    (b) Estimate the static TWFE regression of `lrate` on `funded` with county and year fixed effects, clustered by county. Then decompose it with `bacon()` (Lab 10). How much weight does the $2\times2$ from 1(b) get?
+
+    (c) Estimate Callaway--Sant'Anna with `att_gt()` as in Lab 10, with never-funded counties as controls. Each post-funding ATT$(g,t)$ is a $2\times2$: cohort $g$ against the never-funded counties, from year $g-1$ (the year before funding) to year $t$. Find ATT(2011, 2013) and check that it equals your 2(a). Then report `aggte()` with `type = "simple"` and `type = "dynamic"`. Read the package's guide to aggregation (<https://bcallaway11.github.io/did/articles/did-basics.html>, section "Aggregating group-time average treatment effects") and explain in your own words what each one averages, and why the two overall numbers differ here.
+
+    (d) Your TWFE estimate in (b) is about twice the simple ATT in (c), but (b) showed this is not because of the forbidden $2\times2$. Explain the difference. (Hint: remember that `bacon()` splits TWFE into $2\times2$s that each compare the average of *all* years after with the average of *all* years before: for the 2011 cohort against never-funded counties, 2011--2017 against 2003--2010. Each Callaway--Sant'Anna block uses a different comparison.)
+
+    (e) The event study. Re-estimate (c) adding `base_period = "universal"`, so that the dynamic effects before funding are also measured against year $g-1$, as in the event study in lecture. Then use `aggte(type = "dynamic")` with `min_e = -7`, `max_e = 6`, and `ggdid()`. Describe the coefficients before funding. What do they say about the parallel-trends assumption? Re-estimate with not-yet-funded counties as controls: does it help? Why or why not?
+
+3.  **Two repairs.**
+
+    (a) Covariates. Compare funded and never-funded counties in 2010 on the five 2010 covariates (use the median for `pop_2010`). Then add them to `att_gt()` (`xformla`, with `log(pop_2010)`) using the doubly robust estimator. Report the simple ATT and draw the event study (with `base_period = "universal"`, as in (e)). How much of the problem do the covariates fix?
+
+    (b) Comparable counties. Funded counties are large; most never-funded counties are small and rural. Keep only counties with at least 5,000 teens in 2010:
+
+        ```{r}
+        big <- subset(sx, pop_2010 >= 5000)
+        ```
+
+        How many funded and never-funded counties remain? Re-estimate on `big`, without and with covariates. Report both simple ATTs and draw the event study without covariates. Compare the pre-funding coefficients with 2(e).
+
+    (c) In the event study for `big`, look at $k = -7$ to $-4$ and then at $k = -2$ and $-1$. Recall that the CDC builds each county's rate partly from adjacent years. If funding lowered births sharply from 2011, what would that do to the CDC's 2009 and 2010 rates for a county treated from 2011? Does the pattern you see fit that story?
+
+4.  **Write it up.** In a short paragraph, as in a results section: your preferred estimate in percent with its 95% interval and the sample it comes from; whose effect it is (which aggregation, over which counties); the evidence for and against parallel trends; and how it compares with Mark and Wu's $-3.3\%$. Name one reason the public outcome could make your estimate smaller than theirs.
+
+\newpage
+
+# Part 2: Synthetic Control
+
+## Read: the economic cost of terrorism
+
+Abadie and Gardeazabal (2003, *American Economic Review*) ask what ETA terrorism, which began in the late 1960s, cost the Basque Country. The Basque Country is one of 17 Spanish regions; before 1970 it was among the richest and most industrial. No other region had comparable terrorism, so the authors build a *synthetic* Basque Country: a weighted average of other regions that matches the Basque Country's per capita GDP and its predictors of growth (investment, schooling, sector shares, population density) in the 1960s. Their main finding: after terrorism began, Basque per capita GDP fell about 10 percentage points below its synthetic counterpart. They add a second test from the 1998--1999 ETA truce: stocks of firms with much of their business in the Basque Country rose relative to other firms when the truce became credible, and fell when it ended.
+
+1.  **Reading the design.**
+
+    (a) Why not compare the Basque Country with the average of the other 16 regions?
+
+    (b) The synthetic Basque Country turns out to be about 85% Cataluña and 15% Madrid (Cataluña, like the Basque Country, was one of Spain's most industrial regions), with weights restricted to be nonnegative and to sum to one. If some regions were allowed negative weights, we could often match the Basque Country's pre-1970 GDP path even more closely, perhaps perfectly. Why don't we allow them?
+
+## Run: the Basque Country
+
+The data come with the `Synth` package: 17 regions (the national aggregate is dropped), 1955--1997. Outcome `gdpcap`: real per capita GDP in thousands of 1986 U.S. dollars. The chunk below builds the synthetic control with the authors' predictors, as in Lab 11. Terrorism is treated as starting in 1970, so 1969 is the last pre-period year.
+
+```{r}
+library(dplyr); library(ggplot2); library(tidysynth); library(synthdid)
+data("basque", package = "Synth")
+bq <- basque |>
+  filter(regionno != 1) |>                          ## drop Spain as a whole
+  mutate(region = sub(" \\(.*", "", regionname))    ## short region names
+
+## one function, so you can rebuild on a different donor pool
+build_sc <- function(dat, placebos = TRUE) {
+  dat |>
+    synthetic_control(outcome = gdpcap, unit = region, time = year,
+                      i_unit = "Basque Country", i_time = 1969,
+                      generate_placebos = placebos) |>
+    ## schooling and investment, averaged over 1964-69
+    generate_predictor(time_window = 1964:1969,
+                       illit = mean(school.illit, na.rm = TRUE),
+                       prim = mean(school.prim, na.rm = TRUE),
+                       med = mean(school.med, na.rm = TRUE),
+                       high = mean(school.high, na.rm = TRUE),
+                       posthigh = mean(school.post.high, na.rm = TRUE),
+                       invest = mean(invest, na.rm = TRUE)) |>
+    ## per capita GDP, averaged over 1960-69
+    generate_predictor(time_window = 1960:1969,
+                       gdp = mean(gdpcap, na.rm = TRUE)) |>
+    ## sector shares of output, recorded every other year
+    generate_predictor(time_window = seq(1961, 1969, 2),
+                       agri = mean(sec.agriculture, na.rm = TRUE),
+                       energy = mean(sec.energy, na.rm = TRUE),
+                       industry = mean(sec.industry, na.rm = TRUE),
+                       constr = mean(sec.construction, na.rm = TRUE),
+                       serv_mkt = mean(sec.services.venta, na.rm = TRUE),
+                       serv_nonmkt = mean(sec.services.nonventa, na.rm = TRUE)) |>
+    generate_predictor(time_window = 1969, popdens = popdens) |>
+    ## outer step: choose v so that w(v) fits gdpcap in 1960-69
+    generate_weights(optimization_window = 1960:1969,
+                     margin_ipop = .02, sigf_ipop = 7, bound_ipop = 6) |>
+    generate_control()
+}
+sc <- build_sc(bq)
+```
+
+2.  **The synthetic Basque Country.**
+
+    (a) Report the donor weights (`grab_unit_weights()`) and check them against 1(b). Show `grab_balance_table()`: which predictors does the synthetic control match well? (The schooling variables are counts of people, not shares.)
+
+    (b) Plot the Basque Country and its synthetic control (`plot_trends()`) and the gap (`plot_differences()`). By what percent did Basque per capita GDP fall below its synthetic control, on average over 1980--1997? Compare with the authors' 10 percentage points.
+
+3.  **Inference.**
+
+    (a) `build_sc()` also fitted a synthetic control for every donor region. Draw `plot_placebos()` and report `grab_significance()` for the Basque Country. Where does it rank on the ratio of post- to pre-1970 MSPE, and what is the permutation $p$-value (i.e., the rank-based $p$-value)? What is the smallest $p$-value this design can produce?
+
+    (b) Now rank the regions on the *average post-1970 gap* instead of the MSPE ratio (use `grab_synthetic_control(placebo = TRUE)`). Where does the Basque Country rank now? Look at the pre-1970 MSPE of the regions with larger gaps and explain why the two rankings differ.
+
+4.  **Robustness.**
+
+    (a) Leave one out. Drop the donor with the largest weight from `bq` and rebuild with `build_sc()` (set `placebos = FALSE` to save time). Report the new weights, the pre-1970 RMSPE, and the average gap for 1980--1997 as a percent of the synthetic control, as in 2(b).
+
+    (b) Synthetic DiD. With `synthdid` (Lab 11), estimate DiD, SC, and synthetic DiD on GDP alone, with placebo standard errors (`set.seed(723)` before `vcov()`). Unlike 2(a), `sc_estimate()` matches pre-1970 GDP only, with no covariates. Which regions does it use, and how do they compare with 2(a)? What does that tell you about where the weights come from?
+
+5.  **Write it up.** In four or five sentences, as in a results section: the estimated cost of terrorism (and the years it covers), the comparison and its pre-1970 fit, the placebo evidence, and how much the answer depends on the donor pool and the estimator.
+
+\newpage
+
+# References
+
+Abadie, Alberto, and Javier Gardeazabal. 2003. "The Economic Costs of Conflict: A Case Study of the Basque Country." *American Economic Review* 93(1): 113--132.
+
+Arkhangelsky, Dmitry, Susan Athey, David A. Hirshberg, Guido W. Imbens, and Stefan Wager. 2021. "Synthetic Difference-in-Differences." *American Economic Review* 111(12): 4088--4118.
+
+Callaway, Brantly, and Pedro H. C. Sant'Anna. 2021. "Difference-in-Differences with Multiple Time Periods." *Journal of Econometrics* 225(2): 200--230.
+
+Goodman-Bacon, Andrew. 2021. "Difference-in-Differences with Variation in Treatment Timing." *Journal of Econometrics* 225(2): 254--277.
+
+Mark, Nicholas D. E., and Lawrence L. Wu. 2022. "More Comprehensive Sex Education Reduced Teen Births: Quasi-Experimental Evidence." *Proceedings of the National Academy of Sciences* 119(8): e2113144119.
+
+National Center for Health Statistics. 2022. "Teen Birth Rates for Age Group 15--19 in the United States by County." Centers for Disease Control and Prevention. https://data.cdc.gov/d/3h58-x6cd.
