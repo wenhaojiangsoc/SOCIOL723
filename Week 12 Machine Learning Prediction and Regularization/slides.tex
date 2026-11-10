@@ -49,7 +49,7 @@
 \newcommand{\bhat}{\hat{\bm{\beta}}}
 \newcommand{\dto}{\overset{d}{\longrightarrow}}
 \newcommand{\pto}{\overset{p}{\longrightarrow}}
-\usetikzlibrary{shapes,decorations.pathmorphing}
+\usetikzlibrary{shapes,decorations.pathmorphing,decorations.pathreplacing}
 \newcommand{\lik}{\mathcal{L}}
 \newcommand{\loglik}{\ell}
 \newcommand{\Info}{\mathcal{I}}
@@ -100,6 +100,15 @@
 \definecolor{corestar}{RGB}{0,83,155}
 \newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
+\tikzset{
+  nnin/.style={circle,draw=dukeblue,fill=white,thick,minimum size=7.5mm,inner sep=0pt,font=\footnotesize},
+  nnhid/.style={circle,draw=dukeblue,fill=dukeblue!15,thick,minimum size=7.5mm,inner sep=0pt,font=\footnotesize},
+  nnout/.style={circle,draw=accent,fill=accent!15,thick,minimum size=9mm,inner sep=0pt,font=\footnotesize},
+  nnoff/.style={circle,draw=gray!60,dashed,fill=white,thick,minimum size=7.5mm,inner sep=0pt,font=\footnotesize,text=gray!60},
+  nnedge/.style={-{Stealth[length=1.6mm]},gray!70,line width=0.4pt},
+  nnlink/.style={gray!50,line width=0.35pt},
+  nnhead/.style={font=\footnotesize\bfseries,text=dukeblue,align=center}}
+
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
   {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
@@ -141,390 +150,670 @@
   \titlepage
 \end{frame}
 
-\begin{frame}{Today}
-  \tableofcontents
-  \vskip6pt
-  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
-\end{frame}
-
-\begin{frame}{A Different Goal\core}
-Weeks 5--11 asked: \emph{what is the causal effect, and what must be true to
-recover it?} Today we set that aside entirely.
-\vskip3pt
-\begin{block}{Prediction versus inference}
-\textbf{Inference}: we care about a parameter $\beta$, its interpretation, and
-its standard error. \\
-\textbf{Prediction}: we care only about $\hat Y$ for units we have not seen. The
-parameters are means, not ends, and may not even be identified.
-\end{block}
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item These goals conflict. The model that predicts best is usually not the
-        model whose coefficients you would want to interpret, and vice versa.
-  \item \srct{Molina and Garip (2019)}: sociology has plenty of genuine
-        \emph{prediction} problems (who drops out, which neighbourhoods gentrify,
-        which cases to audit), and separate ML tools for describing heterogeneity.
-  \item Next week we put the two back together. Today, keep them apart.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Plan}
-\textbf{Goal}: predict $Y$ for units we have not seen, and know how well we did.
-\vskip3pt
-\begin{enumerate}\itemsep2pt
-  \item The bias--variance decomposition, proved; why training error lies, by
-        how much, and how cross-validation estimates what we want.
-  \item Ridge and lasso derived: closed forms, shrinkage through the SVD, soft
-        thresholding, why a little bias always helps.
-  \item Trees, forests, boosting: the variance algebra behind averaging; boosting as
-        gradient descent.
-  \item One benchmark on the course's GSS data, and what each method says
-        about which variables matter.
-  \item Interpretation and uncertainty: importance, partial dependence,
-        conformal prediction, and what changed with very flexible models.
-  \item Prediction in social science: the Fragile Families Challenge, bail
-        decisions, a biased health algorithm, and fairness.
-\end{enumerate}
-\vskip3pt
-{\footnotesize Running data: log earnings, GSS 2010--22, $n = 3{,}509$; script \texttt{figs/w12\_gss.R}.}
-\end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Bias-Variance]{The Bias--Variance Tradeoff}
+\section[Why ML]{Why Machine Learning?}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Decomposing Prediction Error\core}
-Let $Y = f(X) + \epsilon$ with $\E[\epsilon\mid X]=0$ and
-$\Var(\epsilon\mid X)=\sigma^2$, and let $\hat f$ be estimated from a training
-sample drawn independently of the new observation. At a new point $x_0$, taking
-expectations over \emph{both} the training sample and the new outcome:
-\begin{align*}
-  \E\Big[\big(Y_0 - \hat f(x_0)\big)^2\Big]
-  = \underbrace{\Big(\E[\hat f(x_0)] - f(x_0)\Big)^2}_{\text{bias}^2}
-  + \underbrace{\Var\big(\hat f(x_0)\big)}_{\text{variance}}
-  + \underbrace{\sigma^2}_{\text{irreducible}} .
-\end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Bias}: how far the method is wrong on average, across training
-        samples. Rigid models (a straight line) have high bias.
-  \item \textbf{Variance}: how much $\hat f$ moves if you redraw the training
-        data. Flexible models (a deep tree) have high variance.
-  \item \textbf{Irreducible error}: noise. No method beats it.
-  \item \alert{Every tuning parameter in this course is a dial between the first
-        two terms.} Penalty size, tree depth, number of neighbours, bandwidth
-        (Week 9!), all the same dial.
-\end{itemize}
+\begin{frame}{Four Reasons to Use Machine Learning}
+\begin{enumerate}\itemsep3pt
+  \item \textbf{Prediction is the goal.} Where are the poor? Wealth in Rwanda predicted from
+        mobile-phone records \srcp{Blumenstock, Cadamuro, and On 2015}.
+  \item \textbf{Measurement.} Turn text and images into variables: how populist a speech
+        is \srcp{Bonikowski, Luo, and Stuhler 2022}; how rich a neighbourhood is, read from
+        its cars \srcp{Gebru et al.\ 2017}.
+  \item \textbf{Ingredients of causal estimators.} Weighting needs each person's chance of
+        treatment given $X$; regression adjustment, their expected outcome (Week 6). With
+        hundreds of covariates, or text and images as $X$, ML predicts them, and double
+        machine learning keeps their errors out of the causal estimate
+        \srcp{Chernozhukov et al.\ 2018; Imai and Nakamura 2026}.
+  \item \textbf{Who benefits?} A causal forest splits on $X$ to find where the treatment
+        effect $\tau(x)$ is larger or smaller \srcp{Wager and Athey 2018}.
+\end{enumerate}
+\vskip2pt
+{\small Reasons 3 and 4 are next week. \alert{Common thread}: every job predicts something
+from $X$: the outcome $Y$, the treatment $D$, or the effect $\tau(x)$.}
 \end{frame}
 
-\begin{frame}{The Decomposition, Proved}
-At a fixed $x_0$, write $f = f(x_0)$ and $\hat f = \hat f(x_0)$; the new outcome is
-$Y_0 = f + \epsilon_0$ with $\epsilon_0$ independent of the training data:
-\begin{align*}
-  \E\big[(Y_0 - \hat f)^2\big]
-  &= \E\big[(\epsilon_0 + f - \hat f)^2\big]
-   && \text{\footnotesize substitute $Y_0$} \\
-  &= \E[\epsilon_0^2] + 2\,\E[\epsilon_0]\,\E[f - \hat f] + \E\big[(f - \hat f)^2\big]
-   && \text{\footnotesize $\epsilon_0$ independent of $\hat f$} \\
-  &= \sigma^2 + \E\big[(f - \E\hat f + \E\hat f - \hat f)^2\big]
-   && \text{\footnotesize $\E[\epsilon_0] = 0$; add and subtract $\E\hat f$} \\
-  &= \sigma^2 + (f - \E\hat f)^2 + \E\big[(\hat f - \E\hat f)^2\big]
-   && \text{\footnotesize cross term has mean zero}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Expectations are over \emph{training samples}: bias and variance describe
-        a method, not one fitted model.
-  \item The same algebra gave the MSE of the RD estimator (Week 9) and the
-        bandwidth choice; here the dial is model complexity.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Why Unbiasedness Stops Being the Goal\core}
-Weeks 1--2 prized unbiasedness: Gauss--Markov ranked estimators \emph{within} the
-unbiased class.
-\vskip3pt
-\begin{alertblock}{For prediction, that is the wrong criterion}
-We care about total error. Accepting a little bias to remove a lot of variance
-lowers MSE. Every method today is deliberately biased.
-\end{alertblock}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item OLS with $k$ regressors has variance growing in $k$: with $p/n$ not small,
-        the variance term swamps everything and OLS predicts badly even though it
-        is unbiased.
-  \item When $p > n$, OLS is not even defined, $\X'\X$ is singular.
-  \item \textbf{In-sample fit is not evidence.} $R^2$ never falls when you add
-        regressors, so training error is a systematically optimistic estimate of
-        test error. The gap is the \emph{optimism}, and it grows with model
-        complexity.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{How Optimistic Is Training Error?}
-OLS with $p$ regressors (with intercept), fixed $\X$, $\Var(\epsilon) = \sigma^2\Ix$,
-hat matrix $\bm H = \X(\X'\X)^{-1}\X'$, $\trace(\bm H) = p$:
-\begin{align*}
-  \E\Big[\tfrac1n\textstyle\sum_i (Y_i - \hat Y_i)^2\Big]
-  &= \tfrac1n\E\big[\bm\epsilon'(\Ix - \bm H)\bm\epsilon\big] = \sigma^2\,\tfrac{n - p}{n}
-   && \text{\footnotesize residual $= (\Ix - \bm H)\bm\epsilon$; trace} \\
-  \E\Big[\tfrac1n\textstyle\sum_i (Y_i^{\text{new}} - \hat Y_i)^2\Big]
-  &= \sigma^2 + \tfrac1n\E\big[\bm\epsilon'\bm H\bm\epsilon\big] = \sigma^2\,\tfrac{n + p}{n}
-   && \text{\footnotesize new noise at the same $\X$} \\
-  \text{optimism} &= \tfrac{2\,p\,\sigma^2}{n}
-   && \text{\footnotesize subtract}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Training error is too low by $2p\sigma^2/n$: Mallows' $C_p$ adds it back,
-        and AIC (Week 3) is the likelihood version of the same correction.
-  \item The penalty grows with $p/n$, not with $p$: 50 predictors are harmless with
-        $n = 100{,}000$ and fatal with $n = 100$.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Optimism on the GSS}
-600 training cases; OLS on the first $p$ columns of a 294-column design (main
-effects, pairwise interactions, squares); test on 1,053 held-out cases
-\srcp{figs/w12\_gss.R}.
-\vskip-2pt
-\begin{center}
-\includegraphics[width=0.56\linewidth]{figs/optimism.pdf}
-\end{center}
-\vskip-8pt
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.0}
-\begin{tabular}{@{}lccccccc@{}}
+\begin{frame}{Three Kinds of Machine Learning\core}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.16\linewidth}>{\raggedright\arraybackslash}p{0.25\linewidth}>{\raggedright\arraybackslash}p{0.27\linewidth}>{\raggedright\arraybackslash}p{0.22\linewidth}@{}}
 \toprule
-$p$ & 10 & 20 & 40 & 80 & 120 & 200 & 240 \\
+kind & the data & what is learned & examples today \\
 \midrule
-test $-$ training MSE & 0.02 & 0.04 & 0.09 & 0.18 & 0.27 & 0.55 & 0.79 \\
-$2p\hat\sigma^2/n$ & 0.02 & 0.04 & 0.08 & 0.16 & 0.24 & 0.40 & 0.48 \\
+\textbf{supervised} & inputs $X$ and a recorded outcome $Y$ & a rule that predicts $Y$ for new cases &
+  log earnings: lasso, trees \\
+\textbf{unsupervised} & inputs $X$ only, no outcome & a few dimensions that summarize $X$ &
+  PCA; a status index \\
+\textbf{self-supervised} & inputs $X$; hide a part and treat it as $Y$ & a code that predicts the hidden part &
+  word2vec, BERT; the hidden word \\
 \bottomrule
 \end{tabular}
 \end{center}
-{\footnotesize Up to $p \approx 80$ the formula is close; beyond it the test cases'
-new $\X$ add variance the fixed-$\X$ formula ignores.}
+\vskip4pt
+\begin{itemize}\itemsep3pt\small
+  \item \textbf{Supervised}: someone recorded the answer; judged by error on new cases.
+  \item \textbf{Unsupervised}: no answer to check; judged by how much of $X$ it keeps.
+  \item \textbf{Self-supervised}: labels come free from the data, so it trains on billions of words.
+\end{itemize}
 \end{frame}
 
+\begin{frame}{Linear Regression Is Already Machine Learning\core}
+OLS learns a rule from data, $\hat Y = a + b\,x$, and applies it to anyone: a supervised
+learner with a shape fixed in advance. Blue dots: average log earnings at each value (size =
+number of people); red: the OLS rule \srcp{figs/w12\_intro.R, A}.
+\begin{center}
+\includegraphics[width=0.74\linewidth]{figs/cef_gss.pdf}
+\end{center}
+\vskip-5pt
+\begin{itemize}\itemsep2pt\small
+  \item Schooling: the line (slope 0.119) is close. Age: earnings rise, then flatten, and the
+        line misses the young (arrow). A fixed shape cannot learn a pattern it does not allow.
+  \item Next: rules whose shape is learned, and ways to stop them bending too much.
+\end{itemize}
+\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Estimating Test Error: Cross-Validation\core}
-Split the data, fit on part, evaluate on the rest.
-\vskip3pt
-\begin{block}{$K$-fold cross-validation}
-Partition the sample into $K$ folds. For $k=1,\dots,K$: fit on all folds but
-$k$, predict fold $k$, record the error. Average:
-\begin{align*}
-  CV_K = \frac1K\sum_{k=1}^{K} \frac{1}{|\mathcal I_k|}\sum_{i\in\mathcal I_k}
-  \Big(Y_i - \hat f^{(-k)}(X_i)\Big)^2 .
-\end{align*}
+\begin{frame}{The Goal From Here: Predict People We Have Not Seen\core}
+\begin{block}{From now on}
+Learn a rule from \textbf{training} data, then predict $Y$ (log earnings, or any outcome)
+for \textbf{new} people. Every method is judged by its error on them, not by how well it
+fits the data it learned from.
 \end{block}
+\vskip4pt
+\textbf{Test $R^2$}: compare the rule with the simplest one, ``predict everyone with the
+average'' $\bar Y$ of the training data:
+\[
+  R^2_{\text{test}} = 1 - \frac{\sum_{\text{new } i}\big(Y_i - \hat Y_i\big)^2}{\sum_{\text{new } i}\big(Y_i - \bar Y\big)^2}
+\]
+\vskip-4pt
+\begin{itemize}\itemsep3pt
+  \item 1: perfect. 0: no better than the average. \alert{Negative: worse than the average.}
+  \item Why it can be negative: in the training data, OLS with an intercept can always
+        match the average (set every slope to 0), so its $R^2 \geq 0$. On new people nothing
+        stops a rule from doing worse than the average. Test $R^2$ has no floor.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Overfitting]{Overfitting and Honest Evaluation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Making OLS Flexible Backfires\core}
+The obvious fix: let OLS bend by adding squares and interactions. The 23 GSS columns
+become 243.
+\vskip4pt
+Fit on 300 training cases, predict 1,053 new people \srcp{figs/w12\_gss.R}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+& MSE, new people & test $R^2$ \\
+\midrule
+predict everyone with the average & 0.886 & 0 \\
+OLS, 23 main effects & 0.720 & 0.19 \\
+OLS, all 243 terms & 11.302 & \alert{$-11.8$} \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\small $1 - 11.302/0.886 = -11.8$. With 243 coefficients and 300 cases, OLS fits the training
+noise: \textbf{overfitting}. Machine learning = flexible \emph{without} overfitting, plus a way to check.}
+\end{frame}
+
+\begin{frame}{Training Error Flatters; New Cases Tell the Truth\core}
+OLS on the first $p$ of the 243 GSS columns, 600 training cases, 1,053 new cases
+\srcp{figs/w12\_gss.R}:
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.5\linewidth]{figs/optimism.pdf}
+\end{center}
+\vskip-6pt
+\begin{itemize}\itemsep2pt\small
+  \item Training error falls with every term added (0.98 with none, 0.40 with 200): a
+        coefficient can always fit a little more noise.
+  \item Error on new cases falls, then rises: 0.89 with none, \alert{0.68 with 12}, 1.16 with 200.
+  \item So we cannot judge or tune a method on the data it was fitted to.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Measuring Error Honestly: Hold Out a Test Set\core}
+Training error is optimistic (previous slides). To measure error on \emph{new} cases,
+keep some cases new: hide them from the fit.
+\vskip6pt
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \fill[dukeblue!20] (0,0) rectangle (7,0.8);
+  \fill[gray!35] (7,0) rectangle (10,0.8);
+  \draw[gray!70] (0,0) rectangle (10,0.8); \draw[gray!70] (7,0) -- (7,0.8);
+  \node at (3.5,0.4) {\small training set, 70\%};
+  \node at (8.5,0.4) {\small test set, 30\%};
+  \node[below, font=\footnotesize] at (3.5,-0.05) {fit the model};
+  \node[below, font=\footnotesize] at (8.5,-0.05) {score it, once, at the end};
+\end{tikzpicture}
+\end{center}
+\vskip2pt
+\begin{enumerate}\itemsep3pt
+  \item Split the sample \emph{at random}, before looking at anything.
+  \item Fit only on the training set.
+  \item Predict the test cases and compute the test MSE: an honest estimate of error on
+        new cases, because the model never saw them.
+\end{enumerate}
 \vskip3pt
-\begin{itemize}\itemsep2pt
-  \item $K = 5$ or $10$ is standard: leave-one-out ($K=n$) has low bias but high
-        variance and is expensive.
-  \item \alert{Everything data-dependent must happen inside the fold}, 
-        variable selection, standardization, imputation. Selecting predictors on
-        the full sample and then cross-validating is a very common and very
-        serious leak.
-  \item With dependence (panels, clusters, time) \alert{split on the
-        independent unit}, not on rows. Same rule as the bootstrap in Week 2.
-\end{itemize}
+{\small Every GSS comparison in this deck uses one such split: 2,456 training cases,
+1,053 test cases (the previous slide used 600 of the training cases).}
 \end{frame}
-
-\begin{frame}{What Cross-Validation Estimates \srcp{Bates, Hastie, and Tibshirani 2024}}
-\begin{itemize}\itemsep4pt
-  \item CV refits the model $K$ times on different training sets, so it estimates
-        the \alert{average} test error of the \emph{procedure} over training sets
-        of size $n(K-1)/K$, not the error of the one model you finally fit.
-  \item The usual interval $\widehat{CV} \pm 2\,\widehat{\text{se}}$, treating the $n$
-        held-out errors as independent, undercovers: the folds share training
-        data, so the errors are correlated. \textbf{Nested CV} fixes the interval.
-  \item \textbf{Tuning and evaluating are two jobs}. If $\lambda$ is chosen by CV,
-        the CV error at the chosen $\lambda$ is optimistic; report error on a
-        held-out test set never used for tuning, or nest the tuning inside each fold.
-  \item \textbf{One-standard-error rule}: among $\lambda$ within one se of the minimum,
-        take the simplest. GSS: lasso keeps 48 of 294 terms at the minimum, 12
-        under the 1-se rule; test $R^2$ 0.344 vs.\ 0.333.
-\end{itemize}
-\end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Regularization]{Regularization}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Ridge Regression\core}
-Add a penalty on the squared size of the coefficients:
-\begin{align*}
-  \hat{\bm\beta}^{\text{ridge}}
-  = \argmin_{\bm\beta}\ \sum_{i=1}^n\big(Y_i - X_i'\bm\beta\big)^2
-  + \lambda \sum_{j=1}^{p}\beta_j^2 ,
-  \qquad
-  \hat{\bm\beta}^{\text{ridge}} = (\X'\X + \lambda \Ix)^{-1}\X'\Y ,
-\end{align*}
-where, as always with a penalty, $\X$ and $\Y$ are centred and the
-intercept is left out of both the penalty and the displayed matrix.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Adding $\lambda\Ix$ makes the matrix invertible \alert{even when
-        $p > n$}, which is why ridge works where OLS does not exist.
-  \item Coefficients shrink toward zero but never reach it: ridge does not select.
-  \item \textbf{Always standardize the predictors first}; the penalty is not
-        scale-invariant, and the intercept is not penalized.
-  \item Ridge shines under \alert{dense} signals: many small effects, and
-        correlated predictors whose coefficients OLS cannot separate.
-  \item As $\lambda\to0$ we recover OLS; as $\lambda\to\infty$ all slopes go to
-        zero and the fit collapses to the sample mean of $Y$. The dial is the
-        bias--variance dial.
+\begin{frame}{Why Regularization Is Machine Learning\core}
+\begin{itemize}\itemsep5pt
+  \item \textbf{The problem.} With 243 terms and 300 cases, OLS uses every coefficient to chase
+        the training cases, noise included, and predicts new people worse than the average.
+  \item \textbf{The idea.} Keep the linear regression, but make every coefficient pay for being
+        nonzero, and more for being large. A predictor gets a sizeable coefficient only if it improves the fit by enough
+        to cover the charge; weak ones are pulled toward zero, or set to zero.
+  \item \textbf{The trade.} The pulled-in coefficients are a little off on average, but they
+        barely move from sample to sample, so predictions for new people improve.
+  \item \textbf{What makes it machine learning.} How much to charge is not chosen by the
+        researcher or by theory. It is a tuning parameter chosen by the data: we try many
+        charges and keep the one that predicts held-out cases best.
+  \item The lasso and ridge are two ways to set the charge (next slides).
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Ridge Through the Singular Value Decomposition}
-Write $\X = \bm U\bm D\bm V'$ with singular values $d_1 \geq \dots \geq d_p$ and
-columns $\bm u_j$ of $\bm U$:
-\begin{align*}
-  \X\hat{\bm\beta}^{\text{OLS}}
-  &= \bm U\bm U'\Y = \textstyle\sum_j \bm u_j\,(\bm u_j'\Y)
-   && \text{\footnotesize projection on the column space} \\
-  \X\hat{\bm\beta}^{\text{ridge}}
-  &= \X(\X'\X + \lambda\Ix)^{-1}\X'\Y
-   = \textstyle\sum_j \bm u_j\,\dfrac{d_j^2}{d_j^2 + \lambda}\,(\bm u_j'\Y)
-   && \text{\footnotesize $\X'\X = \bm V\bm D^2\bm V'$}
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item Ridge shrinks each principal direction by $d_j^2/(d_j^2+\lambda)$: directions
-        in which the predictors barely vary ($d_j$ small, the collinear ones) are
-        shrunk most. That is where OLS variance comes from.
-  \item \textbf{Effective degrees of freedom}:
-        $\text{df}(\lambda) = \trace\big[\X(\X'\X+\lambda\Ix)^{-1}\X'\big] = \sum_j d_j^2/(d_j^2+\lambda)$,
-        from $p$ at $\lambda = 0$ down to 0. Plug it into the optimism formula.
+\begin{frame}{Why Would $p$ Be Large?}
+\begin{itemize}\itemsep8pt
+  \item \textbf{Constructed features.} Flexible relationships need squares and interactions,
+        and they multiply fast.
+  \begin{itemize}\itemsep2pt
+    \item Civil war onset: the literature offers 88 country-level predictors
+          \srcp{Hegre and Sambanis 2006}. All pairwise interactions add 3,828 terms; three-way
+          interactions add 109,736, far more than the 7,140 country-years, with only 115 onsets
+          to learn from \srcp{Muchlinski et al.\ 2016}.
+    \item The GSS: 23 main-effect columns become 243 with pairs and squares.
+  \end{itemize}
+  \item \textbf{Many available features.} Text, images, and administrative records give
+        thousands of columns. Most are noise; some proxy traits we want to model.
+  \item When terms outnumber cases, or come close, the data are \textbf{high-dimensional}: OLS
+        cannot be fitted, or fits the noise.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{A Little Bias Always Helps \srcp{Hoerl and Kennard 1970}}
-One centred regressor, $s = \sum_i x_i^2$; ridge gives $\hat\beta_\lambda = \hat\beta\,s/(s + \lambda)$:
-\begin{align*}
-  \text{bias}(\hat\beta_\lambda) &= -\frac{\lambda}{s+\lambda}\,\beta,
-  \qquad
-  \Var(\hat\beta_\lambda) = \Big(\frac{s}{s+\lambda}\Big)^2\frac{\sigma^2}{s}
-   && \text{\footnotesize shrink a constant fraction} \\
-  \text{MSE}(\lambda) &= \frac{\lambda^2\beta^2 + s\,\sigma^2}{(s+\lambda)^2}
-   && \text{\footnotesize bias$^2$ + variance} \\
-  \frac{d\,\text{MSE}}{d\lambda}\Big|_{\lambda = 0} &= -\frac{2\sigma^2}{s^2} < 0
-   && \text{\footnotesize differentiate, evaluate at 0}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Moving away from OLS \emph{always} lowers MSE at first, whatever $\beta$ is:
-        the variance falls at first order, the bias enters squared. The best
-        $\lambda^* = \sigma^2/\beta^2$ (set the derivative to zero).
-  \item The same is true with many regressors: some $\lambda > 0$ beats OLS.
-        Unbiasedness is a choice, not an optimum.
-\end{itemize}
-\end{frame}
-
+\subsection{Lasso}
 
 \begin{frame}{Lasso\core}
-Penalize the \emph{absolute} size instead:
+\textbf{L}east \textbf{A}bsolute \textbf{S}hrinkage and \textbf{S}election
+\textbf{O}perator: $\hat\beta$ solves a \textit{penalized} least squares problem
 \begin{align*}
-  \hat{\bm\beta}^{\text{lasso}}
-  = \argmin_{\bm\beta}\ \sum_{i=1}^n\big(Y_i - X_i'\bm\beta\big)^2
-  + \lambda \sum_{j=1}^{p}\big|\beta_j\big| .
+  \hat\beta = \argmin_{b\in\R^{p}}\ \sum_{i=1}^n\big(Y_i - \textstyle\sum_{j} X_{ij} b_j\big)^2
+  + \lambda \sum_{j=1}^{p}\big|b_j\big|
 \end{align*}
-\vskip3pt
 \begin{itemize}\itemsep3pt
-  \item \alert{The $\ell_1$ penalty sets coefficients exactly to zero}, so lasso
-        performs variable selection and estimation simultaneously.
-  \item Geometrically: the $\ell_1$ constraint region is a diamond with corners on
-        the axes, and the contours of the sum of squares typically first touch it
-        at a corner. The $\ell_2$ region is a ball with no corners, hence no
-        exact zeros.
-  \item Lasso suits \alert{approximate sparsity}: a few predictors matter, the
-        rest are approximately irrelevant.
-  \item \textbf{Elastic net} mixes them,
-        $\lambda\big(\alpha\sum|\beta_j| + \tfrac{1-\alpha}{2}\sum\beta_j^2\big)$,
-        which handles groups of correlated predictors better than pure lasso.
+  \item Fit in the sample, plus $\lambda$ times the total absolute size of the coefficients.
+  \item $\lambda = 0$ is OLS. As $\lambda$ grows, more coefficients are set
+        \emph{exactly} to zero: lasso selects variables and estimates them at once.
+  \item \textbf{Standardize} the regressors first (software does), so the penalty does
+        not depend on whether income is in dollars or thousands.
+\end{itemize}
+\vskip-2pt
+\begin{center}\small
+GSS, 243 terms, 2,456 training cases \srcp{figs/w12\_690s.R, C}:\quad
+\begin{tabular}{@{}lccc@{}}
+\toprule
+$\lambda$ (glmnet scale) & 0.35 & 0.024 & 0.0014 \\
+terms kept & 0 & 42 & 179 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}{Lasso: Fixing All But One Coefficient\core}
+The lasso minimizes, over $b_1, \dots, b_p$,
+\[
+  L(b) = \sum_{i=1}^n \Big(Y_i - \sum_{k=1}^p X_{ik} b_k\Big)^2 + \lambda \sum_{k=1}^p |b_k| ,
+\]
+with regressors standardized: mean 0, variance 1, so $\sum_i X_{ij}^2 = n$.
+\vskip4pt
+\textbf{One coefficient at a time.} Fix every $b_k$ with $k \neq j$ at its current value (the
+algorithm starts from all zeros). Let $R_i = Y_i - \sum_{k\neq j} X_{ik} b_k$, the part of $Y_i$
+the other regressors leave unexplained. As a function of $b_j$ alone,
+\[
+  L(b_j) = \sum_{i=1}^n \big(R_i - X_{ij} b_j\big)^2 + \lambda\,|b_j| + \text{terms without } b_j .
+\]
+{\small Solve for $b_j$, update it, move to the next $j$ using the updated values, and cycle
+until nothing changes (\textit{coordinate descent}, \texttt{glmnet}). The loss is convex, so the
+starting values do not change the answer.}
+\end{frame}
+
+\begin{frame}{Lasso: the First-Order Condition\core}
+For $b_j \neq 0$, $|b_j|$ has derivative $\text{sign}(b_j)$ ($+1$ or $-1$). Set $\partial L/\partial b_j = 0$:
+\begin{align*}
+  -2\sum_i X_{ij}\big(R_i - X_{ij} b_j\big) + \lambda\,\text{sign}(b_j) &= 0
+   && \text{\footnotesize chain rule} \\
+  -2\sum_i X_{ij} R_i + 2 b_j \sum_i X_{ij}^2 + \lambda\,\text{sign}(b_j) &= 0
+   && \text{\footnotesize multiply out} \\
+  -2n\,\hat b_j + 2n\, b_j + \lambda\,\text{sign}(b_j) &= 0
+   && \text{\footnotesize $\textstyle\sum_i X_{ij}^2 = n$; $\hat b_j = \frac1n \sum_i X_{ij} R_i$} \\
+  b_j &= \hat b_j - \frac{\lambda}{2n}\,\text{sign}(b_j)
+   && \text{\footnotesize solve for $b_j$}
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item $\hat b_j$ is the least-squares answer: set $\lambda = 0$ and the condition gives $b_j = \hat b_j$.
+  \item The lasso moves it toward zero by $\lambda/(2n)$: down if $b_j > 0$, up if $b_j < 0$.
+  \item The formula assumes $b_j \neq 0$. Next: when is $b_j = 0$?
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Three Penalties, One Coefficient}
-Orthonormal design ($\X'\X = \Ix$), OLS estimate $b_j$. Minimize
-$(b_j - \beta_j)^2 + \text{penalty}$ coefficient by coefficient:
-\begin{columns}[T]
-\begin{column}{0.48\linewidth}
+\begin{frame}{The Kink Decides: When Is $b_j$ Zero?\core}
+At $b_j = 0$, $|b_j|$ has a kink: slope $-1$ to the left, $+1$ to the right, so any value in
+$[-1, 1]$ is a valid slope there (the \textit{subgradient}). Collect the three cases:
 \begin{align*}
-  \text{ridge, } \lambda\beta^2: &\quad \hat\beta_j = \frac{b_j}{1+\lambda} \\
-  \text{lasso, } \lambda|\beta|: &\quad \hat\beta_j = \text{sign}(b_j)\big(|b_j| - \tfrac{\lambda}{2}\big)_+ \\
-  \text{best subset}: &\quad \hat\beta_j = b_j\,\mathds 1\{|b_j| > \sqrt{\lambda}\}
+  b_j > 0:&\quad b_j = \hat b_j - \tfrac{\lambda}{2n}, \text{ which is positive only if } \hat b_j > \tfrac{\lambda}{2n} \\
+  b_j < 0:&\quad b_j = \hat b_j + \tfrac{\lambda}{2n}, \text{ which is negative only if } \hat b_j < -\tfrac{\lambda}{2n} \\
+  b_j = 0:&\quad 0 \in -2n\hat b_j + \lambda\,[-1, 1] \;\Longleftrightarrow\; |\hat b_j| \leq \tfrac{\lambda}{2n}
 \end{align*}
-{\footnotesize Lasso: for $\beta_j > 0$ the derivative $-2(b_j - \beta_j) + \lambda = 0$
-gives $b_j - \lambda/2$; if that is negative the minimum sits at 0.}
+\begin{columns}[c]
+\begin{column}{0.58\linewidth}
+\textbf{In one line} (\textit{soft thresholding}):
+\[
+  b_j = \text{sign}(\hat b_j)\,\Big(|\hat b_j| - \tfrac{\lambda}{2n}\Big)_+
+\]
+{\small Move the least-squares answer toward zero by $\lambda/(2n)$; if that would cross zero,
+stop at zero. A weak regressor is dropped.}
 \end{column}
-\begin{column}{0.5\linewidth}
+\begin{column}{0.4\linewidth}
 \begin{center}
-\begin{tikzpicture}[scale=0.45]
-  \draw[->] (-3.2,0) -- (3.4,0) node[right]{\scriptsize $b_j$};
-  \draw[->] (0,-3.0) -- (0,3.2) node[above]{\scriptsize $\hat\beta_j$};
+\begin{tikzpicture}[scale=0.4]
+  \draw[->] (-3.2,0) -- (3.4,0) node[right]{\scriptsize $\hat b_j$};
+  \draw[->] (0,-3.0) -- (0,3.2) node[above]{\scriptsize lasso $b_j$};
   \draw[gray,dashed] (-3,-3) -- (3,3);
-  \draw[dukeblue,very thick] (-3,-2) -- (3,2);
   \draw[accent,very thick] (-3,-2.2) -- (-0.8,0) -- (0.8,0) -- (3,2.2);
-  \draw[black,thick] (-3,-3) -- (-1.2,-1.2); \draw[black,thick] (-1.2,0) -- (1.2,0); \draw[black,thick] (1.2,1.2) -- (3,3);
-  \node[dukeblue] at (2.4,1.15) {\scriptsize ridge};
-  \node[accent] at (1.65,2.25) {\scriptsize lasso};
-  \node at (2.0,3.05) {\scriptsize subset};
-  \node[gray] at (-2.3,-2.85) {\scriptsize OLS};
+  \draw[gray] (0.8,0.1) -- (0.8,-0.1) node[below]{\tiny $\frac{\lambda}{2n}$};
 \end{tikzpicture}
 \end{center}
 \end{column}
 \end{columns}
-\begin{itemize}\itemsep0pt
-  \item Ridge scales everything down; lasso subtracts a constant and stops at
-        zero (\textbf{soft thresholding}); best subset keeps or kills (hard).
-  \item Lasso's degrees of freedom are, on average, the number of nonzero
-        coefficients \srcp{Zou, Hastie, and Tibshirani 2007}.
+\end{frame}
+
+\begin{frame}{The Lasso When Data Are High-Dimensional\core}
+400 regressors, only 100 cases: OLS has no unique answer. True coefficients $7/j^2$: two matter
+(7 and 1.75); the other 398 are tiny \srcp{figs/w12\_sparsity.R}. Lasso with $\lambda = 0.4$:
+\vskip-2pt
+\begin{center}
+\includegraphics[width=0.58\linewidth]{figs/lasso_sim.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep2pt\small
+  \item It keeps exactly the two that matter and sets the other 398 to 0, as the kink predicts.
+  \item \alert{Shrinkage bias}: the two come out at 5.34 and 0.58, pulled toward 0 from 7 and 1.75.
+  \item A smaller $\lambda$ (the CV minimum, 0.23) also lets in a few regressors that correlate
+        with $Y$ by chance, each with a tiny coefficient.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{The Lasso Path on the GSS}
-294 terms (main effects, interactions, squares), 2,456 training cases
-\srcp{figs/w12\_gss.R}:
-\vskip-2pt
+Lasso on the 243 GSS terms, 2,456 training cases, for 100 values of $\lambda$ \srcp{figs/w12\_gss.R}:
 \begin{center}
-\includegraphics[width=0.86\linewidth]{figs/lasso_path.pdf}
+\includegraphics[width=0.84\linewidth]{figs/lasso_path.pdf}
 \end{center}
-\vskip-9pt
-\begin{itemize}\itemsep1pt\small
-  \item Left: coefficients enter one by one as $\lambda$ falls. Right: CV error;
-        the dashed lines mark the minimum (48 terms) and the 1-se choice (12 terms).
+\vskip-6pt
+\begin{itemize}\itemsep2pt\small
+  \item \textbf{Left}: one line per coefficient as the penalty falls. At a huge $\lambda$ all are 0; then
+        they enter one by one. Female enters first (a dummy: its coefficient is the whole gap).
+  \item \textbf{Right}: CV error for each $\lambda$ ($\pm 1$ s.e.): too large underfits, too small overfits.
+        Minimum: 43 terms. The \textbf{1-se rule} takes the largest $\lambda$ within one s.e.\ of the minimum: 17 terms, a simpler model that predicts about as well. How CV works: later.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Approximate Sparsity\adv}
+\begin{itemize}\itemsep2pt
+  \item Lasso works best when the true coefficients are approximately sparse:
+  \begin{itemize}\itemsep1pt
+    \item a small group of regressors with relatively large coefficients suffices
+          to approximate the regression $\sum_j \beta_j X_{ij}$;
+    \item the rest have small coefficients and add little.
+  \end{itemize}
+  \item A classic example: $\beta_j \propto 1/j^2$, $j = 1, \dots, p$.
+\end{itemize}
+\vskip-10pt
+\begin{center}
+\includegraphics[width=0.42\linewidth]{figs/sparse_beta.pdf}
+\end{center}
+\vskip-8pt
+{\footnotesize $\beta_j = 7/j^2$: 7 at $j = 1$, 1.75 at 2, 0.28 at 5, 0.07 at 10; beyond that they barely matter.}
+\end{frame}
 
-\begin{frame}{Choosing $\lambda$, and a Warning About Interpretation\core}
+\subsection{Ridge and Elastic Net}
+
+\begin{frame}{Ridge Regression for Dense Coefficients\core}
+\begin{itemize}\itemsep4pt
+  \item Lasso does best when a few coefficients are large; ridge when many are small:
+  \begin{align*}
+    \hat\beta^{\text{ridge}} = \argmin_{b\in\R^{p}}\ \sum_{i=1}^n\big(Y_i - \textstyle\sum_{j} X_{ij} b_j\big)^2
+    + \lambda \sum_{j=1}^{p} b_j^2
+  \end{align*}
+  \item The penalty is the squared ($\ell_2$) size instead of the absolute ($\ell_1$) size.
+  \item Ridge penalizes \emph{large} coefficients much more aggressively and
+        \emph{small} ones much less. The marginal cost of moving $b_j$:
+  \begin{center}\small
+  \begin{tabular}{@{}lccc@{}}
+  \toprule
+  & $b_j = 0.1$ & $b_j = 1$ & $b_j = 2$ \\
+  \midrule
+  lasso, $\partial(\lambda|b_j|)/\partial b_j = \lambda$ & $\lambda$ & $\lambda$ & $\lambda$ \\
+  ridge, $\partial(\lambda b_j^2)/\partial b_j = 2\lambda b_j$ & $0.2\lambda$ & $2\lambda$ & $4\lambda$ \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  \item Near zero ridge's cost vanishes, so no coefficient is ever pushed exactly to
+        0: ridge keeps every regressor, each a little, which suits a dense truth.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Ridge, One Coefficient at a Time\core}
+Same steps with $\lambda b_j^2$ in place of $\lambda |b_j|$. No kink, so one first-order condition:
+\begin{align*}
+  -2\sum_i X_{ij}\big(R_i - X_{ij} b_j\big) + 2\lambda b_j = -2n\hat b_j + 2n b_j + 2\lambda b_j = 0
+  \;\Rightarrow\; b_j = \hat b_j\cdot\frac{n}{n + \lambda}
+\end{align*}
+\vskip-2pt
+{\small Example: $n = 100$, ridge $\lambda = 25$ (factor $100/125 = 0.8$), lasso $\lambda = 40$ (threshold 0.20)
+\srcp{figs/w12\_690s.R, B}:}
+\begin{center}\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& OLS & ridge & lasso \\
+\midrule
+strong regressor & 0.30 & $0.30\times 0.8 = 0.24$ & 0.10 \\
+weak regressor & 0.15 & $0.15\times 0.8 = 0.12$ & 0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt\small
+  \item Ridge \emph{multiplies} every coefficient by $n/(n + \lambda)$; lasso \emph{subtracts}
+        $\lambda/(2n)$ and stops at 0. Ridge never reaches zero, so it never selects.
+  \item $\lambda = 0$ is OLS; $\lambda \to \infty$ sends every slope to 0.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where Ridge Wins: Many Small Effects\core}
+\begin{center}
+\includegraphics[width=0.84\linewidth]{figs/dense_beta.pdf}
+\end{center}
+\vskip-6pt
+\begin{itemize}\itemsep2pt\small
+  \item \textbf{Dense} (left): every coefficient small, none dominant. Ridge does best: it keeps
+        every regressor and shrinks each a little, where the lasso would drop real small effects.
+  \item Ridge does \emph{not} select: all $p$ regressors stay in, so it does not make the model smaller.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Elastic Net for Sparse \emph{or} Dense Coefficients\core}
+\begin{itemize}\itemsep4pt
+  \item Ridge and lasso can be combined to do well in either \textit{sparse} or
+        \textit{dense} settings. The elastic net, with tuned penalty levels:
+  \begin{align*}
+    \hat\beta^{\text{EN}} = \argmin_{b\in\R^{p}}\ \sum_{i=1}^n\big(Y_i - \textstyle\sum_{j} X_{ij} b_j\big)^2
+    + \lambda_1 \sum_{j=1}^{p} b_j^2 + \lambda_2 \sum_{j=1}^{p}|b_j|
+  \end{align*}
+  \item Choosing $\lambda_1$ and $\lambda_2$ gives more flexibility for a good
+        prediction rule than ridge or lasso alone.
+  \item It still selects variables unless we shut the lasso penalty off with
+        $\lambda_2 = 0$.
+  \item It handles groups of correlated predictors better than pure lasso: the ridge
+        part spreads weight across the group instead of picking one.
+  \item In \texttt{glmnet}: one $\lambda$ and a mixing weight $\alpha$,
+        $\lambda\big(\alpha\sum|b_j| + \tfrac{1-\alpha}{2}\sum b_j^2\big)$; $\alpha = 1$ is
+        lasso, $\alpha = 0$ ridge.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Poverty From Phone Records}
+\textbf{The question.} Blumenstock, Cadamuro, and On (2015): Rwanda has few reliable, recent measures of who is poor and where.
+Can mobile phone records stand in for a household survey?
+\vskip1pt
+\textbf{The data.} Phone surveys of 856 randomly sampled subscribers (assets, housing)
+give a wealth index; each respondent's call records give \emph{several thousand}
+metrics: call volume, timing, contacts' network, mobility.
+\vskip1pt
+\textbf{The method.} $p \gg n$: thousands of candidate regressors for 856 people. Exactly
+our setting. \alert{Elastic net} drops the irrelevant metrics; $\lambda$ chosen by
+cross-validation.
+\vskip1pt
+\textbf{The results.}
+\begin{itemize}\itemsep1pt
+  \item Cross-validated correlation between predicted and surveyed wealth: $r = 0.68$.
+  \item Averaged over Rwanda's 30 districts, the predictions match the government's
+        in-person DHS survey of 12,792 households: $r = 0.92$.
+  \item Tree ensembles gave similar results: the gain came from the regularized
+        search over many features, not from one special method.
+\end{itemize}
+\end{frame}
+
+\subsection{Choosing $\lambda$}
+
+\begin{frame}{Choosing a Tuning Parameter Needs a Third Piece\core}
+Every method today has a tuning parameter: the penalty $\lambda$, tree depth, network size. Three jobs,
+three pieces of data:
+\vskip4pt
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \fill[dukeblue!20] (0,0) rectangle (5,0.8);
+  \fill[accent!25] (5,0) rectangle (7,0.8);
+  \fill[gray!35] (7,0) rectangle (10,0.8);
+  \draw[gray!70] (0,0) rectangle (10,0.8); \draw[gray!70] (5,0) -- (5,0.8); \draw[gray!70] (7,0) -- (7,0.8);
+  \node at (2.5,0.4) {\small training};
+  \node at (6,0.4) {\small validation};
+  \node at (8.5,0.4) {\small test};
+  \draw[decorate,decoration={brace,mirror,amplitude=4pt}] (0,-0.1) -- (7,-0.1)
+    node[midway,below=4pt,font=\footnotesize] {the original training set};
+\end{tikzpicture}
+\end{center}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lll@{}}
+\toprule
+job & data & what goes wrong if you use the wrong piece \\
+\midrule
+fit $\hat f$ for a given $\lambda$ & training & --- \\
+choose $\lambda$ & validation & training error always picks the most flexible \\
+report the error & test & tuning on the test set makes it optimistic again \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\small Choosing the best of many settings on a set of cases fits that set's noise. The
+test set must stay untouched until the very end.}
+\end{frame}
+
+\begin{frame}{$K$-Fold Cross-Validation: Reuse the Training Set\core}
+One validation set wastes data and depends on which cases land in it. Instead, let every
+training case take a turn \srcp{$K = 5$}:
+\vskip4pt
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=0.42cm]
+  \foreach \r in {1,...,5} {
+    \foreach \b in {1,...,5} {
+      \pgfmathsetmacro{\xa}{1.4*(\b-1)}
+      \ifnum\b=\r
+        \fill[accent!35] (\xa,-\r) rectangle ++(1.4,0.8);
+      \else
+        \fill[dukeblue!20] (\xa,-\r) rectangle ++(1.4,0.8);
+      \fi
+      \draw[white, line width=1pt] (\xa,-\r) rectangle ++(1.4,0.8);
+    }
+    \fill[gray!20] (7.3,-\r) rectangle ++(2.2,0.8);
+    \node[left, font=\footnotesize] at (-0.05,-\r+0.4) {round \r};
+  }
+  \node[font=\footnotesize, gray] at (8.4,-2.6) {test set};
+  \node[font=\footnotesize, gray] at (8.4,-3.4) {untouched};
+  \node[font=\footnotesize] at (3.5,0.4) {training set, cut into 5 folds};
+\end{tikzpicture}
+\end{center}
+\vskip2pt
+\begin{enumerate}\itemsep2pt\small
+  \item In round $b$, fit on the four blue folds and predict the orange fold.
+  \item Average the five fold errors: the CV error of one value of $\lambda$.
+  \item Repeat for every setting; choose the one with the smallest CV error.
+  \item Refit on the whole training set with that setting. Score it on the test set, once.
+\end{enumerate}
+{\small Every training case is predicted exactly once, by a model that never saw it.}
+\end{frame}
+
+\begin{frame}{Choosing $\lambda$ by Cross-Validation on the GSS\core}
+The recipe of the previous slide, for $\lambda$. Lasso, 243 terms, 2,456 training
+cases in 5 folds of about 491 \srcp{figs/w12\_690s.R, C}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+left-out fold & $\lambda = 0.35$ (0 terms) & $\lambda = 0.024$ (42 terms) & $\lambda = 0.0014$ (179 terms) \\
+\midrule
+1 & 0.853 & 0.665 & 0.695 \\
+2 & 0.930 & 0.708 & 0.748 \\
+3 & 0.948 & 0.759 & 0.813 \\
+4 & 0.784 & 0.537 & 0.568 \\
+5 & 0.811 & 0.591 & 0.670 \\
+\midrule
+CV-MSE & 0.865 & \alert{0.652} & 0.699 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt\small
+  \item Across a row: in every fold the middle $\lambda$ predicts best. Too large keeps
+        nothing (bias); too small keeps 179 terms (variance).
+  \item Down a column: folds differ (0.54 to 0.76), so we average. \texttt{cv.glmnet}
+        does this over 100 values of $\lambda$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Cross-Validation: Two Rules\core}
+\begin{itemize}\itemsep4pt
+  \item $K = 5$ or $10$ is standard: leave-one-out ($K = n$) has low bias but high
+        variance and is expensive.
+  \item \alert{Everything data-dependent happens inside each round}, on the $K - 1$ training folds
+        only, not once on the whole training set: variable selection, standardization,
+        imputation. So the selected variables may differ slightly from fold to fold; that is
+        correct. Selecting on all the data first is a serious leak (Lab 12 shows it).
+  \item With dependence (panels, clusters, time) \alert{split on the independent
+        unit}, not on rows. Same rule as the bootstrap in Week 2.
+  \item If $\lambda$ is chosen by CV, the CV error at that $\lambda$ is optimistic:
+        report error on a test set never used for tuning.
+\end{itemize}
+\end{frame}
+
+\subsection{Why It Works: Bias and Variance}
+
+\begin{frame}{Why the U-Shape? Bias and Variance\core}
+The CV error fell, then rose, as $\lambda$ shrank. Why? Let $f(x)$ be the average of $Y$ among
+everyone with $X = x$, the best possible prediction. Our $\hat f(x)$ changes from sample to sample:
+\begin{align*}
+  \text{Bias}\big(\hat f(x)\big) &= \E\big[\hat f(x)\big] - f(x)
+   && \text{\footnotesize average prediction minus the truth} \\
+  \Var\big(\hat f(x)\big) &= \E\Big[\big(\hat f(x) - \E[\hat f(x)]\big)^2\Big]
+   && \text{\footnotesize scatter around that average} \\
+  \text{MSE}(x) &= \E\Big[\big(\hat f(x) - f(x)\big)^2\Big]
+   && \text{\footnotesize average squared distance from the truth}
+\end{align*}
 \begin{itemize}\itemsep3pt
-  \item \textbf{Cross-validation} over a grid of $\lambda$: pick the minimizer, or
-        the ``one standard error'' rule, the largest $\lambda$ within one
-        standard error of the minimum, which buys a simpler model at almost no
-        predictive cost.
-  \item There are also \textbf{theoretically derived} penalties that set
-        $\lambda$ from the model rather than by cross-validation. They matter when
-        the lasso is a \emph{step inside} an inference procedure rather than the
-        final answer.
+  \item \textbf{Bias}: wrong on average. Rigid rules (large $\lambda$, few terms) have high bias.
+  \item \textbf{Variance}: unstable. Flexible rules (small $\lambda$, many terms) have high variance.
+  \item Expectations are over repeated \emph{samples}: they describe a method, not one fit.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Decomposing the MSE\core}
+Same idea as the bandwidth in Week 9:
+\begin{align*}
+  \text{MSE}(x)
+  &= \E\Big[\big((\hat f(x) - \E[\hat f(x)]) + (\E[\hat f(x)] - f(x))\big)^2\Big]
+   && \text{\footnotesize add and subtract $\E[\hat f(x)]$} \\
+  &= \E\Big[\big(\hat f(x) - \E[\hat f(x)]\big)^2\Big] + \big(\E[\hat f(x)] - f(x)\big)^2
+   && \text{\footnotesize expand the square;} \\
+  &\quad + 2\,\big(\E[\hat f(x)] - f(x)\big)\,\underbrace{\E\big[\hat f(x) - \E[\hat f(x)]\big]}_{=\,0}
+   && \text{\footnotesize the bias is a constant} \\
+  &= \Var\big(\hat f(x)\big) + \text{Bias}\big(\hat f(x)\big)^2
+\end{align*}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Average squared error = spread around the average prediction + distance of
+        that average from the truth.
+  \item For any approximation fitted on a sample, there is a trade-off between the two.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Tradeoff in One Picture\core}
+Lasso on simulated data with 400 regressors and 100 cases, many samples; error averaged over
+new people \srcp{figs/w12\_lasso\_bv.R}:
+\begin{center}
+\includegraphics[width=0.43\linewidth]{figs/lasso_bv_curve.pdf}
+\end{center}
+\vskip-6pt
+\begin{itemize}\itemsep2pt\small
+  \item Large $\lambda$ (left): few terms, predictions steady but wrong on average. Bias dominates.
+  \item Small $\lambda$ (right): many terms, predictions jump from sample to sample. Variance dominates.
+  \item Error on new people = noise + bias$^2$ + variance is lowest in between. Training error
+        keeps falling, so it cannot find that point.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{So Accept a Little Bias\core}
+\begin{itemize}\itemsep5pt
+  \item Weeks 1--2 prized unbiasedness: Gauss--Markov ranks estimators \emph{within} the
+        unbiased class. For prediction the target is total error, bias$^2$ + variance.
+  \item OLS with 243 terms and 300 cases keeps bias low and lets variance explode
+        (test $R^2$ $-11.8$). Shrinking gives up a little bias for a large cut in variance.
+  \item On the GSS, CV error 0.865 with $\lambda$ large (bias dominates), 0.699 with $\lambda$
+        small (variance dominates), 0.652 in between.
+  \item Every method after this has the same bargain and its own tuning parameter (depth for trees, size
+        and training time for networks), chosen the same way: CV on the training set, the
+        test set once, at the end.
+\end{itemize}
+\end{frame}
+
+\subsection{After Tuning}
+
+\begin{frame}{Lasso Caveats\core}
+\begin{itemize}\itemsep4pt
+  \item The estimates shrink toward zero relative to the unpenalized regression:
+        \textit{shrinkage bias} or \textit{regularization bias}. Lasso is biased
+        by design.
+  \item Lasso will not generally select the ``right'' set of variables.
+  \item It tends to exclude variables with small but nonzero true
+        coefficients (those with $|\hat b_j| \leq \lambda/(2n)$).
+  \item It tends to fail to select the right variables when the $X_i$ are
+        \textit{correlated} (next slide).
+  \item \alert{So: do not interpret the selected set as ``the variables that
+        matter'', and do not report $p$-values from a naive refit on the
+        selected set.} The selection invalidates them. Valid inference after
+        selection is Week 13's job.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Lasso Caveats: Correlated Regressors}
+\begin{itemize}\itemsep4pt
+  \item Suppose $X_1$ has coefficient $\beta_1 = 0$ but is highly correlated with
+        $X_2, \dots, X_k$, whose coefficients are nonzero.
+  \item The marginal predictive benefit of $X_1$ can be very high when
+        $X_2, \dots, X_k$ are \emph{not} in the model, because $X_1$ stands in for
+        all of them; the marginal benefit of any single one of $X_2, \dots, X_k$
+        is then low.
+  \item $X_1$ may enter with a nonzero coefficient while all of $X_2, \dots, X_k$
+        are excluded.
+  \item This inability to select \emph{exactly} the right regressors is not special
+        to lasso; every variable-selection procedure shares it.
 \end{itemize}
 \vskip3pt
-\begin{alertblock}{Lasso selection is not a variable-importance ranking}
-Among correlated predictors, lasso picks one essentially arbitrarily and zeroes
-the rest. Re-run on a bootstrap sample and you may get a different set. \alert{Do
-not interpret the selected set as ``the variables that matter'',} and do not
-report post-lasso $p$-values from a naive refit, the selection invalidates
-them. Valid post-selection inference is exactly what Week 13 is for.
-\end{alertblock}
+{\small Next slide: what this means on the GSS.}
 \end{frame}
 
 \begin{frame}{Selection Is Not Importance, on the GSS}
-Lasso on the 25 main-effect columns, 100 bootstrap samples, 1-se rule
+Lasso on the 23 main-effect columns, 100 bootstrap samples, $\lambda$ by the 1-se rule (path slide)
 \srcp{figs/w12\_gss.R}:
 \begin{center}\footnotesize
 \renewcommand{\arraystretch}{1.0}
@@ -532,84 +821,534 @@ Lasso on the 25 main-effect columns, 100 bootstrap samples, 1-se rule
 \toprule
 variable & share of samples selected & variable & share \\
 \midrule
-education, age, female, SEI & 1.00 & parents' education & 0.78 \\
-hours worked & 1.00 & vocabulary score & 0.58 \\
-ever married & 0.99 & Black & 0.26 \\
-year 2022 & 0.80 & \alert{occupational prestige} & \alert{0.01} \\
+education, age, female, ever married & 1.00 & parents' education & 0.87 \\
+vocabulary score & 0.99 & Black & 0.85 \\
+hours worked & 0.97 & Mountain, Pacific region & 0.34 \\
+year 2022 & 0.90 & \alert{number of children} & \alert{0.09} \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip3pt
 \begin{itemize}\itemsep2pt
-  \item Prestige and SEI correlate at 0.82. Lasso keeps SEI every time and
-        prestige once in 100: not because prestige does not predict earnings, but because
-        SEI already carries that information.
-  \item A random forest's permutation importance ranks prestige third (after SEI
-        and education). Two tools, two stories, same data.
-  \item Middle-frequency variables (vocabulary, parents' education) flip in and
-        out: the selected set has sampling variability \srcp{Mullainathan and Spiess 2017}.
+  \item Strong predictors are kept every time; weaker ones (the regions) flip in and out:
+        the selected set has sampling variability \srcp{Mullainathan and Spiess 2017}.
+  \item Children: dropped in 91\% of samples. Yet the forest ranks it 7th: a forest can use it
+        through interactions, a main-effect lasso cannot \srcp{figs/w12\_importance.R}.
+  \item Two tools, two stories, same data. Neither ranking measures how much a variable matters.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Post-Lasso\core}
+\begin{itemize}\itemsep4pt
+  \item One way to undo the \textit{shrinkage bias}: refit OLS using only the
+        regressors whose lasso coefficients are nonzero.
+  \item This is ``least squares post lasso'', or \textit{post-lasso}:
+  \begin{align*}
+    \hat\beta^{\text{post}} = \argmin_{b\in\R^p}\ \sum_{i=1}^n\big(Y_i - \textstyle\sum_{j} X_{ij} b_j\big)^2
+    \quad\text{such that } b_j = 0 \text{ if } \hat\beta_j^{\text{lasso}} = 0
+  \end{align*}
+  \item Lasso chooses \emph{which} variables; OLS chooses \emph{how large}.
+  \item Removing the shrinkage of the nonzero coefficients sometimes improves
+        prediction, and sometimes does not.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Post-Lasso on the GSS}
+Standardized coefficients, lasso on the 23 main effects ($\lambda$ by the 1-se rule, path slide),
+then OLS on the 9 kept \srcp{figs/w12\_690s.R, D}:
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+& educ & age & female & Black & vocab. & par.\ educ & hours & married & 2022 \\
+\midrule
+lasso & 0.251 & 0.103 & $-0.121$ & $-0.017$ & 0.043 & 0.024 & 0.050 & 0.058 & 0.028 \\
+post-lasso & 0.286 & 0.155 & $-0.174$ & $-0.058$ & 0.061 & 0.070 & 0.101 & 0.098 & 0.087 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item Every lasso coefficient is smaller in size: the female gap grows from
+        $-0.121$ to $-0.174$ once the shrinkage is removed.
+  \item Test $R^2$ on the 243-term design: CV lasso (45 terms) 0.261 $\to$ post-lasso 0.246.
+        Removing shrinkage does not always help prediction.
+\end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Trees]{Trees and Ensembles}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}[allowframebreaks,t]{Regression Trees\core}
-Ridge and lasso control complexity, but both still start from an \emph{additive
-linear} rule: you choose the variables, and an interaction exists only if you
-type it. Trees are the first method we meet that finds nonlinearities and
-interactions on its own.
-\vskip3pt
-Recursively split the covariate space to minimize within-node sum of squares; the
-prediction in a leaf is the mean of the training outcomes there.
-\vskip3pt
-\begin{center}
-\begin{tikzpicture}[scale=0.78,>=Stealth,thick,font=\scriptsize]
-  \node[draw=dukeblue,rounded corners,inner sep=3pt] (r) at (0,2.4) {educ $< 13$?};
-  \node[draw=dukeblue,rounded corners,inner sep=3pt] (l) at (-2.2,1.1) {exper $< 20$?};
-  \node[draw=accent,rounded corners,inner sep=3pt] (rr) at (2.2,1.1) {$\hat Y = 10.6$};
-  \node[draw=accent,rounded corners,inner sep=3pt] (ll) at (-3.6,-0.1) {$\hat Y = 9.2$};
-  \node[draw=accent,rounded corners,inner sep=3pt] (lr) at (-1.0,-0.1) {$\hat Y = 9.8$};
-  \draw[->,dukeblue] (r)--(l) node[midway,above left]{yes};
-  \draw[->,dukeblue] (r)--(rr) node[midway,above right]{no};
-  \draw[->,dukeblue] (l)--(ll); \draw[->,dukeblue] (l)--(lr);
-\end{tikzpicture}
-\end{center}
-\vskip-4pt
-\begin{itemize}\itemsep2pt
-  \item \textbf{Strengths}: automatic interactions and nonlinearity; invariant to
-        monotone transformations; handles mixed variable types; readable.
-  \item \alert{Weaknesses}: high variance, a small change in the data can
-        change the first split and hence everything below it. A single deep tree
-        overfits badly; a shallow one underfits.
-  \item Pruning with a complexity penalty helps but does not solve it. The real
-        fix is to average many trees.
+\begin{frame}{From Linear to Nonlinear Models\core}
+\begin{itemize}\itemsep4pt
+  \item We want to predict $Y_i$ from $p$ regressors $X_i$.
+  \item So far the prediction rule was \textit{linear}: OLS, lasso, ridge. You choose
+        the variables, and an interaction exists only if you type it.
+  \item In reality the pattern is rarely linear; it has thresholds, curves, and
+        interactions.
+  \item Two classes of flexible methods find them on their own: \textbf{tree-based
+        methods} and \textbf{neural networks}.
+  \item Both are commonly used as the \textit{nuisance} learners inside double
+        machine learning (Week 13).
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Growing and Pruning a Tree}
-\textbf{Grow}: at each node, over every variable $j$ and cut point $s$, split
-into $R_1 = \{x_j < s\}$ and $R_2 = \{x_j \geq s\}$ to minimize
+\begin{frame}{Regression Trees\core}
+\begin{itemize}\itemsep4pt
+  \item Partition the regressor space (where $X_i$ takes values) into a set of
+        \textit{rectangles}, and fit a simple model within each.
+  \item The splitting rules can be drawn as a tree, hence \textit{decision trees}.
+  \item The most common choice fits a \emph{constant} in each rectangle, so the
+        unknown function is approximated by a \textit{step function}. With $J$
+        regions $R_1, \dots, R_J$:
+  \[
+    f(X_i) = \sum_{j=1}^J \beta_j\,\mathds 1(X_i \in R_j),
+  \]
+        where $\beta_j$ is a constant for region $j$ and $\mathds 1(\cdot)$ the indicator.
+  \item It is a regression on $J$ dummies, one per leaf, whose definition the data choose.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Each Leaf Predicts Its Average\core}
+Given a partition, choose the constants to minimize the in-sample sum of squares:
 \begin{align*}
-  \sum_{i \in R_1}(Y_i - \bar Y_{R_1})^2 + \sum_{i \in R_2}(Y_i - \bar Y_{R_2})^2 ;
+  \hat\beta &= \argmin_{b_1,\dots,b_J}\ \sum_{i=1}^n\Big(Y_i - \sum_{j=1}^J b_j\,\mathds 1(X_i\in R_j)\Big)^2 \\
+  &= \argmin_{b_1,\dots,b_J}\ \sum_{j=1}^J\ \sum_{i\in R_j}\big(Y_i - b_j\big)^2
+   && \text{\footnotesize each $i$ is in exactly one region}
 \end{align*}
-repeat in each child until nodes are small. Greedy: each split is best given the
-splits above it, not best overall.
-\vskip3pt
-\textbf{Prune}: among subtrees $T$ of the big tree, minimize
+The problem separates by region. For region $j$:
 \begin{align*}
-  C_\alpha(T) = \sum_{\text{leaves } m}\ \sum_{i\in R_m}(Y_i - \bar Y_{R_m})^2 + \alpha\,|T| ,
+  -2\sum_{i\in R_j}(Y_i - b_j) = 0
+  \quad\Longrightarrow\quad
+  \hat\beta_j = \frac{1}{n_j}\sum_{i\in R_j} Y_i = \bar Y_{R_j}
+   && \text{\footnotesize $n_j$ cases in $R_j$}
 \end{align*}
-with $|T|$ the number of leaves and $\alpha$ by cross-validation: the lasso idea,
-penalizing size.
+\begin{itemize}\itemsep3pt
+  \item The prediction in a leaf is the average outcome of the training cases in it,
+        exactly the dummy-regression result of Week 1.
+  \item The hard part is choosing the rectangles.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Recursive Binary Splitting\core}
+\begin{columns}[c]
+\begin{column}{0.47\linewidth}
+\begin{center}
+\includegraphics[height=0.5\textheight]{figs/tree_step1.pdf}\\[-1pt]
+{\footnotesize The tree: each node asks one yes/no question}
+\end{center}
+\end{column}
+\begin{column}{0.47\linewidth}
+\begin{center}
+\includegraphics[height=0.5\textheight]{figs/tree_step2.pdf}\\[-1pt]
+{\footnotesize The same tree as rectangles in $(X_1, X_2)$}
+\end{center}
+\end{column}
+\end{columns}
+\vskip6pt
+{\small Every split cuts one existing rectangle in two along one variable. The leaves
+are the final rectangles, each with its own constant.}
+\end{frame}
+
+\begin{frame}{A Depth-3 Tree for Wages}
+\begin{center}
+\includegraphics[width=0.95\linewidth]{figs/wage_tree.pdf}
+\end{center}
+\vskip-4pt
+{\footnotesize Depth 3: three questions from the root to any leaf, at most $2^3 = 8$ leaves
+\srcp{CPS wage data}.}
+\end{frame}
+
+\begin{frame}{Growing a Regression Tree\core}
+\begin{itemize}\itemsep4pt
+  \item The cut points are chosen from the data, not fixed in advance.
+  \item To keep computation tractable we split recursively, two children at a time.
+  \item At each node, consider every predictor $X_1, \dots, X_p$. For predictor $X_j$
+        and threshold $s$, form the binary split
+  \[
+    R_L = \{i: X_{ij} \leq s\}, \qquad R_R = \{i: X_{ij} > s\}
+  \]
+  \item Compute the sum of squared errors after the split,
+  \[
+    \text{SSE}(j, s) = \sum_{i\in R_L}\big(Y_i - \bar Y_L\big)^2 + \sum_{i\in R_R}\big(Y_i - \bar Y_R\big)^2,
+  \]
+        with $\bar Y_L, \bar Y_R$ the mean outcomes in the two children.
+  \item Choose the $(j, s)$ with the smallest $\text{SSE}(j, s)$: the largest
+        reduction in MSE.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{One Split by Hand}
+Six people, one predictor (years of schooling) \srcp{figs/w12\_690s.R, F}:
+\begin{center}\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+schooling & 10 & 12 & 12 & 14 & 16 & 18 \\
+log earnings & 9.6 & 9.8 & 10.0 & 10.4 & 10.8 & 11.0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+No split: everyone gets the mean 10.27, SSE $= 1.573$. Try every cut:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+cut & left: $n$, mean & right: $n$, mean & $\text{SSE}_L + \text{SSE}_R$ & total \\
+\midrule
+$\leq 11$ & 1, 9.60 & 5, 10.40 & $0.000 + 1.040$ & 1.040 \\
+$\leq 13$ & 3, 9.80 & 3, 10.73 & $0.080 + 0.187$ & \alert{0.267} \\
+$\leq 15$ & 4, 9.95 & 2, 10.90 & $0.350 + 0.020$ & 0.370 \\
+$\leq 17$ & 5, 10.12 & 1, 11.00 & $0.928 + 0.000$ & 0.928 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\small Split at 13 (the high-school/college line): the SSE falls by 83\%. Prediction: 9.80
+with at most 12 years, 10.73 with more. With more predictors, the same search runs over every variable.}
+\end{frame}
+
+\begin{frame}{The First Split on the GSS}
+The 23 main-effect predictors, 2,456 training cases; \texttt{rpart} searches every
+variable and every cut \srcp{figs/w12\_690s.R, F2}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+node & $n$ & mean log earnings & SSE \\
+\midrule
+root (everyone) & 2,456 & 9.94 & 2,129.5 \\
+schooling $< 15.5$ years & 1,407 & 9.66 & 1,137.5 \\
+schooling $\geq 15.5$ years & 1,049 & 10.31 & 733.0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt\small
+  \item SSE falls from 2,129.5 to $1{,}137.5 + 733.0 = 1{,}870.5$, a 12.2\% cut: the
+        training $R^2$ of a one-split tree. The cut is the college line.
+  \item The next splits differ by branch: without a degree, the tree splits next on
+        \emph{female}; with one, on \emph{age} (at 32.5). Sex matters first in one branch,
+        age in the other: an \textbf{interaction} nobody typed.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Growing a Regression Tree: Depth\core}
+\begin{itemize}\itemsep4pt
+  \item Repeat the search inside each child, recursively.
+  \item Splits at level 2 or deeper may use different variables and cut points in
+        different branches; that is how trees create interactions and
+        nonlinearities.
+  \item Stop when a prespecified depth is reached, or (more commonly) when a node
+        would have fewer than a minimum number of observations.
+  \item \textbf{Why depth matters}: the deeper the tree, the smaller the bias, but
+        the noisier the prediction, since fewer observations sit in each leaf to
+        estimate its mean. The bias--variance tradeoff again.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Depth Sets the Bias--Variance Tradeoff, on the GSS\core}
+Trees grown to a fixed depth, no other stopping \srcp{figs/w12\_690s.R, F2}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+depth & 1 & 2 & 3 & 5 & 8 & 12 & 20 \\
+\midrule
+leaves & 2 & 4 & 8 & 31 & 180 & 708 & 1,938 \\
+training $R^2$ & 0.122 & 0.168 & 0.215 & 0.313 & 0.540 & 0.769 & 0.975 \\
+test $R^2$ & 0.132 & 0.179 & \alert{0.231} & 0.218 & 0.074 & $-0.101$ & $-0.368$ \\
+\bottomrule
+\end{tabular}
+\end{center}
 \vskip3pt
-{\footnotesize GSS: a CV-pruned tree reaches test $R^2$ 0.313, below OLS (0.338). One tree is
+\begin{itemize}\itemsep3pt
+  \item Training $R^2$ rises with every level; at depth 20 the tree memorizes the
+        sample (1,938 leaves for 2,456 people).
+  \item Test $R^2$ peaks around depth 3, then collapses below zero: worse than
+        predicting the mean.
+  \item We find the right depth by validation: a train/test split or CV.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Tree Fitting a Curve}
+The noiseless curve $Y = e^{4X}$, 1,000 points; blue = truth, red = fit
+\srcp{figs/w12\_fitml.R}:
+\begin{center}
+\includegraphics[height=0.56\textheight]{figs/fitml_trees.pdf}
+\end{center}
+\vskip-6pt
+{\footnotesize Top: a shallow tree (6 leaves) is a coarse staircase; a deep tree (16 leaves)
+tracks the curve. Bottom: averaging many trees (forest) or adding many small ones
+(boosting) smooths the steps away. Next slides.}
+\end{frame}
+
+\begin{frame}{Pruning a Tree\adv}
+\begin{itemize}\itemsep4pt
+  \item Trying every possible tree structure and cross-validating each is not
+        feasible.
+  \item Better: grow a large tree $T_0$ (stop only when leaves are small), then
+        \textit{prune} it back to a \textit{subtree} $T \subset T_0$.
+  \item \textit{Cost-complexity pruning}: for a penalty $\alpha$, choose the subtree
+        that minimizes
+  \begin{align*}
+    C_\alpha(T) = \sum_{m=1}^{|T|}\ \sum_{i\in R_m}\big(Y_i - \bar Y_{R_m}\big)^2 + \alpha\,|T|,
+  \end{align*}
+        where $|T|$ is the number of leaves.
+  \item As in lasso, the penalty trades complexity against in-sample fit: each extra
+        leaf must lower the SSE by more than $\alpha$.
+  \item $\alpha$, and with it the tree, is chosen by a validation set or CV.
+\end{itemize}
+\vskip3pt
+{\footnotesize GSS: the CV-pruned tree reaches test $R^2$ 0.215, below OLS (0.251). One tree is
 too rough a step function for a mostly smooth relationship.}
 \end{frame}
 
+\begin{frame}{Bagging\core}
+\begin{itemize}\itemsep4pt
+  \item Even tuned, one tree has \textit{high variance}, especially in small samples.
+  \item \textit{Bootstrap aggregation}, or \textit{bagging}, is a general way to
+        reduce the variance of a learning method.
+  \item Recall: for independent $Z_1, \dots, Z_B$, each with variance $\sigma^2$,
+        $\Var(\bar Z) = \sigma^2/B$. Averaging cuts variance.
+  \item Draw $B$ bootstrap samples; grow a tree on each, \emph{deep} and
+        \emph{unpruned}: low bias, high variance. Average:
+  \[
+    \hat f_{\text{bag}}(x) = \frac1B\sum_{b=1}^B \hat f^{\,b}(x)
+  \]
+  \item The average keeps the low bias and sheds much of the variance. Hundreds or
+        thousands of trees are typical.
+\end{itemize}
+\vskip2pt
+{\footnotesize GSS: one deep tree, test $R^2$ $-0.264$; 500 bagged deep trees, $0.268$
+\srcp{figs/w12\_690s.R, G}.}
+\end{frame}
+
+\begin{frame}{Random Forests\core}
+\begin{itemize}\itemsep4pt
+  \item Random forests improve on bagging by \textit{decorrelating} the trees.
+  \item As in bagging, grow trees on bootstrap samples. But at each split, consider
+        only \textit{a random sample of $m$ predictors} out of the $p$, a fresh
+        sample at every split; typically $m \approx \sqrt p$ (GSS: $p = 23$, $m = 5$).
+  \item \textbf{Why}: if one strong predictor dominates the first split, every
+        bagged tree splits on it first, and the trees look alike. Averaging
+        near-copies removes little variance, and the other predictors' information
+        goes unused.
+  \item On the GSS, education is that predictor: it is the root split
+        (slide on the first GSS split).
+  \item Forcing splits to consider different subsets gives different trees, and their
+        average varies less.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why Decorrelating Trees Works\adv}
+$B$ trees, each with variance $\sigma^2$ at a point, pairwise correlation $\rho$:
+\begin{align*}
+  \Var\Big(\frac1B\sum_{b=1}^B T_b\Big)
+  &= \frac{1}{B^2}\Big(\sum_b \Var(T_b) + \sum_{b\neq b'}\Cov(T_b, T_{b'})\Big)
+   && \text{\footnotesize variance of a sum} \\
+  &= \frac{1}{B^2}\big(B\sigma^2 + B(B-1)\rho\sigma^2\big)
+   && \text{\footnotesize $B(B-1)$ ordered pairs} \\
+  &= \rho\,\sigma^2 + \frac{1-\rho}{B}\,\sigma^2
+   && \text{\footnotesize rearrange}
+\end{align*}
+\begin{itemize}\itemsep1pt\small
+  \item More trees kill only the second term. The first, $\rho\sigma^2$, is a floor.
+        With $\sigma^2 = 1$, $B = 500$: $\rho = 0.6$ gives 0.601; $\rho = 0.3$ gives 0.301.
+  \item GSS: two trees' test predictions correlate 0.34 when bagging, 0.29 in the
+        forest; test $R^2$ 0.268 vs.\ 0.274: little gain here \srcp{figs/w12\_690s.R, G}.
+  \item Out-of-bag error: each tree skips about a third of the data
+        ($(1-1/n)^n \approx e^{-1}$). GSS: OOB MSE 0.626, test MSE 0.645.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Which Variables Does the Forest Use? Two Measures\core}
+A forest averages 1,000 trees: no single tree to read, no coefficient. Instead ask
+\emph{how much the predictions depend on each variable}.
+\vskip3pt
+\textbf{1. Permutation importance.} Shuffle one column, which breaks its link with $Y$ and
+leaves its distribution unchanged. Predict again and record how much the error rises.
+\begin{itemize}\itemsep1pt\small
+  \item GSS forest, 1,053 test cases: test MSE 0.645. Shuffle education: 0.809. Its importance $= 0.164$.
+  \item \texttt{ranger} does this tree by tree, on each tree's out-of-bag cases
+        (\texttt{importance = "permutation"}).
+\end{itemize}
+\vskip3pt
+\textbf{2. Impurity importance.} Every split cuts the SSE, as in the earlier split by hand
+(the root split on schooling cut it by 259.0). Credit each cut to the variable that was split on,
+then add the cuts up within a tree and average over the trees.
+\vskip3pt
+{\footnotesize Impurity: \texttt{importance = "impurity"}, free while growing the trees. Same forest as the benchmark table: 2,456 training cases, 23 columns
+\srcp{figs/w12\_importance.R}.}
+\end{frame}
+
+\begin{frame}{Variable Importance on the GSS}
+\begin{center}
+\includegraphics[width=0.66\linewidth]{figs/rf_importance.pdf}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep2pt\small
+  \item Both put education first, then age. They disagree on \emph{female}: 3rd by permutation, 7th
+        by impurity. Female takes 2 values, age 40: more cut points, more chances to win a split by
+        luck, so impurity favours many-valued variables \srcp{Strobl et al.\ 2007}.
+  \item Use permutation, and ask for it; it is not R's default. \texttt{randomForest} reports impurity
+        unless \texttt{importance = TRUE}; \texttt{ranger} reports none unless \texttt{importance = "permutation"}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reading Importance With Care}
+\textbf{Correlated variables share credit.} Age and ever married correlate at 0.36. Rise in test
+MSE when shuffled \srcp{figs/w12\_importance.R}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lc@{}}
+\toprule
+shuffled & rise in test MSE \\
+\midrule
+age alone & 0.057 \\
+ever married alone & 0.017 \\
+sum of the two & 0.074 \\
+age and ever married \emph{together} & \alert{0.090} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt\small
+  \item Shuffle one and the forest leans on the other, so each looks less important alone
+        than the pair is jointly. Shuffle related variables as a group.
+  \item The ranking depends on the measure: hours is 3rd by impurity, 4th by
+        test-set permutation, 5th by out-of-bag permutation.
+  \item Importance describes \emph{the model's predictions}, not the world. A high score
+        says the forest relies on the variable, not that changing it changes earnings
+        (Section Interpretation).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: What Predicts Relationship Quality?}
+\textbf{The question.} Joel et al.\ (2020): researchers have proposed hundreds of variables that shape relationship
+quality. How predictable is it, and which variables actually predict it?
+\vskip2pt
+\textbf{The data.} 43 longitudinal couples studies from 29 labs: 11,196 couples, 2,413 measures at
+baseline, followed for about 14 months.
+\vskip2pt
+\textbf{The method.} A \alert{random forest} in each study (R's \texttt{randomForest}, 5,000 trees,
+$m = p/3$), variance explained judged on out-of-bag cases.
+\vskip2pt
+\textbf{Which predictors?} The \texttt{VSURF} package ranks predictors by \textbf{permutation importance}
+(how much the error rises when a variable is shuffled), drops the weak ones, then adds the rest one at
+a time and keeps those that lower the out-of-bag error. Results are pooled across the 43 studies.
+\end{frame}
+
+\begin{frame}{Joel et al.: Which Constructs the Forests Kept}
+\begin{columns}[c]
+\begin{column}{0.56\linewidth}
+\includegraphics[width=0.94\linewidth]{figs/joel_importance.pdf}
+\end{column}
+\begin{column}{0.42\linewidth}
+\small
+How often \texttt{VSURF} kept each construct across the 43 studies: a selection rate, not an
+importance score.
+\begin{itemize}\itemsep1pt
+  \item Top: perceived partner commitment (85\%), appreciation, sexual satisfaction. Bottom:
+        sacrifice motives (16\%), children (10\%).
+  \item Hollow gray: intimacy, love, trust, passion. Left out of the main models: they may be part
+        of relationship quality itself.
+  \item A rank, not an effect: no size, no direction, no causation.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Boosted Trees\core}
+\begin{itemize}\itemsep4pt
+  \item Bagging and random forests reduce \emph{variance} from low-bias estimates
+        (deep trees) by repeated sampling. \textit{Boosting} reduces \emph{bias}
+        from low-variance estimates (shallow trees) by repeatedly fitting
+        residuals.
+  \item Fit a simple rule (a shallow tree), take the \textit{residuals}, fit
+        another shallow tree to those residuals, and so on.
+  \item Each step fits what the previous steps missed, so each step reduces the
+        remaining approximation error.
+  \item Stop at a stopping criterion. The overall prediction is the sum of the
+        rules from all steps.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Boosted Trees: the Algorithm\core}
+\begin{enumerate}\itemsep4pt
+  \item Initialize the residuals: $R_i := Y_i$, $i = 1, \dots, n$.
+  \item For $j = 1, \dots, J$:
+  \begin{itemize}\itemsep2pt
+    \item fit a tree-based rule $\hat f_j(X_i)$ to the data $(X_i, R_i)_{i=1}^n$;
+    \item update the residuals, $R_i := R_i - \lambda\,\hat f_j(X_i)$, where
+          $\lambda$ is the \textit{learning rate}.
+  \end{itemize}
+  \item Output the boosted rule
+  \[
+    \hat f(X_i) := \sum_{j=1}^J \lambda\,\hat f_j(X_i).
+  \]
+\end{enumerate}
+\vskip3pt
+{\small Choices: the tree depth, the number of steps $J$, and the learning rate
+(a common default is $\lambda = 0.1$), usually by CV. In practice one starts from the
+mean rather than from 0.}
+\end{frame}
+
+\begin{frame}{Boosting by Hand}
+The six people, one-split trees (stumps), learning rate $\lambda = 0.5$; start from
+the mean 10.27 \srcp{figs/w12\_690s.R, H}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+& \multicolumn{6}{c}{residual $R_i$ for schooling $=$} & & \\
+step & 10 & 12 & 12 & 14 & 16 & 18 & stump & $\sum R_i^2$ \\
+\midrule
+0 & $-0.67$ & $-0.47$ & $-0.27$ & 0.13 & 0.53 & 0.73 & & 1.573 \\
+1 & $-0.43$ & $-0.23$ & $-0.03$ & $-0.10$ & 0.30 & 0.50 & cut 13: $-0.47 / +0.47$ & 0.593 \\
+2 & $-0.33$ & $-0.13$ & 0.07 & 0.00 & 0.10 & 0.30 & cut 15: $-0.20 / +0.40$ & 0.233 \\
+3 & $-0.17$ & $-0.17$ & 0.03 & $-0.03$ & 0.07 & 0.27 & cut 11: $-0.33 / +0.07$ & 0.133 \\
+4 & $-0.14$ & $-0.14$ & 0.06 & $-0.01$ & 0.09 & 0.13 & cut 17: $-0.05 / +0.27$ & 0.069 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt\small
+  \item Step 1: the stump fits the residuals with $-0.47$ (at most 12 years) and $+0.47$;
+        we subtract only half of it, e.g.\ $-0.67 - 0.5(-0.47) = -0.43$.
+  \item Each step uses a different cut, so the sum of four stumps is a staircase with
+        five levels. The sum of squared residuals falls every step.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Boosted Trees: How Many Steps}
+\begin{itemize}\itemsep4pt
+  \item The number of steps $J$ matters.
+  \item Each step fits the part of the outcome the previous steps left
+        unexplained, so the in-sample error can only fall (weakly) with each step:
+        1.573, 0.593, 0.233, 0.133, 0.069 by hand.
+  \item Too many steps and the model overfits: eventually it fits the noise.
+  \item Too few steps leave substantial bias.
+  \item In practice, stop once CV-MSE no longer improves.
+  \item A small learning rate with many steps usually beats a large rate with few:
+        many cautious steps rather than a few bold ones.
+  \item A popular implementation is \texttt{xgboost} \srcp{Chen and Guestrin 2016}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Machine Predictions and Bail}
+\textbf{The question.} Kleinberg et al.\ (2018): judges decide pretrial release by predicting crime if
+released. Could an algorithm predict better?
+\vskip3pt
+\textbf{The data and method.} New York City arrests 2008--13; 554,689 cases in the working
+sample; \alert{gradient boosted decision trees} predict crime if released. Judges release 73.6\%; 11.3\% of the released commit a crime before trial.
+\vskip3pt
+\textbf{The results} (held-out test set):
+\begin{itemize}\itemsep2pt
+  \item Same release rate as the judges: crime falls 24.7\%.
+  \item Same crime rate: detention falls from 26.4\% to 15.3\% (a 41.9\% cut).
+  \item Both can be achieved while reducing racial disparities in detention.
+\end{itemize}
+\end{frame}
 
 \begin{frame}{Bagging, Random Forests, Boosting\core}
 \begin{itemize}\itemsep4pt
@@ -623,8 +1362,8 @@ too rough a step function for a mostly smooth relationship.}
         Out-of-bag error is a free cross-validation estimate.
   \item \textbf{Boosting}: fit trees \emph{sequentially}, each on the residuals of
         the current ensemble, adding a shrunken version:
-        $\hat f \leftarrow \hat f + \eta\,\hat t$. Attacks \emph{bias} rather than
-        variance, and with small $\eta$ and many trees is usually the strongest
+        $\hat f \leftarrow \hat f + \lambda\,\hat t$. Attacks \emph{bias} rather than
+        variance, and with a small learning rate $\lambda$ and many trees is usually the strongest
         tabular predictor available.
 \end{itemize}
 \vskip3pt
@@ -632,49 +1371,8 @@ too rough a step function for a mostly smooth relationship.}
 is the cleanest way to keep them straight.
 \end{frame}
 
-\begin{frame}{Why Decorrelating Trees Works}
-$B$ trees, each with variance $\sigma^2$ at a point, pairwise correlation $\rho$:
-\begin{align*}
-  \Var\Big(\frac1B\sum_{b=1}^B T_b\Big)
-  &= \frac{1}{B^2}\Big(\sum_b \Var(T_b) + \sum_{b\neq b'}\Cov(T_b, T_{b'})\Big)
-   && \text{\footnotesize variance of a sum} \\
-  &= \frac{1}{B^2}\big(B\sigma^2 + B(B-1)\rho\sigma^2\big)
-   && \text{\footnotesize $B(B-1)$ ordered pairs} \\
-  &= \rho\,\sigma^2 + \frac{1-\rho}{B}\,\sigma^2
-   && \text{\footnotesize rearrange}
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item More trees kill the second term only. The first, $\rho\sigma^2$, is a
-        floor: bagged trees on the same data are correlated.
-  \item Random forests lower $\rho$ by letting each split see only $m$ of the $p$
-        variables; each tree gets worse, the average gets better.
-  \item Out-of-bag error: each tree skips about a third of the data
-        ($(1-1/n)^n \approx e^{-1}$). GSS: OOB MSE 0.547, test MSE 0.556.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Boosting Is Gradient Descent}
-Loss $L(\bm f) = \sum_i \tfrac12 (Y_i - f_i)^2$ over the vector of fitted values:
-\begin{align*}
-  -\frac{\partial L}{\partial f_i} &= Y_i - f_i
-   && \text{\footnotesize the residual is the negative gradient} \\
-  \hat f^{(m)} &= \hat f^{(m-1)} + \eta\,\hat t_m(x)
-   && \text{\footnotesize $\hat t_m$: a tree fit to the residuals}
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item Each tree is small (depth 3 here) and shrunk by $\eta$ (0.05 here): many
-        weak steps rather than a few big ones \srcp{Friedman 2001}.
-  \item Any differentiable loss works: logistic for binary $Y$, Poisson for counts
-        (Week 4); the residual becomes the gradient of that loss.
-  \item The number of steps is the complexity dial; stop when CV error turns up.
-        GSS: about a few hundred rounds.
-  \item \texttt{xgboost} adds penalties on leaf values and is the usual default
-        for tables of data \srcp{Chen and Guestrin 2016}.
-\end{itemize}
-\end{frame}
-
 \begin{frame}{One Benchmark: Log Earnings in the GSS}
-70\% training / 30\% test, $n = 3{,}509$; 25 main-effect columns, 294 in the
+70\% training / 30\% test, $n = 3{,}509$; 23 main-effect columns, 243 in the
 expanded design; tuning by CV inside the training set \srcp{figs/w12\_gss.R}:
 \vskip3pt
 \begin{center}\footnotesize
@@ -683,25 +1381,52 @@ expanded design; tuning by CV inside the training set \srcp{figs/w12\_gss.R}:
 \toprule
 test $R^2$ & training $n = 2{,}456$ & training $n = 300$ \\
 \midrule
-training mean & 0.000 & $-0.002$ \\
-OLS, 25 main effects & 0.338 & 0.269 \\
-OLS, 294 terms & 0.282 & \alert{$-1{,}368$} \\
-ridge, 294 terms & 0.337 & 0.288 \\
-lasso, 294 terms & 0.344 & 0.305 \\
-elastic net, 294 terms & 0.345 & 0.297 \\
-pruned tree & 0.313 & 0.194 \\
-random forest & 0.373 & \alert{0.332} \\
-boosting & \alert{0.381} & 0.322 \\
-neural network (1 layer) & 0.342 & 0.256 \\
+training mean & 0.000 & $-0.014$ \\
+OLS, 23 main effects & 0.251 & 0.188 \\
+OLS, 243 terms & 0.200 & \alert{$-11.752$} \\
+ridge, 243 terms & 0.253 & 0.180 \\
+lasso, 243 terms & 0.261 & 0.188 \\
+elastic net, 243 terms & 0.261 & \alert{0.197} \\
+pruned tree & 0.215 & 0.123 \\
+random forest & 0.272 & 0.185 \\
+boosting & \alert{0.285} & 0.156 \\
+neural network (1 layer) & 0.259 & 0.137 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip2pt
 {\footnotesize Large $n$: ensembles win, modestly. Small $n$: regularization is everything; the unpenalized
-294-term model is far worse than predicting the mean. Most of the variation in earnings stays unpredicted.}
+243-term model is far worse than predicting the mean. Most of the variation in earnings stays unpredicted.}
 \end{frame}
 
-\begin{frame}{Combining Learners: Stacking}
+\begin{frame}{In the Literature: the Fragile Families Challenge}
+\textbf{The question.} Salganik et al.\ (2020): how predictable are life outcomes, given rich data from
+birth to age 9?
+\textbf{The design.} A mass collaboration: 4,242 families, 12,942 variables;
+outcomes at age 15 released for half the families; 160 teams submitted
+predictions, scored by test $R^2$ on families whose outcomes no team saw.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{@{}lc|lc@{}}
+\toprule
+outcome & best test $R^2$ & outcome & best test $R^2$ \\
+\midrule
+material hardship & 0.23 & eviction & 0.05 \\
+child's GPA & 0.19 & caregiver job training & 0.05 \\
+child's grit & 0.06 & caregiver layoff & 0.03 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep1pt
+  \item The best of 160 teams was only slightly better than a four-variable
+        linear benchmark chosen by a domain expert: three facts about the mother at
+        birth (race, marital status, education) plus the same outcome measured at age 9.
+  \item Errors depended on the \emph{family}, not on the method: the same families
+        were mispredicted by everyone.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Combining Learners: Stacking\adv}
 No method wins everywhere: lasso won the small-sample GSS race among linear
 models, the forest won overall. \textbf{Stacking} lets the data choose a mix
 \srcp{van der Laan, Polley, and Hubbard 2007}:
@@ -722,95 +1447,117 @@ models, the forest won overall. \textbf{Stacking} lets the data choose a mix
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Binary Outcomes: Loss, Thresholds, Calibration}
-For $Y \in \{0,1\}$ every method above predicts $\hat p(x) = \widehat{\Pr}(Y=1\mid x)$:
-lasso and ridge on the logistic log-likelihood (Week 3), trees on the Gini
-index or deviance, boosting on the logistic loss.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Classification is a second step}: predict 1 when $\hat p(x) > c$. The
-        cutoff $c$ is a decision about costs (a missed dropout vs.\ an unneeded
-        intervention), not a statistical quantity; 0.5 is rarely right.
-  \item \textbf{Ranking}: the AUC is the chance a random positive case gets a
-        higher $\hat p$ than a random negative one; it ignores the cutoff and
-        the level of $\hat p$.
-  \item \textbf{Calibration}: among cases with $\hat p \approx 0.3$, do 30\% have
-        $Y = 1$? Flexible models often rank well and calibrate badly; check a
-        calibration plot on held-out data.
-  \item \textbf{Rare outcomes}: accuracy is useless (predict ``no'' for everyone);
-        report AUC, calibration, and precision among the flagged.
-\end{itemize}
-\end{frame}
-
-
-
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Neural Nets]{Neural Networks}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Goal: Learn the Features Too}
-Lasso chooses among features we built (interactions, squares). Trees build
-features by splitting. A neural network \alert{learns its own features} as
-smooth functions of the inputs, then regresses on them.
-\vskip3pt
-\textbf{Plan}:
-\begin{enumerate}\itemsep2pt
-  \item One hidden layer: the model, activations, and why nonlinearity matters.
-  \item What a network can represent: an interaction from two neurons;
-        universal approximation; counting parameters.
-  \item Fitting: gradient descent, backpropagation, stochastic gradients.
-  \item Regularizing: weight decay, dropout, early stopping.
-  \item A network on the GSS.
-\end{enumerate}
-\vskip3pt
-{\footnotesize Notation follows ISL Ch.\ 10: inputs $X_1,\dots,X_p$, $K$ hidden units,
-activation $\sigma(\cdot)$, weights $w$, output coefficients $\beta$.}
+\begin{frame}{Neural Networks: the Idea\core}
+\textbf{Plainly}: a flexible nonlinear function of many inputs. Like a tree, it finds curves,
+thresholds, and interactions you did not type in, but it gets there differently:
+\vskip2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.09\linewidth}>{\raggedright\arraybackslash}p{0.4\linewidth}>{\raggedright\arraybackslash}p{0.45\linewidth}@{}}
+\toprule
+& trees and forests & neural networks \\
+\midrule
+how & cut the inputs into boxes, one variable at a time; predict the average in each box &
+      make new variables, each a weighted mix of \emph{all} inputs bent by a smooth curve; then
+      regress $Y$ on them \\
+shape & steps & smooth surfaces \\
+best on & tables of survey variables (the GSS) & text, images, sound: many raw inputs whose useful
+      features are combinations (pixels $\to$ edges $\to$ cars) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\small\textbf{Uses in this course}: measuring from text and images (Gebru et al.\ 2017; BERT, later
+today), and predicting outcomes and treatments inside causal estimators (Week 13).}
 \end{frame}
 
-\begin{frame}{A Single Hidden Layer}
-\begin{columns}[T]
-\begin{column}{0.42\linewidth}
+\begin{frame}{Single Layer Neural Network\core}
+\begin{itemize}\itemsep4pt
+  \item A neural network takes the $p$ inputs $X_i = (X_{1i}, \dots, X_{pi})$ and
+        builds a nonlinear function $f(X_i)$ to predict $Y_i$.
+  \item The $p$ features make up the units of the \textit{input layer}.
+  \item Every input feeds into each of $K$ hidden units, the \textit{hidden layer}.
+  \item A single-layer network has the form
+  \begin{align*}
+    f(X_i) &= \beta_0 + \sum_{k=1}^K \beta_k A_k = \beta_0 + \sum_{k=1}^K \beta_k\,h_k(X_i) \\
+           &= \beta_0 + \sum_{k=1}^K \beta_k\,\sigma\Big(w_{k0} + \sum_{j=1}^p w_{kj}X_{ji}\Big)
+  \end{align*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Single Layer Neural Network: Picture\core}
 \begin{center}
-\begin{tikzpicture}[scale=0.85,>=Stealth,
-  nd/.style={circle,draw=dukeblue,thick,minimum size=6mm,inner sep=0pt,font=\scriptsize}]
-  \foreach \i in {1,...,4} \node[nd] (x\i) at (0,3.6-1.0*\i) {$X_\i$};
-  \foreach \k in {1,...,5} \node[nd,fill=dukeblue!10] (a\k) at (2,4.0-1.0*\k) {$A_\k$};
-  \node[nd,draw=accent,fill=accent!12] (f) at (4,1.0) {$f$};
-  \foreach \i in {1,...,4} \foreach \k in {1,...,5} \draw[->,gray!70] (x\i) -- (a\k);
-  \foreach \k in {1,...,5} \draw[->,dukeblue] (a\k) -- (f);
-  \node[font=\scriptsize] at (0,-1.3) {input};
-  \node[font=\scriptsize] at (2,-1.3) {hidden};
-  \node[font=\scriptsize] at (4,-1.3) {output};
+\begin{tikzpicture}[x=2.8cm,y=1.05cm]
+  \foreach \i in {1,...,4} \node[nnin] (x\i) at (0,{3.125-1.25*\i}) {$X_\i$};
+  \foreach \k in {1,...,5} \node[nnhid] (a\k) at (1,{3-\k}) {$A_\k$};
+  \node[nnout] (f) at (2,0) {$f(X)$};
+  \node (y) at (2.6,0) {$Y$};
+  \foreach \i in {1,...,4} \foreach \k in {1,...,5} \draw[nnlink] (x\i) -- (a\k);
+  \foreach \k in {1,...,5} \draw[nnlink] (a\k) -- (f);
+  \draw[nnedge] (f) -- (y);
+  \node[nnhead] at (0,2.75) {input layer};
+  \node[nnhead] at (1,2.75) {hidden layer};
+  \node[nnhead] at (2,2.75) {output layer};
 \end{tikzpicture}
 \end{center}
-\end{column}
-\begin{column}{0.56\linewidth}
-\begin{align*}
-  A_k &= \sigma\Big(w_{k0} + \textstyle\sum_{j=1}^p w_{kj}X_j\Big), \quad k = 1,\dots,K \\
-  f(X) &= \beta_0 + \textstyle\sum_{k=1}^K \beta_k A_k
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Each hidden unit is a linear index of the inputs pushed through a fixed
-        nonlinear $\sigma$: a logistic regression without an outcome.
-  \item The output is a linear regression on the $K$ learned features.
-  \item $w$ and $\beta$ are chosen together to minimize
-        $\sum_i (Y_i - f(X_i))^2$.
-\end{itemize}
-\end{column}
-\end{columns}
+\vskip-6pt
+{\footnotesize Each line from an input to a hidden unit carries a weight $w_{kj}$; each
+line from a hidden unit to the output carries a weight $\beta_k$.}
 \end{frame}
 
-\begin{frame}{Activations, and Why They Must Be Nonlinear}
-\begin{align*}
-  \text{sigmoid:}\quad \sigma(z) = \frac{1}{1 + e^{-z}}
-  \qquad\qquad
-  \text{ReLU:}\quad \sigma(z) = \max(0, z)
-\end{align*}
-\vskip-2pt
+\begin{frame}{Two Steps: Hidden Units, Then Output\core}
+\begin{enumerate}\itemsep2pt
+  \item Each of the $K$ \textbf{hidden units} (\textit{neurons}) takes a weighted sum of the inputs
+        and bends it. The number it outputs is its \textit{activation} $A_k$:
+  \[
+    A_k = h_k(X_i) = \sigma\Big(w_{k0} + \sum_{j=1}^p w_{kj}X_{ji}\Big),
+  \]
+        where $\sigma(\cdot)$ is the \textit{activation function}, a fixed bend chosen in advance.
+        Neuron = the node; activation = its output. (Software sometimes lists $\sigma$ as its own
+        ``layer''; it is part of each neuron.)
+  \item The $K$ activations feed into the output layer, a linear regression on the
+        learned features:
+  \[
+    f(X_i) = \beta_0 + \sum_{k=1}^K \beta_k A_k
+  \]
+\end{enumerate}
+\vskip3pt
+{\small $\beta_k$ and $w_{kj}$ are called \textit{weights}; $\beta_0$ and $w_{k0}$
+are called \textit{biases} (intercepts, not the bias of the bias--variance tradeoff).}
+\end{frame}
+
+\begin{frame}{Activation Functions\core}
+\begin{itemize}\itemsep4pt
+  \item The \textit{sigmoid} function
+  \[
+    \sigma(z) = \frac{e^z}{1+e^z} = \frac{1}{1+e^{-z}},
+  \]
+        the same function the logit uses to turn a linear index into a probability
+        (Week 4).
+  \item The modern default is the \textit{ReLU} (\textit{rectified linear unit}):
+        $\sigma(z) = (z)_+ = \max(0, z)$.
+  \begin{center}\small
+  \begin{tabular}{@{}lccc@{}}
+  \toprule
+  $z$ & $-1$ & $0.5$ & $2$ \\
+  \midrule
+  sigmoid & 0.27 & 0.62 & 0.88 \\
+  ReLU & 0 & 0.5 & 2 \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  \item ReLU is cheap to compute and store, and its derivative is simple (0 or 1).
+        It thresholds at 0, but the intercept $w_{k0}$ moves the threshold, like a
+        neuron that fires only above a threshold.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why the Activation Must Be Nonlinear\core}
 Suppose $\sigma(z) = z$ instead:
 \begin{align*}
   f(X) &= \beta_0 + \textstyle\sum_k \beta_k\big(w_{k0} + \sum_j w_{kj}X_j\big)
@@ -819,137 +1566,366 @@ Suppose $\sigma(z) = z$ instead:
    + \textstyle\sum_j \underbrace{\big(\textstyle\sum_k \beta_k w_{kj}\big)}_{\text{slope on } X_j} X_j
    && \text{\footnotesize regroup}
 \end{align*}
-\begin{itemize}\itemsep2pt
+\begin{itemize}\itemsep3pt
   \item \alert{A linear network of any width or depth is one linear regression.}
         All the flexibility comes from $\sigma$.
-  \item ReLU is the modern default: cheap to compute, gradient 1 where active.
-        With the intercept $w_{k0}$, each unit is a hinge at its own location:
-        ReLU networks are piecewise-linear functions.
+  \item With ReLU and the intercept $w_{k0}$, each unit is a hinge at its own
+        location: ReLU networks are piecewise-linear functions.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Two Neurons Make an Interaction}
-Two inputs, two hidden units, $\sigma(z) = z^2$; weights $w_1 = (0, 1, 1)$,
-$w_2 = (0, 1, -1)$, $\beta = (0, \tfrac14, -\tfrac14)$:
-\begin{align*}
-  A_1 &= (X_1 + X_2)^2, \qquad A_2 = (X_1 - X_2)^2
-   && \text{\footnotesize the two hidden units} \\
-  f(X) &= \tfrac14 (X_1 + X_2)^2 - \tfrac14 (X_1 - X_2)^2
-   && \text{\footnotesize output layer} \\
-  &= \tfrac14\big[(X_1^2 + 2X_1X_2 + X_2^2) - (X_1^2 - 2X_1X_2 + X_2^2)\big] = X_1X_2
-   && \text{\footnotesize expand}
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item The interaction was never typed in. The network built it from linear
-        indices and a nonlinearity.
-  \item \textbf{Universal approximation}: with a non-polynomial activation and
-        enough hidden units, one hidden layer approximates any continuous
-        function on a bounded set \srcp{Hornik, Stinchcombe, and White 1989}.
-        Existence, not a recipe: it says nothing about how many units, or how to
-        find the weights.
+\begin{frame}{Why the Bend Makes a Network Flexible\core}
+\begin{itemize}\itemsep6pt
+  \item Each hidden unit takes a weighted sum of the inputs and \textbf{bends} it (S-curve, ReLU).
+        The output adds the bent pieces with weights.
+  \item \textbf{Without the bend}, a weighted sum of weighted sums is still a weighted sum: the
+        network is just a linear regression, however many units it has.
+  \item \textbf{With the bend}, adding pieces that switch on at different places draws curves,
+        thresholds, and interactions nobody typed in. Example with $\sigma(z) = z^2$ and two units:
+        $\tfrac14(X_1 + X_2)^2 - \tfrac14(X_1 - X_2)^2 = X_1X_2$, an interaction.
+  \item \textbf{More units, finer shapes}: with enough hidden units a network can approximate any
+        smooth function \srcp{Hornik, Stinchcombe, and White 1989}. That says it is possible, not
+        how many units or how to find the weights (training, next).
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Deeper Networks, and Counting Parameters}
-Stack layers: layer $\ell$ treats layer $\ell-1$'s activations as inputs,
-\begin{align*}
-  A^{(\ell)}_m = \sigma\Big(w^{(\ell)}_{m0} + \textstyle\sum_k w^{(\ell)}_{mk} A^{(\ell-1)}_k\Big).
-\end{align*}
-\vskip-2pt
+\begin{frame}{Number of Parameters in a Single Layer Network}
+With $p$ inputs and $K$ neurons:
+\begin{itemize}\itemsep4pt
+  \item input to hidden layer: $(p+1)\times K$, that is $p\times K$ weights and $K$
+        biases;
+  \item hidden to output layer: $K + 1$, that is $K$ weights and 1 bias.
+\end{itemize}
+To fit, minimize the loss (continuous $Y_i$) over all of them:
+\[
+  \argmin_{W\in\R^{(p+1)\times K};\ \beta\in\R^{K+1}}\ \sum_{i=1}^n\big(Y_i - f(X_i)\big)^2
+\]
+\vskip3pt
+{\small GSS: 23 inputs, 2 hidden units: $(23+1)\times 2 + (2+1) = 48 + 3 = 51$ parameters.}
+\end{frame}
+
+\begin{frame}{Multilayer Neural Networks\core}
+\begin{itemize}\itemsep2pt
+  \item Single-layer networks have limited power in practice; stacking layers can
+        greatly improve prediction.
+  \item Multilayer networks famously solved the \textit{MNIST} handwritten-digit
+        problem.
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.58\linewidth]{figs/mnist.pdf}
+\end{center}
+\vskip-6pt
+{\footnotesize Each grayscale image has $28\times 28 = 784$ pixels, each an 8-bit number
+(0--255) for how dark the pixel is.}
+\end{frame}
+
+\begin{frame}{Two-Layer Neural Network: Picture}
+\begin{center}
+\begin{tikzpicture}[x=2.4cm,y=0.98cm]
+  \foreach \i/\l in {1/X_1,2/X_2,3/X_3,4/\vdots,5/X_{p}} {
+    \ifnum\i=4 \node (x\i) at (0,{3-\i}) {$\l$};
+    \else \node[nnin,minimum size=7mm] (x\i) at (0,{3-\i}) {$\l$}; \fi}
+  \foreach \k in {1,...,5} \node[nnhid,minimum size=7.5mm,font=\scriptsize] (a\k) at (1,{3-\k}) {$A^{(1)}_\k$};
+  \foreach \k in {1,...,4} \node[nnhid,minimum size=7.5mm,font=\scriptsize] (b\k) at (2,{2.5-\k}) {$A^{(2)}_\k$};
+  \foreach \m/\l in {1/f_0,2/f_1,3/\vdots,4/f_9} {
+    \ifnum\m=3 \node (o\m) at (3,{2.5-\m}) {$\l$};
+    \else \node[nnout,minimum size=7mm] (o\m) at (3,{2.5-\m}) {$\l$}; \fi}
+  \foreach \i in {1,2,3,5} \foreach \k in {1,...,5} \draw[nnlink] (x\i) -- (a\k);
+  \foreach \k in {1,...,5} \foreach \j in {1,...,4} \draw[nnlink] (a\k) -- (b\j);
+  \foreach \j in {1,...,4} \foreach \m in {1,2,4} \draw[nnlink] (b\j) -- (o\m);
+  \node[nnhead] at (0,2.8) {input};
+  \node[nnhead] at (1,2.8) {hidden 1};
+  \node[nnhead] at (2,2.8) {hidden 2};
+  \node[nnhead] at (3,2.8) {output};
+\end{tikzpicture}
+\end{center}
+\vskip-6pt
+{\footnotesize Two hidden layers and several outputs, one per digit.}
+\end{frame}
+
+\begin{frame}{Two-Layer Neural Network}
+\begin{itemize}\itemsep4pt
+  \item MNIST: the input layer has $p = 784$ units; hidden layer $L_1$ has $K_1 = 256$
+        units, $L_2$ has $K_2 = 128$; the output layer has 10 units, the
+        probabilities of the digits 0--9 from a \textit{softmax} (the multinomial
+        logit of Week 4).
+  \item Each neuron $k = 1, \dots, K_1$ in the first hidden layer:
+  \begin{align*}
+    A_k^{(1)} = h_k^{(1)}(X_i) = \sigma\Big(w_{k0}^{(1)} + \sum_{j=1}^{p} w_{kj}^{(1)} X_{ji}\Big)
+  \end{align*}
+  \item The second hidden layer treats the neurons of $L_1$ as its inputs:
+  \begin{align*}
+    A_\ell^{(2)} = h_\ell^{(2)}(X_i) = \sigma\Big(w_{\ell 0}^{(2)} + \sum_{k=1}^{K_1} w_{\ell k}^{(2)} A_k^{(1)}\Big),
+    \qquad \ell = 1, \dots, K_2
+  \end{align*}
+  \item Depth builds features of features (edges, then shapes, then digits).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Number of Parameters in a Two-Layer Network\adv}
+With $p$ inputs, $K_1$ and $K_2$ hidden neurons, and $m$ outputs:
 \begin{center}\small
-\renewcommand{\arraystretch}{1.12}
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}llr@{}}
 \toprule
-network & count & parameters \\
+layer to layer & count & MNIST \\
 \midrule
-GSS, 25 inputs, 2 hidden units & $(25+1)\cdot 2 + (2+1)$ & 55 \\
-MNIST digits: $784 \to 256 \to 128 \to 10$ & $785\cdot256 + 257\cdot128 + 129\cdot10$ & 235,146 \\
+input $\to$ first hidden & $(p+1)\times K_1$: $p K_1$ weights, $K_1$ biases & $785\times 256 = 200{,}960$ \\
+first $\to$ second hidden & $(K_1+1)\times K_2$: $K_1K_2$ weights, $K_2$ biases & $257\times 128 = 32{,}896$ \\
+second hidden $\to$ output & $(K_2+1)\times m$: $K_2 m$ weights, $m$ biases & $129\times 10 = 1{,}290$ \\
+\midrule
+total & & 235,146 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip3pt
 \begin{itemize}\itemsep2pt
-  \item Depth builds features of features (edges, then shapes, then digits), often
-        with far fewer units than one wide layer would need.
   \item 235,146 parameters for 60,000 training images: more parameters than cases,
-        and still it predicts well. Regularization and the fitting algorithm, not
-        the parameter count, control the effective complexity.
+        and still it predicts well.
+  \item Regularization and the fitting algorithm, not the parameter count, control
+        the effective complexity.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Fitting: Gradient Descent}
-Collect all weights in $\theta$; minimize $R(\theta) = \tfrac12\sum_i (Y_i - f_\theta(X_i))^2$.
-\begin{itemize}\itemsep2pt
-  \item Not convex: many local minima and saddle points; no closed form.
-  \item Start from small random $\theta^0$ and step downhill:
+\begin{frame}{Fitting a Neural Network\core}
+\begin{itemize}\itemsep4pt
+  \item Take the single-layer network; the multilayer case works the same way.
+  \item We minimize the squared loss over $(p+1)K$ input weights and biases and $K+1$
+        output ones.
+  \item That is hard, for two reasons:
+  \begin{itemize}\itemsep2pt
+    \item With a nonlinear activation, the loss is \textit{non-convex}. Gradient
+          $= 0$ is necessary but no longer sufficient for the global minimum; we can
+          land in a local minimum or at a saddle point.
+    \item The sheer number of parameters: no closed form, no single calculation
+          solves the gradient equations.
+  \end{itemize}
+  \item Collect all parameters in one long vector $\theta$, of length $(p+1)K + (K+1)$,
+        and minimize
+  \[
+    R(\theta) = \frac12\sum_{i=1}^n\big(Y_i - f_\theta(X_i)\big)^2
+  \]
+        by \textit{gradient descent}, with \textit{regularization} against overfitting.
 \end{itemize}
-\vskip-4pt
-\begin{align*}
-  \theta^{t+1} = \theta^{t} - \rho\,\nabla R(\theta^{t}),
-\end{align*}
-with \textbf{learning rate} $\rho$: too large overshoots, too small crawls.
-\vskip2pt
+\end{frame}
+
+\begin{frame}{Gradient Descent: Picture\core}
 \begin{center}
-\begin{tikzpicture}[scale=0.8]
-  \draw[->] (0,0) -- (7.2,0) node[right]{\scriptsize $\theta$};
-  \draw[->] (0,0) -- (0,2.7) node[above]{\scriptsize $R(\theta)$};
-  \draw[dukeblue,very thick,smooth,domain=0.3:6.4,samples=80,variable=\x]
-    plot ({\x},{0.35+0.04*(\x-1.6)^2*(\x-5.3)^2 + 0.12*\x});
-  \foreach \x/\y in {6.2/1.78,5.8/1.22,5.4/1.00} \fill[accent] (\x,\y) circle (2pt);
-  \draw[->,accent,thick] (6.15,1.70) -- (5.86,1.30);
-  \draw[->,accent,thick] (5.75,1.16) -- (5.47,1.04);
-  \node[font=\scriptsize] at (1.6,0.25) {global};
-  \node[font=\scriptsize] at (5.0,0.7) {local};
-\end{tikzpicture}
+\includegraphics[width=0.66\linewidth]{figs/gradient_descent.pdf}
+\end{center}
+\vskip-6pt
+\begin{itemize}\itemsep2pt\small
+  \item Two minima, one local, one global: where you start decides where you end.
+  \item Is a local minimum good enough? For prediction, usually yes: the global minimum of
+        training error would fit the noise (early stopping avoids it on purpose), and in large
+        networks different local minima give similar error.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Gradient Descent\core}
+\begin{enumerate}\itemsep4pt
+  \item Start with an initial guess $\theta^0$ for all parameters (small random
+        numbers); set $t = 0$.
+  \item Find a small change $\delta$ such that $\theta^{t+1} = \theta^t + \delta$
+        \textit{reduces} the loss: $R(\theta^{t+1}) < R(\theta^t)$.
+  \item Stop when the improvement is negligible, e.g.\
+        $|R(\theta^{t+1}) - R(\theta^t)| < \varepsilon$.
+\end{enumerate}
+\vskip3pt
+The step comes from the \textit{gradient} of $R$ at $\theta^t$, with a small
+positive \textit{learning rate} $\rho$:
+\begin{align*}
+  \delta = -\rho\,\nabla R(\theta^t) = -\rho\,\frac{\partial R(\theta)}{\partial\theta}\bigg|_{\theta = \theta^t}
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item The gradient points uphill; we step the other way.
+  \item Too large a $\rho$ overshoots; too small crawls.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Gradient Descent by Hand}
+One parameter, three outcomes $Y = (1, 2, 6)$, the model predicts $\theta$ for everyone:
+\begin{align*}
+  R(\theta) = \tfrac12\sum_i (Y_i - \theta)^2, \qquad
+  \frac{dR}{d\theta} = -\sum_i (Y_i - \theta), \qquad
+  \theta^{t+1} = \theta^t + 0.1\sum_i (Y_i - \theta^t)
+\end{align*}
+\vskip-2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$t$ & $\theta^t$ & $R(\theta^t)$ & gradient \\
+\midrule
+0 & 0.000 & 20.50 & $-(1 + 2 + 6) = -9.00$ \\
+1 & $0 - 0.1(-9.00) = 0.900$ & 13.62 & $-6.30$ \\
+2 & 1.530 & 10.24 & $-4.41$ \\
+3 & 1.971 & 8.59 & $-3.09$ \\
+4 & 2.280 & 7.78 & $-2.16$ \\
+5 & 2.496 & 7.38 & $-1.51$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+{\small Each step closes 30\% of the gap to the minimizer $\bar Y = 3$; the gradient shrinks as
+we approach it, so the steps shrink too \srcp{figs/w12\_690s.R, I}. Here $R$ is convex; a network's is not.}
+\end{frame}
+
+\begin{frame}{The Gradient for One Observation\adv}
+\begin{itemize}\itemsep4pt
+  \item Computing the gradient is feasible. Take the loss for one observation $i$;
+        the total loss is the sum over the $n$ observations:
+  \begin{align*}
+    R_i(\theta) &= \tfrac12\big(Y_i - f_\theta(X_i)\big)^2 \\
+    &= \tfrac12\Big(Y_i - \beta_0 - \sum_{k=1}^K \beta_k\,\sigma\Big(w_{k0} + \sum_{j=1}^p w_{kj}X_{ji}\Big)\Big)^2
+  \end{align*}
+  \item For short, write the linear index of hidden unit $k$ as
+  \[
+    z_{ik} = w_{k0} + \sum_{j=1}^p w_{kj}X_{ji}, \qquad A_{ik} = \sigma(z_{ik}).
+  \]
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Backpropagation: the Chain Rule\adv}
+\begin{itemize}\itemsep3pt
+  \item For an output weight $\beta_k$:
+  \begin{align*}
+    \frac{\partial R_i}{\partial\beta_k}
+    = \frac{\partial R_i}{\partial f_\theta(X_i)}\cdot\frac{\partial f_\theta(X_i)}{\partial\beta_k}
+    = -\big(Y_i - f_\theta(X_i)\big)\cdot\sigma(z_{ik})
+  \end{align*}
+  \item For an input weight $w_{kj}$:
+  \begin{align*}
+    \frac{\partial R_i}{\partial w_{kj}}
+    &= \frac{\partial R_i}{\partial f_\theta(X_i)}\cdot\frac{\partial f_\theta(X_i)}{\partial\sigma(z_{ik})}\cdot
+       \frac{\partial\sigma(z_{ik})}{\partial z_{ik}}\cdot\frac{\partial z_{ik}}{\partial w_{kj}} \\
+    &= -\big(Y_i - f_\theta(X_i)\big)\cdot\beta_k\cdot\sigma'(z_{ik})\cdot X_{ji}
+  \end{align*}
+  \item Both contain the residual $Y_i - f_\theta(X_i)$: differentiation hands a share of
+        the residual to each parameter through the chain rule. Compute $f$ forward,
+        pass the residual backward: \textit{backpropagation}.
+  \item Deep networks repeat the second line once per layer. If $\sigma'$ is small
+        (sigmoid in its flat tails), products of many small numbers vanish: one reason
+        ReLU replaced sigmoid.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Stochastic Gradient Descent}
+\begin{itemize}\itemsep1pt
+  \item The gradient of the loss $R(\theta) = \sum_i R_i(\theta)$ is the sum of the $n$ gradients
+        $\nabla R_i$. Dividing by $n$ (the \emph{average} loss) only rescales the step $\rho$, but keeps
+        the step from growing with $n$; software uses the average:
+  \[
+    \theta^{t+1} = \theta^t - \rho\,\frac1n\sum_{i=1}^n \nabla R_i(\theta^t)
+  \]
+        Every update uses all $n$ observations: expensive.
+  \item \textit{Stochastic gradient descent} (SGD) uses only a random subsample
+        $B_t$, a \textit{mini-batch}, at each update:
+  \[
+    \theta^{t+1} = \theta^t - \rho\,\frac{1}{|B_t|}\sum_{i\in B_t} \nabla R_i(\theta^t)
+  \]
+  \item One full pass through all observations is an \textit{epoch}. At the start of
+        each epoch the data are shuffled and cut into non-overlapping mini-batches.
+  \item With $n = 1{,}000$ and batches of 10: 100 updates per epoch instead of one.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dealing With Overfitting: Weight Decay\core}
+\begin{itemize}\itemsep4pt
+  \item As in high-dimensional regression, a massive number of parameters risks
+        overfitting.
+  \item A common fix is the ridge ($\ell_2$) penalty on all weights and
+        biases:\footnote{$\sum_j\theta_j^2$ sums the squares of every entry of $\theta$.}
+  \begin{align*}
+    R_i^{\text{ridge}}(\theta) = R_i(\theta) + \lambda\sum_j\theta_j^2
+  \end{align*}
+  \item SGD with a one-observation mini-batch then updates
+  \begin{align*}
+    \theta^{t+1} = \theta^t - \rho\big(\nabla R_i(\theta^t) + 2\lambda\,\theta^t\big)
+    = (1 - 2\rho\lambda)\,\theta^t - \rho\,\nabla R_i(\theta^t)
+  \end{align*}
+  \item Each step first shrinks every weight by the factor $1 - 2\rho\lambda$ (it
+        ``decays''), then steps downhill.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dealing With Overfitting: Dropout\adv}
+\begin{itemize}\itemsep2pt
+  \item Lasso-like penalties that zero out weights are less common in networks.
+        Instead, \textit{dropout learning} keeps units from becoming over-specialized.
+\end{itemize}
+\vskip-2pt
+\begin{columns}[T]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.4cm,y=0.6cm]
+  \foreach \i in {1,...,4} \node[nnin,minimum size=4.6mm] (x\i) at (0,{2.5-\i}) {};
+  \node[nnhid,minimum size=4.6mm] (a1) at (1,2) {};
+  \node[nnhid,minimum size=4.6mm] (a2) at (1,1) {};
+  \node[nnhid,minimum size=4.6mm] (a3) at (1,0) {};
+  \node[nnhid,minimum size=4.6mm] (a4) at (1,-1) {};
+  \node[nnhid,minimum size=4.6mm] (a5) at (1,-2) {};
+  \node[nnout,minimum size=5mm] (f) at (2,0) {};
+  \foreach \i in {1,...,4} \foreach \k in {1,2,3,4,5} \draw[nnlink] (x\i) -- (a\k);
+  \foreach \k in {1,2,3,4,5} \draw[nnlink] (a\k) -- (f);
+\end{tikzpicture}\\[2pt]
+{\footnotesize full network}
+\end{center}
+\end{column}
+\begin{column}{0.44\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.4cm,y=0.6cm]
+  \foreach \i in {1,...,4} \node[nnin,minimum size=4.6mm] (x\i) at (0,{2.5-\i}) {};
+  \node[nnhid,minimum size=4.6mm] (a1) at (1,2) {};
+  \node[nnoff,minimum size=4.6mm] (a2) at (1,1) {};
+  \node[nnhid,minimum size=4.6mm] (a3) at (1,0) {};
+  \node[nnoff,minimum size=4.6mm] (a4) at (1,-1) {};
+  \node[nnhid,minimum size=4.6mm] (a5) at (1,-2) {};
+  \node[nnout,minimum size=5mm] (f) at (2,0) {};
+  \foreach \i in {1,...,4} \foreach \k in {1,3,5} \draw[nnlink] (x\i) -- (a\k);
+  \foreach \k in {1,3,5} \draw[nnlink] (a\k) -- (f);
+\end{tikzpicture}\\[2pt]
+{\footnotesize dropout network}
+\end{center}
+\end{column}
+\end{columns}
+\vskip2pt
+\begin{itemize}\itemsep1pt\small
+  \item In each mini-batch, a fraction $\phi$ of a layer's units is dropped at random
+        (their activations set to 0); the architecture stays intact.
+  \item The rest are scaled by $1/(1-\phi)$, keeping the expected input unchanged ($\phi = 0.5$:
+        survivors count double). No unit can rely on a particular other unit.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Dealing With Overfitting: When to Stop\core}
+1,000 simulated pairs $(X_i, Y_i)$, one input and one output, $Y_i = e^{4X_i}$; one hidden layer of 10 units (31 numbers),
+optimizer stopped early or late \srcp{figs/w12\_fitml.R}:
+\begin{center}
+\includegraphics[width=0.82\linewidth]{figs/fitml_nn.pdf}
 \end{center}
 \vskip-4pt
-{\footnotesize Started on the right, descent settles in the local minimum. Random restarts and
-averaging (5 starts for the GSS network) are the usual defences.}
-\end{frame}
-
-\begin{frame}{Backpropagation: the Chain Rule, Organized}
-One case, one hidden layer; $z_k = w_{k0} + \sum_j w_{kj}X_j$, $A_k = \sigma(z_k)$,
-residual $r = Y - f$, loss $R = \tfrac12 r^2$:
-\begin{align*}
-  \frac{\partial R}{\partial \beta_k}
-  &= \frac{\partial R}{\partial f}\cdot\frac{\partial f}{\partial \beta_k}
-   = -\,r\cdot A_k
-   && \text{\footnotesize output weights} \\
-  \frac{\partial R}{\partial w_{kj}}
-  &= \frac{\partial R}{\partial f}\cdot\frac{\partial f}{\partial A_k}\cdot\frac{\partial A_k}{\partial z_k}\cdot\frac{\partial z_k}{\partial w_{kj}}
-   = -\,r\cdot\beta_k\cdot\sigma'(z_k)\cdot X_j
-   && \text{\footnotesize hidden weights}
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item Both gradients start from the residual $r$: compute $f$ forward, then
-        pass $r$ backward, multiplying by each layer's local derivative.
-  \item Deep networks repeat the second line once per layer. If $\sigma'$ is small
-        (sigmoid in its flat tails), products of many small numbers vanish:
-        one reason ReLU replaced sigmoid.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Stochastic Gradients, and Regularization}
-\textbf{Stochastic gradient descent}: use a random mini-batch $B_t$ per step,
-\begin{align*}
-  \theta^{t+1} = \theta^t - \rho\,\frac{1}{|B_t|}\sum_{i\in B_t}\nabla R_i(\theta^t);
-\end{align*}
-one pass through all batches is an \emph{epoch}. Cheap steps, and the noise helps
-leave poor regions.
-\vskip3pt
-\textbf{Regularization}:
 \begin{itemize}\itemsep2pt
-  \item \textbf{Weight decay}: add $\lambda\sum\theta_j^2$ (ridge); each step also
-        shrinks $\theta$ by $2\rho\lambda\theta$.
-  \item \textbf{Dropout}: in each step, zero a random share $\phi$ of the hidden
-        units and scale the rest by $1/(1-\phi)$; no unit can rely on another.
-  \item \textbf{Early stopping}: watch error on a validation set; stop when it
-        rises. For linear models, stopping gradient descent early acts like a
-        ridge penalty.
+  \item After 5 iterations the network is still a gentle curve; after 500 it tracks
+        the truth. With noisy data, running too long fits the noise instead.
+  \item \textbf{Early stopping}: watch the error on a held-out validation set; stop when
+        it starts rising. For linear models, stopping gradient descent early acts like
+        a ridge penalty.
 \end{itemize}
-\vskip3pt
-{\footnotesize Tune architecture (layers, units), regularization ($\lambda$, $\phi$), and
-optimization (learning rate, batch size, epochs), usually on a validation set.}
+\end{frame}
+
+\begin{frame}{Tuning a Neural Network}
+Three classes of hyperparameters must be tuned for a network to perform well:
+\begin{itemize}\itemsep4pt
+  \item \textit{Architecture}: number of hidden layers and units per layer.
+  \item \textit{Regularization}: the weight penalty $\lambda$ and the dropout rate
+        $\phi$, possibly separately for each layer.
+  \item \textit{Optimization}: the SGD details, learning rate $\rho$, batch size,
+        and number of epochs.
+\end{itemize}
+\vskip5pt
+For large networks CV is often too expensive. Instead, hold out one validation set and
+monitor performance on it while tuning.
 \end{frame}
 
 \begin{frame}{A Network on the GSS}
@@ -958,11 +1934,11 @@ $\{2, 5, 10, 20\}$ and weight decay $\{0.01, 0.1, 1\}$ by 5-fold CV; average of
 5 random starts \srcp{figs/w12\_gss.R}.
 \vskip4pt
 \begin{itemize}\itemsep4pt
-  \item CV picks the \alert{smallest} network: 2 hidden units, decay 0.1, 55
+  \item CV picks the \alert{smallest} network: 2 hidden units, decay 0.1, 51
         parameters.
-  \item Test $R^2$ 0.342: the same as lasso (0.344), below random forests (0.373)
-        and boosting (0.381). With 300 training cases: 0.256, below OLS.
-  \item Nothing in 25 survey variables needs learned representations; the
+  \item Test $R^2$ 0.259: about lasso's (0.261), below random forests (0.272)
+        and boosting (0.285). With 300 training cases: 0.137, below OLS.
+  \item Nothing in 23 survey variables needs learned representations; the
         signal is mostly additive and smooth, and trees capture the few
         thresholds.
 \end{itemize}
@@ -972,50 +1948,700 @@ beat deep networks \srcp{Grinsztajn, Oyallon, and Varoquaux 2022}. Networks win
 when the input is unstructured: text, images, audio.
 \end{frame}
 
+\begin{frame}{In the Literature: Neighbourhoods From Street View}
+\textbf{The question.} Gebru et al.\ (2017): surveys like the ACS are slow and expensive. Can images of the
+street measure a neighbourhood's income, race, and politics?
+\vskip1pt
+\textbf{The data.} 50 million Google Street View images, 200 US cities, 22 million cars.
+\vskip1pt
+\textbf{The method.} The network learns the features (cars) from pixels; a penalized regression does the rest:
+\begin{enumerate}\itemsep1pt
+  \item A \alert{convolutional neural network} (weights shared across image
+        locations) sorts each car into one of 2,657 make--model--year categories.
+  \item Ordinary ridge and logistic regressions map each area's mix of cars to its
+        ACS demographics and votes, trained on some cities, tested on 165 others.
+\end{enumerate}
+\textbf{The results.}
+\begin{itemize}\itemsep1pt
+  \item City level, predicted vs.\ ACS: median household income $r = 0.82$.
+  \item More sedans than pickup trucks: the city voted Democratic 88\% of the time;
+        otherwise Republican 82\%.
+\end{itemize}
+\end{frame}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Beyond]{Beyond: Text, Images, and Foundation Models}
+\section[Representations]{Representations: Text and Images}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Representations: Words as Vectors}
-\textbf{Goal}: turn unstructured inputs into numbers a model can use.
+\begin{frame}{Why Turn Text and Images Into Numbers?}
+Sociologists increasingly study behaviour through text, images, and audio: speeches,
+posts, court records, street photographs \srcp{Lazer et al.\ 2009}. A regression needs
+numbers. Three uses:
 \vskip3pt
-\begin{itemize}\itemsep4pt
-  \item \textbf{Word embeddings}: train a network to predict a word from its
-        neighbours; the hidden-layer weights give each word a vector (say 300
-        numbers). Words used in similar contexts get similar vectors.
-  \item Directions mean something: vector(\emph{rich}) $-$ vector(\emph{poor}),
-        averaged over many antonym pairs, defines an affluence dimension;
-        projecting other words onto it measures their class connotation.
-  \item \srct{Kozlowski, Taddy, and Evans (2019, ASR)}: dimensions of class
-        (affluence, education, cultivation) in a century of books, and how
-        their meanings moved.
-  \item \textbf{Images}: convolutional networks share weights across locations, so
-        a detector for a shape works anywhere in the image.
-        \srct{Gebru et al.\ (2017)}: cars in Google Street View images predict
-        neighbourhood income, race, and voting.
+\begin{enumerate}\itemsep4pt
+  \item \textbf{As the object of study}: the numbers for words carry cultural meaning.
+        How did the meaning of ``class'' change over a century of books?
+        \srcp{Kozlowski, Taddy, and Evans 2019}
+  \item \textbf{As predictors or measurements}: score each presidential speech for
+        populism; read a neighbourhood's income from its cars
+        \srcp{Bonikowski, Luo, and Stuhler 2022; Gebru et al.\ 2017}.
+  \item \textbf{As control variables}: the effect of nearby gunshots on children's test
+        scores must hold neighbourhood ``quality'' fixed; surveys miss it, street images
+        may record it. The effect of price on demand must hold product quality fixed; it
+        is written in the product description \srcp{Bajari et al.\ 2025}.
+\end{enumerate}
+{\small Use 3 is next week. Today: how the numbers are made.}
+\end{frame}
+
+\subsection{Principal Components}
+
+\begin{frame}{Feature Extraction: Principal Components\core}
+\begin{itemize}\itemsep6pt
+  \item We want to turn complex objects, such as text or images, into a relatively small set of
+        numerical features.
+  \item Principal components are an early, classic example of such features (\emph{embeddings}).
+  \item Principal components are weighted sums of the original variables, chosen to be the
+        ``best'' at reproducing the data: each new direction is orthogonal to the previous ones.
+  \item A small number of principal components often captures most of the variation in the
+        original variables, and so gives a useful low-dimensional summary.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Attention and Transformers}
-A sentence is a sequence of word vectors $x_1,\dots,x_T$. Each position builds a
-query $q_t$, key $k_t$, and value $v_t$ (three learned linear maps of $x_t$):
+\begin{frame}{Principal Components: the Setup\core}
+A sample of $n$ observations $W_1, \dots, W_n$ of a centred vector with $d$ entries,
+$W_i = (W_{i1}, \dots, W_{id})'$, each entry with mean 0. Their covariance matrix:
+\[
+  \Sigma_n = \frac1n\sum_{i=1}^n W_i W_i' \qquad (d \times d).
+\]
+\textbf{With $d = 2$, written out:}
 \begin{align*}
-  \text{output}_t = \sum_{s=1}^{T} \alpha_{ts}\,v_s,
-  \qquad
-  \alpha_{ts} = \frac{\exp(q_t'k_s/\sqrt d)}{\sum_{s'}\exp(q_t'k_{s'}/\sqrt d)}
+  \Sigma_n &= \frac1n\sum_{i=1}^n
+  \begin{pmatrix} W_{i1} \\ W_{i2} \end{pmatrix}
+  \begin{pmatrix} W_{i1} & W_{i2} \end{pmatrix}
+  = \frac1n\sum_{i=1}^n \begin{pmatrix} W_{i1}^2 & W_{i1}W_{i2} \\ W_{i2}W_{i1} & W_{i2}^2 \end{pmatrix}
+   && \text{\footnotesize multiply} \\
+  &= \begin{pmatrix} \Var(W_1) & \Cov(W_1, W_2) \\ \Cov(W_1, W_2) & \Var(W_2) \end{pmatrix}
+   && \text{\footnotesize means are 0}
 \end{align*}
-\begin{itemize}\itemsep3pt
-  \item Each word's new representation is a weighted average of all words, with
-        weights from how well its query matches their keys: context decides
-        meaning (\emph{bank} near \emph{river} vs.\ near \emph{loan}).
-  \item Stack many such layers, train on billions of words to predict the next
-        word, and you have a large language model \srcp{Vaswani et al.\ 2017}.
-  \item The softmax weights are the same logic as the multinomial logit (Week 4).
+{\small Diagonal: each variable's variance. Off the diagonal: how the variables move together.
+For standardized SEI and prestige: 1, 1, and their correlation 0.82.}
+\end{frame}
+
+\begin{frame}{Principal Directions and Components\core}
+\begin{itemize}\itemsep4pt
+  \item The \textbf{eigenvectors} $c_k$ (each of length 1) and \textbf{eigenvalues} $\lambda_k$ of
+        $\Sigma_n$ solve
+  \[
+    \Sigma_n c_k = \lambda_k c_k, \qquad k = 1, \dots, d .
+  \]
+        Software (\texttt{prcomp}) finds them. $c_1$ is the direction in which the data vary
+        most; $\lambda_k$ is the variance along $c_k$; the $\lambda_k$ add up to the total variance.
+  \item Keep the $K$ largest ($K \ll d$): $C_K = [c_1, \dots, c_K]$, a $d \times K$ matrix.
+  \item \textbf{Project} $W_i$ on each principal direction. With $d = 2$, written out:
+  \[
+    X_{ki} = c_k' W_i = c_{k1} W_{i1} + c_{k2} W_{i2} :
+  \]
+        a weighted sum of the variables, the $k$-th \textbf{principal component}.
+  \item Person $i$'s compressed features: $X_i^K = (X_{1i}, \dots, X_{Ki})' = C_K' W_i$.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Predictions as Measurements}
+\begin{frame}{Principal Components: a Picture\core}
+\begin{columns}[c]
+\begin{column}{0.5\linewidth}
+\includegraphics[width=\linewidth]{figs/pca_sei_prestige.pdf}
+\end{column}
+\begin{column}{0.48\linewidth}
+\small
+$W_i$ = (SEI, prestige), standardized; 600 of 3,509 GSS respondents \srcp{figs/w12\_repr.R, A}.
+\begin{itemize}\itemsep3pt
+  \item $c_1 = (0.707, 0.707)'$ (red): the direction of most variation; $\lambda_1 = 1.82$,
+        91\% of the total variance of 2.
+  \item Green person: $W_i = (1.35, 0.40)'$.
+        $X_{1i} = 0.707(1.35) + 0.707(0.40) = 1.24$: one number instead of two.
+  \item The green segment is what that one number misses; $c_2$ (dashed) would keep it.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Reconstruction\core}
+\begin{itemize}\itemsep5pt
+  \item $X_i^K$ is the compressed feature vector of the original $W_i$.
+  \item Approximate $W_i$ by projecting $X_i^K$ back to the $d$-dimensional space:
+  \[
+    \hat W_i = C_K X_i^K .
+  \]
+  \item With $d = 2$ and $K = 1$, written out: $\hat W_i = c_1 X_{1i}$, i.e.\
+        $\hat W_{i1} = c_{11} X_{1i}$ and $\hat W_{i2} = c_{12} X_{1i}$.
+        Green person: $\hat W_i = (0.707 \times 1.24,\ 0.707 \times 1.24)' = (0.87, 0.87)'$.
+  \item The choice of $K$ sets how much of the original information (variance) is kept:
+        the share $\sum_{k \leq K} \lambda_k \big/ \sum_k \lambda_k$.
+  \item A common use: compressing images (next).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Principal Components as Compression}
+A 120 $\times$ 160 image: each pixel row is a unit, each of the 160 columns a variable
+\srcp{figs/w12\_repr.R, C}:
+\vskip2pt
+\begin{center}
+\includegraphics[width=0.96\linewidth]{figs/pca_image.pdf}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt\small
+  \item Numbers stored: 19,200 for the original; with $K$ components, $K$ scores per row,
+        $K$ loadings per column, and 160 means: 720 at $K = 2$, 1,560 at $K = 5$,
+        4,360 at $K = 15$.
+  \item At $K = 15$, 23\% of the numbers keep 98\% of the variance, and the text reads cleanly.
+  \item On a document-by-word count table the same algebra is \textit{latent semantic
+        analysis} \srcp{Deerwester et al.\ 1990}; on a user-by-item table, a recommender.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Principal Components as an Encoder--Decoder Network\core}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.55cm,y=0.68cm]
+  \foreach \i in {1,...,7} {
+    \node[nnin,minimum size=6.4mm,font=\scriptsize] (in\i) at (0,{4-\i}) {$W_{i\i}$};
+    \node[nnout,minimum size=6.4mm,font=\scriptsize] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
+  \foreach \k in {1,2,3} \node[nnhid,minimum size=6.4mm,font=\scriptsize] (h\k) at (1,{2-\k}) {$E_{i\k}$};
+  \foreach \i in {1,...,7} \foreach \k in {1,2,3} {\draw[nnlink] (in\i) -- (h\k); \draw[nnlink] (h\k) -- (out\i);}
+  \node[nnhead] at (0,3.75) {input};
+  \node[nnhead] at (1,3.75) {encoding};
+  \node[nnhead] at (2,3.75) {decoding};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+\small
+The approximation of $W_i$ from $W_i$ is a prediction exercise: a shallow one-layer
+\emph{linear} network,
+\[
+  \underset{d\times 1}{W_i} \;\mapsto\; C_K'W_i := \underset{K\times 1}{E_i}
+  \;\mapsto\; A'E_i := \underset{d\times 1}{\hat W_i}.
+\]
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item Step 1 \textbf{encodes} the input into $K$ numbers; step 2 \textbf{decodes} them
+        back to the original space: an encoder--decoder network, an \textbf{autoencoder}.
+  \item For principal components, $A = C_K'$, so $\hat W_i = C_K E_i = C_K X_i^K$.
+  \item The weights into each hidden unit are a principal direction $c_k$; the hidden units'
+        outputs are the principal components; the decoder rebuilds the input.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Reading the Weights}
+\begin{columns}[T]
+\begin{column}{0.49\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.25cm,y=0.6cm]
+  \foreach \i in {1,...,7} {
+    \node[nnin,minimum size=5.6mm,font=\tiny] (in\i) at (0,{4-\i}) {$W_{i\i}$};
+    \node[nnout,minimum size=5.6mm,font=\tiny] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
+  \foreach \k in {1,2,3} \node[nnhid,minimum size=5.6mm,font=\tiny] (h\k) at (1,{2-\k}) {$E_{i\k}$};
+  \foreach \i in {1,...,7} {\draw[nnlink] (in\i) -- (h2); \draw[nnlink] (in\i) -- (h3);}
+  \foreach \i in {1,...,7} \foreach \k in {1,2,3} \draw[nnlink] (h\k) -- (out\i);
+  \foreach \i in {1,...,7} \draw[dukeblue,line width=0.9pt] (in\i) -- (h1);
+\end{tikzpicture}
+\end{center}
+{\footnotesize Weights \emph{into one hidden unit} (blue): a principal direction $c_1$. The unit's
+output is the first principal component.}
+\end{column}
+\begin{column}{0.49\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.25cm,y=0.6cm]
+  \foreach \i in {1,...,7} {
+    \node[nnin,minimum size=5.6mm,font=\tiny] (in\i) at (0,{4-\i}) {$W_{i\i}$};
+    \node[nnout,minimum size=5.6mm,font=\tiny] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
+  \foreach \k in {1,2,3} \node[nnhid,minimum size=5.6mm,font=\tiny] (h\k) at (1,{2-\k}) {$E_{i\k}$};
+  \foreach \i in {2,...,7} \foreach \k in {1,2,3} \draw[nnlink] (in\i) -- (h\k);
+  \foreach \i in {1,...,7} \foreach \k in {1,2,3} \draw[nnlink] (h\k) -- (out\i);
+  \foreach \k in {1,2,3} \draw[accent,line width=0.9pt] (in1) -- (h\k);
+\end{tikzpicture}
+\end{center}
+{\footnotesize Weights \emph{out of one input} (orange): that feature's weight on each latent
+dimension, its loadings $c_{11}, c_{21}, c_{31}$.}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{From Principal Components to Deep Autoencoders}
+\begin{center}
+\begin{tikzpicture}[x=2.0cm,y=0.5cm]
+  \foreach \i in {1,...,5} \node[nnin,minimum size=4.4mm] (a\i) at (0,{3-\i}) {};
+  \foreach \i in {1,...,7} \node[nnhid,minimum size=4.4mm] (b\i) at (1,{4-\i}) {};
+  \foreach \i in {1,2,3}   \node[nnhid,minimum size=4.4mm,fill=dukeblue!45] (c\i) at (2,{2-\i}) {};
+  \foreach \i in {1,...,6} \node[nnhid,minimum size=4.4mm] (d\i) at (3,{3.5-\i}) {};
+  \foreach \i in {1,...,5} \node[nnout,minimum size=4.4mm] (e\i) at (4,{3-\i}) {};
+  \foreach \i in {1,...,5} \foreach \j in {1,...,7} \draw[nnlink] (a\i) -- (b\j);
+  \foreach \i in {1,...,7} \foreach \j in {1,2,3} \draw[nnlink] (b\i) -- (c\j);
+  \foreach \i in {1,2,3} \foreach \j in {1,...,6} \draw[nnlink] (c\i) -- (d\j);
+  \foreach \i in {1,...,6} \foreach \j in {1,...,5} \draw[nnlink] (d\i) -- (e\j);
+  \node[nnhead] at (0,3.9) {input\\$W_i$};
+  \node[nnhead] at (1,3.9) {encoding 1\\$E^1_i$};
+  \node[nnhead] at (2,3.9) {encoding 2\\$E^2_i$ (code)};
+  \node[nnhead] at (3,3.9) {decoding 1\\$D^1_i$};
+  \node[nnhead] at (4,3.9) {output\\$\hat W_i$};
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror},thick,dukeblue] (-0.1,-3.6) -- (2.1,-3.6)
+     node[midway,below=4pt,font=\footnotesize]{encoder: kept};
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror},thick,accent] (2.3,-3.6) -- (4.1,-3.6)
+     node[midway,below=4pt,font=\footnotesize]{decoder: discarded after training};
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\[
+  W_i \;\overset{g_1}{\longmapsto}\; E^1_i \;\overset{g_2}{\longmapsto}\; E^2_i
+  \;\overset{g_3}{\longmapsto}\; D^1_i \;\overset{g_4}{\longmapsto}\; \hat W_i
+\]
+\vskip-4pt
+\begin{itemize}\itemsep1pt\small
+  \item Each $g$ is a layer: weighted sums, then a nonlinear activation (ReLU). One linear
+        layer is PCA; nonlinear layers keep more of $W_i$ in the same $K$. The trained
+        encoder turns any new unit into its code.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Change What the Network Predicts\core}
+\begin{itemize}\itemsep2pt
+  \item With encoder $e(\cdot)$ and decoder $d(\cdot)$, an autoencoder minimizes the
+        rebuilding loss $\E\big[\text{loss}\big(W,\ d(e(W))\big)\big]$. It must rebuild
+        \emph{everything}: font, word order, typos, lighting.
+  \item Keep the encoder, but predict another target $A$:
+        $\E\big[\text{loss}\big(A,\ f(e(W))\big)\big]$. The code keeps what predicts $A$:
+  \begin{center}\small
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{@{}lll@{}}
+  \toprule
+  model & trained to predict & the code ends up holding \\
+  \midrule
+  autoencoder & the input itself & whatever varies most \\
+  word2vec & the words near each word & what a word's company says \\
+  BERT & words hidden from a sentence & meaning in context \\
+  Gebru et al.\ CNN & a car's make and model & visual traits of cars \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  \item The task is a choice: for price effects, a description's code should hold product
+        type and quality, not its wording.
+  \item All but the last are \textbf{self-supervised} (slide on the three kinds): the
+        target comes free from the data, so they train on billions of words.
+\end{itemize}
+\end{frame}
+
+\subsection{Word Vectors}
+
+\begin{frame}{You Know a Word by Its Neighbours\core}
+\begin{columns}[T]
+\begin{column}{0.52\linewidth}
+What is \textcolor{dukeblue}{tesg\"uino}?
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item A bottle of \textcolor{dukeblue}{tesg\"uino} is on the table.
+  \item Everyone likes \textcolor{dukeblue}{tesg\"uino}.
+  \item \textcolor{dukeblue}{Tesg\"uino} makes you drunk.
+  \item We make \textcolor{dukeblue}{tesg\"uino} out of corn.
+\end{itemize}
+\vskip3pt
+{\footnotesize\color{gray}(Jurafsky and Martin, Ch.\ 6)}
+\end{column}
+\begin{column}{0.45\linewidth}
+\begin{itemize}\itemsep4pt
+  \item You never saw the word, yet you know: an alcoholic drink, made from corn.
+  \item \textbf{Distributional hypothesis}: words used in similar contexts have similar
+        meanings.
+  \item So describe each word by the company it keeps, then compress that description.
+  \item Similar words get similar lists of numbers, measured by the \textit{cosine}
+        $\frac{\sum_k a_k b_k}{\sqrt{\sum_k a_k^2}\sqrt{\sum_k b_k^2}}$: 1 = same direction, 0 = unrelated.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Word Vectors From Counts, by Hand}
+How often each word appears within a few words of four context words (hypothetical
+counts) \srcp{figs/w12\_repr.R, D}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lcccc|cc@{}}
+\toprule
+& drink & bottle & field & grow & PC1 & PC2 \\
+\midrule
+tesg\"uino & 4 & 3 & 1 & 1 & 2.10 & 0.06 \\
+beer & 5 & 4 & 0 & 1 & 3.61 & $-0.67$ \\
+wine & 4 & 4 & 0 & 0 & 3.60 & 0.67 \\
+corn & 1 & 0 & 4 & 5 & $-4.38$ & $-0.83$ \\
+wheat & 0 & 0 & 5 & 4 & $-4.93$ & 0.77 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt\small
+  \item Cosine of the count rows: tesg\"uino and beer 0.98, tesg\"uino and corn 0.39.
+  \item Principal components of the table keep 99.6\% of its variance in two numbers per
+        word. PC1 is a drink-versus-crop axis; tesg\"uino sits on the drink side.
+  \item Real vocabularies have 100,000 words and context columns: the table is huge and
+        mostly zeros, and the compressed version (about 300 numbers per word) is what we keep.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Word2Vec: Predict the Neighbours\core}
+\begin{columns}[c]
+\begin{column}{0.4\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.22cm,y=0.8cm]
+  \foreach \w [count=\i] in {a,corn,drunk,tesg\"uino,table} {
+    \ifnum\i=4 \node[nnin,minimum size=5mm,fill=dukeblue!45] (x\i) at (0,{3-\i}) {};
+    \else \node[nnin,minimum size=5mm] (x\i) at (0,{3-\i}) {}; \fi
+    \node[left=2pt of x\i,font=\scriptsize] {\w};
+    \node[nnout,minimum size=5mm] (o\i) at (2,{3-\i}) {};
+    \node[right=2pt of o\i,font=\scriptsize] {\w};}
+  \foreach \k in {1,2,3} \node[nnhid,minimum size=7mm,font=\scriptsize] (h\k) at (1,{1.3*(2-\k)}) {$u_{w\k}$};
+  \foreach \i in {1,2,3,5} \foreach \k in {1,2,3} \draw[nnlink,gray!25] (x\i) -- (h\k);
+  \foreach \k in {1,2,3} \draw[dukeblue,line width=0.9pt] (x4) -- (h\k);
+  \foreach \k in {1,2,3} \foreach \i in {1,...,5} \draw[nnlink] (h\k) -- (o\i);
+  \node[nnhead] at (0,2.75) {word};
+  \node[nnhead] at (1,2.75) {$u_w$};
+  \node[nnhead] at (2,2.75) {context};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.58\linewidth}
+\small
+\textbf{Skip-gram} \srcp{Mikolov et al.\ 2013}: from each word $w$ in a text,
+predict the words $c$ within a few positions of it.
+\begin{itemize}\itemsep3pt
+  \item Input: a 0/1 row with a single 1 for $w$. The weights from that one input
+        are the word's vector $u_{w1}, \dots, u_{wK}$; nothing else reaches the
+        middle layer.
+  \item Output: a probability for every word in the vocabulary,
+  \[
+    \Pr(c \mid w) = \tfrac{\exp(\sum_k u_{wk} v_{ck})}{\sum_{c'}\exp(\sum_k u_{wk} v_{c'k})},
+  \]
+        the multinomial logit of Week 4 with $V$ categories; $v_{ck}$ are the
+        output weights.
+  \item Words with the same neighbours need the same predictions, so they get similar
+        vectors $u_w$.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Negative Sampling: a Logistic Regression\adv}
+\begin{itemize}\itemsep4pt
+  \item The softmax denominator sums over all $V = 100{,}000$ words, for every word of
+        billions. Too slow.
+  \item Instead, a yes/no question: is this pair a real neighbour pair, or a fake one
+        made by drawing a random word?
+  \[
+    \Pr(\text{real} \mid w, c) = \sigma\Big(\sum_k u_{wk} v_{ck}\Big),
+    \qquad \sigma(z) = \frac{1}{1 + e^{-z}}
+  \]
+        the logit of Week 4, with the product of two word vectors as the linear index.
+  \item Each real pair is fed with a few fake ones \srcp{figs/w12\_repr.R, E}:
+  \begin{center}\small
+  \begin{tabular}{@{}lccc@{}}
+  \toprule
+  pair & kind & $\sum_k u_{wk} v_{ck}$ & $\Pr(\text{real})$ \\
+  \midrule
+  (tesg\"uino, drunk) & real & 2.0 & 0.88 \\
+  (tesg\"uino, carburetor) & fake & $-1.5$ & 0.18 \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  \item Gradient descent raises real pairs' products, lowers fake ones'; words sharing
+        neighbours end up with aligned $u_w$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Word Vectors Capture, and What They Miss}
+\textbf{Capture}
+\begin{itemize}\itemsep2pt
+  \item Similarity: words used alike (\emph{teacher}, \emph{instructor}) get a high cosine.
+  \item Directions: vector(\emph{king}) $-$ vector(\emph{man}) $+$ vector(\emph{woman})
+        lands closest to vector(\emph{queen}) \srcp{Mikolov et al.\ 2013}. The difference
+        \emph{man} to \emph{woman} is roughly one direction, shared across pairs.
+  \item The same directions carry the corpus's stereotypes: occupations sit closer to
+        \emph{he} or \emph{she} as they do in the text, and track census occupation
+        shares over a century \srcp{Garg et al.\ 2018}. For sociology that is data.
+\end{itemize}
+\vskip3pt
+\textbf{Miss}
+\begin{itemize}\itemsep2pt
+  \item \textbf{One vector per word}: \emph{bank} gets the same numbers in ``river
+        bank'' and ``bank loan''.
+  \item \textbf{No order}: averaging word vectors gives ``dog bites man'' and ``man
+        bites dog'' the same sentence vector. Next: read the whole sentence.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: the Geometry of Culture}
+\textbf{The question.} Kozlowski, Taddy, and Evans (2019): what does ``class'' mean, and how did its meaning change over the
+twentieth century?
+\vskip2pt
+\textbf{The method.} Word vectors trained on a century of published books.
+\begin{enumerate}\itemsep2pt
+  \item \textbf{Build a dimension}: average the differences over many antonym pairs,
+        vector(\emph{rich}) $-$ vector(\emph{poor}), vector(\emph{affluent}) $-$
+        vector(\emph{impoverished}), \dots: an \emph{affluence} direction.
+  \item \textbf{Place words on it}: the cosine of a word's vector with the direction.
+\end{enumerate}
+\vskip2pt
+Toy three-number vectors \srcp{figs/w12\_repr.R, F; hypothetical}: rich $=(2.0, 1.0, 0.5)$,
+poor $=(-1.6, 0.8, 0.4)$, so the direction is $(3.6, 0.2, 0.1)$;
+golf $=(1.2, 0.3, 1.0)$ gives cosine 0.78, camping $=(-0.6, 0.2, 1.1)$ gives $-0.44$.
+\vskip2pt
+\textbf{The results.} Dimensions of affluence, education, cultivation, status, and more;
+words' positions were checked against survey ratings of the same words. Tracking the
+dimensions decade by decade shows how the meanings of class moved.
+\end{frame}
+
+\subsection{Words in Context}
+
+\begin{frame}{Reading Words in Order: Recurrent Networks\adv}
+A \textbf{language model} predicts the next word from the words so far. A recurrent
+network reads one word at a time and carries a running summary $h_t$:
+\begin{center}
+\begin{tikzpicture}[x=2.25cm,y=0.88cm]
+  \foreach \w/\o [count=\t] in {The/survey,survey/asked,asked/parents,parents/about} {
+    \node[font=\small,text height=1.6ex,text depth=0.4ex] (w\t) at (\t,-0.55) {\w};
+    \node[nnin] (x\t) at (\t,0.35) {$x_\t$};
+    \node[nnhid] (h\t) at (\t,1.55) {$h_\t$};
+    \node[nnout] (o\t) at (\t,2.75) {};
+    \node[font=\scriptsize,text=accent,right=1pt of o\t] {\o?};
+    \draw[nnedge] (w\t) -- (x\t);
+    \draw[nnedge] (x\t) -- node[left,font=\scriptsize,text=gray] {$b$} (h\t);
+    \draw[nnedge] (h\t) -- (o\t);}
+  \node[nnhid,draw=gray!60,fill=white,text=gray] (h0) at (0,1.55) {$h_0$};
+  \foreach \t [evaluate=\t as \s using int(\t-1)] in {1,...,4}
+    \draw[nnedge,dukeblue,line width=0.8pt] (h\s) -- node[above,font=\scriptsize] {$a$} (h\t);
+  \node[nnhead,anchor=east] at (0.55,2.75) {predict next};
+  \node[nnhead,anchor=east] at (0.55,0.35) {word vector};
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt\small
+  \item One number each, for the idea: $h_t = \sigma(a\,h_{t-1} + b\,x_t)$, the same $a, b$ at
+        every step. Like a lagged outcome: today's state depends on yesterday's.
+  \item Long sentences: the gradient multiplies many $a\,\sigma'(\cdot)$ terms and vanishes;
+        \textit{LSTM} gates decide what to keep \srcp{Hochreiter and Schmidhuber 1997}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{ELMo: Read Both Ways, Then Combine\adv}
+\begin{columns}[c]
+\begin{column}{0.56\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.5cm,y=0.92cm]
+  \foreach \w [count=\t] in {the,river,bank,flooded} {
+    \node[font=\scriptsize,text height=1.6ex,text depth=0.4ex] (w\t) at (\t,-0.6) {\w};
+    \node[nnin,minimum size=5.5mm] (x\t) at (\t,0.2) {};
+    \node[nnhid,minimum size=5.5mm] (f1\t) at ({\t-0.2},1.3) {};
+    \node[nnhid,minimum size=5.5mm,draw=accent,fill=accent!15] (b1\t) at ({\t+0.2},1.75) {};
+    \node[nnhid,minimum size=5.5mm] (f2\t) at ({\t-0.2},2.85) {};
+    \node[nnhid,minimum size=5.5mm,draw=accent,fill=accent!15] (b2\t) at ({\t+0.2},3.3) {};
+    \draw[nnlink] (w\t) -- (x\t);
+    \draw[nnlink] (x\t) -- (f1\t); \draw[nnlink] (x\t) -- (b1\t);
+    \draw[nnlink] (f1\t) -- (f2\t); \draw[nnlink] (b1\t) -- (b2\t);}
+  \foreach \t [evaluate=\t as \s using int(\t+1)] in {1,2,3} {
+    \draw[nnedge,dukeblue,line width=0.7pt] (f1\t) -- (f1\s);
+    \draw[nnedge,dukeblue,line width=0.7pt] (f2\t) -- (f2\s);
+    \draw[nnedge,accent,line width=0.7pt] (b1\s) -- (b1\t);
+    \draw[nnedge,accent,line width=0.7pt] (b2\s) -- (b2\t);}
+  \draw[dashed,thick,dukeblue,rounded corners=4pt] (2.62,-0.2) rectangle (3.38,3.65);
+  \node[font=\scriptsize,text=dukeblue,align=center] at (3,4.05) {ELMo vector of \emph{bank}:\\weighted sum of these 5};
+  \node[font=\scriptsize,anchor=east] at (0.6,0.2) {input};
+  \node[font=\scriptsize,anchor=east] at (0.6,1.525) {layer 1};
+  \node[font=\scriptsize,anchor=east] at (0.6,3.075) {layer 2};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.42\linewidth}
+\small
+\textbf{ELMo} \srcp{Peters et al.\ 2018}
+\begin{itemize}\itemsep3pt
+  \item Two language models, each two layers deep: forward (blue) predicts the next
+        word; backward (orange) the previous one.
+  \item At \emph{bank}, the forward states have read ``the river''; the backward
+        states have read ``flooded''.
+  \item The word's vector is a weighted sum of its five states (dashed box), with
+        weights learned for each task: \emph{bank} now differs between ``river bank''
+        and ``bank loan''.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Attention: Look at Every Word at Once\core}
+\begin{quote}\small
+The survey asked parents about the new school. \textbf{It} was badly underfunded.
+\end{quote}
+\vskip-2pt
+A reader links \emph{It} to \emph{school}, eight words back; a recurrent network must
+carry that link through every word between. \textbf{Self-attention}
+\srcp{Vaswani et al.\ 2017} lets each word look at all others directly. Each word gets
+three lists of $D$ numbers, weighted sums of its word vector with learned weights:
+a \textbf{query} $q$ (what it looks for), a \textbf{key} $k$ (what it offers), a
+\textbf{value} $v$ (what it passes on). For word $i$:
+\begin{align*}
+  \text{score}_{ij} &= \frac{\sum_{d} q_{id} k_{jd}}{\sqrt D}
+   && \text{\footnotesize how well word $j$ answers word $i$} \\
+  \text{weight}_{ij} &= \frac{\exp(\text{score}_{ij})}{\sum_{j'}\exp(\text{score}_{ij'})}
+   && \text{\footnotesize softmax: positive, sums to 1 over $j$} \\
+  \text{new vector}_{i} &= \textstyle\sum_j \text{weight}_{ij}\, v_{j}
+   && \text{\footnotesize weighted average of the values}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Attention by Hand: Two Banks}
+$D = 2$; query of \emph{bank} $(1, 1)$; keys: the $(0, 0)$, river $(2, 0)$, loan
+$(0, 2)$, bank $(0.5, 0.5)$; values: the $(0, 0)$, river $(1, 0)$, loan $(0, 1)$, bank
+$(0.5, 0.5)$ \srcp{figs/w12\_repr.R, G; hypothetical}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}l|ccc|ccc@{}}
+\toprule
+& \multicolumn{3}{c|}{``the river bank''} & \multicolumn{3}{c}{``the bank loan''} \\
+& the & river & bank & the & bank & loan \\
+\midrule
+score $= \sum_d q_d k_{jd}/\sqrt 2$ & 0 & $2/\sqrt2 = 1.41$ & $1/\sqrt2 = 0.71$ & 0 & 0.71 & 1.41 \\
+$\exp(\text{score})$ & 1.00 & 4.11 & 2.03 & 1.00 & 2.03 & 4.11 \\
+weight & 0.14 & \alert{0.58} & 0.28 & 0.14 & 0.28 & \alert{0.58} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-6pt
+\begin{align*}
+  \text{river bank: } & 0.14(0, 0) + 0.58(1, 0) + 0.28(0.5, 0.5) = (0.72, 0.14) \\
+  \text{bank loan: }  & 0.14(0, 0) + 0.28(0.5, 0.5) + 0.58(0, 1) = (0.14, 0.72)
+\end{align*}
+\begin{itemize}\itemsep1pt\small
+  \item Same word, two outputs: \emph{bank} leans toward nature in one sentence, money in the other.
+  \item BERT: $D = 64$, 12 sets of $q, k, v$ per layer, 12 layers; a position vector adds word order.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Attention, Drawn}
+Arrows from \emph{bank} to each word it attends to; width $\propto$ weight
+\srcp{figs/w12\_repr.R, G}:
+\vskip2pt
+\begin{center}
+\begin{tikzpicture}
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a0) at (0.00,0) {the};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a1) at (1.95,0) {river};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a2) at (3.90,0) {bank};
+  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.6] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (a0.north);
+  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (a1.north);
+  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (a2.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (a2.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
+  \node[font=\footnotesize] at (1.95,-1.75) {``the river bank'': new vector $(0.72, 0.14)$};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b0) at (6.60,0) {the};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b1) at (8.55,0) {bank};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b2) at (10.50,0) {loan};
+  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (b0.north);
+  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (b1.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (b1.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
+  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (b2.north);
+  \node[font=\footnotesize] at (8.55,-1.75) {``the bank loan'': new vector $(0.14, 0.72)$};
+\end{tikzpicture}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep3pt\small
+  \item \emph{bank} sends most of its attention to the word that tells it which sense it
+        is: \emph{river} in one sentence, \emph{loan} in the other.
+  \item Every word does this at once, in every layer, with 12 different query--key
+        pairs per layer: each can look for a different kind of relation.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{BERT: Learn by Filling In Blanks\core}
+\begin{columns}[c]
+\begin{column}{0.47\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=0.9cm,y=0.85cm]
+  \foreach \w [count=\i] in {[CLS],The,survey,was,[MASK]} {
+    \node[font=\scriptsize,text height=1.6ex,text depth=0.4ex] (t\i) at (\i,0) {\w};
+    \node[nnin,minimum size=5mm] (e\i) at (\i,0.85) {};
+    \node[nnhid,minimum size=5mm] (a\i) at (\i,2.15) {};
+    \node[nnhid,minimum size=5mm] (b\i) at (\i,3.45) {};
+    \draw[nnedge] (t\i) -- (e\i);}
+  \foreach \i in {1,...,5} \foreach \j in {1,...,5} {\draw[nnlink] (e\i) -- (a\j); \draw[nnlink] (a\i) -- (b\j);}
+  \node[nnout,minimum size=5mm] (p) at (5,4.6) {};
+  \node[above=1pt of p,font=\scriptsize,text=accent] {``fielded''};
+  \draw[nnedge] (b5) -- (p);
+  \node[nnhid,minimum size=5mm,fill=dukeblue!45] (c) at (1,4.6) {};
+  \node[above=1pt of c,font=\scriptsize,text=dukeblue] {768 numbers};
+  \draw[nnedge] (b1) -- (c);
+  \node[font=\scriptsize,align=left,anchor=west] at (5.45,0.85) {word +\\position};
+  \node[font=\scriptsize,align=left,anchor=west] at (5.45,2.8) {attention\\layers};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.51\linewidth}
+\small
+\textbf{BERT} \srcp{Devlin et al.\ 2019}: a stack of attention layers, trained on books
+and Wikipedia.
+\begin{itemize}\itemsep3pt
+  \item \textbf{Training task}: hide 15\% of the words behind \texttt{[MASK]} and predict
+        them from \emph{both} sides; also predict whether sentence B followed sentence A.
+  \item The prediction error is backpropagated into every query, key, and value weight
+        and every word vector. Nobody labels anything.
+  \item \textbf{Output}: a vector for every word, read in its sentence. The vector of
+        the extra first token \texttt{[CLS]} (768 numbers) serves as the vector of the
+        whole text.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Using a Pretrained Model on Your Data\core}
+You have 2,000 hand-coded speeches and a BERT trained by someone else on billions of words.
+\vskip3pt
+\begin{enumerate}\itemsep5pt
+  \item \textbf{Linear probing}: freeze BERT. Turn each text into its 768 numbers and
+        fit a ridge or logistic regression on them: today's first section, with
+        $p = 768$. Cheap, and hard to overfit.
+  \item \textbf{Fine-tuning}: keep training \emph{all} of BERT's weights, plus the new
+        output layer, on your labelled data; small learning rate, a few epochs, early
+        stopping on a validation set. Better when the task differs from ordinary text.
+\end{enumerate}
+\vskip3pt
+\begin{itemize}\itemsep3pt
+  \item \srct{Bonikowski, Luo, and Stuhler (2022)} fine-tune a pretrained language model
+        to score populism, nationalism, and authoritarianism in U.S.\ presidential
+        campaign speeches, 1952--2020.
+  \item The cross-validation rules still hold: tune on training folds, report error on
+        texts the model never saw, and split by speaker or document, not by sentence.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Text as a Control Variable: a Preview}
+\textbf{The question}: how much does demand fall when price rises? Expensive products
+differ in quality, and quality is in the description, not in a column.
+\[
+  Y_i = \beta D_i + g(W_i) + \epsilon_i
+  \qquad
+  \begin{array}{l}
+    \text{\footnotesize $Y$: log sales, $D$: log price} \\
+    \text{\footnotesize $W$: the description's BERT vector}
+  \end{array}
+\]
+\begin{itemize}\itemsep4pt
+  \item $g(W_i)$ is an unknown function of 768 numbers: exactly the setting of this
+        week's methods.
+  \item What matters is how well $W$ predicts sales and price, so fine-tune BERT to
+        predict \emph{those}, not to rebuild the text \srcp{Bajari et al.\ 2025}.
+  \item Sociology has the same shape: neighbourhood images as controls for
+        ``quality'' when studying exposure to violence.
+  \item But $\hat g$ is deliberately biased, so plugging it in and reading $\hat\beta$ is not
+        valid. \textbf{Next week}: how to use such predictions in a causal estimate.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Predictions as Measurements\core}
 Sociologists increasingly use model outputs as \emph{variables}: an LLM codes
 the topic of 100,000 speeches; a classifier labels images. Errors in those
 labels bias every downstream estimate.
@@ -1036,11 +2662,11 @@ random subsample of $n$ cases; the model labels all $N$. For a mean,
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Interpretation]{Interpretation and Uncertainty}
+\section[Interpretation]{Interpretation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Looking Inside a Black Box}
+\begin{frame}{Looking Inside a Black Box\core}
 \begin{itemize}\itemsep4pt
   \item \textbf{Permutation importance}: shuffle one variable in the test data and
         record how much error rises. Correlated variables share credit
@@ -1061,135 +2687,13 @@ Turning that into ``what happens when a person's input changes'' needs Weeks 5--
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{Prediction Intervals Without a Model: Split Conformal}
-\srct{Lei, G'Sell, Rinaldo, Tibshirani, and Wasserman (2018)}: any $\hat f$, any
-distribution, exchangeable data.
-\begin{enumerate}\itemsep2pt
-  \item Split the sample. Fit $\hat f$ on part 1.
-  \item On part 2 ($n_2$ cases), compute absolute residuals $R_i = |Y_i - \hat f(X_i)|$.
-  \item Let $\hat q$ be the $\lceil (n_2+1)(1-\alpha)\rceil$-th smallest $R_i$.
-  \item Interval for a new case: $\hat f(x) \pm \hat q$.
-\end{enumerate}
-\vskip3pt
-\textbf{Why it works}: the new residual is exchangeable with the $n_2$ calibration
-residuals, so its rank among them is uniform; the chance it exceeds $\hat q$ is at
-most $\alpha$. Then
-\begin{align*}
-  \Pr\big(Y_{\text{new}} \in \hat f(X_{\text{new}}) \pm \hat q\big) \geq 1 - \alpha
-\end{align*}
-in finite samples, whether or not $\hat f$ is any good. A bad $\hat f$ gives a wide
-interval, not a wrong one. Coverage is on average over $x$, not at each $x$.
-\end{frame}
-
-\begin{frame}{What Changed With Very Flexible Models}
-\begin{itemize}\itemsep4pt
-  \item \textbf{Double descent} \srcp{Belkin, Hsu, Ma, and Mandal 2019}: past the point where a
-        model can fit the training data exactly, test error can fall again as
-        complexity keeps rising. The U-shaped curve is the left half of a
-        bigger picture.
-  \item \textbf{Why}: among the many exact fits, the fitting algorithm picks the
-        smallest-norm one, an implicit ridge penalty; with very many parameters,
-        that interpolant can predict well \srcp{Hastie, Montanari, Rosset, and Tibshirani 2022}.
-  \item \textbf{For tables of social data} (rows of people, columns of
-        variables), tree ensembles still beat deep networks on most benchmarks
-        \srcp{Grinsztajn, Oyallon, and Varoquaux 2022}. Deep learning earns its
-        keep on text, images, and audio.
-  \item The bias--variance logic still governs choices; ``complexity'' is just not
-        the number of parameters.
-\end{itemize}
-\end{frame}
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Social Science]{Prediction in Social Science}
+\section[Fairness]{Prediction and Fairness}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{In the Literature: the Fragile Families Challenge}
-{\footnotesize\color{gray}\srct{Salganik et al.\ (2020)}}\vskip1pt
-\textbf{The question.} How predictable are life outcomes, given rich data from
-birth to age 9?
-\textbf{The design.} A mass collaboration: 4,242 families, 12,942 variables;
-outcomes at age 15 released for half the families; 160 teams submitted
-predictions, scored on a held-out set never seen by anyone.
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}lc|lc@{}}
-\toprule
-outcome & best $R^2_{\text{holdout}}$ & outcome & best $R^2_{\text{holdout}}$ \\
-\midrule
-material hardship & 0.23 & eviction & 0.05 \\
-child's GPA & 0.19 & caregiver job training & 0.05 \\
-child's grit & 0.06 & caregiver layoff & 0.03 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\begin{itemize}\itemsep1pt
-  \item The best of 160 teams was only slightly better than a four-variable
-        linear benchmark chosen by a domain expert (mother's race, marital
-        status, and education at birth; the outcome measured at age 9).
-  \item Errors depended on the \emph{family}, not on the method: the same families
-        were mispredicted by everyone.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{The Fragile Families Challenge: What It Means}
-\begin{itemize}\itemsep4pt
-  \item \textbf{A ceiling, not a failure}: with these data, most variation in life
-        outcomes is unpredictable from childhood measures. That is a substantive
-        finding about stratification, measured honestly.
-  \item \textbf{The holdout did the work}: 160 teams tuning against a public
-        leaderboard would have overfit it; a set opened once, at the end, could not be.
-  \item \textbf{GSS echo}: boosting reached $R^2 = 0.38$ for log earnings, OLS 0.34.
-        Flexible methods add little when the signal is mostly additive and the
-        noise is large.
-  \item \textbf{Prediction as a benchmark for theory}: fit a flexible model on the
-        same covariates as your theoretical model; a large gap in out-of-sample
-        fit says the functional form is wrong \srcp{Verhagen 2024}.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{In the Literature: Machine Predictions and Bail \srcp{Kleinberg et al.\ 2018}}
-\textbf{The question.} Judges decide pretrial release by predicting crime if
-released. Could an algorithm predict better?
-\vskip3pt
-\textbf{The data.} New York City arrests 2008--13; 554,689 cases in the working
-sample. Judges release 73.6\%; 11.3\% of the released commit a crime before trial.
-\vskip3pt
-\textbf{The results} (held-out test set):
-\begin{itemize}\itemsep2pt
-  \item Same release rate as the judges: crime falls 24.7\%.
-  \item Same crime rate: detention falls from 26.4\% to 15.3\% (a 41.9\% cut).
-  \item Both can be achieved while reducing racial disparities in detention.
-\end{itemize}
-\vskip3pt
-\textbf{The catch: selective labels.} Crime is observed only for defendants the
-judge released. The algorithm's prediction for the detained cannot be checked
-directly.
-\end{frame}
-
-\begin{frame}{Kleinberg et al.: Handling Selective Labels}
-\begin{itemize}\itemsep4pt
-  \item Cases are assigned to judges as good as randomly within courthouse-day
-        cells (the judge design of Week 7).
-  \item \textbf{Contraction}: start from the defendants released by the most
-        lenient judges, whose outcomes are mostly observed. Detain more of them
-        in order of predicted risk, and compare with what stricter judges
-        achieved by detaining more.
-  \item Stricter (second-quintile) judges cut crime 9.9\% relative to the most
-        lenient; the algorithm matches that cut while jailing far fewer people.
-  \item The headline imputations still assume selection on observables for the
-        released; contraction is the check that does not.
-\end{itemize}
-\vskip4pt
-\alert{A prediction problem with a causal core}: the policy question is what
-happens if the rule changes, and that needs a design, not only a better $\hat f$.
-\end{frame}
-
 \begin{frame}{A Biased Algorithm, and Why}
-{\footnotesize\color{gray}\srct{Obermeyer, Powers, Vogeli, and Mullainathan (2019)}}\vskip1pt
-A commercial algorithm ranks patients for a care-management program
+Obermeyer et al.\ (2019): a commercial algorithm ranks patients for a care-management program
 (6,079 Black and 43,539 White patients). Above the 97th percentile of the score,
 patients are enrolled automatically.
 \begin{itemize}\itemsep1pt
@@ -1203,8 +2707,7 @@ patients are enrolled automatically.
   \item Retraining on a label combining health and cost cut the excess
         chronic conditions by 84\%.
 \end{itemize}
-{\footnotesize The sociological lesson: what is measured, and for whom, is built into the
-outcome variable before any model is fit.}
+{\footnotesize Lesson: what is measured, and for whom, is built into the outcome before any model is fit.}
 \end{frame}
 
 \begin{frame}{Fairness Criteria Conflict}
@@ -1274,8 +2777,9 @@ causal estimator}, which is next week.
         it can.
 \end{itemize}
 \vskip4pt
-\begin{block}{Problem Set 5}
-Assigned today, due Monday November 23. Covers Weeks 10--11.
+\begin{block}{Problem Set 4}
+Due Friday, November 20. Problem Set 5 (Weeks 12--13) is assigned
+that day and due Friday, December 4.
 \end{block}
 \vskip4pt
 \begin{block}{Reading}
@@ -1288,38 +2792,49 @@ ISL Chapters 5, 6, and 8; Molina and Garip (2019). Optional: ISL Chapter 10
 \footnotesize
 \begin{itemize}\itemsep2pt
 \item Angelopoulos, Anastasios N., Stephen Bates, Clara Fannjiang, Michael I. Jordan, and Tijana Zrnic. 2023. ``Prediction-Powered Inference.'' \textit{Science} 382(6671): 669--674.
+\item Bajari, Patrick, Zhihao Cen, Victor Chernozhukov, Manoj Manukonda, Suhas Vijaykumar, Jin Wang, Ramon Huerta, et al. 2025. ``Hedonic Prices and Quality Adjusted Price Indices Powered by AI.'' \textit{Journal of Econometrics} 251(1): 105652.
+\item Baldi, Pierre and Kurt Hornik. 1989. ``Neural Networks and Principal Component Analysis: Learning from Examples without Local Minima.'' \textit{Neural Networks} 2(1): 53--58.
 \item Athey, Susan and Guido W. Imbens. 2019. ``Machine Learning Methods That Economists Should Know About.'' \textit{Annual Review of Economics} 11: 685--725.
-\item Bates, Stephen, Trevor Hastie, and Robert Tibshirani. 2024. ``Cross-Validation: What Does It Estimate and How Well Does It Do It?'' \textit{Journal of the American Statistical Association} 119(546): 1434--1445.
-\item Belkin, Mikhail, Daniel Hsu, Siyuan Ma, and Soumik Mandal. 2019. ``Reconciling Modern Machine-Learning Practice and the Classical Bias--Variance Trade-Off.'' \textit{PNAS} 116(32): 15849--15854.
+\item Blumenstock, Joshua, Gabriel Cadamuro, and Robert On. 2015. ``Predicting Poverty and Wealth from Mobile Phone Metadata.'' \textit{Science} 350(6264): 1073--1076.
+\item Bonikowski, Bart, Yuchen Luo, and Oscar Stuhler. 2022. ``Politics as Usual? Measuring Populism, Nationalism, and Authoritarianism in U.S. Presidential Campaigns (1952--2020) with Neural Language Models.'' \textit{Sociological Methods \& Research} 51(4): 1721--1787.
 \item Breiman, Leo. 2001. ``Random Forests.'' \textit{Machine Learning} 45(1): 5--32.
 \item Chen, Tianqi and Carlos Guestrin. 2016. ``XGBoost: A Scalable Tree Boosting System.'' \textit{Proceedings of KDD '16}: 785--794.
+\item Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins. 2018. ``Double/Debiased Machine Learning for Treatment and Structural Parameters.'' \textit{The Econometrics Journal} 21(1): C1--C68.
 \item Chouldechova, Alexandra. 2017. ``Fair Prediction with Disparate Impact.'' \textit{Big Data} 5(2): 153--163.
+\item Deerwester, Scott, Susan T. Dumais, George W. Furnas, Thomas K. Landauer, and Richard Harshman. 1990. ``Indexing by Latent Semantic Analysis.'' \textit{Journal of the American Society for Information Science} 41(6): 391--407.
+\item Devlin, Jacob, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. ``BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.'' \textit{Proceedings of NAACL-HLT 2019}: 4171--4186.
 \item Egami, Naoki, Musashi Hinck, Brandon M. Stewart, and Hanying Wei. 2023. ``Using Imperfect Surrogates for Downstream Inference.'' \textit{Advances in Neural Information Processing Systems} 36.
-\item Friedman, Jerome H. 2001. ``Greedy Function Approximation: A Gradient Boosting Machine.'' \textit{Annals of Statistics} 29(5): 1189--1232.
+\item Garg, Nikhil, Londa Schiebinger, Dan Jurafsky, and James Zou. 2018. ``Word Embeddings Quantify 100 Years of Gender and Ethnic Stereotypes.'' \textit{PNAS} 115(16): E3635--E3644.
 \item Gebru, Timnit, et al. 2017. ``Using Deep Learning and Google Street View to Estimate the Demographic Makeup of Neighborhoods across the United States.'' \textit{PNAS} 114(50): 13108--13113.
 \item Grinsztajn, Léo, Edouard Oyallon, and Gaël Varoquaux. 2022. ``Why Do Tree-Based Models Still Outperform Deep Learning on Typical Tabular Data?'' \textit{NeurIPS Datasets and Benchmarks}.
-\item Hastie, Trevor, Andrea Montanari, Saharon Rosset, and Ryan J. Tibshirani. 2022. ``Surprises in High-Dimensional Ridgeless Least Squares Interpolation.'' \textit{Annals of Statistics} 50(2): 949--986.
 \item Hastie, Trevor, Robert Tibshirani, and Jerome Friedman. 2009. \textit{The Elements of Statistical Learning}, 2nd ed. Springer.
-\item Hoerl, Arthur E. and Robert W. Kennard. 1970. ``Ridge Regression: Biased Estimation for Nonorthogonal Problems.'' \textit{Technometrics} 12(1): 55--67.
+\item Hegre, H{\aa}vard and Nicholas Sambanis. 2006. ``Sensitivity Analysis of Empirical Results on Civil War Onset.'' \textit{Journal of Conflict Resolution} 50(4): 508--535.
+\item Hochreiter, Sepp and J\"urgen Schmidhuber. 1997. ``Long Short-Term Memory.'' \textit{Neural Computation} 9(8): 1735--1780.
 \item Hornik, Kurt, Maxwell Stinchcombe, and Halbert White. 1989. ``Multilayer Feedforward Networks Are Universal Approximators.'' \textit{Neural Networks} 2(5): 359--366.
+\item Imai, Kosuke and Kentaro Nakamura. 2026. ``Leveraging Generative AI for Causal Inference with Unstructured Data.'' \textit{Proceedings of the National Academy of Sciences} 123(36): e2530532123.
 \item James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2021. \textit{An Introduction to Statistical Learning}, 2nd ed. Springer. [Ch.\ 5, 6, 8, 10]
+\item Joel, Samantha, Paul W.\ Eastwick, Colleen J.\ Allison, et al. 2020. ``Machine Learning Uncovers the Most Robust Self-Report Predictors of Relationship Quality across 43 Longitudinal Couples Studies.'' \textit{PNAS} 117(32): 19061--19071.
+\item Jurafsky, Daniel and James H. Martin. 2025. \textit{Speech and Language Processing}, 3rd ed.\ draft. Ch.\ 6, ``Vector Semantics and Embeddings.''
 \item Kleinberg, Jon, Himabindu Lakkaraju, Jure Leskovec, Jens Ludwig, and Sendhil Mullainathan. 2018. ``Human Decisions and Machine Predictions.'' \textit{Quarterly Journal of Economics} 133(1): 237--293.
 \item Kleinberg, Jon, Jens Ludwig, Sendhil Mullainathan, and Ziad Obermeyer. 2015. ``Prediction Policy Problems.'' \textit{American Economic Review: Papers \& Proceedings} 105(5): 491--495.
 \item Kleinberg, Jon, Sendhil Mullainathan, and Manish Raghavan. 2017. ``Inherent Trade-Offs in the Fair Determination of Risk Scores.'' \textit{ITCS 2017}, LIPIcs 67: 43:1--43:23.
 \item Kozlowski, Austin C., Matt Taddy, and James A. Evans. 2019. ``The Geometry of Culture: Analyzing the Meanings of Class through Word Embeddings.'' \textit{American Sociological Review} 84(5): 905--949.
-\item Lei, Jing, Max G'Sell, Alessandro Rinaldo, Ryan J. Tibshirani, and Larry Wasserman. 2018. ``Distribution-Free Predictive Inference for Regression.'' \textit{Journal of the American Statistical Association} 113(523): 1094--1111.
+\item Lazer, David, Alex Pentland, Lada Adamic, Sinan Aral, Albert-L\'aszl\'o Barab\'asi, Devon Brewer, et al. 2009. ``Computational Social Science.'' \textit{Science} 323(5915): 721--723.
 \item Lundberg, Scott M. and Su-In Lee. 2017. ``A Unified Approach to Interpreting Model Predictions.'' \textit{Advances in Neural Information Processing Systems} 30.
+\item Mikolov, Tomas, Ilya Sutskever, Kai Chen, Greg Corrado, and Jeffrey Dean. 2013. ``Distributed Representations of Words and Phrases and Their Compositionality.'' \textit{Advances in Neural Information Processing Systems} 26.
 \item Molina, Mario and Filiz Garip. 2019. ``Machine Learning for Sociology.'' \textit{Annual Review of Sociology} 45: 27--45.
+\item Muchlinski, David, David Siroky, Jingrui He, and Matthew Kocher. 2016. ``Comparing Random Forest with Logistic Regression for Predicting Class-Imbalanced Civil War Onset Data.'' \textit{Political Analysis} 24(1): 87--103.
 \item Mullainathan, Sendhil and Jann Spiess. 2017. ``Machine Learning: An Applied Econometric Approach.'' \textit{Journal of Economic Perspectives} 31(2): 87--106.
 \item Obermeyer, Ziad, Brian Powers, Christine Vogeli, and Sendhil Mullainathan. 2019. ``Dissecting Racial Bias in an Algorithm Used to Manage the Health of Populations.'' \textit{Science} 366(6464): 447--453.
+\item Peters, Matthew E., Mark Neumann, Mohit Iyyer, Matt Gardner, Christopher Clark, Kenton Lee, and Luke Zettlemoyer. 2018. ``Deep Contextualized Word Representations.'' \textit{Proceedings of NAACL-HLT 2018}: 2227--2237.
 \item Salganik, Matthew J., Ian Lundberg, Alexander T. Kindel, et al. 2020. ``Measuring the Predictability of Life Outcomes with a Scientific Mass Collaboration.'' \textit{PNAS} 117(15): 8398--8403.
 \item Strobl, Carolin, Anne-Laure Boulesteix, Achim Zeileis, and Torsten Hothorn. 2007. ``Bias in Random Forest Variable Importance Measures.'' \textit{BMC Bioinformatics} 8: 25.
 \item Tibshirani, Robert. 1996. ``Regression Shrinkage and Selection via the Lasso.'' \textit{Journal of the Royal Statistical Society Series B} 58(1): 267--288.
 \item van der Laan, Mark J., Eric C. Polley, and Alan E. Hubbard. 2007. ``Super Learner.'' \textit{Statistical Applications in Genetics and Molecular Biology} 6(1): 25.
-\item Vaswani, Ashish, et al. 2017. ``Attention Is All You Need.'' \textit{Advances in Neural Information Processing Systems} 30.
+\item Vaswani, Ashish, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, \L{}ukasz Kaiser, and Illia Polosukhin. 2017. ``Attention Is All You Need.'' \textit{Advances in Neural Information Processing Systems} 30.
 \item Verhagen, Mark D. 2024. ``Incorporating Machine Learning into Sociological Model-Building.'' \textit{Sociological Methodology} 54(2): 217--268.
+\item Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the American Statistical Association} 113(523): 1228--1242.
 \item Zou, Hui and Trevor Hastie. 2005. ``Regularization and Variable Selection via the Elastic Net.'' \textit{Journal of the Royal Statistical Society Series B} 67(2): 301--320.
-\item Zou, Hui, Trevor Hastie, and Robert Tibshirani. 2007. ``On the `Degrees of Freedom' of the Lasso.'' \textit{Annals of Statistics} 35(5): 2173--2192.
 \end{itemize}
 \end{frame}
 

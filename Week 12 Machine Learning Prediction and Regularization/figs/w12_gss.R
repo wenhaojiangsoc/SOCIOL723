@@ -9,15 +9,15 @@ for (p in c("glmnet", "ranger", "xgboost"))
 suppressMessages({library(glmnet); library(ranger); library(rpart); library(xgboost)})
 d <- readRDS("../Data/gss_earnings.rds")
 d <- d[complete.cases(d[, c("lnearn", "educ", "age", "female", "black", "otherace", "wordsum", "pareduc",
-                            "prestige", "sei", "hours", "childs", "evermar", "region", "year")]), ]
+                            "hours", "childs", "evermar", "region", "year")]), ]
 d$region <- factor(d$region); d$yr <- factor(d$year)
 cat("n complete:", nrow(d), "; sd(lnearn):", round(sd(d$lnearn), 3), "\n")
 
 ## main-effects design and an expanded design (all pairwise interactions + squares)
-f_main <- lnearn ~ educ + age + female + black + otherace + wordsum + pareduc + prestige + sei + hours +
+f_main <- lnearn ~ educ + age + female + black + otherace + wordsum + pareduc + hours +
   childs + evermar + region + yr
-num <- c("educ", "age", "wordsum", "pareduc", "prestige", "sei", "hours", "childs")
-f_big <- as.formula(paste("lnearn ~ (educ + age + female + black + otherace + wordsum + pareduc + prestige + sei + hours + childs + evermar + region + yr)^2 +",
+num <- c("educ", "age", "wordsum", "pareduc", "hours", "childs")
+f_big <- as.formula(paste("lnearn ~ (educ + age + female + black + otherace + wordsum + pareduc + hours + childs + evermar + region + yr)^2 +",
                           paste0("I(", num, "^2)", collapse = " + ")))
 Xm <- model.matrix(f_main, d)[, -1]; Xb <- model.matrix(f_big, d)[, -1]
 Xb <- Xb[, apply(Xb, 2, var) > 0]; Xb <- Xb[, !duplicated(t(Xb))]
@@ -72,34 +72,59 @@ small <- fit_all(sample(tr, 300), "2. small training sample")
 
 ## ---- 3. optimism: training vs test error as the expanded design grows ----------------
 cat("\n## 3. OLS training vs test MSE as p grows (columns of the expanded design, in order)\n")
-ps <- c(5, 10, 20, 40, 80, 120, 160, 200, 240)
+ps <- c(0, 1, 2, 3, 5, 8, 12, 20, 30, 40, 60, 80, 120, 160, 200)
 ps <- ps[ps <= ncol(Xb)]
 trs <- sample(tr, 600)
 op <- t(sapply(ps, function(k) {
-  X1 <- cbind(1, Xb[trs, 1:k]); b <- coef(lm.fit(X1, y[trs])); b[is.na(b)] <- 0
-  c(p = k, train = mean((y[trs] - X1 %*% b)^2), test = mean((y[te] - cbind(1, Xb[te, 1:k]) %*% b)^2))
+  cols <- seq_len(k)                                          # k = 0: intercept only (predict the mean)
+  X1 <- cbind(1, Xb[trs, cols, drop = FALSE]); b <- coef(lm.fit(X1, y[trs])); b[is.na(b)] <- 0
+  c(p = k, train = mean((y[trs] - X1 %*% b)^2), test = mean((y[te] - cbind(1, Xb[te, cols, drop = FALSE]) %*% b)^2))
 }))
 s2 <- mean((y[trs] - cbind(1, Xb[trs, 1:20]) %*% coef(lm.fit(cbind(1, Xb[trs, 1:20]), y[trs])))^2) * 600 / (600 - 21)
 op <- cbind(op, gap = op[, "test"] - op[, "train"], theory_2sig2p_n = 2 * s2 * (op[, "p"] + 1) / 600)
 print(round(op, 3))
-pdf("figs/optimism.pdf", width = 9, height = 3.3, family = "Times")
-par(mar = c(4, 4.2, 1, 1))
-plot(op[, "p"], op[, "test"], type = "b", pch = 19, col = "firebrick", lwd = 2, ylim = c(0, max(op[, "test"])),
-     xlab = "number of predictors (training n = 600)", ylab = "mean squared error")
-lines(op[, "p"], op[, "train"], type = "b", pch = 17, col = "navy", lwd = 2)
-legend("topleft", c("test", "training"), col = c("firebrick", "navy"), pch = c(19, 17), lwd = 2, bty = "n")
+pdf("figs/optimism.pdf", width = 5.4, height = 3.0, family = "Times")
+par(mar = c(3.3, 3.6, 0.6, 0.6), mgp = c(2.1, 0.6, 0))
+yl <- c(0.3, max(op[, "test"]) * 1.03)
+plot(op[, "p"] + 1, op[, "test"], log = "x", type = "l", lwd = 2.5, col = "firebrick", ylim = yl, las = 1, xaxt = "n",
+     xlab = "number of terms in the OLS model (0 = predict the mean)", ylab = "mean squared error")
+axis(1, at = c(0, 1, 3, 10, 30, 100, 200) + 1, labels = c(0, 1, 3, 10, 30, 100, 200))
+lines(op[, "p"] + 1, op[, "train"], lwd = 2.5, col = "navy")
+jb <- which.min(op[, "test"]); points(op[jb, "p"] + 1, op[jb, "test"], pch = 19, cex = 1.1)
+text(op[jb, "p"] + 1, op[jb, "test"] - 0.06, paste0("best: ", op[jb, "p"], " terms"), cex = 0.8)
+text(120, op[nrow(op) - 1, "test"] + 0.03, "new cases", col = "firebrick", cex = 0.85, adj = 1)
+text(120, op[nrow(op) - 1, "train"] - 0.05, "training cases", col = "navy", cex = 0.85, adj = 1)
 dev.off()
+cat("best number of terms for new cases:", op[which.min(op[, "test"]), "p"], "; test MSE", round(min(op[, "test"]), 3), "\n")
 
 ## ---- 4. lasso path, and instability of the selected set ------------------------------
-pdf("figs/lasso_path.pdf", width = 9, height = 3.3, family = "Times")
-par(mfrow = c(1, 2), mar = c(4, 4.2, 2.4, 1))
-plot(full$cl$glmnet.fit, xvar = "lambda", label = FALSE); title("coefficient paths", line = 1.2, cex.main = 0.95, font.main = 1)
-plot(full$cl); title("10-fold CV error", line = 1.2, cex.main = 0.95, font.main = 1)
+pdf("figs/lasso_path.pdf", width = 8.4, height = 3.0, family = "Times")
+par(mfrow = c(1, 2), mar = c(2.2, 3.8, 1.6, 0.8), mgp = c(2.1, 0.55, 0), tcl = -0.3)
+gf <- full$cl$glmnet.fit; xl <- -log(gf$lambda); Bm <- as.matrix(gf$beta)
+hl <- c(educ = "navy", age = "darkgreen", female = "firebrick")
+plot(range(xl), range(Bm), type = "n", las = 1, bty = "l", xlab = "",
+     ylab = "coefficient", main = "coefficient paths (243 terms)", font.main = 1, cex.main = 1.0, xaxt = "n")
+abline(h = 0, col = "gray70")
+for (k in setdiff(rownames(Bm), names(hl))) lines(xl, Bm[k, ], col = adjustcolor("gray55", 0.45), lwd = 0.6)
+for (k in names(hl)) lines(xl, Bm[k, ], col = hl[k], lwd = 2.2)
+legend("topleft", c("schooling", "age", "female"), col = hl, lwd = 2.2, bty = "n", cex = 0.8)
+title(xlab = expression("smaller penalty " * lambda * " " %->% ""), line = 0.8)
+cl <- full$cl; xc <- -log(cl$lambda)
+plot(xc, cl$cvm, type = "n", las = 1, bty = "l", ylim = range(c(cl$cvlo, cl$cvup)), xaxt = "n",
+     xlab = "", ylab = "10-fold CV error (MSE)",
+     main = "choosing the penalty", font.main = 1, cex.main = 1.0)
+polygon(c(xc, rev(xc)), c(cl$cvlo, rev(cl$cvup)), col = adjustcolor("firebrick", 0.15), border = NA)
+lines(xc, cl$cvm, col = "firebrick", lwd = 2)
+v <- -log(c(cl$lambda.min, cl$lambda.1se)); abline(v = v, lty = 2, col = "gray35")
+title(xlab = expression("smaller penalty " * lambda * " " %->% ""), line = 0.8)
+nz <- c(cl$nzero[cl$lambda == cl$lambda.min], cl$nzero[cl$lambda == cl$lambda.1se])
+text(v[1], max(cl$cvup) * 0.985, paste0("minimum: ", nz[1], " terms"), pos = 4, cex = 0.8)
+text(v[2], max(cl$cvup) * 0.95, paste0("1-se rule: ", nz[2], " terms"), pos = 4, cex = 0.8)
 dev.off()
 cat("\n## 4. lasso selection frequency over 100 bootstrap samples (main-effects design, lambda.1se)\n")
 sel <- replicate(100, { b <- sample(tr, replace = TRUE); cl <- cv.glmnet(Xm[b, ], y[b], alpha = 1, nfolds = 5)
   as.vector(coef(cl, s = "lambda.1se"))[-1] != 0 })
 fr <- rowMeans(sel); names(fr) <- colnames(Xm)
 print(round(sort(fr, decreasing = TRUE)[1:16], 2))
-cat("selection frequency: prestige", fr[["prestige"]], "; sei", fr[["sei"]], "\n")
-cat("correlation prestige-sei:", round(cor(d$prestige, d$sei), 2), "; educ-wordsum:", round(cor(d$educ, d$wordsum), 2), "\n")
+cat("correlations among the numeric predictors:\n")
+print(round(cor(d[, c("educ", "age", "wordsum", "pareduc", "hours", "childs")]), 2))

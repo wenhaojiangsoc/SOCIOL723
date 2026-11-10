@@ -368,13 +368,69 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   pensynth (CRAN; toy .5/.5; lambda 0 = classic SC; cv_pensynth picks ~1e-4; silence solver with
   clarabel::clarabel_control(verbose = FALSE)); exercises: predictor sensitivity, windows, spillovers via Nevada,
   single-year 2x2s, random treated unit. synthdid + augsynth are GitHub-only (reinstalled to the system R lib 2026-11-04).
-- Week 12 (ML, 69 pp, rebuilt 2026-10-08; user asked to merge 690S Weeks 2+3: trees AND neural nets
-  and beyond): bias-variance proof, optimism 2p sigma^2/n, CV (Bates et al.), ridge SVD/Hoerl-Kennard,
-  soft thresholding, trees/pruning, RF variance, boosting = gradient descent, stacking, classification;
-  GSS benchmark (`figs/w12_gss.R`: test R2 boosting .381, RF .373, lasso .344, OLS .338, NN .342;
-  n=300: expanded OLS collapses); lasso keeps SEI, prestige 1/100; neural nets (690S content:
-  X1X2 example, backprop, SGD, dropout); embeddings/CNN/attention/PPI; Fragile Families, Kleinberg
-  bail, Obermeyer, fairness impossibility. Subtitle changed; folder name unchanged. Lab 12 not aligned.
+- Week 12 (ML, 120 pp as of 2026-11-08; slide 3 "A Different Goal" (prediction vs inference) DROPPED 2026-11-08 by user; REBUILT 2026-11-05 in the 690S voice, user: "use my 690S idea and expression", "slower, with
+  examples", "use my LASSO/Ridge illustrations"): Bias-Variance = 690S W3 (CEF target, Z-a lemma, decomposition) + toy
+  9/10/14 vs rigid 11 (MSE 5.67 vs 1) + new-outcome sigma^2 frame; Regularization = 690S W2 order (high-dim sqrt(p/n),
+  three reasons I/II/III, setup, approximate sparsity fig3_1, lasso def with loadings, benefit vs cost, FOC with PARTIAL
+  residual + zero-or-not (adv), numbers 30/15/-30 -> .10/0/-.10, three penalties, fig3_2, caveats x2, GSS selection,
+  post-lasso + fig3_3 + GSS (female -.110 -> -.173), rates, lasso path, sparse/dense + fig3_4, ridge (marginal-cost table),
+  matrix form, SVD + Hoerl-Kennard (kept), elastic net, lava, horse-race table from LAB 12 (not the 690S numbers), CV in
+  words/formal/GSS fold table (.865/.579/.618), tuning-lambda tradeoff, two rules, Bates, plug-in x2 (363.8 -> 297.6, 14
+  terms)); Trees = 690S W3 (step function, leaf = average derived, step1/2 figs, wage tree, SSE(j,s), six-person split,
+  GSS root split SEI 41.6, depth table, fitML curve figure, pruning, bagging (-0.162 -> .379), RF (m = sqrt p), decorrelation
+  (.40/.35), boosting idea/algorithm/by hand (SSR 1.573 -> .069)/steps, GD (adv)) then benchmark, stacking, binary; Neural
+  nets = 690S W3 frames (single layer, picture, two steps, activations, X1X2 x3 with 2,3 -> 6 check, parameters, MNIST,
+  two-layer, GD picture, GD by hand Y=1,2,6, gradient, backprop, backprop by hand, SGD x2, weight decay, dropout, early
+  stopping fitml_nn.pdf, tuning) + GSS network. Numbers: figs/w12_690s.R, figs/w12_fitml.R, figs/w12_gss.R. Stars kept on
+  carried-over frames; 'Choosing lambda, and a Warning' merged into 'Lasso Caveats' (star moved there). Lab 12 REBUILT:
+  690S regularization.qmd (three worlds, lava) + GSS (zero-or-not vs glmnet, CV by hand, plug-in by hand + rlasso,
+  post-lasso, instability, leak) + fitML trees/RF/gbm + GSS trees, bagging vs RF, boosting by hand + by rpart loop +
+  GD/backprop by hand + nnet (keras3 code shown eval: false). 22 pp.
+  2026-11-06 (user: drop what is advanced or not useful in practice; figures in the deck's style): DROPPED Ridge SVD,
+  Hoerl-Kennard, Lava (frame + table row + lab code), What CV Estimates (1-se rule + optimism bullet moved into 'CV: Two
+  Rules'), Plug-in sigma-iteration frame (folded into one plug-in frame), Boosting Is GD, Backprop by Hand, Why Stochastic
+  Gradients, Attention/Transformers, Split Conformal, Double Descent; refs removed. 690S fig3_1-4 REDRAWN in base R
+  (figs/w12_sparsity.R: sparse_beta, lasso_sim, postlasso_sim, dense_beta; same DGP/seed as the lab: lasso keeps 7 = 2 big
+  + 5 noise, post-lasso inflates the noise ones), gradient picture redrawn (figs/w12_gradient.R, hypothetical), NN and
+  dropout diagrams now TikZ (nnin/nnhid/nnout/nnoff styles in the preamble), fitml figures navy truth/firebrick fit.
+  Old fig3_*.jpg, gradient.pdf, nn_*.pdf, dropout*.pdf unused (kept). Deck 118 pp.
+  2026-11-07 (user): MSE = Week 9 RD derivation (two frames: 'Bias and Variance: Definitions' + 'Decomposing the MSE',
+  add-and-subtract; the Z-a lemma frame dropped). ALL MATRIX NOTATION REMOVED: sums sum_j X_ij b_j everywhere; optimism
+  derived for the sample mean (2 sigma^2/n), general 2p sigma^2/n stated; 'Ridge, One Coefficient at a Time' (lasso's
+  S_j, D_j; b = OLS * D/(D+lambda); D 100, lambda 25: .30 -> .24, .15 -> .12 vs lasso .10/0; figs/w12_690s.R B).
+  LITERATURE NEXT TO EACH METHOD (all web-verified from the papers): Blumenstock et al. 2015 Science (elastic net,
+  856 respondents, thousands of phone metrics, CV r .68, district r .92) after Elastic Net; Berk et al. 2009 JRSS-A
+  (random forests, 30,000 training, 322 = 1.1%, logit flags 2, forest 137/322 caught, 1,901 flagged, 10:1 cost) after
+  decorrelation; Kleinberg et al. 2018 (GBDT) moved after boosting; Fragile Families moved after the GSS benchmark;
+  Gebru et al. 2017 (CNN 2,657 car classes, ridge/logit to ACS, income r .82, sedans 88%/pickups 82%) after the GSS
+  network. Social Science section renamed 'Prediction and Fairness' (Obermeyer + fairness). Deck 121 pp.
+  2026-11-08 (user): 'Beyond: Text and Images' replaced by a 22-frame section 'Representations: Text and Images'
+  from the 690S Week 14 / SICSS NYUSH deck, in scalar notation with worked numbers (PCA on GSS status variables,
+  PCA = linear autoencoder, word vectors by hand, negative sampling = logit, attention by hand, BERT, probing vs
+  fine-tuning, text as a control); figs/w12_repr.R. Deck 142 pp. Lab 12 not aligned to it.
+  2026-11-09 (user): Today/Plan frames dropped; NEW opening section 'Why Machine Learning?' (three jobs -> CEF ->
+  best predictor -> GSS cell means vs OLS -> cells run out -> k-NN bias/variance; figs/w12_intro.R); BV adds the
+  standard tradeoff curve; regularization drops CML-specific pieces (Theorem 1.2.1, rates, loadings, T(W)) and adds
+  the lasso/ridge constraint picture; NN figures redrawn without overlaps (nnlink style) plus RNN, ELMo, attention
+  figures. Deck 148 pp.
+  2026-11-09 (user): Trees adds variable importance (3 frames after decorrelation; figs/w12_importance.R ->
+  rf_importance.pdf, permutation vs impurity, correlated-credit table). Deck 151 pp.
+  2026-11-09 (user): Bias-Variance ends with 'Training, Validation, Test' (4 frames: test set, third piece,
+  K-fold picture, choosing k by CV; figs/w12_split.R -> cv_knn.pdf); 'Cross-Validation for lambda' points back. Deck 155 pp.
+  2026-11-09 (user): slide 9 'Three Kinds of ML'; PCA derived in 690S NYUSH notation (eigen-equation via Lagrangian,
+  2-variable solution, rebuild error = dropped eigenvalues; w12_repr.R H); 690S-style encoder-decoder figures;
+  confusion matrix / precision / recall / F1 frames (Berk + figs/w12_classify.R). Deck 163 pp.
+  2026-11-09 RESTRUCTURE (user): NO CEF framing anywhere in Week 12 (just 'predict Y'); opening = three reasons
+  (poverty/Blumenstock, text+images, causal ingredients -> DML) -> kinds -> line misses -> flexible OLS backfires;
+  section 'Overfitting and Honest Evaluation' (k-NN, train/test, CV, then Bias and Variance as the explanation, 'So
+  Accept a Little Bias'); regularization slimmed (no FOC/subgradient, no formal CV, no plug-in frame; one-coefficient
+  lasso/ridge with sum X^2 = 1). Deck 149 pp.
+  2026-11-09 (user): GSS predictors EXCLUDE SEI and prestige (occupation constructs leak earnings); hours kept;
+  23 main effects / 243 expanded; all GSS numbers in slides + Lab 12 rerun. PCA section uses 690S matrix notation
+  (exception to the scalar rule). Slide 5 = 'Linear Regression Is Already Machine Learning'.
+  2026-11-09 REORDER (user): overfitting -> lasso -> ridge/elastic net -> choosing lambda (train/val/test, K-fold, GSS CV)
+  -> bias-variance as the explanation of the CV U-curve (lasso simulation figs/w12_lasso_bv.R) -> after tuning. NO k-NN
+  anywhere (one dial: lambda). Slide 4 kinds table one line per row + GSS 3-panel figure (figs/w12_kinds.R). Deck 148 pp.
 - Week 13 (causal ML, 53 pp, rebuilt 2026-10-08; user frames kept): simulation `figs/w13_sims.R`
   (design A = CCDDHNR Fig. 1: naive bias/sd -3.2, DML coverage .93; design B very nonlinear: DML
   also biased, l-hat RMSE 1.02 -> "orthogonality makes errors multiply, not small"); orthogonality
@@ -404,7 +460,11 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   results sentence, cross-cohort difference with sqrt(se1^2+se2^2); units (0-1 housework). Part 3 "own logit reported like a paper" CUT 2026-09-24 (user); Parts 3-4 now:
   counts (Poisson vs vcovHC SE, then dispersion test; hurdle), groups (clustered SE -> RI only; the FE / three-slopes / three-questions item was cut 2026-09-24). Answer key
   `homework2_answers.qmd` is gitignored, fully executed, mirrors the numbering.
-- Remaining to build: Weeks 11-14 slides+labs, Problem Sets 3-5, midterm review, final packet.
+- Problem Set 4 (`Homework/homework4/`, built 2026-11-06; assigned Fri Nov 6, due Fri Nov 20; Weeks 10-11): Part 1 DiD =
+  Mark & Wu 2022 PNAS read + run on `Data/sexed_county.csv` (CDC model-based teen birth rates + their public funding file,
+  `Data/build_sexed_extract.R`); Part 2 SC = Abadie-Gardeazabal 2003 read + run on `Synth::basque` (tidysynth, synthdid).
+  Key `homework4_answers.qmd` (gitignored). PS5 = Weeks 12-13, assigned Fri Nov 20, due Fri Dec 4 (day after the final; user's choice). Numbers in the napkin.
+- Remaining to build: Weeks 13-14 labs, Problem Set 5, midterm review, final packet.
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
 ## Gotchas
