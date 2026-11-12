@@ -104,10 +104,10 @@ for (dep in c(1, 2, 3, 5, 8, 12, 20)) {
 }
 
 ## ---- G. one deep tree vs bagging vs random forest on the GSS ---------------------
-cat("\n## G. deep tree, bagging (mtry = p), random forest (mtry = 5); 500 trees\n")
+cat("\n## G. deep tree, bagging (mtry = p), random forest (mtry = 4, the default floor(sqrt(23))); 500 trees\n")
 deep <- ranger(y ~ ., dtr, num.trees = 1, mtry = ncol(Xm), replace = FALSE, sample.fraction = 1, min.node.size = 5, seed = 1)
 bag <- ranger(y ~ ., dtr, num.trees = 500, mtry = ncol(Xm), min.node.size = 5, seed = 1)
-rf5 <- ranger(y ~ ., dtr, num.trees = 500, mtry = 5, min.node.size = 5, seed = 1)
+rf5 <- ranger(y ~ ., dtr, num.trees = 500, mtry = 4, min.node.size = 5, seed = 1)
 cat("p =", ncol(Xm), "; one deep tree test R2", round(r2(predict(deep, dte)$predictions), 3),
     "; bagging", round(r2(predict(bag, dte)$predictions), 3), "; random forest", round(r2(predict(rf5, dte)$predictions), 3), "\n")
 ## correlation between two bagged trees' test predictions vs two forest trees'

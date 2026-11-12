@@ -1,5 +1,5 @@
 ---
-title: "\\textbf{Lab 12: Lasso, Ridge, Trees, and Neural Networks}"
+title: "\\textbf{Lab 12: Lasso, Ridge, Trees, Neural Networks, and Word Vectors}"
 subtitle: "SOCIOL 723, Social Statistics II, Thursday, November 12"
 author: "Wenhao Jiang"
 format:
@@ -43,173 +43,33 @@ options(digits = 4, scipen = 999, width = 76)
 
 # Goals
 
-1.  Fit lasso, post-lasso, ridge, and elastic net in simulated worlds that are
-    sparse, dense, or both, and see which penalty wins where (the 690S Week 2 code).
-2.  On the GSS: check the lasso's zero-or-not rule by hand, run cross-validation by
-    hand, compute the plug-in penalty by hand, and refit post-lasso.
-3.  Grow trees, forests, and boosted trees, first on a noiseless curve (the 690S Week 3
-    code), then on the GSS; do one split and four boosting steps by hand.
-4.  Fit neural networks; do gradient descent and one backpropagation step by hand.
+One task: predict log earnings in the GSS for people the model has not seen. For each
+method, the code you would run in your own work.
 
-Every number on the Week 12 slides that is not from `figs/w12_gss.R` comes from this
-lab or from `figs/w12_690s.R`, which uses the same data, seed, and split.
+1.  Penalized regression with `glmnet`: lasso, ridge, elastic net; $\lambda$ by
+    cross-validation; post-lasso.
+2.  Trees with `rpart`, random forests with `ranger` (tuning, variable importance),
+    boosted trees with `xgboost`.
+3.  A neural network with `nnet`.
+4.  Word vectors with `word2vec`.
+5.  One scoreboard: every method's test $R^2$.
+
+The test set is touched only to report the final number.
 
 ```{r}
 #| label: packages
 library(glmnet)       ## lasso, ridge, elastic net
-library(hdm)          ## lasso with the plug-in penalty (rlasso)
-library(ggplot2)
-library(ggpubr)       ## ggarrange: panels side by side
 library(rpart)        ## regression trees
 library(rpart.plot)   ## drawing trees
-library(ranger)       ## fast random forests (GSS)
-library(randomForest) ## random forests (690S code)
-library(gbm)          ## boosted trees (690S code)
+library(ranger)       ## random forests
+library(xgboost)      ## boosted trees
 library(nnet)         ## one-hidden-layer neural networks
-## a plain theme for every figure
-theme_lab <- theme_bw(base_size = 10) +
-  theme(panel.grid = element_blank(), legend.title = element_blank(),
-        legend.position = "bottom")
+library(word2vec)     ## word vectors (skip-gram), no Python needed
+library(janeaustenr)  ## the text of Jane Austen's six novels
+library(plotmo)       ## plot_glmnet: labelled lasso paths
 ```
 
-# Penalized regression in three simulated worlds
-
-## Three data-generating processes
-
-We follow the 690S code. The regressors are uniform on $(-0.5, 0.5)$, the error is
-standard normal, and the coefficients come in three shapes: **sparse**
-($\beta_j = 7/j^2$), **dense** (every $\beta_j$ small and random), and **sparse and
-dense** (both at once). With $n = 100$ and $p = 400$, OLS does not exist.
-
-```{r}
-#| label: gen-data
-## generate one sample, one test sample, and a large "population" from a chosen DGP
-gen_data <- function(n, p, regime = "sparse", npop = 20000) {
-  ## constants chosen to give an R^2 of roughly .80
-  if (regime == "sparse") {
-    beta <- (1 / seq(1:p)^2) * 7                     ## a few big, then tiny
-  } else if (regime == "dense") {
-    beta <- rnorm(p) * 0.2                           ## all small, comparable size
-  } else if (regime == "sparsedense") {
-    beta <- (1 / seq(1:p)^2) * 6.5 + rnorm(p, 0, 0.5) * 0.7   ## both
-  }
-  true_fn <- function(x) x %*% beta                  ## the true CEF is linear
-  X <- matrix(runif(n * p, -0.5, 0.5), n, p)         ## training regressors
-  y <- true_fn(X) + rnorm(n)                         ## training outcome
-  Xpop <- matrix(runif(npop * p, -0.5, 0.5), npop, p)  ## fresh cases to test on
-  ypop <- true_fn(Xpop) + rnorm(npop)
-  list(X = X, y = as.vector(y), Xpop = Xpop, ypop = as.vector(ypop), beta = beta)
-}
-```
-
-## Approximate sparsity
-
-```{r}
-#| label: fig-sparse
-#| fig-cap: "Approximate sparsity: the $j$-th largest coefficient when $\\beta_j = 7/j^2$."
-#| fig-height: 2.6
-set.seed(1)
-n <- 100; p <- 400
-res <- gen_data(n, p, regime = "sparse")
-X <- res$X; y <- res$y; betas <- res$beta
-## plot the 20 largest coefficients
-ggplot(data.frame(j = seq_along(betas), magnitude = abs(betas)),
-       aes(j, magnitude)) +
-  geom_line(colour = "navy", linewidth = 0.4) +
-  geom_point(shape = 21, size = 2, colour = "navy", fill = "white") +
-  xlim(1, 20) + labs(x = "j", y = "j-th largest coefficient") + theme_lab
-```
-
-## Lasso and post-lasso
-
-```{r}
-#| label: lasso-sim
-## lasso with the penalty chosen by 5-fold cross-validation
-fit_lasso_cv <- cv.glmnet(X, y, family = "gaussian", alpha = 1, nfolds = 5)
-## lambda.min = the lambda with the smallest cross-validated MSE
-lasso_betas <- as.numeric(coef(fit_lasso_cv, s = "lambda.min"))[-1]
-sum(lasso_betas != 0)                                ## how many regressors kept
-## post-lasso: OLS on the kept regressors only
-kept <- which(lasso_betas != 0)
-post_betas <- coef(lm(y ~ X[, kept]))[-1]
-## compare the largest few coefficients: truth, lasso, post-lasso
-round(rbind(truth = betas[kept], lasso = lasso_betas[kept],
-            post_lasso = post_betas), 2)
-```
-
-```{r}
-#| label: fig-post
-#| fig-cap: "Sorted coefficient sizes: truth, lasso (shrunk toward zero), and post-lasso (shrinkage removed)."
-#| fig-height: 3.0
-## sort each set of absolute coefficients from largest to smallest and plot them
-sorted <- function(b, lab) data.frame(j = seq_along(b), magnitude = sort(abs(b), decreasing = TRUE), type = lab)
-ggplot(rbind(sorted(betas, "unpenalized (truth)"), sorted(lasso_betas, "lasso"),
-             sorted(post_betas, "post-lasso")),
-       aes(j, magnitude, colour = type)) +
-  geom_line(linewidth = 0.4) + geom_point(shape = 21, size = 2, fill = "white") +
-  scale_colour_manual(values = c("unpenalized (truth)" = "navy", "lasso" = "firebrick",
-                                 "post-lasso" = "darkgreen")) +
-  xlim(1, 20) + labs(x = "j", y = "j-th largest coefficient") + theme_lab
-```
-
-The lasso finds the large coefficients but pulls them toward zero (shrinkage bias);
-post-lasso refits them by OLS and brings them back.
-
-## Ridge, elastic net, and plug-in lasso
-
-```{r}
-#| label: r2
-## out-of-sample R^2, with the training mean as the benchmark
-r2_score <- function(pred, actual, ytrain) 1 - sum((actual - pred)^2) / sum((actual - mean(ytrain))^2)
-```
-
-```{r}
-#| label: horse-race
-## fit every method in one world and return its out-of-sample R^2
-race <- function(regime) {
-  set.seed(1)
-  r <- gen_data(100, 400, regime)
-  X <- r$X; y <- r$y; Xp <- r$Xpop; yp <- r$ypop
-  lcv <- cv.glmnet(X, y, alpha = 1, nfolds = 5)             ## lasso, CV
-  rcv <- cv.glmnet(X, y, alpha = 0, nfolds = 5)             ## ridge, CV
-  ecv <- cv.glmnet(X, y, alpha = 0.5, nfolds = 5)           ## elastic net, CV
-  rl  <- rlasso(X, y, post = FALSE)                         ## lasso, plug-in penalty
-  rlp <- rlasso(X, y, post = TRUE)                          ## post-lasso, plug-in
-  c(`lasso (CV)`       = r2_score(predict(lcv, Xp, s = "lambda.min"), yp, y),
-    `lasso (plug-in)`  = r2_score(predict(rl, newdata = Xp), yp, y),
-    `post-lasso (plug-in)` = r2_score(predict(rlp, newdata = Xp), yp, y),
-    `ridge (CV)`       = r2_score(predict(rcv, Xp, s = "lambda.min"), yp, y),
-    `elastic net (CV)` = r2_score(predict(ecv, Xp, s = "lambda.min"), yp, y))
-}
-tab <- sapply(c(sparse = "sparse", dense = "dense", `sparse and dense` = "sparsedense"), race)
-round(tab, 3)
-```
-
-Read the table by column. In the sparse world the lasso family wins and ridge,
-spreading weight over 400 terms, fails. In the dense world nothing does well with 100
-cases, but ridge is best. When the truth is sparse and dense, the CV lasso, which
-catches the few big coefficients, does best.
-
-```{r}
-#| label: fig-dense
-#| fig-cap: "The 20 largest coefficients in the dense and the sparse-and-dense worlds."
-#| fig-height: 2.6
-## the coefficient shapes of the other two worlds
-plot_beta <- function(regime, title, col) {
-  set.seed(1); b <- gen_data(100, 400, regime, npop = 10)$beta
-  ggplot(data.frame(j = 1:400, magnitude = sort(abs(b), decreasing = TRUE)), aes(j, magnitude)) +
-    geom_line(colour = col, linewidth = 0.4) +
-    geom_point(shape = 21, size = 2, colour = col, fill = "white") +
-    xlim(1, 20) + ggtitle(title) + labs(x = "j", y = "j-th largest coefficient") + theme_lab
-}
-ggarrange(plot_beta("dense", "Dense", "navy"), plot_beta("sparsedense", "Sparse and dense", "firebrick"), nrow = 1)
-```
-
-# Lasso on the GSS
-
-## Data, design, and the split
-
-The same steps as `figs/w12_gss.R`, so the numbers match the slides.
+# Data and the split
 
 ```{r}
 #| label: gss-design
@@ -224,7 +84,7 @@ d$region <- factor(d$region); d$yr <- factor(d$year)
 ## 23 main-effect columns
 f_main <- lnearn ~ educ + age + female + black + otherace + wordsum + pareduc +
   hours + childs + evermar + region + yr
-## reason III for large p: all pairwise interactions plus squares
+## a flexible design: all pairwise interactions plus squares
 num <- c("educ", "age", "wordsum", "pareduc", "hours", "childs")
 f_big <- as.formula(paste("lnearn ~ (educ + age + female + black + otherace + wordsum + pareduc + hours + childs + evermar + region + yr)^2 +",
                           paste0("I(", num, "^2)", collapse = " + ")))
@@ -236,417 +96,409 @@ y <- d$lnearn; n <- nrow(d)
 c(n = n, main = ncol(Xm), expanded = ncol(Xb))
 ## 30% test set, never used for fitting or tuning
 te <- sample(n, round(0.3 * n)); tr <- setdiff(1:n, te)
+## test R^2, with the training mean as the benchmark
 r2 <- function(pred) 1 - mean((y[te] - pred)^2) / mean((y[te] - mean(y[tr]))^2)
-set.seed(7231)                                       ## same stream as figs/w12_690s.R
+## data frames for the tree, forest, and network functions
+dtr <- data.frame(y = y[tr], Xm[tr, ]); dte <- data.frame(Xm[te, ])
 ```
 
-## The zero-or-not rule, checked against glmnet
+# Lasso, ridge, and elastic net
 
-For one standardized regressor with $D = \sum_i X_i^2$, the lasso solution is
-$(\hat S - \lambda)/(2D)$ if $\hat S > \lambda$, $0$ if $|\hat S| \leq \lambda$, and
-$(\hat S + \lambda)/(2D)$ if $\hat S < -\lambda$, with $\hat S = 2\sum_i X_iY_i$.
-`glmnet` minimizes $\frac{1}{2n}\sum_i (Y_i - X_ib)^2 + \lambda_g|b|$, so its
-$\lambda_g = \lambda/(2n)$.
+The lasso picks $b$ to minimize
+$$\sum_i \Big(Y_i - b_0 - \sum_j X_{ij} b_j\Big)^2 + \lambda \sum_j |b_j| .$$
+Ridge uses $\lambda \sum_j b_j^2$; the elastic net mixes the two. In `glmnet`, `alpha = 1`
+is the lasso, `alpha = 0` ridge, anything in between an elastic net. `glmnet` divides
+the sum of squares by $2n$, so its `lambda` is the slides' $\lambda/(2n)$. It standardizes
+the columns before penalizing and reports coefficients on the original scale.
+
+## Fit, choose $\lambda$, read the coefficients
+
+`cv.glmnet` fits the whole path of $\lambda$ values and runs $K$-fold cross-validation on
+the training cases. `lambda.min` has the smallest CV error; `lambda.1se` is the largest
+$\lambda$ within one standard error of it (a simpler model that predicts about as well).
 
 ```{r}
-#| label: soft-threshold
-x1 <- as.vector(scale(d$educ[tr])) * sqrt(length(tr) / (length(tr) - 1))  ## mean 0, sum x^2 = n
-y1 <- y[tr] - mean(y[tr])                            ## centred outcome
-S <- 2 * sum(x1 * y1); D <- sum(x1^2)
-by_hand <- function(lam) if (S > lam) (S - lam) / (2 * D) else if (S < -lam) (S + lam) / (2 * D) else 0
-lams <- c(0, 200, 600, 2 * abs(S))                   ## no penalty ... penalty above |S|
-cbind(lambda = lams, OLS = S / (2 * D),
-      by_hand = sapply(lams, by_hand),
-      glmnet = sapply(lams, function(l) as.numeric(coef(glmnet(cbind(x1, 0), y1,
-                 lambda = l / (2 * length(tr)), standardize = FALSE, intercept = FALSE))[2])))
+#| label: lasso-main
+set.seed(7231)
+cl_m <- cv.glmnet(Xm[tr, ], y[tr], alpha = 1, nfolds = 10)   ## 23 main effects
+## coefficients at lambda.1se: the variables kept and their sizes
+b <- coef(cl_m, s = "lambda.1se")[-1, 1]
+round(b[b != 0], 3)
 ```
-
-The two columns agree: lasso subtracts $\lambda/(2D)$ from the OLS slope and stops at
-zero once $\lambda \geq |\hat S|$.
-
-## Cross-validation by hand
 
 ```{r}
-#| label: cv-hand
-## 5 folds of the training sample
-fold <- sample(rep(1:5, length.out = length(tr)))
-path <- glmnet(Xb[tr, ], y[tr], alpha = 1)           ## one lambda grid for everything
-lams <- path$lambda[c(1, 30, 60)]                    ## a big, a middle, a small penalty
-## for each lambda and each fold: fit without the fold, predict the fold, record MSE
-cvtab <- sapply(lams, function(l) sapply(1:5, function(k) {
-  m <- glmnet(Xb[tr[fold != k], ], y[tr[fold != k]], alpha = 1, lambda = path$lambda)
-  mean((y[tr[fold == k]] - predict(m, Xb[tr[fold == k], ], s = l))^2)
-}))
-nz <- sapply(lams, function(l) sum(coef(path, s = l)[-1] != 0))   ## terms kept
-colnames(cvtab) <- paste0("lambda=", signif(lams, 2), " (", nz, " terms)")
-round(rbind(cvtab, `CV-MSE` = colMeans(cvtab)), 3)
+#| label: fig-lasso
+#| fig-cap: "Lasso on the 23 main effects. Left: each covariate's coefficient path as the penalty shrinks; the eight largest named; vertical line at lambda.1se. Right: 10-fold cross-validated MSE with 1-s.e. bars; dashed lines at lambda.min and lambda.1se; top axis = number of variables kept."
+#| fig-width: 7.5
+#| fig-height: 3.4
+par(mfrow = c(1, 2), cex = 0.8)
+## coefficient paths: one line per covariate, the 8 largest named, vertical line at lambda.1se
+plot_glmnet(cl_m$glmnet.fit, s = cl_m$lambda.1se, label = 8)
+plot(cl_m)                                           ## CV error with +/- 1 s.e. bars
 ```
 
-The middle penalty wins in every fold. `cv.glmnet` does the same over 100 values:
+## Prediction: the flexible design
+
+The same code on the 243-term design, then ridge and the elastic net:
 
 ```{r}
-#| label: cv-glmnet
-#| fig-cap: "Cross-validated MSE against log penalty. Left dashed line: minimum; right: one-standard-error rule."
-cl <- cv.glmnet(Xb[tr, ], y[tr], alpha = 1, nfolds = 10)
-plot(cl)
-c(terms_at_min = cl$nzero[cl$lambda == cl$lambda.min],
-  terms_at_1se = cl$nzero[cl$lambda == cl$lambda.1se],
-  test_R2_min = r2(predict(cl, Xb[te, ], s = "lambda.min")),
-  test_R2_1se = r2(predict(cl, Xb[te, ], s = "lambda.1se")))
+#| label: lasso-big
+cl <- cv.glmnet(Xb[tr, ], y[tr], alpha = 1, nfolds = 10)     ## lasso
+cr <- cv.glmnet(Xb[tr, ], y[tr], alpha = 0, nfolds = 10)     ## ridge
+ce <- cv.glmnet(Xb[tr, ], y[tr], alpha = 0.5, nfolds = 10)   ## elastic net
+c(lasso_terms_kept = unname(cl$nzero[cl$lambda == cl$lambda.min]),
+  lasso = r2(predict(cl, Xb[te, ], s = "lambda.min")),
+  ridge = r2(predict(cr, Xb[te, ], s = "lambda.min")),
+  elastic_net = r2(predict(ce, Xb[te, ], s = "lambda.min")))
 ```
 
-## The plug-in penalty by hand
+## Choosing $\alpha$ for the elastic net by cross-validation
 
-$\lambda = 2c\,\hat\sigma\sqrt n\, z_{1-a/(2p)}$ with $c = 1.1$, $a = 0.1$; start
-$\hat\sigma$ from an intercept-only fit and iterate.
+The elastic-net penalty is
+$\lambda\big[\tfrac{1-\alpha}{2}\sum_j b_j^2 + \alpha \sum_j |b_j|\big]$: $\alpha = 0$ is ridge,
+$\alpha = 1$ the lasso. `cv.glmnet` tunes $\lambda$ for one $\alpha$, so loop over a grid of
+$\alpha$ and keep the pair $(\alpha, \lambda)$ with the smallest CV error. Use the **same
+folds** for every $\alpha$ (`foldid`), so the comparison is not driven by different splits.
 
 ```{r}
-#| label: plugin
-ntr <- length(tr); p <- ncol(Xb)
-z <- qnorm(1 - 0.1 / (2 * p))                        ## Bonferroni over 2p tails
-Xs <- scale(Xb[tr, ])                                ## standardized: loadings = 1
-sig <- sd(y[tr])                                     ## step 0: intercept only
-for (it in 1:15) {
-  lam <- 2 * 1.1 * sig * sqrt(ntr) * z               ## plug-in lambda
-  m <- glmnet(Xs, y[tr], alpha = 1, lambda = lam / (2 * ntr), standardize = FALSE)
-  sig_new <- sqrt(mean((y[tr] - predict(m, Xs))^2))  ## update sigma from the fit
-  cat(sprintf("iter %d: sigma %.3f -> lambda %.1f, terms kept %d\n",
-              it, sig, lam, sum(coef(m)[-1] != 0)))
-  if (abs(sig_new - sig) < 1e-4) break
-  sig <- sig_new
-}
-## test R^2 of the plug-in lasso
-Xte_s <- scale(Xb[te, ], attr(Xs, "scaled:center"), attr(Xs, "scaled:scale"))
-r2(as.vector(predict(m, Xte_s)))
+#| label: en-alpha
+set.seed(723)
+foldid <- sample(rep(1:10, length.out = length(tr)))   ## one fold assignment for all alphas
+alphas <- seq(0, 1, by = 0.1)
+fits <- lapply(alphas, function(a) cv.glmnet(Xb[tr, ], y[tr], alpha = a, foldid = foldid))
+cv_min <- sapply(fits, function(f) min(f$cvm))         ## best CV error for each alpha
+data.frame(alpha = alphas, cv_mse = round(cv_min, 4))
+best <- which.min(cv_min)
+ce_best <- fits[[best]]
+c(alpha = alphas[best], lambda = ce_best$lambda.min,
+  terms_kept = unname(ce_best$nzero[ce_best$lambda == ce_best$lambda.min]),
+  test_R2 = r2(predict(ce_best, Xb[te, ], s = "lambda.min")))
 ```
 
-`hdm::rlasso` runs the same idea with refinements (data-driven loadings), so its
-selection need not match ours exactly:
-
-```{r}
-#| label: rlasso
-rl <- rlasso(Xb[tr, ], y[tr], post = FALSE)
-c(terms_kept = sum(coef(rl)[-1] != 0), test_R2 = r2(predict(rl, newdata = Xb[te, ])))
-```
+The CV errors across $\alpha$ are usually close: once $\lambda$ is tuned, the mix matters
+less than the amount of shrinkage. The test set is used once, for the chosen pair.
 
 ## Post-lasso
 
-```{r}
-#| label: post-gss
-## 23 main effects, standardized, lasso at the 1-se lambda, then OLS on the kept ones
-Zm <- scale(Xm[tr, ])
-clm <- cv.glmnet(Zm, y[tr], alpha = 1, nfolds = 10)
-bl <- coef(clm, s = "lambda.1se")[-1]; names(bl) <- colnames(Xm)
-km <- which(bl != 0)
-bp <- coef(lm(y[tr] ~ Zm[, km]))[-1]
-round(rbind(lasso = bl[km], post_lasso = bp), 3)
-## on the 243-term design: does removing the shrinkage help prediction?
-keep_plugin <- which(coef(m)[-1] != 0)
-post_plugin <- lm.fit(cbind(1, Xb[tr, keep_plugin]), y[tr])
-c(plugin_lasso = r2(as.vector(predict(m, Xte_s))),
-  plugin_post_lasso = r2(as.vector(cbind(1, Xb[te, keep_plugin]) %*% coef(post_plugin))))
-```
-
-## Lasso selection is unstable
+Refit OLS on the variables the lasso kept: lasso chooses *which*, OLS chooses *how large*.
 
 ```{r}
-#| label: lasso-stability
-## refit the lasso on 100 bootstrap samples; how often is each variable kept?
-sel <- replicate(100, {
-  b <- sample(tr, replace = TRUE)
-  cvb <- cv.glmnet(Xm[b, ], y[b], alpha = 1, nfolds = 5)
-  as.vector(coef(cvb, s = "lambda.1se"))[-1] != 0
-})
-freq <- rowMeans(sel); names(freq) <- colnames(Xm)
-round(sort(freq, decreasing = TRUE)[1:12], 2)
-## children as a main effect, and the female x children interaction in the plug-in lasso
-c(children_main_effect = freq[["childs"]],
-  plugin_keeps_female_x_children = "female:childs" %in% colnames(Xb)[keep_plugin])
+#| label: post-lasso
+keep <- names(b)[b != 0]                             ## kept at lambda.1se, main effects
+post <- lm(y[tr] ~ Xm[tr, keep])
+round(rbind(lasso = b[keep], post_lasso = coef(post)[-1]), 3)
 ```
 
-::: callout-important
-The lasso rarely keeps the number of children as a main effect, yet
-the plug-in lasso on the expanded design keeps female $\times$ children: children matter
-through sex. Weaker predictors flip in and out across samples. **The selected set is not
-a ranking of importance**, and
-$p$-values from a naive refit on the selected set are not valid.
-:::
+# Trees
 
-## How to do cross-validation wrong
-
-```{r}
-#| label: leak
-## WRONG: screen the 40 columns most correlated with y on ALL the data, then CV
-cors <- apply(Xb, 2, function(z) abs(cor(z, y)))
-top <- order(cors, decreasing = TRUE)[1:40]
-cv_leak <- cv.glmnet(Xb[, top], y, alpha = 1, nfolds = 10)
-## RIGHT: screen inside each fold, using only that fold's training cases
-folds <- sample(rep(1:10, length.out = n))
-honest <- sapply(1:10, function(k) {
-  a <- which(folds != k); b <- which(folds == k)
-  cc <- apply(Xb[a, ], 2, function(z) abs(cor(z, y[a])))
-  tp <- order(cc, decreasing = TRUE)[1:40]
-  fit <- cv.glmnet(Xb[a, tp], y[a], alpha = 1, nfolds = 5)
-  mean((y[b] - predict(fit, Xb[b, tp], s = "lambda.min"))^2)
-})
-c(leaky_cv_mse = min(cv_leak$cvm), honest_cv_mse = mean(honest))
-```
-
-::: callout-warning
-**Every data-dependent choice must happen inside the fold**: screening,
-standardization, imputation, and tuning alike. Here the leak is small because 2,456
-cases dilute it; with $p \gg n$ it can be enormous.
-:::
-
-# Trees and ensembles
-
-## A noiseless curve (690S)
-
-```{r}
-#| label: fitml-data
-## Y = exp(4X), no noise: the only error is approximation error
-set.seed(1)
-x_train <- matrix(runif(1000), 1000, 1)
-y_train <- as.vector(exp(4 * x_train))
-fitml <- data.frame(x = x_train[, 1], y = y_train)
-## plot the truth (blue) and a method's predictions (red)
-plot_fit <- function(pred, title) {
-  ggplot(data.frame(x = fitml$x, y = fitml$y, pred = pred), aes(x)) +
-    geom_point(aes(y = y), size = 0.5, colour = "navy") +
-    geom_point(aes(y = pred), size = 0.5, colour = "firebrick", alpha = 0.6) +
-    ggtitle(title) + labs(x = "X", y = "g(X)") + theme_lab
-}
-```
-
-```{r}
-#| label: fig-trees
-#| fig-cap: "A shallow tree (complexity penalty cp = .01) and a deep tree (cp = .0005)."
-#| fig-height: 2.6
-shallow <- rpart(y ~ x, data = fitml, cp = 0.01)     ## cp = complexity penalty
-deep    <- rpart(y ~ x, data = fitml, cp = 0.0005)
-ggarrange(plot_fit(predict(shallow), "shallow tree"), plot_fit(predict(deep), "deep tree"), nrow = 1)
-c(leaves_shallow = sum(shallow$frame$var == "<leaf>"), leaves_deep = sum(deep$frame$var == "<leaf>"))
-```
-
-```{r}
-#| label: fig-tree-plot
-#| fig-cap: "The shallow tree drawn as a tree: each leaf predicts the mean of its cases."
-#| fig-height: 3.0
-rpart.plot(shallow, type = 2, extra = 1, under = TRUE, fallen.leaves = TRUE)
-```
-
-## One split by hand
-
-```{r}
-#| label: split-hand
-toy <- data.frame(educ = c(10, 12, 12, 14, 16, 18),
-                  y    = c(9.6, 9.8, 10.0, 10.4, 10.8, 11.0))
-sse <- function(v) sum((v - mean(v))^2)              ## within-node sum of squares
-## try every cut: SSE left + SSE right
-t(sapply(c(11, 13, 15, 17), function(s) {
-  L <- toy$y[toy$educ <= s]; R <- toy$y[toy$educ > s]
-  c(cut = s, n_left = length(L), mean_left = mean(L), mean_right = mean(R),
-    SSE = sse(L) + sse(R))
-}))
-## rpart finds the same cut (it reports the midpoint between 12 and 14)
-rpart(y ~ educ, toy, control = rpart.control(minsplit = 2, minbucket = 1, maxdepth = 1, cp = 0))
-```
-
-## Trees on the GSS
+A regression tree splits the data in two at the cut $(j, s)$ that makes
+$\sum_{i \in L}(Y_i - \bar Y_L)^2 + \sum_{i \in R}(Y_i - \bar Y_R)^2$ smallest, then splits each
+part again; each leaf predicts its average.
 
 ```{r}
 #| label: gss-tree
-dtr <- data.frame(y = y[tr], Xm[tr, ]); dte <- data.frame(Xm[te, ])
-## the first split rpart chooses, and a depth-3 tree
-t3 <- rpart(y ~ ., dtr, control = rpart.control(maxdepth = 3, cp = 0))
-t3
-## depth as the bias-variance dial: training vs test R^2
-t(sapply(c(1, 2, 3, 5, 8, 12, 20), function(dep) {
-  tt <- rpart(y ~ ., dtr, control = rpart.control(maxdepth = dep, cp = 0, minsplit = 2, minbucket = 1))
-  c(depth = dep, leaves = sum(tt$frame$var == "<leaf>"),
-    train_R2 = 1 - mean((y[tr] - predict(tt, dtr))^2) / mean((y[tr] - mean(y[tr]))^2),
-    test_R2 = r2(predict(tt, dte)))
-})) |> round(3)
+t3 <- rpart(y ~ ., data = dtr,  ## y ~ . : predict y from every other column
+            control = rpart.control(
+              maxdepth = 3,  ## at most 3 splits from the root to a leaf (default 30)
+              cp = 0,  ## complexity penalty: keep a split only if it cuts the
+    ##   error by at least cp x (root error); default 0.01
+              minsplit = 20,  ## a node needs at least 20 cases to be split (default)
+              minbucket = 7))  ## every leaf keeps at least 7 cases (default minsplit/3)
 ```
 
 ```{r}
 #| label: fig-gss-tree
 #| fig-cap: "The depth-3 tree on the GSS. Below 16 years of schooling the tree splits next on sex; above, on age: an interaction."
 #| fig-height: 3.4
-rpart.plot(t3, type = 2, extra = 1, under = TRUE, fallen.leaves = TRUE, cex = 0.6)
+rpart.plot(t3, type = 2,  ## split label under each node
+           extra = 1,  ## print the number of cases in each node
+           under = TRUE, fallen.leaves = TRUE, cex = 0.6)
 ```
 
-## Bagging and random forests
+The usual workflow: grow a large tree, then prune it back by cross-validation. `rpart`
+cross-validates the pruning sequence as it grows (10 folds by default); keep the
+complexity penalty `cp` with the smallest CV error.
 
 ```{r}
-#| label: fig-rf
-#| fig-cap: "Random forest (500 trees) and boosted trees (100 steps, learning rate .05) on the noiseless curve."
-#| fig-height: 2.6
-## 690S code: randomForest grows 500 trees; leaves of at most 5 cases
-RFmodel <- randomForest(y ~ x, data = fitml, ntree = 500, nodesize = 5)
-## boosted trees: n.trees = number of steps, shrinkage = learning rate, depth 3
-BoostTreemodel <- gbm(y ~ x, data = fitml, distribution = "gaussian",
-                      n.trees = 100, shrinkage = 0.05, interaction.depth = 3)
-ggarrange(plot_fit(predict(RFmodel, fitml), "random forest"),
-          plot_fit(predict(BoostTreemodel, fitml, n.trees = 100), "boosted trees"), nrow = 1)
+#| label: prune
+set.seed(723)
+big <- rpart(y ~ ., data = dtr,
+             cp = 0.001,  ## small penalty: grow a large tree
+             xval = 10)  ## 10-fold CV of every pruned size (the default)
+round(big$cptable[1:6, ], 4)  ## CP, splits, training error, CV error (xerror) and its s.e.
+cp_best <- big$cptable[which.min(big$cptable[, "xerror"]), "CP"]
+pruned <- prune(big, cp = cp_best)  ## cut back every split worth less than cp_best
+c(cp = cp_best, leaves = sum(pruned$frame$var == "<leaf>"), test_R2 = r2(predict(pruned, dte)))
 ```
 
-On the GSS: one deep tree, 500 bagged deep trees (every split may use all 23
-predictors), and a random forest (each split sees 5 random predictors).
+# Random forests
+
+Grow many deep trees on bootstrap samples; at each split try only `mtry` random
+predictors (default: $\sqrt p$ rounded down, here 4); average the trees.
 
 ```{r}
-#| label: bag-rf-gss
-deep1 <- ranger(y ~ ., dtr, num.trees = 1, mtry = ncol(Xm), replace = FALSE,
-                sample.fraction = 1, min.node.size = 5, seed = 1)
-bag <- ranger(y ~ ., dtr, num.trees = 500, mtry = ncol(Xm), min.node.size = 5, seed = 1)
-rf5 <- ranger(y ~ ., dtr, num.trees = 500, mtry = 5, min.node.size = 5, seed = 1)
-c(one_deep_tree = r2(predict(deep1, dte)$predictions),
-  bagging = r2(predict(bag, dte)$predictions),
-  random_forest = r2(predict(rf5, dte)$predictions))
-## how correlated are two trees? (average over pairs among the first 50 trees)
-avg_cor <- function(fit) { cm <- cor(predict(fit, dte, predict.all = TRUE)$predictions[, 1:50]); mean(cm[upper.tri(cm)]) }
-c(bagging = avg_cor(bag), random_forest = avg_cor(rf5))
-## out-of-bag MSE: a free estimate of test MSE
-c(oob_mse = rf5$prediction.error, test_mse = mean((y[te] - predict(rf5, dte)$predictions)^2))
+#| label: rf
+rf <- ranger(y ~ ., data = dtr,
+             num.trees = 1000,  ## trees to average (default 500); more never hurts
+             mtry = 4,  ## predictors tried at each split; default floor(sqrt(p))
+             min.node.size = 5,  ## smallest leaf; default 5 for regression, 1 for classes
+             replace = TRUE,  ## bootstrap samples (default); FALSE = subsamples
+             importance = "permutation",  ## compute permutation importance (default "none")
+             seed = 723)  ## ranger's own seed: same forest every run
+c(oob_mse = rf$prediction.error,  ## out-of-bag: a free estimate of test MSE
+  test_mse = mean((y[te] - predict(rf, dte)$predictions)^2),
+  test_R2 = r2(predict(rf, dte)$predictions))
+
+## Random Forests build each tree using a bootstrap sample of the data 
+## (leaving out roughly 36.8% of observations per tree), ranger automatically
+## evaluates prediction error on those left-out samples without needing separate k-fold splits
 ```
 
-## Boosting by hand
+## Tuning
+
+Judge `mtry` and `min.node.size` (smallest leaf) by the out-of-bag MSE.
 
 ```{r}
-#| label: boost-hand
-## best one-split tree (a stump) for residuals r on x
-stump <- function(x, r) {
-  cuts <- sort(unique(x)); cuts <- (head(cuts, -1) + tail(cuts, -1)) / 2
-  s <- cuts[which.min(sapply(cuts, function(c) sse(r[x <= c]) + sse(r[x > c])))]
-  list(cut = s, fit = ifelse(x <= s, mean(r[x <= s]), mean(r[x > s])))
-}
-R <- toy$y - mean(toy$y)                             ## start from the mean
-lambda <- 0.5                                        ## learning rate
-for (j in 1:4) {
-  st <- stump(toy$educ, R)                           ## fit a stump to the residuals
-  R <- R - lambda * st$fit                           ## subtract a fraction of it
-  cat(sprintf("step %d: cut %.0f, residuals %s, SSR %.3f\n", j, st$cut,
-              paste(round(R, 2), collapse = " "), sum(R^2)))
-}
+#| label: rf-tune
+M <- c(1, 3, 5, 8, 23); N <- c(1, 5, 20, 50, 100)
+oob <- sapply(N, function(nd) sapply(M, function(m)
+  ranger(y ~ ., dtr, num.trees = 1000, mtry = m, min.node.size = nd, seed = 723)$prediction.error))
+dimnames(oob) <- list(paste0("mtry=", M), paste0("node=", N))
+round(oob, 3)
+rf_tun <- ranger(y ~ ., dtr, num.trees = 1000, mtry = 8, min.node.size = 50, seed = 723)
+c(default = r2(predict(rf, dte)$predictions), tuned = r2(predict(rf_tun, dte)$predictions))
 ```
 
-The same loop on the GSS, with depth-3 trees and a learning rate of 0.05:
+## Variable importance
+
+**Permutation importance**: shuffle one column, predict again, record how much the
+error rises (`ranger` does this on each tree's out-of-bag cases). **Impurity
+importance**: add up how much each variable's splits cut the sum of squares. Ask for
+permutation importance explicitly; it is not the default.
 
 ```{r}
-#| label: boost-gss
-boost <- function(M = 400, eta = 0.05, depth = 3) {
-  f_tr <- rep(mean(y[tr]), length(tr)); f_te <- rep(mean(y[tr]), length(te))
-  dd <- dtr
-  for (m in seq_len(M)) {
-    dd$y <- y[tr] - f_tr                             ## current residuals
-    t_m <- rpart(y ~ ., dd, control = rpart.control(maxdepth = depth, cp = 0, xval = 0))
-    f_tr <- f_tr + eta * predict(t_m, dd)            ## add a shrunken tree
-    f_te <- f_te + eta * predict(t_m, dte)
-  }
-  f_te
-}
-c(steps_100 = r2(boost(100)), steps_400 = r2(boost(400)))
+#| label: fig-importance
+#| fig-cap: "Variable importance for the random forest, top 10. Left: permutation (rise in out-of-bag MSE when shuffled). Right: impurity (share of all SSE reduction)."
+#| fig-width: 7.5
+#| fig-height: 3.2
+rf_i <- ranger(y ~ ., dtr, num.trees = 1000, importance = "impurity", seed = 723)
+ip <- sort(rf$variable.importance, decreasing = TRUE)[1:10]
+ii <- sort(rf_i$variable.importance / sum(rf_i$variable.importance), decreasing = TRUE)[1:10]
+par(mfrow = c(1, 2), mar = c(4, 7, 2, 1), cex = 0.8)
+barplot(rev(ip), horiz = TRUE, las = 1, col = "navy", border = NA,
+        main = "permutation", xlab = "rise in OOB MSE")
+barplot(rev(ii), horiz = TRUE, las = 1, col = "firebrick", border = NA,
+        main = "impurity", xlab = "share of SSE reduction")
+```
+
+Correlated variables share credit, and impurity importance favours variables with
+many distinct values. Importance describes the forest's predictions, not causes.
+
+# Boosted trees
+
+Start from the mean, fit a small tree to the residuals, add a fraction $\eta$ (the
+learning rate) of it, and repeat:
+$\hat f \leftarrow \hat f + \eta\, \hat f_m$. `xgb.cv` picks the number of steps by 5-fold CV,
+stopping once 50 more steps bring no improvement; `xgb.train` then fits that many steps on
+all training cases.
+
+```{r}
+#| label: xgboost
+set.seed(723)
+dm <- xgb.DMatrix(Xm[tr, ], label = y[tr])
+pars <- list(objective = "reg:squarederror",  ## squared error; "binary:logistic" for 0/1
+             eta = 0.05,  ## learning rate: share of each tree added (default 0.3)
+             max_depth = 3,  ## depth of each small tree (default 6)
+             min_child_weight = 1  ## smallest leaf, in cases for squared error (default 1)
+             )  
+cvb <- xgb.cv(params = pars, data = dm,
+              nrounds = 2000,  ## maximum number of trees
+              nfold = 5,  ## 5-fold CV inside the training set
+              early_stopping_rounds = 50,  ## stop once 50 more trees bring no CV gain
+              verbose = 0)
+steps <- which.min(cvb$evaluation_log$test_rmse_mean)  ## steps with the lowest CV error
+bst <- xgb.train(params = pars, data = dm, nrounds = steps, verbose = 0)  ## refit on all training cases
+c(steps = steps, test_R2 = r2(predict(bst, Xm[te, ])))
 ```
 
 # Neural networks
 
-## Gradient descent and backpropagation by hand
-
-```{r}
-#| label: gd-hand
-## minimize R(theta) = 1/2 sum (Y - theta)^2 by gradient descent, rho = 0.1
-Y <- c(1, 2, 6); theta <- 0
-for (t in 0:5) {
-  grad <- -sum(Y - theta)                            ## dR/dtheta
-  cat(sprintf("t %d: theta %.3f, R %.3f, gradient %.3f\n", t, theta, 0.5 * sum((Y - theta)^2), grad))
-  theta <- theta - 0.1 * grad                        ## step downhill
-}
-```
-
-```{r}
-#| label: backprop-hand
-## one case, one ReLU hidden unit: forward, backward, update
-X <- 1; Yc <- 4; w0 <- 0; w1 <- 2; b0 <- 0; b1 <- 1.5; rho <- 0.1
-z <- w0 + w1 * X; A <- max(0, z); f <- b0 + b1 * A; r <- Yc - f   ## forward pass
-g_b1 <- -r * A                                       ## dR/db1
-g_w1 <- -r * b1 * (z > 0) * X                        ## dR/dw1, ReLU slope = 1 here
-b1 <- b1 - rho * g_b1; w1 <- w1 - rho * g_w1         ## update
-f_new <- b0 + b1 * max(0, w0 + w1 * X)
-c(residual = r, dR_db1 = g_b1, dR_dw1 = g_w1, b1 = b1, w1 = w1,
-  f_new = f_new, loss_before = 0.5 * r^2, loss_after = 0.5 * (Yc - f_new)^2)
-```
-
-## A network on the noiseless curve
-
-```{r}
-#| label: fig-nn
-#| fig-cap: "One hidden layer of 10 units, stopped after 5 or 500 iterations."
-#| fig-height: 2.6
-ys <- (y_train - mean(y_train)) / sd(y_train)        ## networks like standardized targets
-n5   <- nnet(x_train, ys, size = 10, linout = TRUE, maxit = 5,   trace = FALSE)
-n500 <- nnet(x_train, ys, size = 10, linout = TRUE, maxit = 500, trace = FALSE)
-back <- function(m) mean(y_train) + sd(y_train) * as.vector(predict(m, x_train))
-ggarrange(plot_fit(back(n5), "5 iterations"), plot_fit(back(n500), "500 iterations"), nrow = 1)
-```
-
-The 690S code fits the same curve with `keras3` (two hidden layers of 200 and 20 ReLU
-units, Adam, mini-batches of 10, early stopping on a 20% validation set). It needs a
-Python installation of TensorFlow, so it is shown but not run here:
-
-```{r}
-#| label: keras
-#| eval: false
-library(keras3)   ## install_keras(tensorflow = "default") once
-build_model <- function() {
-  keras_model_sequential() |>
-    layer_dense(units = 200, activation = "relu", input_shape = c(1)) |>
-    layer_dense(units = 20, activation = "relu") |>
-    layer_dense(units = 1) |>
-    compile(optimizer = optimizer_adam(learning_rate = 0.01), loss = "mse")
-}
-## one epoch vs 100 epochs, mini-batches of 10
-model1 <- build_model();   model1   |> fit(x_train, y_train, epochs = 1,   batch_size = 10, verbose = 0)
-model100 <- build_model(); model100 |> fit(x_train, y_train, epochs = 100, batch_size = 10, verbose = 0)
-## early stopping: stop when the validation loss has not improved for 5 epochs
-early <- callback_early_stopping(monitor = "val_loss", patience = 5)
-model <- build_model()
-model |> fit(x_train, y_train, epochs = 100, batch_size = 10,
-             validation_split = 0.2, callbacks = list(early), verbose = 0)
-```
-
-## A network on the GSS
+One hidden layer: $A_k = \sigma\big(w_{k0} + \sum_j w_{kj}X_j\big)$, then
+$f(X) = \beta_0 + \sum_k \beta_k A_k$, fit by gradient descent. `size` = number of hidden
+units; `decay` = weight decay (a ridge penalty on the weights).
 
 ```{r}
 #| label: nn-gss
-## standardize inputs with the training means and sds
+## raw X and raw y, no rescaling (see the note below)
+## 2 hidden units and weight decay 0.1 (chosen by CV in figs/w12_gss.R)
+## average 5 random starts: the loss is not convex
+set.seed(723)
+nn_pred <- rowMeans(replicate(5, {
+  m <- nnet(Xm[tr, ], y[tr],
+            size = 2,  ## hidden units in the one hidden layer
+            decay = 0.1,  ## weight decay: ridge penalty on all weights (default 0)
+            linout = TRUE,  ## linear output for a continuous y (default: logistic)
+            maxit = 500,  ## at most 500 optimizer iterations (default 100)
+            trace = FALSE)  ## do not print the optimizer's progress
+  as.vector(predict(m, Xm[te, ]))
+}))
+c(parameters = (ncol(Xm) + 1) * 2 + 2 + 1, test_R2 = r2(nn_pred))
+
+## nnet does not have a user-input learning rate; default is BFGS quasi-Newton optimization method
+```
+
+`nnet` works on the raw variables here because the weight decay keeps every weight small.
+Set `decay = 0` and the fit gets much worse (Exercise 6). The usual safe habit is still to
+put the inputs on one scale, as in the next model.
+
+## A deeper network with keras3
+
+`keras3` drives Keras/TensorFlow from R. The first call downloads a private Python and
+TensorFlow (about a minute, once); after that it runs like any package.
+
+The model has two hidden layers of ReLU units, $23 \to 32 \to 16 \to 1$, with dropout after
+each, trained by Adam (a version of stochastic gradient descent) on mini-batches, with 20%
+of the training cases held back to decide when to stop.
+
+```{r}
+#| label: keras
+library(keras3)
+set_random_seed(723)  ## seeds R, Python, and TensorFlow together
+
+## 0. Rescale. Keras starts every weight near 0 and Adam takes small steps, so
+##    (a) inputs on very different scales (age ~ 45, female 0/1) slow training, and
+##    (b) predictions start near 0 while log earnings sit near 10.
+##    So: inputs to mean 0, sd 1, and the outcome too; undo it at the end.
+##    Means and sds come from the TRAINING cases only.
 mu <- colMeans(Xm[tr, ]); sdv <- apply(Xm[tr, ], 2, sd)
 Ztr <- scale(Xm[tr, ], mu, sdv); Zte <- scale(Xm[te, ], mu, sdv)
 ym <- mean(y[tr]); ysd <- sd(y[tr])
-## the size and weight decay chosen by CV in figs/w12_gss.R: 2 units, decay 0.1
-## average 5 random starts (the loss is not convex)
-pred <- rowMeans(replicate(5, {
-  m <- nnet(Ztr, (y[tr] - ym) / ysd, size = 2, decay = 0.1, linout = TRUE, maxit = 500, trace = FALSE)
-  ym + ysd * as.vector(predict(m, Zte))
-}))
-c(parameters = (ncol(Xm) + 1) * 2 + 2 + 1, test_R2 = r2(pred))
+
+## 1. Describe the network, layer by layer. The pipe |> adds one layer at a time.
+model <- keras_model_sequential(input_shape = ncol(Ztr)) |>  ## 23 standardized inputs
+  layer_dense(units = 32,  ## hidden layer 1: 32 units
+              activation = "relu") |>  ##   each unit: max(0, w0 + sum_j w_j X_j)
+  layer_dropout(rate = 0.2) |>  ## in training, switch off a random 20% of the
+    ##   units at each step (against overfitting)
+  layer_dense(units = 16, activation = "relu") |>  ## hidden layer 2: 16 units
+  layer_dropout(rate = 0.2) |>
+  layer_dense(units = 1)  ## output: one number, no activation (= linear)
+## weights in each layer: (23 + 1) x 32, 0, (32 + 1) x 16, 0, (16 + 1) x 1
+## (print `model` in the console for Keras's own summary table)
+sapply(model$layers, function(layer) layer$count_params())
+
+## 2. Choose the loss and the optimizer.
+model |> compile(
+  loss = "mse",  ## mean squared error; "binary_crossentropy" for 0/1
+  optimizer = optimizer_adam(learning_rate = 0.001))  ## Adam; 0.001 is its default step size
+
+## 3. Train. fit() changes `model` in place and returns the loss history.
+##    validation_split takes the LAST 20% of rows, so shuffle the rows first
+shuf <- sample(nrow(Ztr))
+history <- model |> fit(
+  x = Ztr[shuf, ], y = ((y[tr] - ym) / ysd)[shuf],  ## standardized inputs and outcome
+  epochs = 200,  ## at most 200 passes through the training data
+  batch_size = 32,  ## one gradient step per mini-batch of 32 cases
+  validation_split = 0.2,  ## hold out the last 20% of rows to monitor
+  callbacks = list(callback_early_stopping(
+    monitor = "val_loss",  ## watch the held-out loss
+    patience = 10,  ## stop after 10 epochs without improvement
+    restore_best_weights = TRUE)),  ## and go back to the best epoch's weights
+  verbose = 0)  ## no progress bar
+
+## 4. Predict, and undo the standardization of y.
+keras_pred <- ym + ysd * as.vector(predict(model, Zte, verbose = 0))
+c(epochs_run = length(history$metrics$loss), test_R2 = r2(keras_pred))
+```
+
+```{r}
+#| label: fig-keras
+#| fig-cap: "Training and validation loss by epoch. Early stopping ends training once the validation loss stops falling."
+#| fig-height: 2.8
+plot(history)  ## loss by epoch: training vs. validation
+```
+
+With 2,456 cases and 23 survey variables, the deep network does no better than the
+two-unit `nnet`: deep networks pay off with many raw inputs (pixels, words), not here.
+
+# Word vectors
+
+Skip-gram word2vec predicts each word's neighbours,
+$\Pr(c \mid w) = \exp\big(\sum_k u_{wk} v_{ck}\big) / \sum_{c'} \exp\big(\sum_k u_{wk} v_{c'k}\big)$;
+the fitted $u_w$ is word $w$'s vector. Similarity is the cosine,
+$\sum_k a_k b_k / \big(\sqrt{\sum_k a_k^2}\sqrt{\sum_k b_k^2}\big)$.
+
+The text: Jane Austen's six novels, about 730,000 words. The `word2vec` package does not
+take a seed, so the numbers change a little from run to run; the patterns do not.
+
+```{r}
+#| label: w2v-austen
+txt <- tolower(austen_books()$text)
+txt <- gsub("[^a-z ]", " ", txt[nchar(txt) > 0])  ## letters only
+m <- word2vec(txt,
+              type = "skip-gram",  ## predict neighbours from the word ("cbow": the reverse)
+              dim = 50,  ## numbers per word, K (default 50)
+              window = 5,  ## neighbours = words within 5 positions (default 5)
+              iter = 20,  ## passes through the text (default 5)
+              negative = 5,  ## fake pairs per real pair, negative sampling (default 5)
+              min_count = 5,  ## drop words seen fewer than 5 times (default 5)
+              threads = 1)  ## one thread: fewer run-to-run differences
+emb <- as.matrix(m)  ## one row per word
+dim(emb)
+## nearest words by cosine
+predict(m, c("sister", "letter"), type = "nearest", top_n = 5)
+## arithmetic: brother - he + she
+predict(m, emb["brother", ] - emb["he", ] + emb["she", ], type = "nearest", top_n = 5)
+```
+
+A cultural dimension, as in Kozlowski, Taddy, and Evans (2019): average several
+male-minus-female differences into one direction, then take each word's cosine with it
+(positive = closer to the male side of Austen's usage).
+
+```{r}
+#| label: w2v-dimension
+cosine <- function(a, b) sum(a * b) / sqrt(sum(a^2) * sum(b^2))
+gender <- (emb["he", ] - emb["she", ] + emb["man", ] - emb["woman", ] +
+           emb["his", ] - emb["her", ] + emb["mr", ] - emb["mrs", ]) / 4
+ws <- c("captain", "clergyman", "estate", "fortune", "business", "marriage",
+        "beauty", "music", "needlework", "lady")
+round(sort(sapply(ws, function(w) cosine(emb[w, ], gender))), 2)
+```
+
+# Scoreboard
+
+```{r}
+#| label: scoreboard
+ols <- lm.fit(cbind(1, Xm[tr, ]), y[tr])
+sort(c(OLS = r2(as.vector(cbind(1, Xm[te, ]) %*% coef(ols))),
+       lasso = r2(predict(cl, Xb[te, ], s = "lambda.min")),
+       ridge = r2(predict(cr, Xb[te, ], s = "lambda.min")),
+       elastic_net = r2(predict(ce, Xb[te, ], s = "lambda.min")),
+       pruned_tree = r2(predict(pruned, dte)),
+       random_forest = r2(predict(rf, dte)$predictions),
+       boosting = r2(predict(bst, Xm[te, ])),
+       neural_net = r2(nn_pred),
+       deep_net_keras = r2(keras_pred)), decreasing = TRUE) |> round(3)
 ```
 
 # Exercises
 
-1.  **Which penalty wins.** In the simulation, change $n$ from 100 to 400 in all three
-    worlds. Which methods improve most, and why does the dense world gain the most?
-2.  **The zero-or-not rule.** Using the `soft-threshold` chunk, find the smallest
-    $\lambda$ at which education drops out. Show it equals $|\hat S|$.
-3.  **Post-lasso.** Why do all nine post-lasso coefficients exceed the lasso ones in
-    size? When would post-lasso predict worse than lasso?
-4.  **Depth.** Grow trees of depth 1 to 20 on the GSS with `minbucket = 20` instead of 1.
-    How do the training and test $R^2$ change? Explain with bias and variance.
-5.  **Forests.** Vary `mtry` over 2, 5, 10, 23 for `ranger`. Report the test $R^2$ and
-    the average correlation between trees. Is lower correlation always better?
-6.  **Boosting's dials.** In `boost()`, try $\eta \in \{0.01, 0.1, 0.5\}$ with
-    $M \in \{100, 400\}$. Show that small $\eta$ with many steps beats large $\eta$ with
-    few, in terms of bias.
-7.  **Prediction is not inference.** Take the post-lasso coefficient on `female`.
+1.  **Two rules for $\lambda$.** Print the main-effect lasso coefficients at
+    `lambda.min` and at `lambda.1se`. Which variables differ? Which model predicts
+    better on the test set?
+2.  **Post-lasso.** Why is every post-lasso coefficient larger in size than the lasso
+    one? When would post-lasso predict worse than lasso?
+3.  **Pruning.** Grow `big` with `cp = 0.0001` instead. Does the pruned tree change?
+4.  **Forests.** Add `mtry` = 2 and 12 to the `rf-tune` grid, and try `num.trees` = 50.
+    Report the out-of-bag MSE.
+5.  **Boosting's learning rate.** In the `xgboost` chunk, try `eta` = 0.01, 0.1, 0.5.
+    How many steps does CV choose for each, and which predicts best?
+6.  **Scaling and weight decay.** Rerun `nn-gss` with `decay = 0`, then with
+    `Ztr`, `Zte` (from the `keras` chunk) as inputs. When does rescaling matter?
+7.  **Word vectors.** In `w2v-austen`, change `window` to 2 and then 10. How do the
+    nearest words to *letter* change? Build a *rich* $-$ *poor* dimension and place five
+    words on it.
+8.  **Prediction is not inference.** Take the post-lasso coefficient on `female`.
     Explain in two sentences why you would not report it with the usual standard error.
 
 # Session information

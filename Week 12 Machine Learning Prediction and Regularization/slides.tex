@@ -172,7 +172,7 @@
         effect $\tau(x)$ is larger or smaller \srcp{Wager and Athey 2018}.
 \end{enumerate}
 \vskip2pt
-{\small Reasons 3 and 4 are next week. \alert{Common thread}: every job predicts something
+{\small Reason 2: text, after neural networks; 3 and 4: next week. \alert{Common thread}: every job predicts something
 from $X$: the outcome $Y$, the treatment $D$, or the effect $\tau(x)$.}
 \end{frame}
 
@@ -181,7 +181,7 @@ from $X$: the outcome $Y$, the treatment $D$, or the effect $\tau(x)$.}
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.16\linewidth}>{\raggedright\arraybackslash}p{0.25\linewidth}>{\raggedright\arraybackslash}p{0.27\linewidth}>{\raggedright\arraybackslash}p{0.22\linewidth}@{}}
 \toprule
-kind & the data & what is learned & examples today \\
+kind & the data & what is learned & examples \\
 \midrule
 \textbf{supervised} & inputs $X$ and a recorded outcome $Y$ & a rule that predicts $Y$ for new cases &
   log earnings: lasso, trees \\
@@ -197,6 +197,7 @@ kind & the data & what is learned & examples today \\
   \item \textbf{Supervised}: someone recorded the answer; judged by error on new cases.
   \item \textbf{Unsupervised}: no answer to check; judged by how much of $X$ it keeps.
   \item \textbf{Self-supervised}: labels come free from the data, so it trains on billions of words.
+  \item Today: supervised, then self-supervised (word2vec) after neural networks. PCA: next week.
 \end{itemize}
 \end{frame}
 
@@ -390,7 +391,7 @@ until nothing changes (\textit{coordinate descent}, \texttt{glmnet}). The loss i
 starting values do not change the answer.}
 \end{frame}
 
-\begin{frame}{Lasso: the First-Order Condition\core}
+\begin{frame}{Lasso: the First-Order Condition\adv}
 For $b_j \neq 0$, $|b_j|$ has derivative $\text{sign}(b_j)$ ($+1$ or $-1$). Set $\partial L/\partial b_j = 0$:
 \begin{align*}
   -2\sum_i X_{ij}\big(R_i - X_{ij} b_j\big) + \lambda\,\text{sign}(b_j) &= 0
@@ -409,7 +410,7 @@ For $b_j \neq 0$, $|b_j|$ has derivative $\text{sign}(b_j)$ ($+1$ or $-1$). Set 
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The Kink Decides: When Is $b_j$ Zero?\core}
+\begin{frame}{The Kink Decides: When Is $b_j$ Zero?}
 At $b_j = 0$, $|b_j|$ has a kink: slope $-1$ to the left, $+1$ to the right, so any value in
 $[-1, 1]$ is a valid slope there (the \textit{subgradient}). Collect the three cases:
 \begin{align*}
@@ -515,7 +516,7 @@ Lasso on the 243 GSS terms, 2,456 training cases, for 100 values of $\lambda$ \s
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Ridge, One Coefficient at a Time\core}
+\begin{frame}{Ridge, One Coefficient at a Time}
 Same steps with $\lambda b_j^2$ in place of $\lambda |b_j|$. No kink, so one first-order condition:
 \begin{align*}
   -2\sum_i X_{ij}\big(R_i - X_{ij} b_j\big) + 2\lambda b_j = -2n\hat b_j + 2n b_j + 2\lambda b_j = 0
@@ -541,7 +542,7 @@ weak regressor & 0.15 & $0.15\times 0.8 = 0.12$ & 0 \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Where Ridge Wins: Many Small Effects\core}
+\begin{frame}{Where Ridge Wins: Many Small Effects}
 \begin{center}
 \includegraphics[width=0.84\linewidth]{figs/dense_beta.pdf}
 \end{center}
@@ -1130,7 +1131,7 @@ too rough a step function for a mostly smooth relationship.}
   \item Random forests improve on bagging by \textit{decorrelating} the trees.
   \item As in bagging, grow trees on bootstrap samples. But at each split, consider
         only \textit{a random sample of $m$ predictors} out of the $p$, a fresh
-        sample at every split; typically $m \approx \sqrt p$ (GSS: $p = 23$, $m = 5$).
+        sample at every split; typically $\sqrt p$ rounded down (GSS: $\sqrt{23} = 4.8$, so $m = 4$).
   \item \textbf{Why}: if one strong predictor dominates the first split, every
         bagged tree splits on it first, and the trees look alike. Averaging
         near-copies removes little variance, and the other predictors' information
@@ -1156,8 +1157,8 @@ $B$ trees, each with variance $\sigma^2$ at a point, pairwise correlation $\rho$
 \begin{itemize}\itemsep1pt\small
   \item More trees kill only the second term. The first, $\rho\sigma^2$, is a floor.
         With $\sigma^2 = 1$, $B = 500$: $\rho = 0.6$ gives 0.601; $\rho = 0.3$ gives 0.301.
-  \item GSS: two trees' test predictions correlate 0.34 when bagging, 0.29 in the
-        forest; test $R^2$ 0.268 vs.\ 0.274: little gain here \srcp{figs/w12\_690s.R, G}.
+  \item GSS: two trees' test predictions correlate 0.34 when bagging, 0.27 in the
+        forest; test $R^2$ 0.268 vs.\ 0.272: little gain here \srcp{figs/w12\_690s.R, G}.
   \item Out-of-bag error: each tree skips about a third of the data
         ($(1-1/n)^n \approx e^{-1}$). GSS: OOB MSE 0.626, test MSE 0.645.
 \end{itemize}
@@ -1222,6 +1223,35 @@ age and ever married \emph{together} & \alert{0.090} \\
         says the forest relies on the variable, not that changing it changes earnings
         (Section Interpretation).
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Tuning a Random Forest}
+Three tuning parameters in \texttt{ranger}; judge them by the \textbf{out-of-bag} MSE, which needs no
+validation fold \srcp{figs/w12\_rf\_tune.R}:
+\begin{itemize}\itemsep1pt\small
+  \item \texttt{mtry} ($m$): how many predictors each split may try. Default: $\sqrt p$ rounded down; here $\sqrt{23} = 4.8$, so 4.
+  \item \texttt{min.node.size}: fewest cases in a leaf. Default 5; larger gives shallower, smoother trees.
+  \item \texttt{num.trees}: more never hurts (OOB MSE 0.815 with 10 trees, 0.626 with 1,000).
+\end{itemize}
+\vskip-2pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+OOB MSE & \multicolumn{5}{c}{\texttt{min.node.size}} \\
+\texttt{mtry} & 1 & 5 & 20 & 50 & 100 \\
+\midrule
+1 & 0.740 & 0.740 & 0.742 & 0.744 & 0.749 \\
+3 & 0.630 & 0.629 & 0.629 & 0.638 & 0.648 \\
+5 & 0.626 & \alert{0.623} & 0.623 & 0.625 & 0.631 \\
+8 & 0.633 & 0.629 & 0.626 & \alert{0.623} & 0.627 \\
+23 (bagging) & 0.663 & 0.656 & 0.642 & 0.635 & 0.634 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-1pt
+{\small \texttt{mtry} matters most; leaf size barely, once $m$ is sensible. Test $R^2$, touched once:
+default 0.272, tuned ($m = 8$, leaf 50) 0.286, bagging 0.264. Forests work well at their defaults.}
 \end{frame}
 
 \begin{frame}{In the Literature: What Predicts Relationship Quality?}
@@ -1294,29 +1324,25 @@ importance score.
 mean rather than from 0.}
 \end{frame}
 
-\begin{frame}{Boosting by Hand}
-The six people, one-split trees (stumps), learning rate $\lambda = 0.5$; start from
-the mean 10.27 \srcp{figs/w12\_690s.R, H}:
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}lcccccccc@{}}
-\toprule
-& \multicolumn{6}{c}{residual $R_i$ for schooling $=$} & & \\
-step & 10 & 12 & 12 & 14 & 16 & 18 & stump & $\sum R_i^2$ \\
-\midrule
-0 & $-0.67$ & $-0.47$ & $-0.27$ & 0.13 & 0.53 & 0.73 & & 1.573 \\
-1 & $-0.43$ & $-0.23$ & $-0.03$ & $-0.10$ & 0.30 & 0.50 & cut 13: $-0.47 / +0.47$ & 0.593 \\
-2 & $-0.33$ & $-0.13$ & 0.07 & 0.00 & 0.10 & 0.30 & cut 15: $-0.20 / +0.40$ & 0.233 \\
-3 & $-0.17$ & $-0.17$ & 0.03 & $-0.03$ & 0.07 & 0.27 & cut 11: $-0.33 / +0.07$ & 0.133 \\
-4 & $-0.14$ & $-0.14$ & 0.06 & $-0.01$ & 0.09 & 0.13 & cut 17: $-0.05 / +0.27$ & 0.069 \\
-\bottomrule
-\end{tabular}
+\begin{frame}{Boosting by Hand: Start From Zero}
+Six people; stumps; $\lambda = 0.5$; guess 0, so $R_i = Y_i$ \srcp{figs/w12\_boost\_steps.R}.
+\begin{center}
+\includegraphics[width=0.88\linewidth]{figs/boost_step1.pdf}
+\end{center}
+\vskip-4pt
+{\small Person with 10 years ($Y = 9.6$): prediction $0 \to 4.90 \to 7.37 \to 8.48 \to 9.10$. Each step adds
+half of what is still missing, so the gap halves: $9.6 \to 4.70 \to 2.23 \to 1.12 \to 0.50$.}
+\end{frame}
+
+\begin{frame}{Small Steps Predict Better on New Cases}
+$Y = e^{4X} + \text{noise}$ (sd 4); 100 training, 5,000 test cases; stumps \srcp{figs/w12\_boost\_steps.R}:
+\begin{center}
+\includegraphics[width=0.56\linewidth]{figs/boost_lr_test.pdf}
 \end{center}
 \begin{itemize}\itemsep2pt\small
-  \item Step 1: the stump fits the residuals with $-0.47$ (at most 12 years) and $+0.47$;
-        we subtract only half of it, e.g.\ $-0.67 - 0.5(-0.47) = -0.43$.
-  \item Each step uses a different cut, so the sum of four stumps is a staircase with
-        five levels. The sum of squared residuals falls every step.
+  \item Lowest test MSE: $\lambda = 1$: 21.1 at step 48; $\lambda = 0.3$: 19.4 at step 21; $\lambda = 0.1$: 18.7 at step 67.
+  \item A big rate peaks early, peaks worse, then climbs as later stumps fit noise. A small rate
+        needs more steps but gets closer to the noise floor of 16.
 \end{itemize}
 \end{frame}
 
@@ -1325,7 +1351,7 @@ step & 10 & 12 & 12 & 14 & 16 & 18 & stump & $\sum R_i^2$ \\
   \item The number of steps $J$ matters.
   \item Each step fits the part of the outcome the previous steps left
         unexplained, so the in-sample error can only fall (weakly) with each step:
-        1.573, 0.593, 0.233, 0.133, 0.069 by hand.
+        by hand, the 10-year person's gap went 9.6, 4.70, 2.23, 1.12, 0.50.
   \item Too many steps and the model overfits: eventually it fits the noise.
   \item Too few steps leave substantial bias.
   \item In practice, stop once CV-MSE no longer improves.
@@ -1472,8 +1498,8 @@ best on & tables of survey variables (the GSS) & text, images, sound: many raw i
 \end{tabular}
 \end{center}
 \vskip2pt
-{\small\textbf{Uses in this course}: measuring from text and images (Gebru et al.\ 2017; BERT, later
-today), and predicting outcomes and treatments inside causal estimators (Week 13).}
+{\small\textbf{Uses in this course}: measuring from text and images (Gebru et al.\ 2017, end of this section;
+word vectors, next section), and predicting outcomes and treatments inside causal estimators (Week 13).}
 \end{frame}
 
 \begin{frame}{Single Layer Neural Network\core}
@@ -1687,7 +1713,7 @@ total & & 235,146 \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Fitting a Neural Network\core}
+\begin{frame}{Fitting a Neural Network}
 \begin{itemize}\itemsep4pt
   \item Take the single-layer network; the multilayer case works the same way.
   \item We minimize the squared loss over $(p+1)K$ input weights and biases and $K+1$
@@ -1709,7 +1735,7 @@ total & & 235,146 \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Gradient Descent: Picture\core}
+\begin{frame}{Gradient Descent: Picture}
 \begin{center}
 \includegraphics[width=0.66\linewidth]{figs/gradient_descent.pdf}
 \end{center}
@@ -1722,7 +1748,7 @@ total & & 235,146 \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Gradient Descent\core}
+\begin{frame}{Gradient Descent}
 \begin{enumerate}\itemsep4pt
   \item Start with an initial guess $\theta^0$ for all parameters (small random
         numbers); set $t = 0$.
@@ -1830,7 +1856,7 @@ we approach it, so the steps shrink too \srcp{figs/w12\_690s.R, I}. Here $R$ is 
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Dealing With Overfitting: Weight Decay\core}
+\begin{frame}{Dealing With Overfitting: Weight Decay}
 \begin{itemize}\itemsep4pt
   \item As in high-dimensional regression, a massive number of parameters risks
         overfitting.
@@ -1849,7 +1875,7 @@ we approach it, so the steps shrink too \srcp{figs/w12\_690s.R, I}. Here $R$ is 
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Dealing With Overfitting: Dropout\adv}
+\begin{frame}{Dealing With Overfitting: Dropout}
 \begin{itemize}\itemsep2pt
   \item Lasso-like penalties that zero out weights are less common in networks.
         Instead, \textit{dropout learning} keeps units from becoming over-specialized.
@@ -1948,30 +1974,48 @@ beat deep networks \srcp{Grinsztajn, Oyallon, and Varoquaux 2022}. Networks win
 when the input is unstructured: text, images, audio.
 \end{frame}
 
-\begin{frame}{In the Literature: Neighbourhoods From Street View}
-\textbf{The question.} Gebru et al.\ (2017): surveys like the ACS are slow and expensive. Can images of the
-street measure a neighbourhood's income, race, and politics?
-\vskip1pt
-\textbf{The data.} 50 million Google Street View images, 200 US cities, 22 million cars.
-\vskip1pt
-\textbf{The method.} The network learns the features (cars) from pixels; a penalized regression does the rest:
-\begin{enumerate}\itemsep1pt
-  \item A \alert{convolutional neural network} (weights shared across image
-        locations) sorts each car into one of 2,657 make--model--year categories.
-  \item Ordinary ridge and logistic regressions map each area's mix of cars to its
-        ACS demographics and votes, trained on some cities, tested on 165 others.
-\end{enumerate}
-\textbf{The results.}
-\begin{itemize}\itemsep1pt
-  \item City level, predicted vs.\ ACS: median household income $r = 0.82$.
-  \item More sedans than pickup trucks: the city voted Democratic 88\% of the time;
-        otherwise Republican 82\%.
+\begin{frame}{In the Literature: Finding Protests in Social Media}
+\textbf{The question.} Zhang and Pan (2019): protest data usually come from newspapers. Where the press is
+controlled, as in China, most protests never reach the news. Can social media posts find them?
+\vskip2pt
+\textbf{The data.} 9.5 million Weibo posts (China's Twitter), 2010--2017, with a protest word. Most
+are not about protests: ``my stomach is protesting.''
+\vskip2pt
+\textbf{The method.} Two neural networks give the probability that a post describes a protest: one reads
+the \emph{text}, one looks at the \emph{photos} (a network pretrained on 1.2 million everyday images,
+retrained on protest photos). Labels: an activists' archive of protest posts (yes), random posts (no).
+\vskip3pt
+\includegraphics[width=0.94\linewidth]{figs/zhang_pan_fig3.png}
+{\footnotesize Photos ordered by predicted protest probability (their Figure 3).}
+\end{frame}
+
+\begin{frame}{Zhang and Pan: Validation and Results}
+\textbf{Honest evaluation.} Checked on 10,000 posts that coders read by hand and the networks never saw.
+\emph{Precision}: share of flagged posts that are really protests. \emph{Recall}: share of real protest posts found.
+F1 combines the two (1 = perfect).
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& precision & recall & F1 \\
+\midrule
+stage 1: trained on the archive vs.\ random posts & 0.66 & 0.73 & 0.69 \\
+stage 2: retrained on 40,505 hand-coded hard cases & 0.79 & 0.90 & 0.84 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt\small
+  \item Stage 2's hard cases: posts \emph{about} grievances (demolitions, police) that describe no protest.
+        Of the 40,505, only 9,761 were protests. Text predicted better than photos.
+  \item \textbf{Result}: 136,330 likely protest events in over 96\% of China's counties. Unpaid wages 29\%,
+        property 26\%, land 17\%: more rural land protests than newspaper-based data.
+  \item \textbf{Blind spots}: few events in Tibet and Xinjiang, where social media use is lower and control tighter.
 \end{itemize}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Representations]{Representations: Text and Images}
+\section[Word Embeddings]{Word Embeddings}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
@@ -1987,255 +2031,37 @@ numbers. Three uses:
   \item \textbf{As predictors or measurements}: score each presidential speech for
         populism; read a neighbourhood's income from its cars
         \srcp{Bonikowski, Luo, and Stuhler 2022; Gebru et al.\ 2017}.
-  \item \textbf{As control variables}: the effect of nearby gunshots on children's test
-        scores must hold neighbourhood ``quality'' fixed; surveys miss it, street images
-        may record it. The effect of price on demand must hold product quality fixed; it
-        is written in the product description \srcp{Bajari et al.\ 2025}.
+  \item \textbf{As control variables}: hold fixed what is written in a text (next week).
 \end{enumerate}
-{\small Use 3 is next week. Today: how the numbers are made.}
-\end{frame}
-
-\subsection{Principal Components}
-
-\begin{frame}{Feature Extraction: Principal Components\core}
-\begin{itemize}\itemsep6pt
-  \item We want to turn complex objects, such as text or images, into a relatively small set of
-        numerical features.
-  \item Principal components are an early, classic example of such features (\emph{embeddings}).
-  \item Principal components are weighted sums of the original variables, chosen to be the
-        ``best'' at reproducing the data: each new direction is orthogonal to the previous ones.
-  \item A small number of principal components often captures most of the variation in the
-        original variables, and so gives a useful low-dimensional summary.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Principal Components: the Setup\core}
-A sample of $n$ observations $W_1, \dots, W_n$ of a centred vector with $d$ entries,
-$W_i = (W_{i1}, \dots, W_{id})'$, each entry with mean 0. Their covariance matrix:
-\[
-  \Sigma_n = \frac1n\sum_{i=1}^n W_i W_i' \qquad (d \times d).
-\]
-\textbf{With $d = 2$, written out:}
-\begin{align*}
-  \Sigma_n &= \frac1n\sum_{i=1}^n
-  \begin{pmatrix} W_{i1} \\ W_{i2} \end{pmatrix}
-  \begin{pmatrix} W_{i1} & W_{i2} \end{pmatrix}
-  = \frac1n\sum_{i=1}^n \begin{pmatrix} W_{i1}^2 & W_{i1}W_{i2} \\ W_{i2}W_{i1} & W_{i2}^2 \end{pmatrix}
-   && \text{\footnotesize multiply} \\
-  &= \begin{pmatrix} \Var(W_1) & \Cov(W_1, W_2) \\ \Cov(W_1, W_2) & \Var(W_2) \end{pmatrix}
-   && \text{\footnotesize means are 0}
-\end{align*}
-{\small Diagonal: each variable's variance. Off the diagonal: how the variables move together.
-For standardized SEI and prestige: 1, 1, and their correlation 0.82.}
-\end{frame}
-
-\begin{frame}{Principal Directions and Components\core}
-\begin{itemize}\itemsep4pt
-  \item The \textbf{eigenvectors} $c_k$ (each of length 1) and \textbf{eigenvalues} $\lambda_k$ of
-        $\Sigma_n$ solve
-  \[
-    \Sigma_n c_k = \lambda_k c_k, \qquad k = 1, \dots, d .
-  \]
-        Software (\texttt{prcomp}) finds them. $c_1$ is the direction in which the data vary
-        most; $\lambda_k$ is the variance along $c_k$; the $\lambda_k$ add up to the total variance.
-  \item Keep the $K$ largest ($K \ll d$): $C_K = [c_1, \dots, c_K]$, a $d \times K$ matrix.
-  \item \textbf{Project} $W_i$ on each principal direction. With $d = 2$, written out:
-  \[
-    X_{ki} = c_k' W_i = c_{k1} W_{i1} + c_{k2} W_{i2} :
-  \]
-        a weighted sum of the variables, the $k$-th \textbf{principal component}.
-  \item Person $i$'s compressed features: $X_i^K = (X_{1i}, \dots, X_{Ki})' = C_K' W_i$.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Principal Components: a Picture\core}
-\begin{columns}[c]
-\begin{column}{0.5\linewidth}
-\includegraphics[width=\linewidth]{figs/pca_sei_prestige.pdf}
-\end{column}
-\begin{column}{0.48\linewidth}
-\small
-$W_i$ = (SEI, prestige), standardized; 600 of 3,509 GSS respondents \srcp{figs/w12\_repr.R, A}.
-\begin{itemize}\itemsep3pt
-  \item $c_1 = (0.707, 0.707)'$ (red): the direction of most variation; $\lambda_1 = 1.82$,
-        91\% of the total variance of 2.
-  \item Green person: $W_i = (1.35, 0.40)'$.
-        $X_{1i} = 0.707(1.35) + 0.707(0.40) = 1.24$: one number instead of two.
-  \item The green segment is what that one number misses; $c_2$ (dashed) would keep it.
-\end{itemize}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Reconstruction\core}
-\begin{itemize}\itemsep5pt
-  \item $X_i^K$ is the compressed feature vector of the original $W_i$.
-  \item Approximate $W_i$ by projecting $X_i^K$ back to the $d$-dimensional space:
-  \[
-    \hat W_i = C_K X_i^K .
-  \]
-  \item With $d = 2$ and $K = 1$, written out: $\hat W_i = c_1 X_{1i}$, i.e.\
-        $\hat W_{i1} = c_{11} X_{1i}$ and $\hat W_{i2} = c_{12} X_{1i}$.
-        Green person: $\hat W_i = (0.707 \times 1.24,\ 0.707 \times 1.24)' = (0.87, 0.87)'$.
-  \item The choice of $K$ sets how much of the original information (variance) is kept:
-        the share $\sum_{k \leq K} \lambda_k \big/ \sum_k \lambda_k$.
-  \item A common use: compressing images (next).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Principal Components as Compression}
-A 120 $\times$ 160 image: each pixel row is a unit, each of the 160 columns a variable
-\srcp{figs/w12\_repr.R, C}:
-\vskip2pt
-\begin{center}
-\includegraphics[width=0.96\linewidth]{figs/pca_image.pdf}
-\end{center}
-\vskip-4pt
-\begin{itemize}\itemsep2pt\small
-  \item Numbers stored: 19,200 for the original; with $K$ components, $K$ scores per row,
-        $K$ loadings per column, and 160 means: 720 at $K = 2$, 1,560 at $K = 5$,
-        4,360 at $K = 15$.
-  \item At $K = 15$, 23\% of the numbers keep 98\% of the variance, and the text reads cleanly.
-  \item On a document-by-word count table the same algebra is \textit{latent semantic
-        analysis} \srcp{Deerwester et al.\ 1990}; on a user-by-item table, a recommender.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Principal Components as an Encoder--Decoder Network\core}
-\begin{columns}[c]
-\begin{column}{0.44\linewidth}
-\begin{center}
-\begin{tikzpicture}[x=1.55cm,y=0.68cm]
-  \foreach \i in {1,...,7} {
-    \node[nnin,minimum size=6.4mm,font=\scriptsize] (in\i) at (0,{4-\i}) {$W_{i\i}$};
-    \node[nnout,minimum size=6.4mm,font=\scriptsize] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
-  \foreach \k in {1,2,3} \node[nnhid,minimum size=6.4mm,font=\scriptsize] (h\k) at (1,{2-\k}) {$E_{i\k}$};
-  \foreach \i in {1,...,7} \foreach \k in {1,2,3} {\draw[nnlink] (in\i) -- (h\k); \draw[nnlink] (h\k) -- (out\i);}
-  \node[nnhead] at (0,3.75) {input};
-  \node[nnhead] at (1,3.75) {encoding};
-  \node[nnhead] at (2,3.75) {decoding};
-\end{tikzpicture}
-\end{center}
-\end{column}
-\begin{column}{0.54\linewidth}
-\small
-The approximation of $W_i$ from $W_i$ is a prediction exercise: a shallow one-layer
-\emph{linear} network,
-\[
-  \underset{d\times 1}{W_i} \;\mapsto\; C_K'W_i := \underset{K\times 1}{E_i}
-  \;\mapsto\; A'E_i := \underset{d\times 1}{\hat W_i}.
-\]
-\vskip-4pt
-\begin{itemize}\itemsep2pt
-  \item Step 1 \textbf{encodes} the input into $K$ numbers; step 2 \textbf{decodes} them
-        back to the original space: an encoder--decoder network, an \textbf{autoencoder}.
-  \item For principal components, $A = C_K'$, so $\hat W_i = C_K E_i = C_K X_i^K$.
-  \item The weights into each hidden unit are a principal direction $c_k$; the hidden units'
-        outputs are the principal components; the decoder rebuilds the input.
-\end{itemize}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Reading the Weights}
-\begin{columns}[T]
-\begin{column}{0.49\linewidth}
-\begin{center}
-\begin{tikzpicture}[x=1.25cm,y=0.6cm]
-  \foreach \i in {1,...,7} {
-    \node[nnin,minimum size=5.6mm,font=\tiny] (in\i) at (0,{4-\i}) {$W_{i\i}$};
-    \node[nnout,minimum size=5.6mm,font=\tiny] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
-  \foreach \k in {1,2,3} \node[nnhid,minimum size=5.6mm,font=\tiny] (h\k) at (1,{2-\k}) {$E_{i\k}$};
-  \foreach \i in {1,...,7} {\draw[nnlink] (in\i) -- (h2); \draw[nnlink] (in\i) -- (h3);}
-  \foreach \i in {1,...,7} \foreach \k in {1,2,3} \draw[nnlink] (h\k) -- (out\i);
-  \foreach \i in {1,...,7} \draw[dukeblue,line width=0.9pt] (in\i) -- (h1);
-\end{tikzpicture}
-\end{center}
-{\footnotesize Weights \emph{into one hidden unit} (blue): a principal direction $c_1$. The unit's
-output is the first principal component.}
-\end{column}
-\begin{column}{0.49\linewidth}
-\begin{center}
-\begin{tikzpicture}[x=1.25cm,y=0.6cm]
-  \foreach \i in {1,...,7} {
-    \node[nnin,minimum size=5.6mm,font=\tiny] (in\i) at (0,{4-\i}) {$W_{i\i}$};
-    \node[nnout,minimum size=5.6mm,font=\tiny] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
-  \foreach \k in {1,2,3} \node[nnhid,minimum size=5.6mm,font=\tiny] (h\k) at (1,{2-\k}) {$E_{i\k}$};
-  \foreach \i in {2,...,7} \foreach \k in {1,2,3} \draw[nnlink] (in\i) -- (h\k);
-  \foreach \i in {1,...,7} \foreach \k in {1,2,3} \draw[nnlink] (h\k) -- (out\i);
-  \foreach \k in {1,2,3} \draw[accent,line width=0.9pt] (in1) -- (h\k);
-\end{tikzpicture}
-\end{center}
-{\footnotesize Weights \emph{out of one input} (orange): that feature's weight on each latent
-dimension, its loadings $c_{11}, c_{21}, c_{31}$.}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{From Principal Components to Deep Autoencoders}
-\begin{center}
-\begin{tikzpicture}[x=2.0cm,y=0.5cm]
-  \foreach \i in {1,...,5} \node[nnin,minimum size=4.4mm] (a\i) at (0,{3-\i}) {};
-  \foreach \i in {1,...,7} \node[nnhid,minimum size=4.4mm] (b\i) at (1,{4-\i}) {};
-  \foreach \i in {1,2,3}   \node[nnhid,minimum size=4.4mm,fill=dukeblue!45] (c\i) at (2,{2-\i}) {};
-  \foreach \i in {1,...,6} \node[nnhid,minimum size=4.4mm] (d\i) at (3,{3.5-\i}) {};
-  \foreach \i in {1,...,5} \node[nnout,minimum size=4.4mm] (e\i) at (4,{3-\i}) {};
-  \foreach \i in {1,...,5} \foreach \j in {1,...,7} \draw[nnlink] (a\i) -- (b\j);
-  \foreach \i in {1,...,7} \foreach \j in {1,2,3} \draw[nnlink] (b\i) -- (c\j);
-  \foreach \i in {1,2,3} \foreach \j in {1,...,6} \draw[nnlink] (c\i) -- (d\j);
-  \foreach \i in {1,...,6} \foreach \j in {1,...,5} \draw[nnlink] (d\i) -- (e\j);
-  \node[nnhead] at (0,3.9) {input\\$W_i$};
-  \node[nnhead] at (1,3.9) {encoding 1\\$E^1_i$};
-  \node[nnhead] at (2,3.9) {encoding 2\\$E^2_i$ (code)};
-  \node[nnhead] at (3,3.9) {decoding 1\\$D^1_i$};
-  \node[nnhead] at (4,3.9) {output\\$\hat W_i$};
-  \draw[decorate,decoration={brace,amplitude=4pt,mirror},thick,dukeblue] (-0.1,-3.6) -- (2.1,-3.6)
-     node[midway,below=4pt,font=\footnotesize]{encoder: kept};
-  \draw[decorate,decoration={brace,amplitude=4pt,mirror},thick,accent] (2.3,-3.6) -- (4.1,-3.6)
-     node[midway,below=4pt,font=\footnotesize]{decoder: discarded after training};
-\end{tikzpicture}
-\end{center}
-\vskip-4pt
-\[
-  W_i \;\overset{g_1}{\longmapsto}\; E^1_i \;\overset{g_2}{\longmapsto}\; E^2_i
-  \;\overset{g_3}{\longmapsto}\; D^1_i \;\overset{g_4}{\longmapsto}\; \hat W_i
-\]
-\vskip-4pt
-\begin{itemize}\itemsep1pt\small
-  \item Each $g$ is a layer: weighted sums, then a nonlinear activation (ReLU). One linear
-        layer is PCA; nonlinear layers keep more of $W_i$ in the same $K$. The trained
-        encoder turns any new unit into its code.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Change What the Network Predicts\core}
-\begin{itemize}\itemsep2pt
-  \item With encoder $e(\cdot)$ and decoder $d(\cdot)$, an autoencoder minimizes the
-        rebuilding loss $\E\big[\text{loss}\big(W,\ d(e(W))\big)\big]$. It must rebuild
-        \emph{everything}: font, word order, typos, lighting.
-  \item Keep the encoder, but predict another target $A$:
-        $\E\big[\text{loss}\big(A,\ f(e(W))\big)\big]$. The code keeps what predicts $A$:
-  \begin{center}\small
-  \renewcommand{\arraystretch}{1.0}
-  \begin{tabular}{@{}lll@{}}
-  \toprule
-  model & trained to predict & the code ends up holding \\
-  \midrule
-  autoencoder & the input itself & whatever varies most \\
-  word2vec & the words near each word & what a word's company says \\
-  BERT & words hidden from a sentence & meaning in context \\
-  Gebru et al.\ CNN & a car's make and model & visual traits of cars \\
-  \bottomrule
-  \end{tabular}
-  \end{center}
-  \item The task is a choice: for price effects, a description's code should hold product
-        type and quality, not its wording.
-  \item All but the last are \textbf{self-supervised} (slide on the three kinds): the
-        target comes free from the data, so they train on billions of words.
-\end{itemize}
+{\small This section: how word vectors are made.}
 \end{frame}
 
 \subsection{Word Vectors}
+
+\begin{frame}{A Word Is a Category}
+In a regression, a word is a categorical variable: one 0/1 dummy per word in the vocabulary.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+& beer & wine & tesg\"uino & corn & wheat & drink & \dots \\
+\midrule
+beer & 1 & 0 & 0 & 0 & 0 & 0 & \dots \\
+wine & 0 & 1 & 0 & 0 & 0 & 0 & \dots \\
+corn & 0 & 0 & 0 & 1 & 0 & 0 & \dots \\
+\bottomrule
+\end{tabular}
+\end{center}
+This row is called a \textbf{one-hot} vector. Two problems:
+\begin{itemize}\itemsep3pt
+  \item \textbf{Too long}: English needs about 100,000 columns, one per word.
+  \item \textbf{No similarity}: beer and wine share no 1, and neither do beer and corn. The coding
+        says beer is as different from wine as from corn.
+\end{itemize}
+\vskip3pt
+\textbf{Goal}: give each word a short list of $K$ numbers (often $K = 300$), its \textbf{word vector},
+so that words with similar meanings get similar lists.
+\end{frame}
 
 \begin{frame}{You Know a Word by Its Neighbours\core}
 \begin{columns}[T]
@@ -2249,7 +2075,7 @@ What is \textcolor{dukeblue}{tesg\"uino}?
   \item We make \textcolor{dukeblue}{tesg\"uino} out of corn.
 \end{itemize}
 \vskip3pt
-{\footnotesize\color{gray}(Jurafsky and Martin, Ch.\ 6)}
+{\footnotesize Jurafsky and Martin (2025), Ch.\ 6.}
 \end{column}
 \begin{column}{0.45\linewidth}
 \begin{itemize}\itemsep4pt
@@ -2257,408 +2083,281 @@ What is \textcolor{dukeblue}{tesg\"uino}?
   \item \textbf{Distributional hypothesis}: words used in similar contexts have similar
         meanings.
   \item So describe each word by the company it keeps, then compress that description.
-  \item Similar words get similar lists of numbers, measured by the \textit{cosine}
-        $\frac{\sum_k a_k b_k}{\sqrt{\sum_k a_k^2}\sqrt{\sum_k b_k^2}}$: 1 = same direction, 0 = unrelated.
 \end{itemize}
 \end{column}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Word Vectors From Counts, by Hand}
-How often each word appears within a few words of four context words (hypothetical
-counts) \srcp{figs/w12\_repr.R, D}:
+\begin{frame}{Word2Vec: Turn Neighbours Into a Prediction Task}
+A toy text of seven three-word sentences \srcp{figs/w12\_lang.R, A; hypothetical}:
 \begin{center}\small
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{@{}lcccc|cc@{}}
+\emph{drink beer cold} \quad \emph{drink wine cold} \quad \emph{drink tesg\"uino cold} \quad \emph{drink wine red}\\
+\emph{grow corn field} \quad \emph{grow wheat field} \quad \emph{grow corn yellow}
+\end{center}
+\textbf{Step 1: list the pairs.} For every word $w$, each word $c$ right next to it is a
+\emph{context} word. From \emph{drink beer cold}:
+\begin{center}\small
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-& drink & bottle & field & grow & PC1 & PC2 \\
-\midrule
-tesg\"uino & 4 & 3 & 1 & 1 & 2.10 & 0.06 \\
-beer & 5 & 4 & 0 & 1 & 3.61 & $-0.67$ \\
-wine & 4 & 4 & 0 & 0 & 3.60 & 0.67 \\
-corn & 1 & 0 & 4 & 5 & $-4.38$ & $-0.83$ \\
-wheat & 0 & 0 & 5 & 4 & $-4.93$ & 0.77 \\
+word $w$ & drink & beer & beer & cold \\
+context $c$ & beer & drink & cold & beer \\
 \bottomrule
 \end{tabular}
 \end{center}
-\begin{itemize}\itemsep2pt\small
-  \item Cosine of the count rows: tesg\"uino and beer 0.98, tesg\"uino and corn 0.39.
-  \item Principal components of the table keep 99.6\% of its variance in two numbers per
-        word. PC1 is a drink-versus-crop axis; tesg\"uino sits on the drink side.
-  \item Real vocabularies have 100,000 words and context columns: the table is huge and
-        mostly zeros, and the compressed version (about 300 numbers per word) is what we keep.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Word2Vec: Predict the Neighbours\core}
-\begin{columns}[c]
-\begin{column}{0.4\linewidth}
-\begin{center}
-\begin{tikzpicture}[x=1.22cm,y=0.8cm]
-  \foreach \w [count=\i] in {a,corn,drunk,tesg\"uino,table} {
-    \ifnum\i=4 \node[nnin,minimum size=5mm,fill=dukeblue!45] (x\i) at (0,{3-\i}) {};
-    \else \node[nnin,minimum size=5mm] (x\i) at (0,{3-\i}) {}; \fi
-    \node[left=2pt of x\i,font=\scriptsize] {\w};
-    \node[nnout,minimum size=5mm] (o\i) at (2,{3-\i}) {};
-    \node[right=2pt of o\i,font=\scriptsize] {\w};}
-  \foreach \k in {1,2,3} \node[nnhid,minimum size=7mm,font=\scriptsize] (h\k) at (1,{1.3*(2-\k)}) {$u_{w\k}$};
-  \foreach \i in {1,2,3,5} \foreach \k in {1,2,3} \draw[nnlink,gray!25] (x\i) -- (h\k);
-  \foreach \k in {1,2,3} \draw[dukeblue,line width=0.9pt] (x4) -- (h\k);
-  \foreach \k in {1,2,3} \foreach \i in {1,...,5} \draw[nnlink] (h\k) -- (o\i);
-  \node[nnhead] at (0,2.75) {word};
-  \node[nnhead] at (1,2.75) {$u_w$};
-  \node[nnhead] at (2,2.75) {context};
-\end{tikzpicture}
-\end{center}
-\end{column}
-\begin{column}{0.58\linewidth}
-\small
-\textbf{Skip-gram} \srcp{Mikolov et al.\ 2013}: from each word $w$ in a text,
-predict the words $c$ within a few positions of it.
-\begin{itemize}\itemsep3pt
-  \item Input: a 0/1 row with a single 1 for $w$. The weights from that one input
-        are the word's vector $u_{w1}, \dots, u_{wK}$; nothing else reaches the
-        middle layer.
-  \item Output: a probability for every word in the vocabulary,
-  \[
-    \Pr(c \mid w) = \tfrac{\exp(\sum_k u_{wk} v_{ck})}{\sum_{c'}\exp(\sum_k u_{wk} v_{c'k})},
-  \]
-        the multinomial logit of Week 4 with $V$ categories; $v_{ck}$ are the
-        output weights.
-  \item Words with the same neighbours need the same predictions, so they get similar
-        vectors $u_w$.
-\end{itemize}
-\end{column}
-\end{columns}
-\end{frame}
-
-\begin{frame}{Negative Sampling: a Logistic Regression\adv}
-\begin{itemize}\itemsep4pt
-  \item The softmax denominator sums over all $V = 100{,}000$ words, for every word of
-        billions. Too slow.
-  \item Instead, a yes/no question: is this pair a real neighbour pair, or a fake one
-        made by drawing a random word?
-  \[
-    \Pr(\text{real} \mid w, c) = \sigma\Big(\sum_k u_{wk} v_{ck}\Big),
-    \qquad \sigma(z) = \frac{1}{1 + e^{-z}}
-  \]
-        the logit of Week 4, with the product of two word vectors as the linear index.
-  \item Each real pair is fed with a few fake ones \srcp{figs/w12\_repr.R, E}:
-  \begin{center}\small
-  \begin{tabular}{@{}lccc@{}}
-  \toprule
-  pair & kind & $\sum_k u_{wk} v_{ck}$ & $\Pr(\text{real})$ \\
-  \midrule
-  (tesg\"uino, drunk) & real & 2.0 & 0.88 \\
-  (tesg\"uino, carburetor) & fake & $-1.5$ & 0.18 \\
-  \bottomrule
-  \end{tabular}
-  \end{center}
-  \item Gradient descent raises real pairs' products, lowers fake ones'; words sharing
-        neighbours end up with aligned $u_w$.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{What Word Vectors Capture, and What They Miss}
-\textbf{Capture}
 \begin{itemize}\itemsep2pt
-  \item Similarity: words used alike (\emph{teacher}, \emph{instructor}) get a high cosine.
-  \item Directions: vector(\emph{king}) $-$ vector(\emph{man}) $+$ vector(\emph{woman})
-        lands closest to vector(\emph{queen}) \srcp{Mikolov et al.\ 2013}. The difference
-        \emph{man} to \emph{woman} is roughly one direction, shared across pairs.
-  \item The same directions carry the corpus's stereotypes: occupations sit closer to
-        \emph{he} or \emph{she} as they do in the text, and track census occupation
-        shares over a century \srcp{Garg et al.\ 2018}. For sociology that is data.
+  \item Seven sentences give 28 pairs; 11 different words. Tesg\"uino's pairs: (tesg\"uino, drink), (tesg\"uino, cold).
+  \item \textbf{Step 2}: fit a model that predicts $c$ from $w$. Nobody labels anything: the text is the data.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[t]{Word2Vec: the Network}
+\begin{columns}[T]
+\begin{column}{0.42\linewidth}
+\vskip-10pt
+\centering
+\begin{tikzpicture}[x=1.45cm,y=0.52cm,hd/.style={nnhead,text height=1.8ex,text depth=0.4ex}]
+  \foreach \w [count=\i] in {beer,cold,corn,drink,field,grow,red,tesg\"uino,wheat,wine,yellow} {
+    \ifnum\i=8 \node[nnin,minimum size=4.6mm,fill=dukeblue!45,font=\scriptsize] (x\i) at (0,{6-\i}) {1};
+    \else \node[nnin,minimum size=4.6mm,font=\scriptsize] (x\i) at (0,{6-\i}) {0}; \fi
+    \node[left=1pt of x\i,font=\scriptsize] {\w};
+    \node[nnout,minimum size=4.6mm] (o\i) at (2,{6-\i}) {};
+    \node[right=1pt of o\i,font=\scriptsize] {\w};}
+  \foreach \k in {1,2} \node[nnhid,minimum size=8mm,font=\small] (h\k) at (1,{4.5-3*\k}) {$A_\k$};
+  \foreach \i in {1,...,7,9,10,11} \foreach \k in {1,2} \draw[nnlink,gray!20] (x\i) -- (h\k);
+  \foreach \k in {1,2} \draw[dukeblue,line width=0.9pt] (x8) -- (h\k);
+  \foreach \k in {1,2} \foreach \i in {1,...,11} \draw[nnlink] (h\k) -- (o\i);
+  \node[hd] at (0,6.1) {input};
+  \node[hd] at (1,6.1) {hidden};
+  \node[hd] at (2,6.1) {output};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.56\linewidth}
+\small
+The single-layer network from before, with three choices:
+\begin{itemize}\itemsep3pt
+  \item \textbf{Input}: the one-hot row of word $w$; 11 inputs, one of them 1.
+  \item \textbf{Hidden layer}: $K = 2$ units, $A_k = \sum_j w_{kj} X_j$, with \emph{no activation
+        and no intercept}: just a weighted sum.
+  \item \textbf{Output}: 11 units, one per word, giving $\Pr(c \mid w)$ for every possible
+        context word $c$.
 \end{itemize}
 \vskip3pt
-\textbf{Miss}
-\begin{itemize}\itemsep2pt
-  \item \textbf{One vector per word}: \emph{bank} gets the same numbers in ``river
-        bank'' and ``bank loan''.
-  \item \textbf{No order}: averaging word vectors gives ``dog bites man'' and ``man
-        bites dog'' the same sentence vector. Next: read the whole sentence.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{In the Literature: the Geometry of Culture}
-\textbf{The question.} Kozlowski, Taddy, and Evans (2019): what does ``class'' mean, and how did its meaning change over the
-twentieth century?
-\vskip2pt
-\textbf{The method.} Word vectors trained on a century of published books.
-\begin{enumerate}\itemsep2pt
-  \item \textbf{Build a dimension}: average the differences over many antonym pairs,
-        vector(\emph{rich}) $-$ vector(\emph{poor}), vector(\emph{affluent}) $-$
-        vector(\emph{impoverished}), \dots: an \emph{affluence} direction.
-  \item \textbf{Place words on it}: the cosine of a word's vector with the direction.
-\end{enumerate}
-\vskip2pt
-Toy three-number vectors \srcp{figs/w12\_repr.R, F; hypothetical}: rich $=(2.0, 1.0, 0.5)$,
-poor $=(-1.6, 0.8, 0.4)$, so the direction is $(3.6, 0.2, 0.1)$;
-golf $=(1.2, 0.3, 1.0)$ gives cosine 0.78, camping $=(-0.6, 0.2, 1.1)$ gives $-0.44$.
-\vskip2pt
-\textbf{The results.} Dimensions of affluence, education, cultivation, status, and more;
-words' positions were checked against survey ratings of the same words. Tracking the
-dimensions decade by decade shows how the meanings of class moved.
-\end{frame}
-
-\subsection{Words in Context}
-
-\begin{frame}{Reading Words in Order: Recurrent Networks\adv}
-A \textbf{language model} predicts the next word from the words so far. A recurrent
-network reads one word at a time and carries a running summary $h_t$:
-\begin{center}
-\begin{tikzpicture}[x=2.25cm,y=0.88cm]
-  \foreach \w/\o [count=\t] in {The/survey,survey/asked,asked/parents,parents/about} {
-    \node[font=\small,text height=1.6ex,text depth=0.4ex] (w\t) at (\t,-0.55) {\w};
-    \node[nnin] (x\t) at (\t,0.35) {$x_\t$};
-    \node[nnhid] (h\t) at (\t,1.55) {$h_\t$};
-    \node[nnout] (o\t) at (\t,2.75) {};
-    \node[font=\scriptsize,text=accent,right=1pt of o\t] {\o?};
-    \draw[nnedge] (w\t) -- (x\t);
-    \draw[nnedge] (x\t) -- node[left,font=\scriptsize,text=gray] {$b$} (h\t);
-    \draw[nnedge] (h\t) -- (o\t);}
-  \node[nnhid,draw=gray!60,fill=white,text=gray] (h0) at (0,1.55) {$h_0$};
-  \foreach \t [evaluate=\t as \s using int(\t-1)] in {1,...,4}
-    \draw[nnedge,dukeblue,line width=0.8pt] (h\s) -- node[above,font=\scriptsize] {$a$} (h\t);
-  \node[nnhead,anchor=east] at (0.55,2.75) {predict next};
-  \node[nnhead,anchor=east] at (0.55,0.35) {word vector};
-\end{tikzpicture}
-\end{center}
-\vskip-4pt
-\begin{itemize}\itemsep2pt\small
-  \item One number each, for the idea: $h_t = \sigma(a\,h_{t-1} + b\,x_t)$, the same $a, b$ at
-        every step. Like a lagged outcome: today's state depends on yesterday's.
-  \item Long sentences: the gradient multiplies many $a\,\sigma'(\cdot)$ terms and vanishes;
-        \textit{LSTM} gates decide what to keep \srcp{Hochreiter and Schmidhuber 1997}.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{ELMo: Read Both Ways, Then Combine\adv}
-\begin{columns}[c]
-\begin{column}{0.56\linewidth}
-\begin{center}
-\begin{tikzpicture}[x=1.5cm,y=0.92cm]
-  \foreach \w [count=\t] in {the,river,bank,flooded} {
-    \node[font=\scriptsize,text height=1.6ex,text depth=0.4ex] (w\t) at (\t,-0.6) {\w};
-    \node[nnin,minimum size=5.5mm] (x\t) at (\t,0.2) {};
-    \node[nnhid,minimum size=5.5mm] (f1\t) at ({\t-0.2},1.3) {};
-    \node[nnhid,minimum size=5.5mm,draw=accent,fill=accent!15] (b1\t) at ({\t+0.2},1.75) {};
-    \node[nnhid,minimum size=5.5mm] (f2\t) at ({\t-0.2},2.85) {};
-    \node[nnhid,minimum size=5.5mm,draw=accent,fill=accent!15] (b2\t) at ({\t+0.2},3.3) {};
-    \draw[nnlink] (w\t) -- (x\t);
-    \draw[nnlink] (x\t) -- (f1\t); \draw[nnlink] (x\t) -- (b1\t);
-    \draw[nnlink] (f1\t) -- (f2\t); \draw[nnlink] (b1\t) -- (b2\t);}
-  \foreach \t [evaluate=\t as \s using int(\t+1)] in {1,2,3} {
-    \draw[nnedge,dukeblue,line width=0.7pt] (f1\t) -- (f1\s);
-    \draw[nnedge,dukeblue,line width=0.7pt] (f2\t) -- (f2\s);
-    \draw[nnedge,accent,line width=0.7pt] (b1\s) -- (b1\t);
-    \draw[nnedge,accent,line width=0.7pt] (b2\s) -- (b2\t);}
-  \draw[dashed,thick,dukeblue,rounded corners=4pt] (2.62,-0.2) rectangle (3.38,3.65);
-  \node[font=\scriptsize,text=dukeblue,align=center] at (3,4.05) {ELMo vector of \emph{bank}:\\weighted sum of these 5};
-  \node[font=\scriptsize,anchor=east] at (0.6,0.2) {input};
-  \node[font=\scriptsize,anchor=east] at (0.6,1.525) {layer 1};
-  \node[font=\scriptsize,anchor=east] at (0.6,3.075) {layer 2};
-\end{tikzpicture}
-\end{center}
-\end{column}
-\begin{column}{0.42\linewidth}
-\small
-\textbf{ELMo} \srcp{Peters et al.\ 2018}
-\begin{itemize}\itemsep3pt
-  \item Two language models, each two layers deep: forward (blue) predicts the next
-        word; backward (orange) the previous one.
-  \item At \emph{bank}, the forward states have read ``the river''; the backward
-        states have read ``flooded''.
-  \item The word's vector is a weighted sum of its five states (dashed box), with
-        weights learned for each task: \emph{bank} now differs between ``river bank''
-        and ``bank loan''.
-\end{itemize}
+Weights: $11 \times 2$ into the hidden layer, $2 \times 11$ out of it: 44 in all. The only
+nonlinear step is the softmax at the output. Word2vec is kept this simple on purpose: it must
+run over billions of words.
 \end{column}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Attention: Look at Every Word at Once\core}
-\begin{quote}\small
-The survey asked parents about the new school. \textbf{It} was badly underfunded.
-\end{quote}
-\vskip-2pt
-A reader links \emph{It} to \emph{school}, eight words back; a recurrent network must
-carry that link through every word between. \textbf{Self-attention}
-\srcp{Vaswani et al.\ 2017} lets each word look at all others directly. Each word gets
-three lists of $D$ numbers, weighted sums of its word vector with learned weights:
-a \textbf{query} $q$ (what it looks for), a \textbf{key} $k$ (what it offers), a
-\textbf{value} $v$ (what it passes on). For word $i$:
+\begin{frame}{Why the Hidden Layer Is the Word's Vector}
+\textbf{1. It is the word's own weights.} Feed tesg\"uino's one-hot row: $X_j = 1$ for tesg\"uino, 0 for the other 10 words.
 \begin{align*}
-  \text{score}_{ij} &= \frac{\sum_{d} q_{id} k_{jd}}{\sqrt D}
-   && \text{\footnotesize how well word $j$ answers word $i$} \\
-  \text{weight}_{ij} &= \frac{\exp(\text{score}_{ij})}{\sum_{j'}\exp(\text{score}_{ij'})}
-   && \text{\footnotesize softmax: positive, sums to 1 over $j$} \\
-  \text{new vector}_{i} &= \textstyle\sum_j \text{weight}_{ij}\, v_{j}
-   && \text{\footnotesize weighted average of the values}
+  A_k = \sum_{j} w_{kj} X_j = w_{k,\text{beer}} \cdot 0 + \dots + w_{k,\text{tesg\"uino}} \cdot 1 + \dots
+   = w_{k,\text{tesg\"uino}}
 \end{align*}
-\end{frame}
-
-\begin{frame}{Attention by Hand: Two Banks}
-$D = 2$; query of \emph{bank} $(1, 1)$; keys: the $(0, 0)$, river $(2, 0)$, loan
-$(0, 2)$, bank $(0.5, 0.5)$; values: the $(0, 0)$, river $(1, 0)$, loan $(0, 1)$, bank
-$(0.5, 0.5)$ \srcp{figs/w12\_repr.R, G; hypothetical}:
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}l|ccc|ccc@{}}
-\toprule
-& \multicolumn{3}{c|}{``the river bank''} & \multicolumn{3}{c}{``the bank loan''} \\
-& the & river & bank & the & bank & loan \\
-\midrule
-score $= \sum_d q_d k_{jd}/\sqrt 2$ & 0 & $2/\sqrt2 = 1.41$ & $1/\sqrt2 = 0.71$ & 0 & 0.71 & 1.41 \\
-$\exp(\text{score})$ & 1.00 & 4.11 & 2.03 & 1.00 & 2.03 & 4.11 \\
-weight & 0.14 & \alert{0.58} & 0.28 & 0.14 & 0.28 & \alert{0.58} \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip-6pt
-\begin{align*}
-  \text{river bank: } & 0.14(0, 0) + 0.58(1, 0) + 0.28(0.5, 0.5) = (0.72, 0.14) \\
-  \text{bank loan: }  & 0.14(0, 0) + 0.28(0.5, 0.5) + 0.58(0, 1) = (0.14, 0.72)
-\end{align*}
-\begin{itemize}\itemsep1pt\small
-  \item Same word, two outputs: \emph{bank} leans toward nature in one sentence, money in the other.
-  \item BERT: $D = 64$, 12 sets of $q, k, v$ per layer, 12 layers; a position vector adds word order.
+So the hidden layer is the pair of weights leaving tesg\"uino's input. Call it
+$u_{\text{tesg\"uino}} = (w_{1,\text{tesg\"uino}},\ w_{2,\text{tesg\"uino}})$: \textbf{the word vector}. Every word has its own.
+\vskip6pt
+\textbf{2. Why it carries meaning.}
+\begin{itemize}\itemsep3pt
+  \item The output layer sees \emph{only} $u_w$. Whatever the network predicts about $w$'s neighbours,
+        it must predict from these two numbers.
+  \item Beer and tesg\"uino have the same neighbours (\emph{drink}, \emph{cold}). To predict them well,
+        training must give both words the same $u$.
+  \item Words used in similar contexts end up with similar vectors: the distributional hypothesis,
+        turned into a prediction problem.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Attention, Drawn}
-Arrows from \emph{bank} to each word it attends to; width $\propto$ weight
-\srcp{figs/w12\_repr.R, G}:
-\vskip2pt
+\begin{frame}{The Output Is Week 4's Multinomial Logit}
+Each possible context word $c$ also has two output weights $v_c = (v_{c1}, v_{c2})$. Score and probability:
+\[
+  \text{score}(w, c) = \sum_{k} u_{wk}\, v_{ck}, \qquad
+  \Pr(c \mid w) = \frac{\exp(\text{score}(w, c))}{\sum_{c'} \exp(\text{score}(w, c'))}
+\]
+The multinomial logit with 11 categories: positive, and sums to 1 over $c$. Trained toy, $w =$ tesg\"uino,
+$u = (0.05, 1.35)$ \srcp{figs/w12\_lang.R, A2}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+context $c$ & $v_c$ & score & $\Pr(c \mid \text{tesg\"uino})$ \\
+\midrule
+drink & $(0.05, 1.91)$ & $0.05(0.05) + 1.35(1.91) = 2.59$ & 0.43 \\
+cold & $(0.09, 1.68)$ & $0.05(0.09) + 1.35(1.68) = 2.28$ & 0.31 \\
+corn & $(0.36, -2.10)$ & $0.05(0.36) + 1.35(-2.10) = -2.82$ & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep2pt\small
+  \item Denominator: $\exp(\text{score})$ summed over all 11 words $= 31.09$. So $\Pr(\text{drink}) = e^{2.59}/31.09 = 0.43$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Training Word2Vec, One Pair at a Time}
+Stochastic gradient descent, one pair per step. Start from random weights; first pair (tesg\"uino, drink);
+learning rate 0.5 \srcp{figs/w12\_lang.R, A1}.
+\vskip6pt
 \begin{center}
-\begin{tikzpicture}
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a0) at (0.00,0) {the};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a1) at (1.95,0) {river};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a2) at (3.90,0) {bank};
-  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.6] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (a0.north);
-  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (a1.north);
-  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (a2.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (a2.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
-  \node[font=\footnotesize] at (1.95,-1.75) {``the river bank'': new vector $(0.72, 0.14)$};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b0) at (6.60,0) {the};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b1) at (8.55,0) {bank};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b2) at (10.50,0) {loan};
-  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (b0.north);
-  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (b1.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (b1.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
-  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (b2.north);
-  \node[font=\footnotesize] at (8.55,-1.75) {``the bank loan'': new vector $(0.14, 0.72)$};
+\begin{tikzpicture}[box/.style={draw=dukeblue,thick,rounded corners=2pt,fill=white,align=center,font=\scriptsize,
+    minimum height=1.45cm,text width=2.45cm,inner sep=2pt}, arr/.style={-{Stealth[length=2mm]},thick,gray!70}]
+  \node[box] (a) at (0,0) {\textbf{1. word vector}\\[2pt]$u_{\text{tesg\"uino}}$\\$= (-0.12,\ 0.53)$};
+  \node[box] (b) at (2.85,0) {\textbf{2. score each word}\\[2pt]drink $-0.24$, cold $0.16$,\\corn $-0.63$, \dots};
+  \node[box] (c) at (5.7,0) {\textbf{3. softmax}\\[2pt]$p_{\text{drink}} = 0.074$\\$p_{\text{cold}} = 0.110$, \dots};
+  \node[box,draw=accent,text width=3.35cm] (d) at (9.15,0) {\textbf{4. loss} $\tfrac12(y - p)^2$\\[2pt]drink: $\tfrac12(1{-}.074)^2{=}.43$\\cold: $\tfrac12(0{-}.110)^2{=}.006$\\sum of 11: 0.48};
+  \node[box,text width=4.9cm] (f) at (7.0,-2.15) {\textbf{5. backpropagation, then a step}\\[2pt]$u$: $(-0.12, 0.53) \to (-0.12, 0.50)$\\(the output weights move too)};
+  \node[box,draw=accent] (g) at (2.4,-2.15) {\textbf{6. check}\\[2pt]$p_{\text{drink}}$: $0.074 \to 0.075$\\loss: $0.476 \to 0.474$};
+  \draw[arr] (a) -- (b); \draw[arr] (b) -- (c); \draw[arr] (c) -- (d); \draw[arr] (d) -- (f);
+  \draw[arr] (f) -- (g);
 \end{tikzpicture}
 \end{center}
 \vskip4pt
-\begin{itemize}\itemsep3pt\small
-  \item \emph{bank} sends most of its attention to the word that tells it which sense it
-        is: \emph{river} in one sentence, \emph{loan} in the other.
-  \item Every word does this at once, in every layer, with 12 different query--key
-        pairs per layer: each can look for a different kind of relation.
-\end{itemize}
+{\small $y = 1$ for the word that appeared (drink) and 0 for the other 10. Each step moves the weights so that
+drink becomes a little more likely after tesg\"uino and the other words a little less.}
 \end{frame}
 
-\begin{frame}{BERT: Learn by Filling In Blanks\core}
+\begin{frame}{Training Word2Vec: From One Pair to the Whole Text}
 \begin{columns}[c]
-\begin{column}{0.47\linewidth}
+\begin{column}{0.5\linewidth}
 \begin{center}
-\begin{tikzpicture}[x=0.9cm,y=0.85cm]
-  \foreach \w [count=\i] in {[CLS],The,survey,was,[MASK]} {
-    \node[font=\scriptsize,text height=1.6ex,text depth=0.4ex] (t\i) at (\i,0) {\w};
-    \node[nnin,minimum size=5mm] (e\i) at (\i,0.85) {};
-    \node[nnhid,minimum size=5mm] (a\i) at (\i,2.15) {};
-    \node[nnhid,minimum size=5mm] (b\i) at (\i,3.45) {};
-    \draw[nnedge] (t\i) -- (e\i);}
-  \foreach \i in {1,...,5} \foreach \j in {1,...,5} {\draw[nnlink] (e\i) -- (a\j); \draw[nnlink] (a\i) -- (b\j);}
-  \node[nnout,minimum size=5mm] (p) at (5,4.6) {};
-  \node[above=1pt of p,font=\scriptsize,text=accent] {``fielded''};
-  \draw[nnedge] (b5) -- (p);
-  \node[nnhid,minimum size=5mm,fill=dukeblue!45] (c) at (1,4.6) {};
-  \node[above=1pt of c,font=\scriptsize,text=dukeblue] {768 numbers};
-  \draw[nnedge] (b1) -- (c);
-  \node[font=\scriptsize,align=left,anchor=west] at (5.45,0.85) {word +\\position};
-  \node[font=\scriptsize,align=left,anchor=west] at (5.45,2.8) {attention\\layers};
-\end{tikzpicture}
+\includegraphics[width=\linewidth]{figs/w2v_loss.pdf}
 \end{center}
 \end{column}
-\begin{column}{0.51\linewidth}
+\begin{column}{0.48\linewidth}
 \small
-\textbf{BERT} \srcp{Devlin et al.\ 2019}: a stack of attention layers, trained on books
-and Wikipedia.
-\begin{itemize}\itemsep3pt
-  \item \textbf{Training task}: hide 15\% of the words behind \texttt{[MASK]} and predict
-        them from \emph{both} sides; also predict whether sentence B followed sentence A.
-  \item The prediction error is backpropagated into every query, key, and value weight
-        and every word vector. Nobody labels anything.
-  \item \textbf{Output}: a vector for every word, read in its sentence. The vector of
-        the extra first token \texttt{[CLS]} (768 numbers) serves as the vector of the
-        whole text.
+\begin{itemize}\itemsep4pt
+  \item \textbf{Epoch}: take the 28 pairs in a random order and do the one-pair step for each:
+        28 small steps.
+  \item After each epoch, average the loss over all 28 pairs \srcp{figs/w12\_lang.R, A}:
+        0.47 at the start, 0.46 after 1 epoch, 0.41 after 10, 0.29 after 300.
+  \item It cannot reach 0. After \emph{drink} come \emph{beer}, \emph{wine}, \emph{tesg\"uino}, \emph{wine}:
+        no rule can be sure which. The lowest possible average is 0.27.
+  \item Software averages the errors of a mini-batch (say 32 pairs), then steps. All 28 at once is
+        plain gradient descent.
 \end{itemize}
 \end{column}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Using a Pretrained Model on Your Data\core}
-You have 2,000 hand-coded speeches and a BERT trained by someone else on billions of words.
-\vskip3pt
+\begin{frame}{Word2Vec by Hand: the Result}
+\begin{columns}[c]
+\begin{column}{0.45\linewidth}
+\begin{center}
+\includegraphics[width=\linewidth]{figs/w2v_toy.pdf}
+\end{center}
+\end{column}
+\begin{column}{0.53\linewidth}
+\small
+The 11 trained word vectors $u_w$ \srcp{figs/w12\_lang.R, A}. Similarity is measured by the
+\textbf{cosine} of two vectors: 1 = same direction, 0 = unrelated, $-1$ = opposite.
+\begin{itemize}\itemsep3pt
+  \item Beer, tesg\"uino, wine sit together: each must predict \emph{drink} and \emph{cold}. Cosine of
+        tesg\"uino with beer 1.00, with wine 1.00.
+  \item Corn and wheat sit together elsewhere (both predict \emph{grow}, \emph{field}): tesg\"uino
+        and corn, 0.05, unrelated.
+  \item We never told the network that tesg\"uino is a drink. It learned it from the company the word keeps.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Negative Sampling: the Shortcut Used in Practice\adv}
+The softmax needs a score for \emph{every} word in the vocabulary, about 100,000 of them, at every step,
+for billions of pairs. Too slow. Instead, at each step:
+\vskip4pt
 \begin{enumerate}\itemsep5pt
-  \item \textbf{Linear probing}: freeze BERT. Turn each text into its 768 numbers and
-        fit a ridge or logistic regression on them: today's first section, with
-        $p = 768$. Cheap, and hard to overfit.
-  \item \textbf{Fine-tuning}: keep training \emph{all} of BERT's weights, plus the new
-        output layer, on your labelled data; small learning rate, a few epochs, early
-        stopping on a validation set. Better when the task differs from ordinary text.
+  \item \textbf{Pull together}: take the real pair, say (tesg\"uino, drink), and move tesg\"uino's vector
+        toward drink's output vector.
+  \item \textbf{Push apart}: draw a few words at random from the vocabulary, say \emph{carburetor} and
+        \emph{field}, treat them as fake neighbours, and move tesg\"uino's vector away from theirs.
+  \item Leave the other 99,997 words alone.
+\end{enumerate}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Each step becomes a yes/no question, ``real neighbour or random word?'', so the work per step
+        does not grow with the vocabulary.
+  \item The number of random words per real pair is a tuning parameter: 5 by default in word2vec
+        (\texttt{negative = 5} in R's \texttt{word2vec}); 5--20 for small texts \srcp{Mikolov et al.\ 2013}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Directions Carry Meaning}
+\begin{columns}[c]
+\begin{column}{0.48\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm,wv/.style={circle,draw,thick,minimum size=3.5mm,inner sep=0pt}]
+  \draw[-{Stealth[length=2mm]},thick,gray!70] (0,0) -- (4.6,0);
+  \draw[-{Stealth[length=2mm]},thick,gray!70] (0,0) -- (0,4.2);
+  \draw[-{Stealth[length=2mm]},thick,gray!70] (0,0) -- (-1.3,-1.1);
+  \node[wv,draw=dukeblue!70] (k) at (0.6,2.6) {}; \node[left=2pt of k,font=\small] {king};
+  \node[wv,draw=dukeblue!70] (m) at (1.6,3.4) {}; \node[above=2pt of m,font=\small] {man};
+  \node[wv,draw=accent] (q) at (1.9,1.1) {}; \node[right=2pt of q,font=\small] {queen};
+  \node[wv,draw=accent] (w) at (3.4,1.9) {}; \node[right=2pt of w,font=\small] {woman};
+  \draw[-{Stealth[length=2mm]},dashed,thick] (m) -- (w);
+  \draw[-{Stealth[length=2mm]},dashed,thick] (k) -- (q);
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.5\linewidth}
+\small
+\begin{itemize}\itemsep4pt
+  \item The step from \emph{man} to \emph{woman} is roughly the same arrow as from \emph{king} to
+        \emph{queen}: one direction carries ``male to female.''
+  \item So vector(\emph{king}) $-$ vector(\emph{man}) $+$ vector(\emph{woman}) lands closest to
+        vector(\emph{queen}) \srcp{Mikolov et al.\ 2013}.
+  \item In Lab 12, on Jane Austen's novels: \emph{brother} $-$ \emph{he} $+$ \emph{she} lands
+        on \emph{sister}.
+  \item Sociology: average several such arrows into one \emph{dimension} (gender, class), then place
+        any word on it. Next slides.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{In the Literature: the Geometry of Culture}
+\begin{columns}[c]
+\begin{column}{0.5\linewidth}
+\includegraphics[width=\linewidth]{figs/kozlowski_fig2C.png}
+\end{column}
+\begin{column}{0.48\linewidth}
+\small
+\textbf{The question.} Kozlowski, Taddy, and Evans (2019): what does ``class'' mean, and how did
+its meaning change over the twentieth century?
+\vskip3pt
+\textbf{The method.} Word vectors trained on books and news.
+\begin{enumerate}\itemsep2pt
+  \item \textbf{Build a dimension}: average arrows over many antonym pairs, \emph{rich} $-$ \emph{poor},
+        \emph{affluent} $-$ \emph{impoverished}, \dots: a class axis. The same for gender.
+  \item \textbf{Place words on it}: a word's cosine with each axis.
 \end{enumerate}
 \vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \srct{Bonikowski, Luo, and Stuhler (2022)} fine-tune a pretrained language model
-        to score populism, nationalism, and authoritarianism in U.S.\ presidential
-        campaign speeches, 1952--2020.
-  \item The cross-validation rules still hold: tune on training folds, report error on
-        texts the model never saw, and split by speaker or document, not by sentence.
-\end{itemize}
+Their Figure 2C: sports on gender and class at once. Golf: rich, masculine. Boxing: poor,
+masculine. Softball, volleyball: feminine.
+\end{column}
+\end{columns}
 \end{frame}
 
-\begin{frame}{Text as a Control Variable: a Preview}
-\textbf{The question}: how much does demand fall when price rises? Expensive products
-differ in quality, and quality is in the description, not in a column.
-\[
-  Y_i = \beta D_i + g(W_i) + \epsilon_i
-  \qquad
-  \begin{array}{l}
-    \text{\footnotesize $Y$: log sales, $D$: log price} \\
-    \text{\footnotesize $W$: the description's BERT vector}
-  \end{array}
-\]
-\begin{itemize}\itemsep4pt
-  \item $g(W_i)$ is an unknown function of 768 numbers: exactly the setting of this
-        week's methods.
-  \item What matters is how well $W$ predicts sales and price, so fine-tune BERT to
-        predict \emph{those}, not to rebuild the text \srcp{Bajari et al.\ 2025}.
-  \item Sociology has the same shape: neighbourhood images as controls for
-        ``quality'' when studying exposure to violence.
-  \item But $\hat g$ is deliberately biased, so plugging it in and reading $\hat\beta$ is not
-        valid. \textbf{Next week}: how to use such predictions in a causal estimate.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Predictions as Measurements\core}
-Sociologists increasingly use model outputs as \emph{variables}: an LLM codes
-the topic of 100,000 speeches; a classifier labels images. Errors in those
-labels bias every downstream estimate.
-\vskip3pt
-\textbf{Prediction-powered inference} \srcp{Angelopoulos et al.\ 2023}: hand-code a
-random subsample of $n$ cases; the model labels all $N$. For a mean,
-\begin{align*}
-  \hat\theta_{PP}
-  = \underbrace{\frac1N\sum_{i=1}^{N}\hat Y_i}_{\text{model, everyone}}
-  - \underbrace{\frac1n\sum_{i=1}^{n}\big(\hat Y_i - Y_i\big)}_{\text{model's bias, estimated on the coded cases}}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item Unbiased whatever the model's quality; the better the model, the smaller
-        the variance relative to using the $n$ coded cases alone.
-  \item The same correction extends to regressions: \srct{Egami, Hinck, Stewart, and
-        Wei (2023)}. The coded subsample must be random.
-\end{itemize}
+\begin{frame}{Kozlowski et al.: Validation and Results}
+\vskip0pt
+{\small \textbf{Class axis}: the average of 8 arrows, \emph{rich} $-$ \emph{poor}, \emph{affluent} $-$ \emph{impoverished},
+\emph{expensive} $-$ \emph{inexpensive}, \emph{luxury} $-$ \emph{cheap}, \dots\ (their Table 1). A word's class
+score is its cosine with this axis.}
+\vskip2pt
+\begin{columns}[t]
+\begin{column}{0.44\linewidth}
+\centering\includegraphics[height=0.4\textheight]{figs/kozlowski_fig3.png}
+\vskip2pt
+\raggedright{\footnotesize \textbf{Do the axes match people?} Music genres: embedding (gray) vs.\ survey
+ratings (black). Over 59 words they correlate 0.88 for gender, 0.70 for race, 0.52 for class (their Table 2).}
+\end{column}
+\begin{column}{0.54\linewidth}
+\centering\includegraphics[height=0.4\textheight]{figs/kozlowski_fig7.png}
+\vskip2pt
+\raggedright{\footnotesize \textbf{How class changed.} Each dimension's cosine with the class axis, by decade,
+U.S.\ books. In 1900 class meant \emph{beautiful}, \emph{graceful}, \emph{fine}; by 1990, \emph{educated}
+and \emph{employed}.}
+\end{column}
+\end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2666,104 +2365,29 @@ random subsample of $n$ cases; the model labels all $N$. For a mean,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Looking Inside a Black Box\core}
-\begin{itemize}\itemsep4pt
-  \item \textbf{Permutation importance}: shuffle one variable in the test data and
-        record how much error rises. Correlated variables share credit
-        unpredictably, and impurity-based importance favours variables with many
-        cut points \srcp{Strobl et al.\ 2007}.
-  \item \textbf{Partial dependence}: average prediction as one variable is set to
-        each value for everyone, $\bar f(x_j) = \frac1n\sum_i \hat f(x_j, X_{i,-j})$.
-        It evaluates the model at combinations (a 22-year-old with 30 years of
-        experience) that never occur.
-  \item \textbf{SHAP values}: split each prediction into additive contributions
-        using Shapley values from game theory \srcp{Lundberg and Lee 2017}.
-        Same caveat: the attribution describes the model, not the world.
-\end{itemize}
-\vskip3pt
-\begin{alertblock}{None of these is a causal effect}
-They answer ``what does this fitted function do when I move this input?''
-Turning that into ``what happens when a person's input changes'' needs Weeks 5--11.
-\end{alertblock}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Fairness]{Prediction and Fairness}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{A Biased Algorithm, and Why}
-Obermeyer et al.\ (2019): a commercial algorithm ranks patients for a care-management program
-(6,079 Black and 43,539 White patients). Above the 97th percentile of the score,
-patients are enrolled automatically.
-\begin{itemize}\itemsep1pt
-  \item At the same score, Black patients are sicker: at the 97th percentile they
-        have 26.3\% more chronic conditions (4.8 vs.\ 3.8).
-  \item \textbf{Cause: the label.} The algorithm predicts \emph{cost}. At the same
-        health, Black patients generate \$1,801 less cost a year, through
-        unequal access to care. The prediction is accurate; the target is wrong.
-  \item Equalizing health at the threshold would raise the Black share of
-        auto-enrolled patients from 17.7\% to 46.5\%.
-  \item Retraining on a label combining health and cost cut the excess
-        chronic conditions by 84\%.
-\end{itemize}
-{\footnotesize Lesson: what is measured, and for whom, is built into the outcome before any model is fit.}
-\end{frame}
-
-\begin{frame}{Fairness Criteria Conflict}
-A risk score $S$, groups $a$, outcome $Y$. Three reasonable requirements:
-\begin{enumerate}\itemsep1pt
-  \item \textbf{Calibration} within groups: $\Pr(Y = 1\mid S = s, a) = s$.
-  \item \textbf{Balance for the negative class}: equal mean $S$ among those with $Y = 0$.
-  \item \textbf{Balance for the positive class}: equal mean $S$ among those with $Y = 1$.
-\end{enumerate}
-\vskip3pt
-\srct{Kleinberg, Mullainathan, and Raghavan (2017)}: all three hold only with
-perfect prediction or equal base rates. For a yes/no rule
-\srcp{Chouldechova 2017},
-\begin{align*}
-  \text{FPR} = \frac{p}{1-p}\cdot\frac{1 - \text{PPV}}{\text{PPV}}\cdot(1 - \text{FNR}),
-\end{align*}
-with $p$ the base rate: equal PPV across groups with different $p$ forces
-different error rates. COMPAS: recidivism 51\% among Black and 39\% among White
-defendants, so the two sides of that debate were each right about a different
-criterion.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Practice]{Practice}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}[allowframebreaks,t]{What ML Buys, and What It Does Not\core}
-\begin{columns}[T]
-\begin{column}{0.47\textwidth}
-\textbf{Buys}
-\begin{itemize}\small\itemsep2pt
-  \item Prediction with many predictors, including $p > n$.
-  \item Automatic nonlinearity and interactions, no functional form to guess.
-  \item Honest out-of-sample performance estimates.
-\end{itemize}
-\end{column}
-\begin{column}{0.49\textwidth}
-\textbf{Does not buy}
-\begin{itemize}\small\itemsep2pt
-  \item \alert{Causal interpretation.} A variable importance score is not an
-        effect.
-  \item Valid standard errors for the coefficients it selects.
-  \item Extrapolation: trees do return a prediction for out-of-range inputs, but
-        only the boundary leaf's constant, so they cannot extend a trend.
-  \item Freedom from the identification problems of Weeks 5--11.
-\end{itemize}
-\end{column}
-\end{columns}
-\vskip5pt
-\begin{block}{The genuine sociological uses}
-\emph{Prediction as the goal} (screening, triage, forecasting);
-\emph{measurement} (constructing variables from text or images);
-\emph{describing heterogeneity}; and \alert{estimating nuisance functions inside a
-causal estimator}, which is next week.
-\end{block}
+\begin{frame}{Saying It Right: Prediction, Not Cause\core}
+``Is this variable important for predicting civil war (or a disease)?'' \alert{Yes, in that form}:
+important \emph{for prediction}, \emph{in this model}, \emph{in these data}. GSS rows, then two hypothetical:
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.58\linewidth}@{}}
+\toprule
+\textbf{do not say} & \textbf{say instead} \\
+\midrule
+Children do not affect earnings (the lasso dropped it). &
+With the other 22 columns in, children add little to prediction; the lasso kept it in 9\% of bootstrap samples. \\
+Education is the most important cause of earnings. &
+The forest's test MSE rises most when education is shuffled (0.645 $\to$ 0.809): its predictions lean on education most. \\
+Poverty causes civil war (it tops the importance list). &
+Poverty is a strong predictor of onset in these country-years; whether it causes war is a design question (Weeks 5--11). \\
+Gene $X$ is \emph{the} driver of the disease. &
+$X$ improves prediction of the disease; a correlated gene could have taken its place. \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+{\small Why: selection and importance follow correlation with $Y$; correlated variables can swap places;
+another sample can give another list.}
 \end{frame}
 
 \begin{frame}{Looking Ahead}
@@ -2772,15 +2396,9 @@ causal estimator}, which is next week.
   \item That trade is exactly why we cannot drop these estimates into a regression
         and read off a coefficient: they are \emph{deliberately biased} and
         converge slowly.
-  \item \textbf{Next week}: what has to change before an estimate this biased can
-        be used as an ingredient in a causal estimator, and what it buys us when
-        it can.
+  \item \textbf{Next week}: principal components, text as a control variable, and what has to change before an estimate this biased can
+        be used as an ingredient in a causal estimator.
 \end{itemize}
-\vskip4pt
-\begin{block}{Problem Set 4}
-Due Friday, November 20. Problem Set 5 (Weeks 12--13) is assigned
-that day and due Friday, December 4.
-\end{block}
 \vskip4pt
 \begin{block}{Reading}
 ISL Chapters 5, 6, and 8; Molina and Garip (2019). Optional: ISL Chapter 10
@@ -2791,25 +2409,17 @@ ISL Chapters 5, 6, and 8; Molina and Garip (2019). Optional: ISL Chapter 10
 \begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep2pt
-\item Angelopoulos, Anastasios N., Stephen Bates, Clara Fannjiang, Michael I. Jordan, and Tijana Zrnic. 2023. ``Prediction-Powered Inference.'' \textit{Science} 382(6671): 669--674.
-\item Bajari, Patrick, Zhihao Cen, Victor Chernozhukov, Manoj Manukonda, Suhas Vijaykumar, Jin Wang, Ramon Huerta, et al. 2025. ``Hedonic Prices and Quality Adjusted Price Indices Powered by AI.'' \textit{Journal of Econometrics} 251(1): 105652.
-\item Baldi, Pierre and Kurt Hornik. 1989. ``Neural Networks and Principal Component Analysis: Learning from Examples without Local Minima.'' \textit{Neural Networks} 2(1): 53--58.
 \item Athey, Susan and Guido W. Imbens. 2019. ``Machine Learning Methods That Economists Should Know About.'' \textit{Annual Review of Economics} 11: 685--725.
+\item Baldi, Pierre and Kurt Hornik. 1989. ``Neural Networks and Principal Component Analysis: Learning from Examples without Local Minima.'' \textit{Neural Networks} 2(1): 53--58.
 \item Blumenstock, Joshua, Gabriel Cadamuro, and Robert On. 2015. ``Predicting Poverty and Wealth from Mobile Phone Metadata.'' \textit{Science} 350(6264): 1073--1076.
 \item Bonikowski, Bart, Yuchen Luo, and Oscar Stuhler. 2022. ``Politics as Usual? Measuring Populism, Nationalism, and Authoritarianism in U.S. Presidential Campaigns (1952--2020) with Neural Language Models.'' \textit{Sociological Methods \& Research} 51(4): 1721--1787.
 \item Breiman, Leo. 2001. ``Random Forests.'' \textit{Machine Learning} 45(1): 5--32.
 \item Chen, Tianqi and Carlos Guestrin. 2016. ``XGBoost: A Scalable Tree Boosting System.'' \textit{Proceedings of KDD '16}: 785--794.
 \item Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins. 2018. ``Double/Debiased Machine Learning for Treatment and Structural Parameters.'' \textit{The Econometrics Journal} 21(1): C1--C68.
-\item Chouldechova, Alexandra. 2017. ``Fair Prediction with Disparate Impact.'' \textit{Big Data} 5(2): 153--163.
-\item Deerwester, Scott, Susan T. Dumais, George W. Furnas, Thomas K. Landauer, and Richard Harshman. 1990. ``Indexing by Latent Semantic Analysis.'' \textit{Journal of the American Society for Information Science} 41(6): 391--407.
-\item Devlin, Jacob, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. ``BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.'' \textit{Proceedings of NAACL-HLT 2019}: 4171--4186.
-\item Egami, Naoki, Musashi Hinck, Brandon M. Stewart, and Hanying Wei. 2023. ``Using Imperfect Surrogates for Downstream Inference.'' \textit{Advances in Neural Information Processing Systems} 36.
-\item Garg, Nikhil, Londa Schiebinger, Dan Jurafsky, and James Zou. 2018. ``Word Embeddings Quantify 100 Years of Gender and Ethnic Stereotypes.'' \textit{PNAS} 115(16): E3635--E3644.
 \item Gebru, Timnit, et al. 2017. ``Using Deep Learning and Google Street View to Estimate the Demographic Makeup of Neighborhoods across the United States.'' \textit{PNAS} 114(50): 13108--13113.
 \item Grinsztajn, Léo, Edouard Oyallon, and Gaël Varoquaux. 2022. ``Why Do Tree-Based Models Still Outperform Deep Learning on Typical Tabular Data?'' \textit{NeurIPS Datasets and Benchmarks}.
 \item Hastie, Trevor, Robert Tibshirani, and Jerome Friedman. 2009. \textit{The Elements of Statistical Learning}, 2nd ed. Springer.
 \item Hegre, H{\aa}vard and Nicholas Sambanis. 2006. ``Sensitivity Analysis of Empirical Results on Civil War Onset.'' \textit{Journal of Conflict Resolution} 50(4): 508--535.
-\item Hochreiter, Sepp and J\"urgen Schmidhuber. 1997. ``Long Short-Term Memory.'' \textit{Neural Computation} 9(8): 1735--1780.
 \item Hornik, Kurt, Maxwell Stinchcombe, and Halbert White. 1989. ``Multilayer Feedforward Networks Are Universal Approximators.'' \textit{Neural Networks} 2(5): 359--366.
 \item Imai, Kosuke and Kentaro Nakamura. 2026. ``Leveraging Generative AI for Causal Inference with Unstructured Data.'' \textit{Proceedings of the National Academy of Sciences} 123(36): e2530532123.
 \item James, Gareth, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 2021. \textit{An Introduction to Statistical Learning}, 2nd ed. Springer. [Ch.\ 5, 6, 8, 10]
@@ -2817,24 +2427,20 @@ ISL Chapters 5, 6, and 8; Molina and Garip (2019). Optional: ISL Chapter 10
 \item Jurafsky, Daniel and James H. Martin. 2025. \textit{Speech and Language Processing}, 3rd ed.\ draft. Ch.\ 6, ``Vector Semantics and Embeddings.''
 \item Kleinberg, Jon, Himabindu Lakkaraju, Jure Leskovec, Jens Ludwig, and Sendhil Mullainathan. 2018. ``Human Decisions and Machine Predictions.'' \textit{Quarterly Journal of Economics} 133(1): 237--293.
 \item Kleinberg, Jon, Jens Ludwig, Sendhil Mullainathan, and Ziad Obermeyer. 2015. ``Prediction Policy Problems.'' \textit{American Economic Review: Papers \& Proceedings} 105(5): 491--495.
-\item Kleinberg, Jon, Sendhil Mullainathan, and Manish Raghavan. 2017. ``Inherent Trade-Offs in the Fair Determination of Risk Scores.'' \textit{ITCS 2017}, LIPIcs 67: 43:1--43:23.
 \item Kozlowski, Austin C., Matt Taddy, and James A. Evans. 2019. ``The Geometry of Culture: Analyzing the Meanings of Class through Word Embeddings.'' \textit{American Sociological Review} 84(5): 905--949.
 \item Lazer, David, Alex Pentland, Lada Adamic, Sinan Aral, Albert-L\'aszl\'o Barab\'asi, Devon Brewer, et al. 2009. ``Computational Social Science.'' \textit{Science} 323(5915): 721--723.
-\item Lundberg, Scott M. and Su-In Lee. 2017. ``A Unified Approach to Interpreting Model Predictions.'' \textit{Advances in Neural Information Processing Systems} 30.
 \item Mikolov, Tomas, Ilya Sutskever, Kai Chen, Greg Corrado, and Jeffrey Dean. 2013. ``Distributed Representations of Words and Phrases and Their Compositionality.'' \textit{Advances in Neural Information Processing Systems} 26.
 \item Molina, Mario and Filiz Garip. 2019. ``Machine Learning for Sociology.'' \textit{Annual Review of Sociology} 45: 27--45.
 \item Muchlinski, David, David Siroky, Jingrui He, and Matthew Kocher. 2016. ``Comparing Random Forest with Logistic Regression for Predicting Class-Imbalanced Civil War Onset Data.'' \textit{Political Analysis} 24(1): 87--103.
 \item Mullainathan, Sendhil and Jann Spiess. 2017. ``Machine Learning: An Applied Econometric Approach.'' \textit{Journal of Economic Perspectives} 31(2): 87--106.
-\item Obermeyer, Ziad, Brian Powers, Christine Vogeli, and Sendhil Mullainathan. 2019. ``Dissecting Racial Bias in an Algorithm Used to Manage the Health of Populations.'' \textit{Science} 366(6464): 447--453.
-\item Peters, Matthew E., Mark Neumann, Mohit Iyyer, Matt Gardner, Christopher Clark, Kenton Lee, and Luke Zettlemoyer. 2018. ``Deep Contextualized Word Representations.'' \textit{Proceedings of NAACL-HLT 2018}: 2227--2237.
 \item Salganik, Matthew J., Ian Lundberg, Alexander T. Kindel, et al. 2020. ``Measuring the Predictability of Life Outcomes with a Scientific Mass Collaboration.'' \textit{PNAS} 117(15): 8398--8403.
 \item Strobl, Carolin, Anne-Laure Boulesteix, Achim Zeileis, and Torsten Hothorn. 2007. ``Bias in Random Forest Variable Importance Measures.'' \textit{BMC Bioinformatics} 8: 25.
 \item Tibshirani, Robert. 1996. ``Regression Shrinkage and Selection via the Lasso.'' \textit{Journal of the Royal Statistical Society Series B} 58(1): 267--288.
 \item van der Laan, Mark J., Eric C. Polley, and Alan E. Hubbard. 2007. ``Super Learner.'' \textit{Statistical Applications in Genetics and Molecular Biology} 6(1): 25.
-\item Vaswani, Ashish, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, \L{}ukasz Kaiser, and Illia Polosukhin. 2017. ``Attention Is All You Need.'' \textit{Advances in Neural Information Processing Systems} 30.
 \item Verhagen, Mark D. 2024. ``Incorporating Machine Learning into Sociological Model-Building.'' \textit{Sociological Methodology} 54(2): 217--268.
 \item Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the American Statistical Association} 113(523): 1228--1242.
 \item Zou, Hui and Trevor Hastie. 2005. ``Regularization and Variable Selection via the Elastic Net.'' \textit{Journal of the Royal Statistical Society Series B} 67(2): 301--320.
+\item Zhang, Han and Jennifer Pan. 2019. ``CASM: A Deep-Learning Approach for Identifying Collective Action Events with Text and Image Data from Social Media.'' \textit{Sociological Methodology} 49(1): 1--57.
 \end{itemize}
 \end{frame}
 

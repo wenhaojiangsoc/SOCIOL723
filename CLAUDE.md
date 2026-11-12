@@ -431,6 +431,125 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   2026-11-09 REORDER (user): overfitting -> lasso -> ridge/elastic net -> choosing lambda (train/val/test, K-fold, GSS CV)
   -> bias-variance as the explanation of the CV U-curve (lasso simulation figs/w12_lasso_bv.R) -> after tuning. NO k-NN
   anywhere (one dial: lambda). Slide 4 kinds table one line per row + GSS 3-panel figure (figs/w12_kinds.R). Deck 148 pp.
+  2026-11-11 (user): REPRESENTATIONS section (PCA, word vectors, attention, BERT, predictions as measurements)
+  MOVED OUT of Week 12 to Week 13: parked as `Week 13 .../representations_from_w12.tex` (not yet inserted; needs
+  Week 12's nn tikz styles; figs pca_image/pca_sei_prestige + w12_repr.R copied to Week 13 figs; its refs listed
+  at the file's end). Interpretation + Fairness kept. SHAP now 2 frames after the Joel frames in Trees
+  (figs/w12_shap.R: exact Shapley, 4 players educ/age/female/other 20 columns, 500 background training cases;
+  woman 16 yrs, age 45: 9.928 + .233 + .056 - .099 + .032 = 10.151). Deck 111 pp. Lab 12 aligned: plug-in
+  lasso + hdm DROPPED, soft-threshold in slide notation (b-hat = (1/n) sum X R, threshold lambda/(2n)),
+  post-lasso on 243 terms uses CV lasso (45 terms .261 -> .246), importance + SHAP sections added.
+  Then (user): Looking Ahead's Problem Set 4 block DROPPED; opening says reasons 2-4 are next week, kinds table
+  header 'examples' + bullet 'Today: supervised only. PCA and word embeddings: next week'; NN 'Uses' line and
+  Looking Ahead point to embeddings/BERT next week.
+  Then (user): SHAP frames DROPPED again (figs/w12_shap.R unused; Interpretation frame keeps the SHAP bullet) and
+  Lab 12's SHAP section + exercise dropped; stars: Lasso FOC = adv; Kink Decides, Ridge One Coefficient, Where Ridge
+  Wins = no star. Deck 109 pp.
+  2026-11-11 (user): NEW 'Tuning a Random Forest' after 'Reading Importance With Care' (figs/w12_rf_tune.R: OOB grid
+  mtry x min.node.size, default .626 OOB / test R2 .272, tuned mtry 8 leaf 50 .286, bagging .264; trees 10/100/1000/3000
+  -> .815/.646/.626/.624) and boosting by hand now THREE picture frames replacing the table (user: show the process and the learning rate):
+  'Boosting by Hand: Start From Zero' (user: guess 0, R_i = Y_i, 4 updates; boost_step1.pdf 2x4: residuals+stump /
+  prediction; person 10 yrs 0 -> 4.90 -> 7.37 -> 8.48 -> 9.10, gap halves), 'Tuning a Random Forest' says default = sqrt(p) rounded down; here sqrt(23)=4.8, so 4,
+  [DROPPED by user 2026-11-11] 'The Learning Rate: Whole Steps or Half Steps' (boost_lr.pdf, now unused: 4 steps, rate 1 SSR .267/.181/.156/.115 vs .5
+  .593/.233/.133/.069; rate 1 re-splits at 13 in step 4 = overshoot), 'Small Steps Predict Better on New Cases'
+  (boost_lr_test.pdf: exp(4x)+N(0,16), n 100, best test MSE rate 1 21.1@48, .3 19.4@21, .1 18.7@67); all from
+  figs/w12_boost_steps.R. Deck 111 pp.
+  Unused old figures + 8 conflicted-copy .aux/.out deleted; pca_* git rm'd (live in Week 13 now).
+  LAB 12 REWRITTEN (user: no '690S' anywhere, most common code, gbm retired): GSS throughout; glmnet (soft threshold,
+  CV by hand, cv.glmnet, post-lasso, ridge/EN, small sparse-vs-dense sim, stability, leak) -> rpart (split by hand,
+  depth table, prune by CV) -> ranger (bag vs RF, OOB grid tuning, importance) -> boosting (by hand, rpart loop,
+  xgboost with xgb.cv early stopping) -> nnet (GD + backprop by hand, GSS net, keras sketch eval:false) -> scoreboard.
+  Noiseless-curve sections, ggplot/ggpubr, randomForest, gbm DROPPED. 17 pp. Lab scoreboard differs slightly from the
+  slide benchmark (boost .282 vs .285, tree .218 vs .215, NN .250 vs .259: different RNG streams).
+  2026-11-11 (user): stars removed from Fitting a NN, GD Picture, GD, Weight Decay, Dropout. FAIRNESS and PRACTICE
+  sections DROPPED (Obermeyer, KMR 2017, Chouldechova, Lundberg-Lee refs removed); SHAP bullet dropped. Interpretation =
+  'Looking Inside a Black Box' (permutation + partial dependence) -> [DROPPED 2026-11-11 by user] 'Partial Dependence, Step by Step'
+  (figs/w12_pdp.R -> pdp_gss.pdf: set everyone's age to 30 -> 9.745; age 25-64, 10.066 at 50; educ 12 -> 9.707,
+  16 -> 10.164) -> NEW 'Saying It Right: Prediction, Not Cause' (core; do-not-say / say-instead table: children
+  lasso 9%, education 0.645 -> 0.809, hypothetical civil war and gene rows) -> Looking Ahead. Deck 106 pp.
+  2026-11-11 (user): NEW section 'From Networks to Language Models' after Neural Nets (before Interpretation): Why Turn
+  Text Into Numbers (control use -> next week) -> word vectors (neighbours, word2vec, NEW 'Word2Vec by Hand' =
+  figs/w12_lang.R A -> w2v_toy.pdf: 7 hypothetical sentences, 28 pairs, K=2, GD loss 2.40 -> 0.83, beer=tesguino cosine
+  1.00, wine .82, corn -.99; negative sampling adv; capture/miss; Kozlowski) -> words in context (RNN adv, ELMo adv,
+  attention x3, BERT) -> NEW 'GPT: Predict the Next Word' (causal-attention tikz; GPT-3 96 layers/175B/300B tokens,
+  Brown et al. 2020) -> NEW 'Generating Text by Hand' (w12_lang.R B: scores 2/1.5/1/-3 -> .505/.306/.186/.003,
+  T .5/2, loss -log .306 = 1.18; Ouyang et al. 2022) -> Using a Pretrained Model. PCA stays in Week 13. Opening slides
+  and Looking Ahead updated. Deck 125 pp.
+  2026-11-11 (user: 'still abstract, unpack super slow'): language section REBUILT slow, 31 frames on one toy
+  (figs/w12_lang.R, now with weight decay .01): A Word Is a Category (one-hot) -> Neighbours -> Cosine (worked 1/0/-1)
+  -> Turn Neighbours Into a Prediction Task (7 sentences, 28 pairs) -> The Network (11 one-hot in, K=2, no bend, 11 out,
+  44 weights) -> Why the Hidden Layer Is the Word's Vector (lookup algebra; u_tesguino = u_beer = (0.23,1.69)) -> Output
+  Is the Multinomial Logit (v_drink (.31,1.93): score 3.33, P .47; cold 3.02/.35; corn -3.79; denominator 59.01) ->
+  Training (loss 2.40 -> 1.46 -> 1.04; pair error .09-1 = -.91) -> Result (w2v_toy.pdf clusters) -> neg sampling ->
+  capture/miss -> Kozlowski -> One Vector per Word Is Not Enough -> RNN, ELMo (adv) -> Attention Step 1 (own vectors:
+  weights .19/.51/.31, new bank (1.17,.15)/(.15,1.17)) -> Step 2 Q/K/V (core) -> by hand -> drawn -> From Attention to a
+  Transformer (heads, per-word ReLU net, position vectors, BERT-base 12/12/768/110M) -> BERT -> BERT task by hand (MASK:
+  .535/.359/.098/.008, loss 1.03) -> GPT Looking Left Only (BERT vs GPT visibility table) -> GPT picture -> Every Word Is a
+  Test Question (6 predictions, avg loss 2.10) -> Generating Text by Hand (+ temperature) -> From GPT to a Chat Assistant
+  (pretraining, instruction tuning, rankings; validate as measurement) -> Using a Pretrained Model. Deck 138 pp.
+  Lab 12 updated 2026-11-11: boosting by hand starts from 0 (matches slide); NEW section 'Language models': word2vec by
+  hand (same toy and numbers as figs/w12_lang.R), word2vec on janeaustenr with the `word2vec` CRAN package (installed
+  2026-11-11 with janeaustenr; NO seed argument, results vary slightly by run, so lab text quotes no numbers):
+  nearest words, brother - he + she -> sister, Kozlowski-style gender dimension; attention by hand (both slide
+  examples); next-word softmax + temperature + loss; text::textEmbed BERT shown eval:false. Exercise 7 = word vectors.
+  22 pp.
+  Then (user): LAB 12 = RUN-ONLY (every by-hand part DROPPED; formulas kept as text): data -> glmnet (cv.glmnet on 23
+  main effects + Figure 1 = plotmo::plot_glmnet(fit, s = lambda.1se, label = 8) + plot(cv.glmnet) (plotmo installed 2026-11-11);
+  243-term lasso/ridge/EN; NEW 'Choosing alpha by CV' (shared foldid, alpha 0..1 by .1, best .1, 67 terms, test R2 .261; CV MSEs .6445-.6500); post-lasso; bootstrap stability; leak) -> rpart (depth-3 plot, prune by CV) -> ranger (OOB,
+  tuning grid, Figure 3 = permutation vs impurity importance barplots) -> xgboost (xgb.cv) -> nnet (+ keras eval:false)
+  -> word2vec on Austen (+ text::textEmbed eval:false) -> scoreboard. 7 exercises. 13 pp. Lab numbers are NOT tied to
+  the slides' RNG stream any more (main-effect lasso keeps 9 incl. female -0.231 on the raw scale).
+  2026-11-11 (user): from Trees onward every function call has its key arguments commented, defaults included (rpart
+  method/maxdepth/cp/minsplit/minbucket/xval + cptable; ranger num.trees/mtry/min.node.size/replace/importance/seed;
+  xgboost objective/eta/max_depth/subsample/colsample_bytree/min_child_weight/lambda + nrounds/nfold/early stopping;
+  nnet size/decay/linout/maxit; word2vec type/dim/window/iter/negative/min_count). KERAS3 NOW RUNS (first call
+  auto-provisions Python 3.13 + TensorFlow via reticulate/uv into ~/Library/Caches/org.R-project.R/R/reticulate;
+  system python 3.14 is too new for TF): 23 -> 32 -> 16 -> 1 ReLU, dropout .2, Adam .001, batch 32, validation_split
+  .2 on SHUFFLED rows (training rows are in year order), early stopping patience 10; set_random_seed(723); stops at
+  epoch 34, test R2 .228 (on scoreboard); plot(history) figure. Do not print `model` in the lab (box-drawing
+  characters break pdflatex); per-layer count_params() instead. Lab 16 pp.
+  2026-11-11 (user: 'try no standardization'): nnet chunk now uses RAW X and raw y (decay .1: test R2 .261; with
+  decay 0 raw drops to .094; checks in scratch only); standardization (train means/sds, X and y) MOVED into the keras
+  chunk as step 0 with the reason (Keras raw X+y R2 -0.68, X only .115, both .228). New exercise 6 'Scaling and weight
+  decay'; exercises now 8.
+  2026-11-11 (user): word2vec block revised: Cosine frame DROPPED (defined on the Result slide); Network says no
+  activation, no intercept (only nonlinearity = output softmax); 'Why the Hidden Layer Is the Word's Vector' (core) =
+  lookup + why it carries meaning (output sees only u_w; same neighbours -> same u); toy now trained by SGD, one pair
+  per step (figs/w12_lang.R: sd .5 start, rate .1, decay .01, 300 epochs): 'Training Word2Vec, One Pair at a Time'
+  (tikz 7-step pipeline, pair (tesguino, drink): u (-.12,.53), P .074, loss 2.61, error -.93, u -> (-.13,.48), P .078,
+  loss 2.56) + 'From One Pair to the Whole Text' (w2v_loss.pdf: 2.53/2.41/1.60/.96, floor .83); output slide u
+  (1.10,2.39), drink 4.53/.56, cold 4.03/.34, corn -.72, denominator 165.06; Result cosines 1.00/.99/-1.00. Negative
+  sampling rewritten without formulas (default negative = 5). 'Directions Carry Meaning' = tikz king/man/woman/queen
+  (690S style) + Austen brother - he + she. Kozlowski = 2 frames with the paper's figures (figs/kozlowski_fig2C.png
+  sports on gender x class; fig3 music validation, Table 2 .88/.70/.52; fig7 class dimensions by decade), cropped from
+  Dropbox/TextSE/data/papers/kozlowski2019.pdf (preprint figures). Garg ref removed. Deck 138 pp.
+  2026-11-11 (user): WORDS IN CONTEXT through Using a Pretrained Model DROPPED (One Vector per Word, RNN, ELMo,
+  attention x4, transformer, BERT x2, GPT x4, chat, pretrained); saved in the session scratchpad
+  (dropped_context_bert_gpt.tex) and in git history; refs Hochreiter, Peters, Vaswani, Devlin, Brown, Ouyang removed;
+  language section now ends with Kozlowski. NEW 'The Loss for One Pair' before the one-pair training slide (11 dummies,
+  -sum y log p = -log p_drink = 2.61; table drink/cold/corn). One-pair slide step 6 = backpropagation. Kozlowski
+  results slide says how the class axis is built (8 antonym pairs, their Table 1). Opening slides: self-supervised
+  (word2vec) only. Deck 122 pp.
+  2026-11-11 (user): toy now trained with SQUARED-ERROR loss 1/2 sum_c (y_c - p_c)^2 on the softmax output (SGD,
+  rate .5, decay .001, 300 epochs; cross-entropy version saved in scratchpad w12_lang_ce.R). 'The Loss for One Pair'
+  DROPPED. One-pair slide: step 4 loss (drink 1/2(1-.074)^2 = .43, cold .006, sum .48), step 5 'backpropagation' =
+  u (-.12,.53) -> (-.12,.50), check p .074 -> .075, loss .476 -> .474. Curve .47/.46/.41/.29, floor .27. Output slide
+  u (0.05,1.35): drink 2.59/.43, cold 2.28/.31, corn -2.82, denominator 31.09. Result: tesguino-beer 1.00, -wine 1.00,
+  -corn 0.05. Output vectors of beer and tesguino also cosine 1.00 (printed in w12_lang.R A2). Slide 103 writes
+  u_tesguino = (w_1,tesguino, w_2,tesguino). Deck 121 pp.
+  2026-11-11 (user): 'Looking Inside a Black Box' DROPPED (Interpretation = Saying It Right only); section renamed
+  'Word Embeddings'; NEW 'Convolutional Networks: Images as Input' (tikz 6x6 image 0/9, 3x3 vertical-edge filter,
+  4x4 feature map 0/27/27/0; window arithmetic) + 'Convolutional Networks: Shared Weights, Many Layers' (224x224x3:
+  dense 64 units 9,633,856 weights vs 64 filters 1,792; pooling; edges -> cars; filters learned) before Gebru;
+  figs/w12_cnn.R. TikZ gotcha: `grid` steps 1cm unless step=1 is given when x/y units are rescaled. Deck 122 pp.
+  2026-11-11 (user: CNN too hard): CNN frames + Gebru frame REPLACED by Zhang & Pan 2019 Sociological Methodology
+  (CASM): 'In the Literature: Finding Protests in Social Media' (9.5M Weibo posts with protest words 2010-17; text
+  network + photo network pretrained on 1.2M images; labels = Wickedonna archive vs random posts; their Figure 3 strip
+  figs/zhang_pan_fig3.png) + 'Zhang and Pan: Validation and Results' (10,000 hand-coded out-of-sample posts; stage 1
+  P .66 R .73 F1 .69; stage 2 retrained on 40,505 hand-coded hard cases (9,761 protests) P .79 R .90 F1 .84; 136,330
+  events, >96% of counties; wages 29%, property 26%, land 17%; misses Tibet/Xinjiang). Verified from the paper PDF.
+  figs/w12_cnn.R now unused; Gebru still cited in Four Reasons. Word2Vec network tikz now shows all 11 inputs/outputs (scriptsize labels, y=0.52cm). Word "lookup" removed from slides 104 and 106 (user).
+  Deck 121 pp.
 - Week 13 (causal ML, 53 pp, rebuilt 2026-10-08; user frames kept): simulation `figs/w13_sims.R`
   (design A = CCDDHNR Fig. 1: naive bias/sd -3.2, DML coverage .93; design B very nonlinear: DML
   also biased, l-hat RMSE 1.02 -> "orthogonality makes errors multiply, not small"); orthogonality
