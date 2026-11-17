@@ -1,0 +1,2565 @@
+R00001.00    [CASEID]                                       Survey Year: 1979
+  PRIMARY VARIABLE
+
+             IDENTIFICATION CODE
+ 
+ORIGINAL QUESTION NAME: CASEID
+ 
+NOTE: THIS NUMBER WAS ASSIGNED ACCORDING TO THE RECORD NUMBER OF EACH RESPONDENT
+ON THE TAPE. THE FIRST RESPONDENT WAS ASSIGNED ID#1, THE SECOND WAS ASSIGNED 
+ID#2, ETC.
+ 
+ACTUAL NUMBER
+ 
+UNIVERSE: All
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:          12686        Mean:              6343.5
+ 
+Lead In: None.
+Default Next Question: R00001.49
+--------------------------------------------------------------------------------
+R00003.00    [Q1-3_A~M]                                     Survey Year: 1979
+  PRIMARY VARIABLE
+
+             DATE OF BIRTH - MONTH
+ 
+ORIGINAL QUESTION NAME: S01Q01A
+ 
+FIRST, WHEN WERE YOU BORN?
+ 
+1 THRU 12 ACTUAL MONTH
+ 
+UNIVERSE: All
+ 
+    1126           1
+     991           2
+    1028           3
+     970           4
+    1015           5
+    1053           6
+    1114           7
+    1223           8
+    1225           9
+    1010          10
+     954          11
+     977          12
+  -------
+   12686
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:             12        Mean:                6.49
+ 
+Lead In: R00001.66[Default]
+Default Next Question: R00005.00
+--------------------------------------------------------------------------------
+R00005.00    [Q1-3_A~Y]                                     Survey Year: 1979
+  PRIMARY VARIABLE
+
+             DATE OF BIRTH - YEAR
+ 
+ORIGINAL QUESTION NAME: S01Q01A
+ 
+SEE R(3.)
+ 
+ACTUAL YEAR
+ 
+UNIVERSE: All
+ 
+    1680          57
+    1677          58
+    1722          59
+    1662          60
+    1530          61
+    1600          62
+    1550          63
+    1265          64
+  -------
+   12686
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:             57        Max:             64        Mean:               60.34
+ 
+Lead In: R00003.00[Default]
+Default Next Question: R00006.00
+--------------------------------------------------------------------------------
+R00018.00    [FAM-6]                                        Survey Year: 1979
+  PRIMARY VARIABLE
+
+             AREA OF RESIDENCE AT AGE 14 URBAN/RURAL?
+ 
+ORIGINAL QUESTION NAME: S01Q06
+ 
+(HAND CARD A.) WHICH OF THE CATEGORIES ON THIS CARD BEST DESCRIBES WHERE YOU 
+(ARE/WERE) LIVING (WHEN YOU WERE 14 YEARS OLD)?
+ 
+UNIVERSE: All
+ 
+    9970       1 IN TOWN OR CITY
+    2016       2 IN COUNTRY-NOT FARM
+     660       3 ON FARM OR RANCH
+  -------
+   12646
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      40
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:              3        Mean:                1.26
+ 
+Lead In: R00014.00[Default] R00016.10[Default]
+Default Next Question: R00019.00
+--------------------------------------------------------------------------------
+R00019.00    [FAM-7]                                        Survey Year: 1979
+  PRIMARY VARIABLE
+
+             WITH WHOM DID R LIVE AT AGE 14?
+ 
+ORIGINAL QUESTION NAME: S01Q07
+ 
+(HAND CARD B.) PLEASE TAKE A LOOK AT THIS CARD AND TELL ME WITH WHOM YOU 
+(ARE/WERE) LIVING (WHEN YOU WERE 14 YEARS OLD). (CODE ONE CATEGORY FOR 'ADULT 
+WOMAN' AND ONE CATEGORY FOR 'ADULT MAN'. PROBE IF NECESSARY: AND WHICH LETTER IN
+BOX (1 OR 2) BEST DESCRIBES WHO YOU (ARE/WERE) LIVING WITH (THEN?)
+ 
+UNIVERSE: All
+ 
+    8570      11 FATHER-MOTHER
+     191      12 FATHER-STEPMOTHER
+      30      13 FATHER-OTHER WOMAN RELATIVE
+       9      14 FATHER-OTHER WOMAN
+     146      15 FATHER-NO WOMAN
+       6      19 FATHER-MISSING WOMAN
+     841      21 STEPFATHER-MOTHER
+      14      22 STEPFATHER-STEPMOTHER
+       2      23 STEPFATHER-WOMAN RELATIVE
+       2      24 STEPFATHER-OTHER WOMAN
+       2      25 STEPFATHER-NO WOMAN
+     102      31 MAN RELATIVE-MOTHER
+       2      32 MAN RELATIVE-STEPMOTHER
+     235      33 MAN RELATIVE-WOMAN RELATIVE
+       1      34 MAN RELATIVE-OTHER WOMAN
+      17      35 MAN RELATIVE-NO WOMAN
+      54      41 OTHER MAN-MOTHER
+       1      42 OTHER MAN-STEPMOTHER
+       9      43 OTHER MAN-WOMAN RELATIVE
+      57      44 OTHER MAN-OTHER WOMAN
+       6      45 OTHER MAN-NO WOMAN
+    2124      51 NO MAN-MOTHER
+       1      52 NO MAN-STEPMOTHER
+     138      53 NO MAN-WOMAN RELATIVE
+      18      54 NO MAN-OTHER WOMAN
+       3      55 NO MAN-NO WOMAN
+      22      80 OTHER ARRANGEMENT
+       3      90 ON MY OWN
+      60      91 MISSING MAN-MOTHER
+       1      93 MISSING MAN-WOMAN RELATIVE
+  -------
+   12667
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      19
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:             11        Max:             93        Mean:               20.44
+ 
+Lead In: R00018.00[Default]
+Default Next Question: R00020.00
+--------------------------------------------------------------------------------
+R00023.00    [FAM-10]                                       Survey Year: 1979
+  PRIMARY VARIABLE
+
+             RELATION TO R OF ADULT MALE IN HOUSEHOLD AT AGE 14
+ 
+ORIGINAL QUESTION NAME: S01Q10
+ 
+WHO WAS THE ADULT MAN (RELATIVE) YOU LIVE(D) WITH (WHEN YOU WERE 14 YEARS 
+OLD)--WHAT IS HIS RELATIONSHIP TO YOU?
+ 
+UNIVERSE: All
+ 
+       0       0 RESPONDENT
+       6       1 SPOUSE
+       0       2 SON
+       0       3 DAUGHTER
+       1       4 FATHER
+       0       5 MOTHER
+      50       6 BROTHER
+       0       7 SISTER
+     156       8 GRANDFATHER
+       0       9 GRANDMOTHER
+       0      10 GRANDSON
+       0      11 GRANDDAUGHTER
+      89      12 UNCLE ETC.
+       0      13 AUNT ETC.
+       0      14 GREAT-UNCLE
+       0      15 GREAT-AUNT
+       4      16 COUSIN
+       0      17 NEPHEW
+       0      18 NIECE
+       0      19 OTHER BLOOD RELATIVE
+       0      20 ADOPTED OR STEP-SON
+       0      21 ADOPTED OR STEP-DAUGHTER
+       0      22 SON-IN-LAW
+       0      23 DAUGHTER-IN-LAW
+       0      24 FATHER-IN-LAW
+       0      25 MOTHER-IN-LAW
+      17      26 BROTHER-IN-LAW
+       0      27 SISTER-IN-LAW
+       0      28 GRANDFATHER-IN-LAW
+       0      29 GRANDMOTHER-IN-LAW
+       0      30 GRANDSON-IN-LAW
+       0      31 GRANDDAUGHER-IN-LAW
+       0      32 OTHER IN-LAW RELATIVE
+       1      33 PARTNER
+       1      34 BOARDER
+       0      35 FOSTER CHILD
+      56      36 OTHER NON-RELATIVE
+       3      37 STEP-FATHER
+       0      38 STEP-MOTHER
+       1      39 STEP-BROTHER
+       0      40 STEP-SISTER
+       0      41 GREAT GRANDSON
+       0      42 GREAT GRANDDAUGHTER
+       0      43 STEP GRANDSON
+       0      44 STEP GRANDDAUGHTER
+       0      45 FOSTER SON
+       0      46 FOSTER DAUGHTER
+       1      47 PARENTS
+       0      48 GRANDPARENTS
+       0      49 AUNT & UNCLE
+      30      50 FOSTER FATHER
+       0      51 FOSTER MOTHER
+       0      52 FOSTER BROTHER
+       0      53 FOSTER SISTER
+       0      54 GUARDIAN
+       0      57 HUSBAND OR BROTHER-IN-LAW
+       0      58 WIFE OR SISTER-IN-LAW
+       0      59 ADOPTED OR STEP-BROTHER
+       0      62 BROTHER OR COUSIN
+       0      63 SISTER OR COUSIN
+       0      64 BROTHER (NATURAL, STEP, ADOPTED)
+       0      65 SISTER (NATURAL, STEP, ADOPTED)
+       0      66 SIBLING OR IN-LAW'S SPOUSE
+       0      60 ADOPTED OR STEP-SISTER
+  -------
+     416
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)     148
+TOTAL =========>     564   VALID SKIP(-4)   12122     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:             50        Mean:               16.62
+ 
+Lead In: R00022.00[Default]
+Default Next Question: R00024.00
+--------------------------------------------------------------------------------
+R00025.00    [FAM-11A]                                      Survey Year: 1979
+  PRIMARY VARIABLE
+
+             OCCUPATION OF ADULT MALE PRESENT IN HOUSEHOLD AT AGE 14 (CENSUS 3 
+             DIGIT)
+ 
+ORIGINAL QUESTION NAME: S01Q11A
+ 
+WHAT KIND OF WORK (DOES/DID) HE DO? WHAT (ARE/WERE) SOME OF HIS MAIN ACTIVITIES 
+OR DUTIES? (PROBE FOR TWO MAIN ACTIVITIES.)
+ 
+SEE ATTACHMENT 3 FOR DEFINITIONS
+ 
+UNIVERSE: R father/father figure worked for pay when R was 14
+ 
+     999           1 TO 195: 001-195 PROFESSIONAL,TECHNICAL AND KINDRED
+    1086         201 TO 245: 201-245 MANAGERS,OFFICIALS AND PROPRIETORS
+     395         260 TO 285: 260-285 SALES WORKERS
+     366         301 TO 395: 301-395 CLERICAL AND KINDRED
+    2199         401 TO 575: 401-575 CRAFTSMEN,FOREMEN AND KINDRED
+     240         580 TO 590: 580-590 ARMED FORCES
+    1774         601 TO 715: 601-715 OPERATIVES AND KINDRED
+     580         740 TO 785: 740-785 LABORERS, EXCEPT FARM
+     258         801 TO 802: 801-802 FARMERS AND FARM MANAGERS
+     292         821 TO 824: 821-824 FARM LABORERS AND FOREMAN
+     621         901 TO 965: 901-965 SERVICE WORKERS, EXCEPT PRIVATE HOUSEHOLD
+       2         980 TO 984: 980-984 PRIVATE HOUSEHOLD
+  -------
+    8812
+ 
+Refusal(-1)            9
+Don't Know(-2)       204
+Invalid Skip(-3)     507
+TOTAL =========>    9532   VALID SKIP(-4)    3154     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:            984        Mean:              499.62
+ 
+Lead In: R00024.00[Default]
+Default Next Question: R00027.00
+--------------------------------------------------------------------------------
+R00065.00    [HGC-MOTHER]                                   Survey Year: 1979
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED BY R'S MOTHER
+ 
+ORIGINAL QUESTION NAME: S01Q16
+ 
+WHAT IS THE HIGHEST GRADE OR YEAR OF REGULAR SCHOOL THAT YOUR MOTHER EVER 
+COMPLETED?
+ 
+UNIVERSE: R with mother/mother figure
+ 
+     132       0 NONE
+      24       1 1ST GRADE
+      87       2 2ND GRADE
+     183       3 3RD GRADE
+     173       4 4TH GRADE
+     198       5 5TH GRADE
+     421       6 6TH GRADE
+     260       7 7TH GRADE
+     801       8 8TH GRADE
+     698       9 9TH GRADE
+     999      10 10TH GRADE
+    1107      11 11TH GRADE
+    4817      12 12TH GRADE
+     364      13 1ST YR COL
+     561      14 2ND YR COL
+     178      15 3RD YR COL
+     647      16 4TH YR COL
+     101      17 5TH YR COL
+      92      18 6TH YR COL
+      14      19 7TH YR COL
+      21      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+   11878
+ 
+Refusal(-1)            3
+Don't Know(-2)       527
+Invalid Skip(-3)     251
+TOTAL =========>   12659   VALID SKIP(-4)      27     NON-INTERVIEW(-5)       0
+ 
+Min:              0        Max:             20        Mean:               10.87
+ 
+Lead In: R00061.00[Default]
+Default Next Question: R00066.00
+--------------------------------------------------------------------------------
+R00079.00    [HGC-FATHER]                                   Survey Year: 1979
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED BY R'S FATHER
+ 
+ORIGINAL QUESTION NAME: S01Q23
+ 
+LET'S GO BACK TO YOUR FATHER NOW. WHAT IS THE HIGHEST GRADE OR YEAR OF REGULAR 
+SCHOOL THAT YOUR FATHER EVER COMPLETED?
+ 
+UNIVERSE: R with father/father figure
+ 
+     199       0 NONE
+      48       1 1ST GRADE
+     102       2 2ND GRADE
+     215       3 3RD GRADE
+     208       4 4TH GRADE
+     190       5 5TH GRADE
+     499       6 6TH GRADE
+     306       7 7TH GRADE
+     950       8 8TH GRADE
+     568       9 9TH GRADE
+     754      10 10TH GRADE
+     616      11 11TH GRADE
+    3694      12 12TH GRADE
+     286      13 1ST YR COL
+     558      14 2ND YR COL
+     162      15 3RD YR COL
+     899      16 4TH YR COL
+     151      17 5TH YR COL
+     209      18 6TH YR COL
+      56      19 7TH YR COL
+     210      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+   10880
+ 
+Refusal(-1)            3
+Don't Know(-2)      1150
+Invalid Skip(-3)     423
+TOTAL =========>   12456   VALID SKIP(-4)     230     NON-INTERVIEW(-5)       0
+ 
+Min:              0        Max:             20        Mean:               10.95
+ 
+Lead In: R00077.00[Default]
+Default Next Question: R00080.00
+--------------------------------------------------------------------------------
+R00091.00    [FAM-28A]                                      Survey Year: 1979
+  PRIMARY VARIABLE
+
+             NUMBER OF SIBLINGS
+ 
+ORIGINAL QUESTION NAME: S01Q28A
+ 
+SEE R(90.)
+ 
+ACTUAL NUMBER
+ 
+UNIVERSE: All
+ 
+     362           0
+    1611           1
+    2530           2
+    2412           3
+    1783           4
+    1198           5
+     933           6
+     634           7
+     421           8
+     289           9
+     178          10
+     116          11
+      67          12
+      64          13
+      27          14
+      11          15
+      32          16 TO 99999: 16+
+  -------
+   12668
+ 
+Refusal(-1)            1
+Don't Know(-2)         3
+Invalid Skip(-3)      14
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              0        Max:             29        Mean:                3.85
+ 
+Lead In: R00090.00[Default]
+Default Next Question: R00092.00
+--------------------------------------------------------------------------------
+R00173.66    [SCHSUR-27]                                    Survey Year: 1979
+  PRIMARY VARIABLE
+
+             PERCENTAGE OF STUDENTS CLASSIFIED DISADVANTAGED - SCHOOL SURVEY
+ 
+ORIGINAL QUESTION NAME: *CREATED
+ 
+ABOUT WHAT PERCENTAGE OF THE STUDENTS IN YOUR SCHOOL ARE CLASSIFIED AS 
+DISADVANTAGED ACCORDING TO ESEA GUIDELINES? (IF YOUR SCHOOL USES OTHER 
+GUIDELINES, PLEASE RESPOND WITH THE PERCENTAGE ACCORDING TO THAT SYSTEM.)
+ 
+ACTUAL PERCENTAGE
+ 
+UNIVERSE: All except those without any formal schooling
+ 
+     366           0
+    2063           1 TO 9
+    1397          10 TO 19
+     906          20 TO 29
+     607          30 TO 39
+     560          40 TO 49
+     235          50 TO 59
+     283          60 TO 69
+     208          70 TO 79
+     122          80 TO 89
+     199          90 TO 99
+  -------
+    6946
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    6946   VALID SKIP(-4)    5740     NON-INTERVIEW(-5)       0
+ 
+Min:              0        Max:             99        Mean:               23.98
+ 
+Lead In: R00173.65[Default]
+Default Next Question: R00173.67
+--------------------------------------------------------------------------------
+R00196.00    [SCHOOL-17]                                    Survey Year: 1979
+  PRIMARY VARIABLE
+
+             TYPE OF CURRENT OR LAST SCHOOL CURRICULUM IN GRADES 9-12
+ 
+ORIGINAL QUESTION NAME: S04Q17
+ 
+DO YOU FEEL THAT YOUR PROGRAM (IS/WAS) LARGELY VOCATIONAL, COMMERCIAL, COLLEGE 
+PREPARATORY, OR (IS/WAS) IT A GENERAL PROGRAM?
+ 
+UNIVERSE: All except those without any formal schooling; attended >= 9
+ 
+    1534       1 VOCATIONAL
+     315       2 COMMERCIAL
+    3388       3 COLLEGE PREPARATORY
+    6289       4 GENERAL PROGRAM
+  -------
+   11526
+ 
+Refusal(-1)            0
+Don't Know(-2)       203
+Invalid Skip(-3)     149
+TOTAL =========>   11878   VALID SKIP(-4)     808     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:              4        Mean:                3.25
+ 
+Lead In: R00195.00[Default]
+Default Next Question: R00197.00
+--------------------------------------------------------------------------------
+R00234.00    [SCHOOL-30]                                    Survey Year: 1979
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED R WOULD LIKE
+ 
+ORIGINAL QUESTION NAME: S04Q30
+ 
+WHAT IS THE HIGHEST GRADE OR YEAR OF REGULAR SCHOOL, THAT IS,
+ELEMENTARY SCHOOL, HIGH SCHOOL, COLLEGE, OR GRADUATE SCHOOL THAT YOU WOULD LIKE 
+TO COMPLETE?
+ 
+UNIVERSE: All
+ 
+       1       1 1ST GRADE
+       0       2 2ND GRADE
+       7       3 3RD GRADE
+       2       4 4TH GRADE
+       5       5 5TH GRADE
+      20       6 6TH GRADE
+      12       7 7TH GRADE
+      44       8 8TH GRADE
+      76       9 9TH GRADE
+      76      10 10TH GRADE
+      53      11 11TH GRADE
+    4460      12 12TH GRADE
+     192      13 1ST YR COLLEGE
+    1324      14 2ND YR COLLEGE
+     219      15 3RD YR COLLEGE
+    4150      16 4TH YR COLLEGE
+     918      17 5TH YR COLLEGE
+    1065      18 6TH+ YR COLLEGE
+  -------
+   12624
+ 
+Refusal(-1)            0
+Don't Know(-2)        34
+Invalid Skip(-3)      28
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:             18        Mean:               14.39
+ 
+Lead In: R00233.00[Default]
+Default Next Question: R00235.00
+--------------------------------------------------------------------------------
+R00235.00    [SCHOOL-31]                                    Survey Year: 1979
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED R EXPECTS
+ 
+ORIGINAL QUESTION NAME: S04Q31
+ 
+AS THINGS NOW STAND, WHAT IS THE HIGHEST GRADE OR YEAR YOU THINK YOU WILL 
+ACTUALLY COMPLETE?
+ 
+UNIVERSE: All
+ 
+       2       1 1ST GRADE
+       0       2 2ND GRADE
+      11       3 3RD GRADE
+       6       4 4TH GRADE
+      10       5 5TH GRADE
+      30       6 6TH GRADE
+      41       7 7TH GRADE
+     116       8 8TH GRADE
+     225       9 9TH GRADE
+     280      10 10TH GRADE
+     262      11 11TH GRADE
+    4791      12 12TH GRADE
+     359      13 1ST YR COLLEGE
+    1582      14 2ND YR COLLEGE
+     222      15 3RD YR COLLEGE
+    3260      16 4TH YR COLLEGE
+     681      17 5TH YR COLLEGE
+     687      18 6TH+ YR COLLEGE
+  -------
+   12565
+ 
+Refusal(-1)            0
+Don't Know(-2)        83
+Invalid Skip(-3)      38
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:             18        Mean:               13.76
+ 
+Lead In: R00234.00[Default]
+Default Next Question: R00236.00
+--------------------------------------------------------------------------------
+R00236.00    [SCHOOL-32]                                    Survey Year: 1979
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED R'S CLOSEST FRIEND WOULD LIKE
+ 
+ORIGINAL QUESTION NAME: S04Q32
+ 
+NOW THINK ABOUT YOUR BEST OR CLOSEST FRIEND. WHAT IS THE HIGHEST GRADE OR YEAR 
+OF REGULAR SCHOOL THAT THIS FRIEND WANTS TO COMPLETE?
+ 
+UNIVERSE: All
+ 
+       0       1 1ST GRADE
+       0       2 2ND GRADE
+       2       3 3RD GRADE
+       1       4 4TH GRADE
+       1       5 5TH GRADE
+       5       6 6TH GRADE
+      10       7 7TH GRADE
+      40       8 8TH GRADE
+      78       9 9TH GRADE
+     141      10 10TH GRADE
+     132      11 11TH GRADE
+    5325      12 12TH GRADE
+     183      13 1ST YR COLLEGE
+     977      14 2ND YR COLLEGE
+     175      15 3RD YR COLLEGE
+    4051      16 4TH YR COLLEGE
+     515      17 5TH YR COLLEGE
+     730      18 6TH+ YR COLLEGE
+  -------
+   12366
+ 
+Refusal(-1)            2
+Don't Know(-2)       225
+Invalid Skip(-3)      93
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              3        Max:             18        Mean:               14.01
+ 
+Lead In: R00235.00[Default]
+Default Next Question: R00238.00
+--------------------------------------------------------------------------------
+R01537.10    [ROTTER_SCORE]                                 Survey Year: 1979
+  PRIMARY VARIABLE
+
+             ROTTER SCALE SCORE 79
+ 
+Rotter - Locus of Control Scale Score. This 4-item score is created from 
+variables with the QNAME stem= ROTTER_.
+ 
+This scale was first asked in 1979 (R1) to all respondents and then resasked in 
+2014 (R26). Those who didn't complete the R26 interview were asked these 
+questions in 2016 (R27)
+ 
+UNIVERSE: All
+ 
+     580           1 TO 4
+    7320           5 TO 9
+    4551          10 TO 14
+      90          15 TO 19
+  -------
+   12541
+ 
+Refusal(-1)            1
+Don't Know(-2)        14
+Invalid Skip(-3)     130
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              4        Max:             16        Mean:                8.66
+ 
+Lead In: R01537.00[Default]
+Default Next Question: R01538.00
+--------------------------------------------------------------------------------
+R01736.00    [SAMPLE_ID]                                    Survey Year: 1979
+  PRIMARY VARIABLE
+
+             SAMPLE IDENTIFICATION CODE
+ 
+ORIGINAL QUESTION NAME: S24Q01
+ 
+UNIVERSE: Entire Sample
+ 
+    2236       1 CROSS MALE WHITE
+     203       2 CROSS MALE WH. POOR
+     346       3 CROSS MALE BLACK
+     218       4 CROSS MALE HISPANIC
+    2279       5 CROSS FEMALE WHITE
+     198       6 CROSS FEMALE WH POOR
+     405       7 CROSS FEMALE BLACK
+     226       8 CROSS FEMALE HISPANIC
+     742       9 SUP MALE WH POOR
+    1105      10 SUP MALE BLACK
+     729      11 SUP MALE HISPANIC
+     901      12 SUP FEM WH POOR
+    1067      13 SUP FEMALE BLACK
+     751      14 SUP FEMALE HISPANIC
+     609      15 MIL MALE WHITE
+     162      16 MIL MALE BLACK
+      53      17 MIL MALE HISPANIC
+     342      18 MIL FEMALE WHITE
+      89      19 MIL FEMALE BLACK
+      25      20 MIL FEMALE HISPANIC
+  -------
+   12686
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:             20        Mean:                8.17
+ 
+
+
+NOTE: MARCH 1, 1986  NORC
+ 
+SEX CODE CHANGED ON 42 CASES
+ 
+Lead In: R01735.19[Default]
+Default Next Question: R01737.00
+--------------------------------------------------------------------------------
+R02147.00    [SAMPLE_RACE]                                  Survey Year: 78SCRN
+  PRIMARY VARIABLE
+
+             R'S RACIAL/ETHNIC COHORT FROM SCREENER
+ 
+UNIVERSE: Entire Sample
+ 
+    2002       1 HISPANIC
+    3174       2 BLACK
+    7510       3 NON-BLACK, NON-HISPANIC
+  -------
+   12686
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:              3        Mean:                2.43
+ 
+
+
+NOTE: AUGUST 26, 1980  DENNIS GREY
+ 
+DESCRIPTION:
+COHORT=3;
+IF R(1736.)=4 ! R(1736.)=8 ! R(1736.)=11 ! R(1736.)=14 THEN COHORT=1;
+IF R(1736.)=17 ! R(1736.)=20 THEN COHORT=1;
+IF R(1736.)=3 ! R(1736.)=7 ! R(1736.)=10 ! R(1736.)=13 THEN COHORT=2;
+IF R(1736.)=16 ! R(1736.)=19 THEN COHORT=2;
+R(2147.)=COHORT;
+ 
+Lead In: R02146.00[Default]
+Default Next Question: R02148.00
+--------------------------------------------------------------------------------
+R02148.00    [SAMPLE_SEX]                                   Survey Year: 1979
+  PRIMARY VARIABLE
+
+             SEX OF R
+ 
+UNIVERSE: Entire sample
+ 
+    6403       1 MALE
+    6283       2 FEMALE
+  -------
+   12686
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:              2        Mean:                 1.5
+ 
+
+
+NOTE: AUGUST 26, 1980  DENNIS GREY
+MARCH 1, 1986  NORC
+ 
+DESCRIPTION:
+IF (R(1736.)>0 & R(1736.)<=4) ! (R(1736.)>=9 & R(1736.)<=11) THEN SEX=1;
+IF R(1736.)>=15 & R(1736.)<=17 THEN SEX=1;
+IF (R(1736.)>=5 & R(1736.)<=8) ! (R(1736.)>=12 & R(1736.)<=14) THEN SEX=
+IF R(1736.)>=18 & R(1736.)<=20 THEN SEX=2;
+R(2148.)=SEX;
+SEX CODE CHANGED ON 42 CASES
+ 
+Lead In: R02147.00[Default]
+Default Next Question: R02149.00
+--------------------------------------------------------------------------------
+R02161.00    [SAMPWEIGHT]                                   Survey Year: 1979
+  PRIMARY VARIABLE
+
+             SAMPLING WEIGHT
+ 
+ORIGINAL QUESTION NAME: *CREATED
+ 
+SEE R(1376.)
+ 
+1 THRU 9999999 SAMPLING WEIGHT (2 IMPLIED DECIMAL PLACES)
+ 
+UNIVERSE: Entire Sample
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:           4100        Max:        1058864        Mean:           264539.71
+ 
+Lead In: R02160.20[Default]
+Default Next Question: R02161.01
+--------------------------------------------------------------------------------
+R02164.00    [REGION]                                       Survey Year: 1979
+  PRIMARY VARIABLE
+
+             REGION OF CURRENT RESIDENCE
+ 
+UNIVERSE: All except those with no records
+ 
+    2550       1 NORTHEAST
+    2934       2 NORTH CENTRAL
+    4568       3 SOUTH
+    2395       4 WEST
+  -------
+   12447
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12447   VALID SKIP(-4)     239     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:              4        Mean:                2.55
+ 
+
+
+NOTE: AUGUST 26, 1980  DENNIS GREY
+ 
+DESCRIPTION:
+REGION=-4;
+S=R(1740.);
+IF S=09 ! S=23 ! S=25 ! S=33 ! S=34 ! S=36 ! S=42 ! S=44 ! S=50
+                                                       THEN REGION=1;
+IF S=01 ! S=05 ! S=10 ! S=11 ! S=12 ! S=13 ! S=21 ! S=22 ! S=24 ! S=28 !
+   S=37 ! S=40 ! S=45 ! S=47 ! S=48 ! S=51 ! S=54      THEN REGION=3;
+IF S=17 ! S=18 ! S=19 ! S=20 ! S=26 ! S=27 ! S=29 ! S=31 ! S=39 !
+   S=46 ! S=38 ! S=55                                  THEN REGION=2;
+IF S=02 ! S=04 ! S=06 ! S=08 ! S=15 ! S=16 ! S=30 ! S=32 ! S=35 !
+   S=41 ! S=49 ! S=53 ! S=56                           THEN REGION=4;
+R(2164.)=REGION;
+ 
+Lead In: R02161.01[Default]
+Default Next Question: R02165.00
+--------------------------------------------------------------------------------
+R02175.01    [MARSTAT-KEY]                                  Survey Year: 1979
+  PRIMARY VARIABLE
+
+             MARITAL STATUS
+ 
+UNIVERSE: Entire Sample
+ 
+   11117       0 NEVER MARRIED
+    1352       1 MARRIED
+     130       2 SEPARATED
+      84       3 DIVORCED
+       0       5 REMARRIED
+       1       6 WIDOWED
+  -------
+   12684
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)       2
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              0        Max:              6        Mean:                 .15
+ 
+Lead In: R02175.00[Default]
+Default Next Question: R02175.02
+--------------------------------------------------------------------------------
+R02179.00    [TNFI_TRUNC]                                   Survey Year: 1979
+  PRIMARY VARIABLE
+
+             TOTAL NET FAMILY INCOME IN PAST CALENDAR YEAR *KEY* (TRUNCATED)
+ 
+ORIGINAL QUESTION NAME: *CREATED
+ 
+NOTE: FOR VARIABLE CREATION, SEE APPENDIX 2: TOTAL NET FAMILY INCOME
+ 
+ACTUAL NUMBER
+ 
+UNIVERSE: All
+ 
+      49           0
+     113           1 TO 999
+     207        1000 TO 1999
+     362        2000 TO 2999
+     509        3000 TO 3999
+     548        4000 TO 4999
+     794        5000 TO 5999
+     755        6000 TO 6999
+     517        7000 TO 7999
+     456        8000 TO 8999
+     394        9000 TO 9999
+    1552       10000 TO 14999
+    1108       15000 TO 19999
+     978       20000 TO 24999
+    1595       25000 TO 49999
+     258       50000 TO 9999999: 50000+
+  -------
+   10195
+ 
+Refusal(-1)          585
+Don't Know(-2)      1194
+Invalid Skip(-3)     712
+TOTAL =========>   12686   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              0        Max:          75001        Mean:            14706.87
+ 
+Lead In: R02175.02[Default]
+Default Next Question: R02179.10
+--------------------------------------------------------------------------------
+R03046.00    [DELIN-1]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES RUN AWAY FROM HOME IN PAST YR (AGE 
+             17 OR UNDER)
+ 
+ORIGINAL QUESTION NAME: S40Q01
+ 
+ON THIS FORM ARE DESCRIPTIONS OF TYPES OF ACTIVITIES THAT SOME YOUNG PEOPLE CAN 
+GET INTO TROUBLE FOR. I WANT YOU TO READ EACH ITEM, AND PUT A CHECK MARK AFTER 
+THE CATEGORY WHICH BEST DESCRIBES THE NUMBER OF TIMES IN THE LAST YEAR YOU HAVE 
+DONE THE ACTIVITIES DESCRIBED. IF YOU CANNOT REMEMBER EXACTLY THE NUMBER OF 
+TIMES YOU HAVE DONE SOMETHING, JUST WRITE DOWN YOUR BEST GUESS. (HAND FORM J) IF
+R IS 18 YEARS OLD OR OLDER, SAY: PLEASE SKIP QUESTIONS 1-3, AS THOSE QUESTIONS 
+ARE ONLY FOR PEOPLE UNDER 18 YEARS OF AGE. RUNAWAY FROM HOME?
+ 
+UNIVERSE: R is >= 17
+ 
+    3524       0 NEVER
+     226       1 ONCE
+      74       2 TWICE
+      55       3 3-5 TIMES
+      11       4 6-10 TIMES
+       4       5 11-50 TIMES
+       4       6 MORE THAN 50 TIMES
+  -------
+    3898
+ 
+Refusal(-1)           37
+Don't Know(-2)         0
+Invalid Skip(-3)      79
+TOTAL =========>    4014   VALID SKIP(-4)    8127     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .16
+ 
+Lead In: R03045.00[Default]
+Default Next Question: R03047.00
+--------------------------------------------------------------------------------
+R03047.00    [DELIN-2]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES SKIPPED SCHOOL DAY IN PAST YR (AGE 
+             17 OR UNDER)
+ 
+ORIGINAL QUESTION NAME: S40Q02
+ 
+SEE R(3046.) SKIPPED A FULL DAY OF SCHOOL WITHOUT A REAL EXCUSE?
+ 
+UNIVERSE: R is >= 17
+ 
+    2048       0 NEVER
+     493       1 ONCE
+     351       2 TWICE
+     478       3 3-5 TIMES
+     260       4 6-10 TIMES
+     187       5 11-50 TIMES
+      79       6 MORE THAN 50 TIMES
+  -------
+    3896
+ 
+Refusal(-1)           38
+Don't Know(-2)         0
+Invalid Skip(-3)      80
+TOTAL =========>    4014   VALID SKIP(-4)    8127     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 1.3
+ 
+Lead In: R03046.00[Default]
+Default Next Question: R03048.00
+--------------------------------------------------------------------------------
+R03048.00    [DELIN-3]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY - TIMES DRANK ALCOHOLIC BEVERAGES PAST YR (AGE 17 
+             OR UNDER)
+ 
+ORIGINAL QUESTION NAME: S40Q03
+ 
+SEE R(3046.) DRANK BEER, WINE, OR LIQUOR WITHOUT YOUR PARENTS' PERMISSION?
+ 
+UNIVERSE: R is >= 17
+ 
+    1530       0 NEVER
+     432       1 ONCE
+     283       2 TWICE
+     552       3 3-5 TIMES
+     352       4 6-10 TIMES
+     437       5 11-50 TIMES
+     300       6 MORE THAN 50 TIMES
+  -------
+    3886
+ 
+Refusal(-1)           47
+Don't Know(-2)         0
+Invalid Skip(-3)      81
+TOTAL =========>    4014   VALID SKIP(-4)    8127     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                2.07
+ 
+Lead In: R03047.00[Default]
+Default Next Question: R03049.00
+--------------------------------------------------------------------------------
+R03049.00    [DELIN-4]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES INTENTIONALLY DAMAGED PROPERTY IN 
+             PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q04
+ 
+SEE R(3046.) PURPOSELY DAMAGED OR DESTROYED PROPERTY THAT DID NOT BELONG TO YOU?
+ 
+UNIVERSE: All
+ 
+    9603       0 NEVER
+    1019       1 ONCE
+     447       2 TWICE
+     434       3 3-5 TIMES
+     143       4 6-10 TIMES
+      58       5 11-50 TIMES
+      30       6 MORE THAN 50 TIMES
+  -------
+   11734
+ 
+Refusal(-1)          110
+Don't Know(-2)         0
+Invalid Skip(-3)     297
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .36
+ 
+Lead In: R03048.00[Default]
+Default Next Question: R03050.00
+--------------------------------------------------------------------------------
+R03050.00    [DELIN-5]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES FOUGHT AT SCHOOL OR WORK IN PAST 
+             YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q05
+ 
+SEE R(3046.) GOTTEN INTO A PHYSICAL FIGHT AT SCHOOL OR WORK?
+ 
+UNIVERSE: All
+ 
+    8485       0 NEVER
+    1544       1 ONCE
+     733       2 TWICE
+     686       3 3-5 TIMES
+     235       4 6-10 TIMES
+      83       5 11-50 TIMES
+      34       6 MORE THAN 50 TIMES
+  -------
+   11800
+ 
+Refusal(-1)           70
+Don't Know(-2)         0
+Invalid Skip(-3)     271
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .56
+ 
+Lead In: R03049.00[Default]
+Default Next Question: R03051.00
+--------------------------------------------------------------------------------
+R03051.00    [DELIN-6]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES SHOPLIFTED IN PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q06
+ 
+SEE R(3046.) TAKEN SOMETHING FROM A STORE WITHOUT PAYING FOR IT?
+ 
+UNIVERSE: All
+ 
+    8748       0 NEVER
+    1408       1 ONCE
+     637       2 TWICE
+     609       3 3-5 TIMES
+     205       4 6-10 TIMES
+     132       5 11-50 TIMES
+      49       6 MORE THAN 50 TIMES
+  -------
+   11788
+ 
+Refusal(-1)           77
+Don't Know(-2)         0
+Invalid Skip(-3)     276
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .53
+ 
+Lead In: R03050.00[Default]
+Default Next Question: R03052.00
+--------------------------------------------------------------------------------
+R03052.00    [DELIN-7]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES STOLEN OTHER'S BELONGINGS PAST YR 
+             (WORTH <$50)
+ 
+ORIGINAL QUESTION NAME: S40Q07
+ 
+SEE R(3046.) OTHER THAN FROM A STORE, TAKEN SOMETHING NOT BELONGING TO YOU WORTH
+UNDER $50?
+ 
+UNIVERSE: All
+ 
+    9551       0 NEVER
+    1118       1 ONCE
+     472       2 TWICE
+     426       3 3-5 TIMES
+     125       4 6-10 TIMES
+      65       5 11-50 TIMES
+      31       6 MORE THAN 50 TIMES
+  -------
+   11788
+ 
+Refusal(-1)           82
+Don't Know(-2)         0
+Invalid Skip(-3)     271
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .37
+ 
+Lead In: R03051.00[Default]
+Default Next Question: R03053.00
+--------------------------------------------------------------------------------
+R03053.00    [DELIN-8]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES STOLEN OTHER'S BELONGINGS PAST YR 
+             (WORTH >$50)
+ 
+ORIGINAL QUESTION NAME: S40Q08
+ 
+SEE R(3046.) OTHER THAN FROM A STORE, TAKEN SOMETHING NOT BELONGING TO YOU WORTH
+$50 OR MORE?
+ 
+UNIVERSE: All
+ 
+   11118       0 NEVER
+     356       1 ONCE
+     121       2 TWICE
+      96       3 3-5 TIMES
+      40       4 6-10 TIMES
+      24       5 11-50 TIMES
+      21       6 MORE THAN 50 TIMES
+  -------
+   11776
+ 
+Refusal(-1)           89
+Don't Know(-2)         0
+Invalid Skip(-3)     276
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .11
+ 
+Lead In: R03052.00[Default]
+Default Next Question: R03054.00
+--------------------------------------------------------------------------------
+R03054.00    [DELIN-9]                                      Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES USED FORCE TO OBTAIN THINGS IN PAST
+             YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q09
+ 
+SEE R(3046.) USED FORCE OR STRONG ARM METHODS TO GET MONEY OR THINGS FROM A 
+PERSON?
+ 
+UNIVERSE: All
+ 
+   11192       0 NEVER
+     317       1 ONCE
+     125       2 TWICE
+      90       3 3-5 TIMES
+      32       4 6-10 TIMES
+      19       5 11-50 TIMES
+      19       6 MORE THAN 50 TIMES
+  -------
+   11794
+ 
+Refusal(-1)           77
+Don't Know(-2)         0
+Invalid Skip(-3)     270
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                  .1
+ 
+Lead In: R03053.00[Default]
+Default Next Question: R03055.00
+--------------------------------------------------------------------------------
+R03055.00    [DELIN-10]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY - TIMES SERIOUSLY THREATENED TO HIT/HIT SOMEONE 
+             PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q10
+ 
+SEE R(3046.) HIT OR SERIOUSLY THREATENED TO HIT SOMEONE?
+ 
+UNIVERSE: All
+ 
+    7390       0 NEVER
+    1879       1 ONCE
+     908       2 TWICE
+     950       3 3-5 TIMES
+     354       4 6-10 TIMES
+     180       5 11-50 TIMES
+     124       6 MORE THAN 50 TIMES
+  -------
+   11785
+ 
+Refusal(-1)           80
+Don't Know(-2)         0
+Invalid Skip(-3)     276
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .82
+ 
+Lead In: R03054.00[Default]
+Default Next Question: R03056.00
+--------------------------------------------------------------------------------
+R03056.00    [DELIN-11]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES ATTACKED W/INTENT TO INJURE/KILL IN
+             PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q11
+ 
+SEE R(3046.) ATTACKED SOMEONE WITH THE IDEA OF SERIOUSLY HURTING OR KILLING 
+THEM?
+ 
+UNIVERSE: All
+ 
+   10547       0 NEVER
+     687       1 ONCE
+     225       2 TWICE
+     183       3 3-5 TIMES
+      71       4 6-10 TIMES
+      36       5 11-50 TIMES
+      43       6 MORE THAN 50 TIMES
+  -------
+   11792
+ 
+Refusal(-1)           78
+Don't Know(-2)         0
+Invalid Skip(-3)     271
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                  .2
+ 
+Lead In: R03055.00[Default]
+Default Next Question: R03057.00
+--------------------------------------------------------------------------------
+R03057.00    [DELIN-12]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES SMOKED MARIJUANA/HASHISH IN PAST 
+             YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q12
+ 
+SEE R(3046.) SMOKED MARIJUANA OR HASHISH ('POT,' 'GRASS,' 'HASH')?
+ 
+UNIVERSE: All
+ 
+    6229       0 NEVER
+    1019       1 ONCE
+     483       2 TWICE
+     793       3 3-5 TIMES
+     566       4 6-10 TIMES
+     817       5 11-50 TIMES
+    1815       6 MORE THAN 50 TIMES
+  -------
+   11722
+ 
+Refusal(-1)          133
+Don't Know(-2)         0
+Invalid Skip(-3)     286
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                1.84
+ 
+Lead In: R03056.00[Default]
+Default Next Question: R03058.00
+--------------------------------------------------------------------------------
+R03058.00    [DELIN-13]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY - TIMES USED OTHER DRUGS/CHEMICALS TO GET HIGH IN 
+             PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q13
+ 
+SEE R(3046.) USED ANY DRUGS OR CHEMICALS TO GET HIGH OR FOR KICKS, EXCEPT 
+MARIJUANA?
+ 
+UNIVERSE: All
+ 
+    9422       0 NEVER
+     534       1 ONCE
+     366       2 TWICE
+     505       3 3-5 TIMES
+     331       4 6-10 TIMES
+     349       5 11-50 TIMES
+     191       6 MORE THAN 50 TIMES
+  -------
+   11698
+ 
+Refusal(-1)          141
+Don't Know(-2)         0
+Invalid Skip(-3)     302
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                  .6
+ 
+Lead In: R03057.00[Default]
+Default Next Question: R03059.00
+--------------------------------------------------------------------------------
+R03059.00    [DELIN-14]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES SOLD MARIJUANA/HASHISH IN PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q14
+ 
+SEE R(3046.) SOLD MARIJUANA OR HASHISH?
+ 
+UNIVERSE: All
+ 
+   10427       0 NEVER
+     315       1 ONCE
+     210       2 TWICE
+     263       3 3-5 TIMES
+     185       4 6-10 TIMES
+     150       5 11-50 TIMES
+     143       6 MORE THAN 50 TIMES
+  -------
+   11693
+ 
+Refusal(-1)          144
+Don't Know(-2)         0
+Invalid Skip(-3)     304
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .33
+ 
+Lead In: R03058.00[Default]
+Default Next Question: R03060.00
+--------------------------------------------------------------------------------
+R03060.00    [DELIN-15]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES SOLD HARD DRUGS IN PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q15
+ 
+SEE R(3046.) SOLD HARD DRUGS SUCH AS HEROIN, COCAINE, OR LSD (TOTAL # OF ALL 
+HARD DRUG SALES)
+ 
+UNIVERSE: All
+ 
+   11423       0 NEVER
+      79       1 ONCE
+      57       2 TWICE
+      50       3 3-5 TIMES
+      41       4 6-10 TIMES
+      32       5 11-50 TIMES
+      35       6 MORE THAN 50 TIMES
+  -------
+   11717
+ 
+Refusal(-1)          124
+Don't Know(-2)         0
+Invalid Skip(-3)     300
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .07
+ 
+Lead In: R03059.00[Default]
+Default Next Question: R03061.00
+--------------------------------------------------------------------------------
+R03061.00    [DELIN-16]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES ATTEMPTED TO "CON" SOMEONE IN PAST 
+             YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q16
+ 
+TRIED TO GET SOMETHING BY LYING TO A PERSON ABOUT WHAT YOU WOULD DO FOR HIM, 
+THAT IS, TRIED TO CON SOMEONE?
+ 
+UNIVERSE: All
+ 
+    9140       0 NEVER
+    1054       1 ONCE
+     585       2 TWICE
+     591       3 3-5 TIMES
+     185       4 6-10 TIMES
+      90       5 11-50 TIMES
+      76       6 MORE THAN 50 TIMES
+  -------
+   11721
+ 
+Refusal(-1)          118
+Don't Know(-2)         0
+Invalid Skip(-3)     302
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .48
+ 
+Lead In: R03060.00[Default]
+Default Next Question: R03062.00
+--------------------------------------------------------------------------------
+R03062.00    [DELIN-17]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES TAKEN AUTO W/OUT OWNER PERMISSION 
+             IN PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q17
+ 
+SEE R(3046.) TAKEN A VEHICLE FOR A RIDE OR DRIVE WITHOUT THE OWNER'S PERMISSION?
+ 
+UNIVERSE: All
+ 
+   10830       0 NEVER
+     525       1 ONCE
+     176       2 TWICE
+     138       3 3-5 TIMES
+      43       4 6-10 TIMES
+      24       5 11-50 TIMES
+      16       6 MORE THAN 50 TIMES
+  -------
+   11752
+ 
+Refusal(-1)          101
+Don't Know(-2)         0
+Invalid Skip(-3)     288
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .14
+ 
+Lead In: R03061.00[Default]
+Default Next Question: R03063.00
+--------------------------------------------------------------------------------
+R03063.00    [DELIN-18]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES BROKEN INTO A BUILDING IN PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q18
+ 
+SEE R(3046.) BROKEN INTO A BUILDING OR VEHICLE TO STEAL SOMETHING OR JUST TO 
+LOOK AROUND?
+ 
+UNIVERSE: All
+ 
+   11042       0 NEVER
+     360       1 ONCE
+     162       2 TWICE
+     100       3 3-5 TIMES
+      43       4 6-10 TIMES
+      21       5 11-50 TIMES
+      20       6 MORE THAN 50 TIMES
+  -------
+   11748
+ 
+Refusal(-1)          101
+Don't Know(-2)         0
+Invalid Skip(-3)     292
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .12
+ 
+Lead In: R03062.00[Default]
+Default Next Question: R03064.00
+--------------------------------------------------------------------------------
+R03064.00    [DELIN-19]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES KNOWINGLY SOLD/HELD STOLEN GOODS IN
+             PAST YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q19
+ 
+SEE R(3046.) KNOWINGLY SOLD OR HELD STOLEN GOODS?
+ 
+UNIVERSE: All
+ 
+   10406       0 NEVER
+     655       1 ONCE
+     279       2 TWICE
+     243       3 3-5 TIMES
+      90       4 6-10 TIMES
+      44       5 11-50 TIMES
+      32       6 MORE THAN 50 TIMES
+  -------
+   11749
+ 
+Refusal(-1)          101
+Don't Know(-2)         0
+Invalid Skip(-3)     291
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .23
+ 
+Lead In: R03063.00[Default]
+Default Next Question: R03065.00
+--------------------------------------------------------------------------------
+R03065.00    [DELIN-20]                                     Survey Year: 1980
+  PRIMARY VARIABLE
+
+             ILLEGAL ACTIVITY 80 INT - TIMES AIDED IN GAMBLING OPERATION IN PAST
+             YEAR
+ 
+ORIGINAL QUESTION NAME: S40Q20
+ 
+SEE R(3046.) HELPED IN A GAMBLING OPERATION, LIKE RUNNING NUMBERS OR POLICY OR 
+BOOKS?
+ 
+UNIVERSE: All
+ 
+   11456       0 NEVER
+     110       1 ONCE
+      53       2 TWICE
+      47       3 3-5 TIMES
+      27       4 6-10 TIMES
+      22       5 11-50 TIMES
+      22       6 MORE THAN 50 TIMES
+  -------
+   11737
+ 
+Refusal(-1)          109
+Don't Know(-2)         0
+Invalid Skip(-3)     295
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .06
+ 
+Lead In: R03064.00[Default]
+Default Next Question: R03066.00
+--------------------------------------------------------------------------------
+R04056.01    [MARSTAT-KEY]                                  Survey Year: 1980
+  PRIMARY VARIABLE
+
+             MARITAL STATUS
+ 
+UNIVERSE: All
+ 
+   10025       0 NEVER MARRIED
+    1827       1 MARRIED
+     157       2 SEPARATED
+     121       3 DIVORCED
+       0       5 REMARRIED
+       9       6 WIDOWED
+  -------
+   12139
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)       2
+TOTAL =========>   12141   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     545
+ 
+Min:              0        Max:              6        Mean:                 .21
+ 
+Lead In: R04056.00[Default]
+Default Next Question: R04057.00
+--------------------------------------------------------------------------------
+R06183.01    [AFQT-3]                                       Survey Year: 1981
+  PRIMARY VARIABLE
+
+             PROFILES, ARMED FORCES QUALIFICATION TEST (AFQT) PERCENTILE SCORE -
+             REVISED 2006
+ 
+ORIGINAL QUESTION NAME: *CREATED
+ 
+SEE ATTACHMENT 106 ADDENDUM FOR DEFINITIONS
+NOTE: (SEE R( 6182.))  3 IMPLIED DECIMAL PLACES
+ 
+ACTUAL PERCENTAGE
+ 
+UNIVERSE: All
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   11914   VALID SKIP(-4)     281     NON-INTERVIEW(-5)     491
+ 
+Min:              0        Max:         100000        Mean:            42395.61
+ 
+Lead In: R06183.00[Default]
+Default Next Question: R06184.10
+--------------------------------------------------------------------------------
+R06186.01    [MARSTAT-KEY]                                  Survey Year: 1981
+  PRIMARY VARIABLE
+
+             MARITAL STATUS
+ 
+UNIVERSE: All
+ 
+    9354       0 NEVER MARRIED
+    2424       1 MARRIED
+     230       2 SEPARATED
+     171       3 DIVORCED
+       0       5 REMARRIED
+      16       6 WIDOWED
+  -------
+   12195
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>   12195   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     491
+ 
+Min:              0        Max:              6        Mean:                 .29
+ 
+Lead In: R06186.00[Default]
+Default Next Question: R06188.00
+--------------------------------------------------------------------------------
+R08984.01    [MARSTAT-KEY]                                  Survey Year: 1982
+  PRIMARY VARIABLE
+
+             MARITAL STATUS
+ 
+UNIVERSE: All
+ 
+    8549       0 NEVER MARRIED
+    3010       1 MARRIED
+     276       2 SEPARATED
+     269       3 DIVORCED
+       0       5 REMARRIED
+      15       6 WIDOWED
+  -------
+   12119
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)       4
+TOTAL =========>   12123   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     563
+ 
+Min:              0        Max:              6        Mean:                 .37
+ 
+Lead In: R08984.00[Default]
+Default Next Question: R08985.00
+--------------------------------------------------------------------------------
+R11449.01    [MARSTAT-KEY]                                  Survey Year: 1983
+  PRIMARY VARIABLE
+
+             MARITAL STATUS
+ 
+    7840       0 NEVER MARRIED
+    3665       1 MARRIED
+     334       2 SEPARATED
+     365       3 DIVORCED
+       0       5 REMARRIED
+      15       6 WIDOWED
+  -------
+   12219
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)       2
+TOTAL =========>   12221   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     465
+ 
+Min:              0        Max:              6        Mean:                 .45
+ 
+Lead In: R11449.00[Default]
+Default Next Question: R11450.01
+--------------------------------------------------------------------------------
+R15201.01    [MARSTAT-KEY]                                  Survey Year: 1984
+  PRIMARY VARIABLE
+
+             MARITAL STATUS
+ 
+    7093       0 NEVER MARRIED
+    4099       1 MARRIED
+     400       2 SEPARATED
+     455       3 DIVORCED
+       0       5 REMARRIED
+      21       6 WIDOWED
+  -------
+   12068
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)       1
+TOTAL =========>   12069   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     617
+ 
+Min:              0        Max:              6        Mean:                 .53
+ 
+Lead In: R15201.00[Default]
+Default Next Question: R15202.01
+--------------------------------------------------------------------------------
+R22580.01    [HGCREV86]                                     Survey Year: 1986
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED AS OF MAY 1 SURVEY YEAR (REVISED)
+ 
+ORIGINAL QUESTION NAME: HGCREV86
+ 
+COMMENT: Highest Grade Completed
+ 
+       4       0 NONE
+       3       1 1ST GRADE
+       0       2 2ND GRADE
+      13       3 3RD GRADE
+      15       4 4TH GRADE
+      14       5 5TH GRADE
+      55       6 6TH GRADE
+      96       7 7TH GRADE
+     265       8 8TH GRADE
+     474       9 9TH GRADE
+     516      10 10TH GRADE
+     571      11 11TH GRADE
+    4656      12 12TH GRADE
+     896      13 1ST YR COL
+     921      14 2ND YR COL
+     616      15 3RD YR COL
+    1160      16 4TH YR COL
+     172      17 5TH YR COL
+      93      18 6TH YR COL
+      44      19 7TH YR COL
+      33      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+   10617
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      38
+TOTAL =========>   10655   VALID SKIP(-4)       0     NON-INTERVIEW(-5)    2031
+ 
+Min:              0        Max:             20        Mean:               12.56
+ 
+Lead In: R22579.01[Default]
+Default Next Question: R22581.01
+--------------------------------------------------------------------------------
+R24454.01    [HGCREV87]                                     Survey Year: 1987
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED AS OF MAY 1 SURVEY YEAR (REVISED)
+ 
+ORIGINAL QUESTION NAME: HGCREV87
+ 
+COMMENT: Highest Grade Completed
+ 
+       3       0 NONE
+       3       1 1ST GRADE
+       0       2 2ND GRADE
+      11       3 3RD GRADE
+      12       4 4TH GRADE
+      17       5 5TH GRADE
+      47       6 6TH GRADE
+      94       7 7TH GRADE
+     248       8 8TH GRADE
+     435       9 9TH GRADE
+     482      10 10TH GRADE
+     531      11 11TH GRADE
+    4605      12 12TH GRADE
+     877      13 1ST YR COL
+     878      14 2ND YR COL
+     497      15 3RD YR COL
+    1268      16 4TH YR COL
+     217      17 5TH YR COL
+     130      18 6TH YR COL
+      49      19 7TH YR COL
+      42      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+   10446
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      39
+TOTAL =========>   10485   VALID SKIP(-4)       0     NON-INTERVIEW(-5)    2201
+ 
+Min:              0        Max:             20        Mean:               12.65
+ 
+Lead In: R24453.01[Default]
+Default Next Question: R24455.01
+--------------------------------------------------------------------------------
+R28711.01    [HGCREV88]                                     Survey Year: 1988
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED AS OF MAY 1 SURVEY YEAR (REVISED)
+ 
+ORIGINAL QUESTION NAME: HGCREV88
+ 
+COMMENT: Highest Grade Completed
+ 
+       4       0 NONE
+       3       1 1ST GRADE
+       0       2 2ND GRADE
+      13       3 3RD GRADE
+      12       4 4TH GRADE
+      15       5 5TH GRADE
+      45       6 6TH GRADE
+      93       7 7TH GRADE
+     247       8 8TH GRADE
+     435       9 9TH GRADE
+     463      10 10TH GRADE
+     507      11 11TH GRADE
+    4588      12 12TH GRADE
+     867      13 1ST YR COL
+     860      14 2ND YR COL
+     471      15 3RD YR COL
+    1263      16 4TH YR COL
+     250      17 5TH YR COL
+     163      18 6TH YR COL
+      76      19 7TH YR COL
+      49      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+   10424
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      40
+TOTAL =========>   10464   VALID SKIP(-4)       1     NON-INTERVIEW(-5)    2221
+ 
+Min:              0        Max:             20        Mean:                12.7
+ 
+Lead In: R28710.00[Default]
+Default Next Question: R28712.01
+--------------------------------------------------------------------------------
+R30748.01    [HGCREV89]                                     Survey Year: 1989
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED AS OF MAY 1 SURVEY YEAR (REVISED)
+ 
+ORIGINAL QUESTION NAME: HGCREV89
+ 
+COMMENT: Highest Grade Completed
+ 
+       4       0 NONE
+       3       1 1ST GRADE
+       0       2 2ND GRADE
+      13       3 3RD GRADE
+      13       4 4TH GRADE
+      14       5 5TH GRADE
+      49       6 6TH GRADE
+      92       7 7TH GRADE
+     242       8 8TH GRADE
+     438       9 9TH GRADE
+     456      10 10TH GRADE
+     513      11 11TH GRADE
+    4620      12 12TH GRADE
+     883      13 1ST YR COL
+     889      14 2ND YR COL
+     463      15 3RD YR COL
+    1270      16 4TH YR COL
+     267      17 5TH YR COL
+     189      18 6TH YR COL
+      94      19 7TH YR COL
+      63      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+   10575
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      30
+TOTAL =========>   10605   VALID SKIP(-4)       0     NON-INTERVIEW(-5)    2081
+ 
+Min:              0        Max:             20        Mean:               12.75
+ 
+Lead In: R30747.00[Default]
+Default Next Question: R30749.01
+--------------------------------------------------------------------------------
+R33415.00    [HRP1]                                         Survey Year: 1990
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+ORIGINAL QUESTION NAME: *CREATED
+ 
+ACTUAL DOLLARS AND CENTS
+ 
+       5           0
+      69           1 TO 99
+      86         100 TO 199
+     116         200 TO 299
+     354         300 TO 399
+     756         400 TO 499
+     901         500 TO 599
+     932         600 TO 699
+     809         700 TO 799
+     846         800 TO 899
+     581         900 TO 999
+    3246        1000 TO 9999999: 1000+
+  -------
+    8701
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    8701   VALID SKIP(-4)    1735     NON-INTERVIEW(-5)    2250
+ 
+Min:              0        Max:        2100000        Mean:             1614.19
+ 
+Lead In: R33414.00[Default]
+Default Next Question: R33415.10
+--------------------------------------------------------------------------------
+R34015.01    [HGCREV90]                                     Survey Year: 1990
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED AS OF MAY 1 SURVEY YEAR (REVISED)
+ 
+ORIGINAL QUESTION NAME: HGCREV90
+ 
+COMMENT: Highest Grade Completed
+ 
+       4       0 NONE
+       3       1 1ST GRADE
+       0       2 2ND GRADE
+      14       3 3RD GRADE
+      12       4 4TH GRADE
+      15       5 5TH GRADE
+      49       6 6TH GRADE
+      86       7 7TH GRADE
+     237       8 8TH GRADE
+     415       9 9TH GRADE
+     440      10 10TH GRADE
+     495      11 11TH GRADE
+    4513      12 12TH GRADE
+     872      13 1ST YR COL
+     890      14 2ND YR COL
+     461      15 3RD YR COL
+    1242      16 4TH YR COL
+     274      17 5TH YR COL
+     194      18 6TH YR COL
+     108      19 7TH YR COL
+      75      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+   10399
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      37
+TOTAL =========>   10436   VALID SKIP(-4)       0     NON-INTERVIEW(-5)    2250
+ 
+Min:              0        Max:             20        Mean:               12.79
+ 
+Lead In: R34014.00[Default]
+Default Next Question: R34016.01
+--------------------------------------------------------------------------------
+R36058.00    [HRP1]                                         Survey Year: 1991
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+ORIGINAL QUESTION NAME: *CREATED
+ 
+ACTUAL DOLLARS AND CENTS
+ 
+       0           0
+      46           1 TO 99
+      70         100 TO 199
+      88         200 TO 299
+     144         300 TO 399
+     592         400 TO 499
+     755         500 TO 599
+     728         600 TO 699
+     670         700 TO 799
+     719         800 TO 899
+     474         900 TO 999
+    3087        1000 TO 9999999: 1000+
+  -------
+    7373
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    7373   VALID SKIP(-4)    1645     NON-INTERVIEW(-5)    3668
+ 
+Min:              8        Max:        2400000        Mean:             1434.59
+ 
+Lead In: R36057.00[Default]
+Default Next Question: R36058.10
+--------------------------------------------------------------------------------
+R36569.01    [HGCREV91]                                     Survey Year: 1991
+  PRIMARY VARIABLE
+
+             HIGHEST GRADE COMPLETED AS OF MAY 1 SURVEY YEAR (REVISED)
+ 
+ORIGINAL QUESTION NAME: HGCREV91
+ 
+COMMENT: Highest Grade Completed
+ 
+       3       0 NONE
+       3       1 1ST GRADE
+       0       2 2ND GRADE
+      11       3 3RD GRADE
+      11       4 4TH GRADE
+      10       5 5TH GRADE
+      40       6 6TH GRADE
+      63       7 7TH GRADE
+     168       8 8TH GRADE
+     308       9 9TH GRADE
+     353      10 10TH GRADE
+     416      11 11TH GRADE
+    3912      12 12TH GRADE
+     817      13 1ST YR COL
+     816      14 2ND YR COL
+     424      15 3RD YR COL
+    1071      16 4TH YR COL
+     233      17 5TH YR COL
+     180      18 6TH YR COL
+      89      19 7TH YR COL
+      75      20 8TH YR COL OR MORE
+       0      95 UNGRADED
+  -------
+    9003
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+Invalid Skip(-3)      15
+TOTAL =========>    9018   VALID SKIP(-4)       0     NON-INTERVIEW(-5)    3668
+ 
+Min:              0        Max:             20        Mean:               12.87
+ 
+Lead In: R36568.00[Default]
+Default Next Question: R36570.01
+--------------------------------------------------------------------------------
+R39560.00    [HRP1]                                         Survey Year: 1992
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+ORIGINAL QUESTION NAME: HRWAGE1
+ 
+ACTUAL DOLLARS AND CENTS
+ 
+       2           0
+      42           1 TO 99
+      54         100 TO 199
+      98         200 TO 299
+     121         300 TO 399
+     555         400 TO 499
+     709         500 TO 599
+     685         600 TO 699
+     625         700 TO 799
+     658         800 TO 899
+     526         900 TO 999
+    3236        1000 TO 9999999: 1000+
+  -------
+    7311
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    7311   VALID SKIP(-4)    1705     NON-INTERVIEW(-5)    3670
+ 
+Min:              0        Max:        3340000        Mean:             1670.68
+ 
+Lead In: R39559.00[Default]
+Default Next Question: R39560.10
+--------------------------------------------------------------------------------
+R44169.00    [HRP1]                                         Survey Year: 1993
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+ORIGINAL QUESTION NAME: HRP1
+ 
+ACTUAL DOLLARS AND CENTS
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+       3           0
+      35           1 TO 99
+      71         100 TO 199
+      73         200 TO 299
+     121         300 TO 399
+     425         400 TO 499
+     652         500 TO 599
+     666         600 TO 699
+     588         700 TO 799
+     617         800 TO 899
+     525         900 TO 999
+    3511        1000 TO 9999999: 1000+
+  -------
+    7287
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    7287   VALID SKIP(-4)    1724     NON-INTERVIEW(-5)    3675
+ 
+Min:              0        Max:        6000000        Mean:             2277.33
+ 
+Lead In: R44168.00[Default]
+Default Next Question: R44169.10
+--------------------------------------------------------------------------------
+R50799.00    [HRP1]                                         Survey Year: 1994
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       0           0
+     596           1 TO 499
+    2905         500 TO 999
+    1936        1000 TO 1499
+     966        1500 TO 1999
+     407        2000 TO 2499
+     152        2500 TO 2999
+      73        3000 TO 3499
+      57        3500 TO 3999
+      25        4000 TO 4499
+      15        4500 TO 4999
+      82        5000 TO 99999999: 5000+
+  -------
+    7214
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    7214   VALID SKIP(-4)    1677     NON-INTERVIEW(-5)    3795
+ 
+Min:             11        Max:          20000        Mean:             1227.47
+ 
+Lead In: R50798.00[Default]
+Default Next Question: R50799.10
+--------------------------------------------------------------------------------
+R51652.00    [HRP1]                                         Survey Year: 1996
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       2           0
+     492           1 TO 499
+    2787         500 TO 999
+    2027        1000 TO 1499
+    1081        1500 TO 1999
+     489        2000 TO 2499
+     263        2500 TO 2999
+     102        3000 TO 3499
+      53        3500 TO 3999
+      29        4000 TO 4499
+      21        4500 TO 4999
+      92        5000 TO 99999999: 5000+
+  -------
+    7438
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    7438   VALID SKIP(-4)    1198     NON-INTERVIEW(-5)    4050
+ 
+Min:              0        Max:          50000        Mean:             1316.03
+ 
+Lead In: R51650.00[Default]
+Default Next Question: R51652.10
+--------------------------------------------------------------------------------
+R64780.00    [HRP1]                                         Survey Year: 1998
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       0           0
+     289           1 TO 499
+    2501         500 TO 999
+    1990        1000 TO 1499
+    1225        1500 TO 1999
+     567        2000 TO 2499
+     313        2500 TO 2999
+     144        3000 TO 3499
+      93        3500 TO 3999
+      43        4000 TO 4499
+      29        4500 TO 4999
+     120        5000 TO 99999999: 5000+
+  -------
+    7314
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    7314   VALID SKIP(-4)    1085     NON-INTERVIEW(-5)    4287
+ 
+Min:              1        Max:          64903        Mean:             1465.92
+ 
+Lead In: R64779.00[Default]
+Default Next Question: R64780.10
+--------------------------------------------------------------------------------
+R70057.00    [HRP1]                                         Survey Year: 2000
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       0           0
+     230           1 TO 499
+    1998         500 TO 999
+    1909        1000 TO 1499
+    1233        1500 TO 1999
+     654        2000 TO 2499
+     405        2500 TO 2999
+     219        3000 TO 3499
+     114        3500 TO 3999
+      63        4000 TO 4499
+      56        4500 TO 4999
+     161        5000 TO 99999999: 5000+
+  -------
+    7042
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    7042   VALID SKIP(-4)     990     NON-INTERVIEW(-5)    4654
+ 
+Min:              1        Max:         100000        Mean:             1656.07
+ 
+Lead In: R70056.00[Default]
+Default Next Question: R70057.10
+--------------------------------------------------------------------------------
+R77029.00    [HRP1]                                         Survey Year: 2002
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       2           0
+     333           1 TO 499
+    1592         500 TO 999
+    1692        1000 TO 1499
+    1201        1500 TO 1999
+     681        2000 TO 2499
+     417        2500 TO 2999
+     269        3000 TO 3499
+     130        3500 TO 3999
+      78        4000 TO 4499
+      51        4500 TO 4999
+     188        5000 TO 99999999: 5000+
+  -------
+    6634
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    6634   VALID SKIP(-4)    1090     NON-INTERVIEW(-5)    4962
+ 
+Min:              0        Max:          52564        Mean:             1778.06
+ 
+Lead In: R77028.00[Default]
+Default Next Question: R77029.10
+--------------------------------------------------------------------------------
+R84952.00    [HRP1]                                         Survey Year: 2004
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       1           0
+     246           1 TO 499
+    1328         500 TO 999
+    1614        1000 TO 1499
+    1165        1500 TO 1999
+     721        2000 TO 2499
+     469        2500 TO 2999
+     263        3000 TO 3499
+     165        3500 TO 3999
+     123        4000 TO 4499
+      63        4500 TO 4999
+     209        5000 TO 99999999: 5000+
+  -------
+    6367
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    6367   VALID SKIP(-4)    1294     NON-INTERVIEW(-5)    5025
+ 
+Min:              0        Max:          46154        Mean:             1891.49
+ 
+Lead In: R84951.00[Default]
+Default Next Question: R84952.10
+--------------------------------------------------------------------------------
+R99000.01    [C1DOB~M]                                      Survey Year: XRND
+  PRIMARY VARIABLE
+
+             DATE OF BIRTH OF 1ST CHILD - MONTH
+ 
+ 
+ 
+NOTE:  SEE APPENDIX 5: SUPPLEMENTAL FERTILITY FILE VARIABLES
+ 
+     739           1: January
+     694           2: February
+     738           3: March
+     729           4: April
+     782           5: May
+     779           6: June
+     846           7: July
+     831           8: August
+     851           9: September
+     816          10: October
+     758          11: November
+     777          12: December
+  -------
+    9340
+ 
+Refusal(-1)            4
+Don't Know(-2)        15
+Invalid Skip(-3)       9
+TOTAL =========>    9368   VALID SKIP(-4)    3318     NON-INTERVIEW(-5)       0
+ 
+Lead In: None.
+Default Next Question: R99000.02
+--------------------------------------------------------------------------------
+R99000.02    [C1DOB~Y]                                      Survey Year: XRND
+  PRIMARY VARIABLE
+
+             DATE OF BIRTH OF 1ST CHILD - YEAR
+ 
+ 
+ 
+NOTE:  SEE APPENDIX 5: SUPPLEMENTAL FERTILITY FILE VARIABLES
+ 
+    1309           0 TO 1978: < 1978
+     576        1979
+     634        1980
+     681        1981
+     696        1982
+     660        1983
+     563        1984
+     532        1985
+     459        1986
+     462        1987
+     435        1988
+     397        1989
+     351        1990
+     262        1991
+     243        1992
+     200        1993
+     173        1994
+     152        1995
+     114        1996
+     112        1997
+      68        1998
+      67        1999
+      45        2000
+      50        2001
+      27        2002
+      21        2003
+      14        2004
+      12        2005
+      13        2006
+       8        2007
+       4        2008
+       7        2009
+       1        2010
+       2        2011
+       4        2012
+       2        2013
+  -------
+    9356
+ 
+Refusal(-1)            2
+Don't Know(-2)         4
+Invalid Skip(-3)       6
+TOTAL =========>    9368   VALID SKIP(-4)    3318     NON-INTERVIEW(-5)       0
+ 
+Lead In: R99000.01[Default]
+Default Next Question: R99003.00
+--------------------------------------------------------------------------------
+T09868.00    [HRP1]                                         Survey Year: 2006
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       1           0
+     240           1 TO 499
+    1139         500 TO 999
+    1518        1000 TO 1499
+    1170        1500 TO 1999
+     795        2000 TO 2499
+     518        2500 TO 2999
+     298        3000 TO 3499
+     190        3500 TO 3999
+     128        4000 TO 4499
+      81        4500 TO 4999
+     282        5000 TO 99999999: 5000+
+  -------
+    6360
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    6360   VALID SKIP(-4)    1293     NON-INTERVIEW(-5)    5033
+ 
+Min:              0        Max:         177884        Mean:             2074.39
+ 
+Lead In: T09867.00[Default]
+Default Next Question: T09868.10
+--------------------------------------------------------------------------------
+T22091.00    [HRP1]                                         Survey Year: 2008
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       1           0
+     223           1 TO 499
+    1009         500 TO 999
+    1467        1000 TO 1499
+    1181        1500 TO 1999
+     782        2000 TO 2499
+     597        2500 TO 2999
+     367        3000 TO 3499
+     210        3500 TO 3999
+     155        4000 TO 4499
+     116        4500 TO 4999
+     312        5000 TO 99999999: 5000+
+  -------
+    6420
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    6420   VALID SKIP(-4)    1337     NON-INTERVIEW(-5)    4929
+ 
+Min:              0        Max:          79807        Mean:             2148.15
+ 
+Lead In: T22090.00[Default]
+Default Next Question: T22091.10
+--------------------------------------------------------------------------------
+T31069.00    [HRP1]                                         Survey Year: 2010
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+     205           1 TO 499
+     842         500 TO 999
+    1439        1000 TO 1499
+    1091        1500 TO 1999
+     742        2000 TO 2499
+     547        2500 TO 2999
+     340        3000 TO 3499
+     217        3500 TO 3999
+     163        4000 TO 4499
+     120        4500 TO 4999
+     349        5000 TO 99999999: 5000+
+  -------
+    6055
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    6055   VALID SKIP(-4)    1510     NON-INTERVIEW(-5)    5121
+ 
+Min:             10        Max:          72115        Mean:             2256.39
+ 
+Lead In: T31068.00[Default]
+Default Next Question: T31522.00
+--------------------------------------------------------------------------------
+T41109.00    [HRP1]                                         Survey Year: 2012
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       0           0
+     187           1 TO 499
+     794         500 TO 999
+    1222        1000 TO 1499
+    1023        1500 TO 1999
+     732        2000 TO 2499
+     546        2500 TO 2999
+     367        3000 TO 3499
+     214        3500 TO 3999
+     163        4000 TO 4499
+     107        4500 TO 4999
+     399        5000 TO 99999999: 5000+
+  -------
+    5754
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    5754   VALID SKIP(-4)    1546     NON-INTERVIEW(-5)    5386
+ 
+Min:              2        Max:          96153        Mean:             2389.05
+ 
+Lead In: T41108.00[Default]
+Default Next Question: T41110.00
+--------------------------------------------------------------------------------
+T50197.00    [HRP1]                                         Survey Year: 2014
+  PRIMARY VARIABLE
+
+             HOURLY RATE OF PAY JOB #01
+ 
+COMMENT: HOURLY RATE OF PAY - JOB # 1
+ 
+NOTE: ACTUAL DOLLARS AND CENTS
+ 
+       2           0
+     168           1 TO 499: 0.01-4.99
+     628         500 TO 999: 5.00-9.99
+    1105        1000 TO 1499: 10.00-14.99
+     929        1500 TO 1999: 15.00-19.99
+     661        2000 TO 2499: 20.00-24.99
+     510        2500 TO 2999: 25.00-29.99
+     382        3000 TO 3499: 30.00-34.99
+     237        3500 TO 3999: 35.00-39.99
+     157        4000 TO 4499: 40.00-44.99
+     118        4500 TO 4999: 45.00-49.99
+     447        5000 TO 99999999: 50.00+
+  -------
+    5344
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    5344   VALID SKIP(-4)    1726     NON-INTERVIEW(-5)    5616
+ 
+Min:              0        Max:         110000        Mean:             2606.42
+ 
+Lead In: T50196.00[Default]
+Default Next Question: T50198.00

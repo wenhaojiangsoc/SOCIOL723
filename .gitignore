@@ -26,3 +26,11 @@ Midterm/midterm_answers.tex
 
 # mid-semester feedback survey stays private
 Midterm Feedback/
+
+# FEMA RD raw data (hundreds of MB; rebuilt by figs/fema/pipeline)
+Week 9 Regression Discontinuity Designs/figs/fema/data/
+
+# Week 13 source papers (copyrighted PDFs, local only)
+Week 13 Causal Machine Learning/papers/
+Data/amazon_toys_raw.csv
+Data/amazon_toys_bert.csv.gz

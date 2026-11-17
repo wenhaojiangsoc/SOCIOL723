@@ -550,16 +550,157 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   events, >96% of counties; wages 29%, property 26%, land 17%; misses Tibet/Xinjiang). Verified from the paper PDF.
   figs/w12_cnn.R now unused; Gebru still cited in Four Reasons. Word2Vec network tikz now shows all 11 inputs/outputs (scriptsize labels, y=0.52cm). Word "lookup" removed from slides 104 and 106 (user).
   Deck 121 pp.
-- Week 13 (causal ML, 53 pp, rebuilt 2026-10-08; user frames kept): simulation `figs/w13_sims.R`
-  (design A = CCDDHNR Fig. 1: naive bias/sd -3.2, DML coverage .93; design B very nonlinear: DML
-  also biased, l-hat RMSE 1.02 -> "orthogonality makes errors multiply, not small"); orthogonality
-  derived (Gateaux), product-of-errors expansion, single vs double selection (BCH abortion-crime),
-  DML variance, AIPW score, PLIV, folds/clusters; 401(k) via hdm::pension (`figs/w13_401k.R`: raw
-  19,559, OLS 5,896, single 8,099, double 8,956, DML PLR lasso/RF/boost 9,609/8,965/9,907, IRM
-  9,319/8,022/8,232; causal forest ATE 7,964, calibration diff .03 p=.47, income GATES 3,946 ->
-  19,326, RATE n.s.); Long-story-short sensitivity; meta-learners, causal forest weights, BLP/GATES,
-  RATE, policy learning, conformal ITE; Athey-Wager 2019 (SIMULATED NSLM data, said on slide),
-  Brand et al. 2021 (2019 WP numbers). Lab 13 not aligned.
+- Week 13 (causal ML, 98 pp, REBUILT 2026-11-14 from the user's brief: HTE first, then DML, DML in designs,
+  representations). Sections: (1) Causal Forests, running example Brand, Xu, Koch & Geraldo 2021 SocMeth (user
+  said "SMR"; no Brand SMR paper exists, assumed this one): NLSY79 rebuilt from a public NLS Investigator extract
+  (`Data/nlsy79_brand/` tagset+csv+cdb, `Data/build_nlsy79_brand.R` -> `Data/nlsy79_brand.rds`, n 4,113 vs paper
+  4,382; outcome level lower .297/.096 vs .398/.207, gap similar); `figs/w13_brand.R`: ATE -.154 (paper -.176),
+  ATT -.111, IPW -.169, OLS -.076, calibration differential .72 p .087 (paper p .07), GATE table vs paper Table 3,
+  BLP -.193 + .168 e, honest depth-2 tree (half A -.384 -> half B -.219), importance, RATE; toy numbers
+  `figs/w13_toy.R` (8-person split .58 vs .50, adaptive-vs-honest sim 63% vs 5.1%, forest weights, DR scores);
+  paper figure `figs/brand_fig4.png`. (2) DML: intuition (FWL, cross-fitting tikz) -> old theory frames in tau/X/l/e
+  notation -> 401(k) -> Chetty et al. 2026 digital twins (CES WP 26-69; 3 frames + `figs/chetty_fig2.png`).
+  (3) DML in designs (`figs/w13_designs.R`): IRM on NLSY (ATE -.193, ATT -.117, PLR -.128, trimmed -.141), DR-DiD
+  on the Week 10 marriage 2x2 (.012 -> linear .053 -> DML .022), RD forest-adjusted Senate (7.82/6.97/5.87,
+  eta jump 1.94), PLIV Card (2SLS .081, lasso .078, forest .148). (4) Representations: PCA frames from the parked
+  `representations_from_w12.tex`, attention + BERT, Amazon toys (`Data/build_amazon_toys_bert.py` +
+  `build_amazon_toys.R` -> `Data/amazon_toys.rds`, 8,003 products x 768 BERT; `figs/w13_amazon.R`: elasticity
+  -0.063 raw, DML lasso -0.065, text R2 price .46 demand .15), Imai & Nakamura 2026 PNAS 123(36) GPI (Weibo
+  censorship, arXiv v4 Tables S3/S4). Source PDFs in `Week 13 .../papers/` (gitignored). New frames unstarred.
+  Lab 13 rewritten to match (grf, DoubleML, Amazon).
+  2026-11-15 (user): CAUSAL FORESTS = theory first, then application. Opens with a motivation-only frame
+  ('Who Gains Most From College?', no data/results) -> theory on toy numbers (CATE, old way [no table],
+  causal tree, split by hand, criterion, search-inflation sim, honesty, forest, weights, residual regression,
+  splits adv, score, calibration test (no numbers), NEW 'Summaries Built From the Scores' (GATE/BLP/importance
+  defined), RATE defined) -> Brand et al. application with OUR numbers only (no 'paper' columns anywhere;
+  'Rebuilding Their Data' -> 'Our Extract of the NLSY79'; their Figure 4 tree frame DROPPED, brand_fig4.png
+  unused; NEW 'Is the Spread Real? Calibration on the NLSY79'; 'What Brand et al. Conclude' -> 'What the
+  NLSY79 Shows'). DML: 401(k) DROPPED (running example, estimator table, DML sensitivity frame; Poterba and
+  Chernozhukov-Cinelli-Newey-Sharma-Syrgkanis refs removed; figs/w13_401k.R unused). 'Back to One Number' is
+  motivated by Wodtke, White, and Zhou 2026 Sociological Science 13:109-153 (ECLS-K:2011 restricted, NOT
+  replicable); after 'What the Theory Requires' come 6 WWZ frames: question/data, two estimands (mu_{1,S}
+  decomposition, disparity eliminated lambda), estimator = AIPW (their eq. 4, super learner RF+GBT+GLM, folds by
+  school), how schools differ (SMDs), main results (Table 1: gap -.480/-.507, composition eliminates -.027 (6%)
+  / -.018, all five -.027/-.024; descriptive ~4/5; sensitivity 2 psi), Why So Little (figs/wwz_fig10_reading.png
+  cropped from their Fig 10). PDFs in papers/. Chetty frames kept after WWZ. Lab 13 still has the 401(k) DML part
+  (Wrap-up 'Next week' still says so). Deck 104 pp.
+  2026-11-15 later (user: idea and operation first, nuances after): forest theory order = Who Gains -> One
+  Effect to Many -> Old Way -> NEW 'Causal Forests: the Idea in Four Steps' (core; tree/honest/forest/summarize
+  table) -> Tree for Effects -> Split by Hand -> One Tree to a Forest -> NEW [fragile] 'Running a Causal
+  Forest in R' (core; grf calls with names from figs/w13_brand.R) -> NUANCES: Why Maximize -> Catch -> Honesty ->
+  Weights -> Residual Regression -> Splits (adv) -> Score -> Calibration -> Summaries -> RATE -> application.
+  Blue stars on 16 forest/DML basics. Deck 106 pp.
+  2026-11-15 REBUILT AGAIN (user: no overview/summary slide, no R code in lecture, logical steps with careful
+  derivations): 'Idea in Four Steps' and 'Running a Causal Forest in R' DROPPED. Theory order: Who Gains ->
+  One Effect to Many -> Old Way -> Tree for Effects -> 'The Splitting Rule, Derived' (MSE = E tau^2 - sum p tau_l^2
+  + sum p Var) -> 'From the Error to the Splitting Rule' (plug-in, variance term, add-and-subtract identity) ->
+  Split by Hand (0.58 check) -> Catch -> Honesty -> 'Why Honesty Removes the Bias' -> Forest -> 'Averaging Trees
+  Is Weighting People' (swap sums) -> weights toy -> 'Inside the Neighbourhood, Treatment Is Still Confounded'
+  (Robinson 1988, ref added) -> 'Residualizing on a Toy Leaf' (figs/w13_toy.R F: DM -0.233 vs -0.6/4.0 = -0.15)
+  -> Weighted Residual Regression (FOC) -> Splits (adv) -> Score -> 'Why the Score Averages to tau(x)' ->
+  Calibration (b = Cov(tau, tau-hat)/Var(tau-hat)) -> 'Effects in Groups, From the Scores' -> 'How the Effect
+  Moves With One Variable' (BLP) -> RATE (TOC via scores) -> application. DML: 'This Is Neyman Orthogonality'
+  + 'Orthogonality, Derived' REPLACED by the 690S Week 4 sequence: From the Model to a Moment Condition ->
+  Definition (Gateaux) -> Error in l-hat -> Error in e-hat (r^2 term) -> Naive Score Not Orthogonal -> Taylor
+  (n^-1/3 vs n^-2/3 table). New derivation frames unstarred. Deck 115 pp.
+  2026-11-16 (user: too complex): 'Splitting Rule, Derived' + 'From the Error to the Splitting Rule' REPLACED by one
+  core frame 'The Splitting Rule: Distance From the Pooled Effect' (Delta = sum n_l (tau_l - tau_P)^2 = n_L n_R/n
+  (tau_L - tau_R)^2, Week 12 SSE analogy, min leaf size); Split by Hand column now Delta (none 0, mother .08,
+  siblings 0). Deck 114 pp.
+  2026-11-16 REBUILD (user: general idea first, then dirt; no tables for ideas, one picture per method; concise DML):
+  forest = Tree for Effects -> Splitting Rule (Delta) -> Split by Hand -> 'Growing the Whole Tree' (every covariate,
+  every cut, recurse, predict) -> Forest (average of trees' EFFECTS) -> Catch -> Honesty x2 -> 'What grf Does With the
+  Trees: Find x's Neighbours' (toy weights + Y/D, weighted DM -0.292; figs/w13_toy.R D) -> confounding/residualizing/
+  weighted residual regression/splits(adv) -> 'Every Person Gets an Effect Estimate: AIPW' (tau-hat_i^AIPW replaces
+  Gamma everywhere; 'Why the Score Averages' DROPPED) -> calibration (tau-bar defined) -> groups -> BLP (why + tikz
+  sketch) -> TOC (tikz sketch); NLSY targeting frame = figs/brand_toc.pdf (w13_brand.R sec 8). DML: Week 1 + ML ->
+  'Where the Error Goes' x2 (residuals, multiply out: (1) noise (2) mean-zero (3) products) -> simulation (naive row
+  dropped) -> moment condition -> score -> 'Moving a Function' (Gateaux, tikz) -> definition (Taylor in r) -> l, e
+  derivations -> 'Why a Zero Derivative Matters' -> single Cross-Fitting frame -> recipe, variance, requires. DROPPED:
+  Attempt 1, Recipe in a Picture, Compare naive, Orthogonality in a Picture, Where the Product Comes From, Double
+  Selection (refs Belloni, Donohue, Chang, Sant'Anna-Zhao, CDDF 2025, CNS 2022, Koch 2025 removed). DESIGNS = One Idea
+  (tikz pipeline) -> one frame per design with raw vs residualized picture (figs/w13_designs_pics.R -> design_sel/did/
+  rd/iv.pdf; NLSY OLS -0.092 vs DML -0.128 unweighted; DiD PLR 0.023 (0.040) new in w13_designs.R) -> 'Linear or DML:
+  Which to Report?'. Codex student review applied. figs/orth_surfaces.pdf + w13_surfaces.R now unused. Deck 105 pp.
+  2026-11-16 later (user): Orthogonality Definition unstarred; WWZ 'Why So Little?' uses figs/wwz_fig10_reading_crop.png
+  (y cropped to the dots, R png crop) in a 0.64 column; NEW 'What Sigma_n Describes, and Why Decompose It' (core, tikz
+  cloud, 2x2 eigen check 1.82/.18) after PCA Setup; NEW 'Position Vectors' (toy dog/man slots), 'Inside One Layer' (tikz:
+  attention -> add+rescale -> Week 12 network per word 768/3072/768 -> add+rescale -> next layer) before BERT, and 'From
+  the Last Layer to a Prediction, and Back' after BERT. Deck 109 pp.
+  LAB 13 REWRITTEN 2026-11-16 (user: stop at DML in Designs; representations + DML are Thursday's): Part 1 grf
+  (split by hand Delta on NLSY: ability wins; AIPW by hand = grf exactly; BLP by lm(aipw ~ e_hat, weights) HC3 =
+  best_linear_projection; TOC plot) -> Part 2 DML (OLS -0.092; cross-fitting loop; DoubleMLPLR n_rep 5 -0.128;
+  learners lasso/forest/xgboost with out-of-fold RMSE (R DoubleML 1.0.2 has NO evaluate_learners; compute from
+  store_predictions); ddml_plm stacking ols/lasso/forest/xgboost, shortstack: nnls -0.128, lasso weight 0) -> Part 3
+  designs (IRM -0.193/-0.117; DiD PLR .023, ATT .022; RD loop 7.82/6.97/5.87; PLIV lasso .078 forest .148, residual
+  first stage .30/.28) all = slide numbers (mlr3 ranger min.node.size = 5 needed to match). 401(k) removed. Part 4
+  (text) parked in lab13_part4_text_parked.qmd. GOTCHA: never name an object `ols` before ddml (masks ddml::ols:
+  "'what' must be a function"). ddml 0.3.1 installed 2026-11-16; xgboost 3.x wants learning_rate not eta.
+  2026-11-16 (user: too much math): 'Why Honesty Removes the Bias' DROPPED; Honesty frame carries one intuitive
+  'why it works' bullet with the simulation numbers. Deck 108 pp.
+  Then (user): 'Inside the Neighbourhood' = plain statement (weighted DM is OLS of Y on D without X) + toy table
+  (DM -0.233 vs -0.15); Robinson derivation, 'Residualizing on a Toy Leaf' and the FOC frame REPLACED by 'The Fix:
+  Residual on Residual, Locally' (core; FWL/DML intuition, weighted formula, toy -0.6/4.0 in one bullet). Forest
+  section uses m(X) = E[Y|X] (ell is the leaf); DML section keeps ell. Robinson 1988 ref removed. Deck 107 pp.
+  2026-11-17 (user: exhausted, deck messy, "revise from your judgement"; less notation, intuition first): FOREST
+  = 'Recap: How Week 12's Tree Picks a Split' (SSE drop = n_L(Ybar_L - Ybar_P)^2 + ...) -> 'A Tree for Effects: Put
+  tau-hat Where Ybar Was' (Delta with APPROX, not =) -> Split by Hand -> Growing -> Catch -> Honesty -> 'From One Tree
+  to an Honest Forest' (half-sample without replacement, then A/B inside it; why not bootstrap; every tree reaches
+  x; out of bag) -> 'Inside a Leaf, College Is Still Not Random' (confounding = OLS without X; FWL in the leaf;
+  one line on why not AIPW per leaf) -> AIPW (group bullet dropped) -> Calibration (KEPT, plain: two estimates per
+  person, regress one on the other, tikz b = 1 vs b = 0; no Cov/Var) -> Groups -> BLP (plain OLS, no Cov/Var) -> TOC
+  (KEPT, three numbered steps) -> application. DROPPED: grf neighbour weights alpha_i(x) everywhere, 'How the Forest
+  Splits', words 'drop down the tree'. DML = Back to One Number -> 'Week 1's FWL, Written as a Normal Equation' ->
+  'DML: the Same Equation, With ML Predictions' (normal equation = score) -> 'Neyman Orthogonality: Prediction
+  Errors Enter Only as a Product' -> 'in a Picture' (figs/w13_orth_curve.R -> orth_curve.pdf: r = 0.2 gives DML
+  .509 vs multiply-by-D .452) -> Cross-Fitting: Why / How -> EXAMPLE = convergence hypothesis on hdm::GrowthData
+  (90 countries, 60 controls; the 690S example; figs/w13_growth.R, w13_growth_stack.R): OLS -0.009 (0.032); out-of-fold
+  R2 for Y: OLS about -3, lasso -0.09, ridge .08, forest .16, boosting .16; for D: ridge .84 best; best pair forest/ridge
+  -0.047 (0.013) [-0.072, -0.021]; splits -0.060 to -0.035; ddml stacking -0.049 (0.015). Frames 'Which Learner? Judge
+  by Held-Out Predictions' and 'Which Estimate to Report' (drop R2 < 0, best per nuisance, fragility checks).
+  DROPPED: all Gateaux/moment-condition derivations, simulation, variance, requires frames, Wodtke-White-Zhou (6) and
+  Chetty (4) frames + refs (user: too complex / not a plain DML-for-controls example). Deck 87 pp.
+  Later 2026-11-17 (user): SSE recap = two frames (four-person example Y = 1,3,5,7: 20 - 4 = 16 = 2(2-4)^2 + 2(6-4)^2;
+  then 'Why the Drop in SSE Is the Distance Between Means' derived person by person). Orthogonality = the standard
+  derivative definition with eta = (l, e), NO Delta notation; picture = the two-panel 3D figs/orth_surfaces.pdf
+  (w13_surfaces.R); the 1-D orth_curve figure was dropped. TOC bullet: > 0 for a good ranking, 0 at q = 1, below 0
+  only if below-average gainers are ranked first. Deck 88 pp.
+  Then (user): SSE recap back to ONE frame, derived forward (SSE = sum Y^2 - n Ybar^2; subtract children from
+  parent). DESIGNS order = One Idea -> DiD -> selection on observables -> RD -> IV. DiD now uses DIVORCE, not
+  marriage (figs/w13_did_divorce.R -> design_did.pdf): 25 states adopting 1969-73 vs 8 with no law through 1978,
+  before 1964-68, after 1974-78, 19 covariates from 1964-68; raw 3.9 (2.7), linear 1.0 (4.5), out-of-fold R2 only
+  the forest > 0 (.23 dY, .11 D), DML forest 1.8 (2.4), splits -0.3 to 4.2. Three frames: DiD recap + where X enters,
+  the 2x2, DML in the 2x2. NLSY = two frames 'From OLS to DML' (-0.092 -> -0.128) and 'From AIPW to DML'
+  (OLS + logit AIPW ATE -0.177 / ATT -0.110 from figs/w13_aipw_nlsy.R vs forests -0.193 / -0.117). The marriage
+  DiD section of w13_designs.R is now unused. Lab 13 Part 3 follows (divorce DiD first). Deck 90 pp.
+  Then (user): DML theory = FWL normal equation -> 'DML: the Same Equation, as a Moment Condition' (moment condition
+  defined; holds at the truth in 3 lines; estimator = sample analogue) -> 'Neyman Orthogonality: Built In by
+  Residualizing' (definition; errors r a(X), r b(X); derivative at r = 0 is function-of-X times residual = 0; by
+  construction, FWL's logic; unstarred) -> 'Why We Care' (3D figure + ML bias slower than root-n, so usual s.e.
+  valid; unstarred) -> Cross-Fitting Why / How.
+  Later 2026-11-17 (user): slide 2 'Last Week: Four Reasons to Use Machine Learning' (1-2 greyed, 3-4 = today). SSE
+  recap has no numeric check. Honest forest frames use THREE names: subsample (random n/2 a tree sees), halves A
+  and B (honesty split inside it), trees t = 1..T (never B for the tree count); nesting tikz on the frame; NEW
+  'Why Subsample Half the People, Without Replacement?' (Y = 1,3,5,7: variance of the mean across samples 1.67 =
+  across the six subsamples of two; hand arithmetic). The formal s.e. frame (pairs of trees per subsample) was
+  tried and DROPPED (too complex); 'out of bag' is never used, say 'trees grown without them'. Leaf toy -0.233 line
+  dropped. AIPW frame: tau-hat(X_i) defined, then 'a person's effect does not have to be estimated leaf by leaf';
+  NEW 'Week 6's Picture, With Forests Predicting' (figs/w13_aipw_forest.R -> aipw_forest.pdf, Week 6's w6_fuzzy DGP,
+  5-fold ranger: x = .5 gap 1.03; person Y 2.06, m1 1.79, m0 .87, e .25, AIPW 2.0; mean AIPW on [.3,.9] 1.19 = truth;
+  x = .95 m0-hat 2.13 vs 2.71, line 1.69). Calibration lead: honesty removes search bias, not sampling noise. 93 pp.
+  Then (user): calibration = bivariate regression AIPW_i = c + b(tau-hat(X_i) - tau-bar) (c = mean AIPW; grf's a =
+  c/tau-bar); Brand et al.'s Figure 4 tree shown as 'Another Fix: Weighting Inside Each Leaf' right after the leaf-
+  confounding frame (their leaves = IPW difference in means on the held-out half; Table 4 adds matching and grf);
+  'First, the Average Effect' rows renamed 'AIPW with forest predictions' (not leaf quantities). Moment-condition
+  frame unstarred; 'Neyman Orthogonality' = score + 'Proved (Chernozhukov et al. 2018)' block + plain language,
+  NO derivation. GROWTH EXAMPLE NOW HAS p > n: 60 controls + their squares = 120 controls, 90 countries, OLS not
+  estimable (122 coefficients, residual df 0); four learners (no OLS): R2 Y lasso -0.15, ridge .06, forest .17,
+  boosting .16; D lasso .83, ridge .78, forest .82, boosting .83; estimates -0.040/-0.033/-0.041/-0.042; best pair
+  forest (Y) + lasso (D): -0.045 (0.014) [-0.073, -0.018]; over 20 fold redraws -0.053 to -0.007; ddml stack
+  -0.051 (0.015). Old 60-control script saved in the scratchpad (w13_growth_60controls.R) and in git. User finds
+  the word 'splits' confusing for repeated cross-fitting: say 'redrawing the random folds'. Lab 13 Part 2 matched.
+  Lab 13 Part 2 REWRITTEN on GrowthData (OLS; five mlr3 learners with out-of-fold R2; best per nuisance; ddml stack);
+  cross-fitting by hand DROPPED (user: redundant); NLSY OLS/PLR moved to the top of Part 3.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,

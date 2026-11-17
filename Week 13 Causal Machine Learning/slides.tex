@@ -18,8 +18,9 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{dsfont}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,calc}
+\usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing}
 \usepackage[english]{babel}
 
 \newcommand{\srcp}[1]{{\scriptsize\color{gray}(#1)}}
@@ -99,6 +100,17 @@
 \definecolor{corestar}{RGB}{0,83,155}
 \newcommand{\core}{\,\raisebox{0.6pt}{\textcolor{corestar}{$\bigstar$}}}
 
+\tikzset{
+  nnin/.style={circle,draw=dukeblue,fill=white,thick,minimum size=7.5mm,inner sep=0pt,font=\footnotesize},
+  nnhid/.style={circle,draw=dukeblue,fill=dukeblue!15,thick,minimum size=7.5mm,inner sep=0pt,font=\footnotesize},
+  nnout/.style={circle,draw=accent,fill=accent!15,thick,minimum size=9mm,inner sep=0pt,font=\footnotesize},
+  nnedge/.style={-{Stealth[length=1.6mm]},gray!70,line width=0.4pt},
+  nnlink/.style={gray!50,line width=0.35pt},
+  nnhead/.style={font=\footnotesize\bfseries,text=dukeblue,align=center},
+  fold/.style={draw=gray!60,minimum width=1.5cm,minimum height=6mm,font=\scriptsize},
+  foldfit/.style={fold,fill=dukeblue!20},
+  foldres/.style={fold,fill=accent!25}}
+
 \setbeamertemplate{section page}{%
   \begin{centering}\vfill
   {\usebeamercolor[fg]{structure}\Large\bfseries\insertsectionhead\par}
@@ -140,847 +152,1939 @@
   \titlepage
 \end{frame}
 
-\begin{frame}{Today}
-  \tableofcontents
-  \vskip6pt
-  {\footnotesize \core{} $=$ essential, you must understand this \quad\quad \adv{} $=$ for understanding, not examined}
+\begin{frame}{Last Week: Four Reasons to Use Machine Learning}
+\begin{enumerate}\itemsep4pt
+  \item {\color{gray}\textbf{Prediction is the goal.} Where are the poor? Wealth in Rwanda predicted
+        from mobile-phone records. \emph{Week 12.}}
+  \item {\color{gray}\textbf{Measurement.} Turn text and images into variables: word embeddings,
+        protest posts found on social media. \emph{Week 12.}}
+  \item \textbf{Ingredients of causal estimators.} Weighting needs each person's chance of
+        treatment given $X$; regression adjustment, their expected outcome (Week 6). With
+        hundreds of covariates, or text and images as $X$, ML predicts them, and \textbf{double
+        machine learning} keeps their errors out of the causal estimate. \alert{\emph{Today.}}
+  \item \textbf{Who benefits?} A \textbf{causal forest} splits on $X$ to find where the treatment
+        effect $\tau(x)$ is larger or smaller. \alert{\emph{Today.}}
+\end{enumerate}
+\vskip6pt
+{\small Last week lasso, forests, boosting, and networks predicted the outcome $Y$ from $X$. Today the same methods predict
+what a causal estimator needs: the outcome $Y$, the treatment $D$, or the effect $\tau(x)$.}
 \end{frame}
 
-\begin{frame}{Putting the Two Halves Together\core}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Weeks 5--11} gave us identification: what must be true for a
-        parameter to be causal. Almost every design ended with a nuisance
-        function to estimate, a propensity score, an outcome regression, a
-        first stage, a conditional trend.
-  \item \textbf{Week 12} gave us flexible estimators for exactly such functions,
-        which work with many covariates and unknown functional form.
-  \item \alert{The obvious move, plug ML into the causal estimator, fails.}
-        Today is about why, and what fixes it.
+\begin{frame}{Where We Are\core}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Weeks 5--11}: identification. Each design ended with functions to
+        estimate: a propensity score, an outcome regression, a first stage, a trend.
+  \item \textbf{Week 12}: machine learning predicts well, but its estimates are
+        deliberately biased and their uncertainty is unknown.
+  \item \textbf{Today}: use those predictions inside causal estimators, in four steps.
 \end{itemize}
 \vskip4pt
-\begin{block}{The payoff}
-We get to relax the functional-form assumptions that identification arguments
-have been quietly leaning on all semester, AJR's linear geography control,
-the linear propensity score, the additive conditional trend, \emph{without}
-giving up $\sqrt n$ inference.
-\end{block}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}llll@{}}
+\toprule
+& question & tool & examples \\
+\midrule
+1 & for whom is the effect larger? & causal forest & Brand et al.\ (2021) \\
+2 & one effect, many controls & double ML (DML) & growth and convergence \\
+3 & the designs of Weeks 6--10 & DML in each design & weighting, DiD, RD, IV \\
+4 & controls that are text & PCA to BERT $+$ DML & toys; Imai--Nakamura (2026) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+{\small Identification is unchanged all day: machine learning replaces functional-form
+assumptions, never the assumption that the right variables are measured.}
 \end{frame}
-
-\begin{frame}{Plan}
-\textbf{Goal}: valid $\sqrt n$ inference on a causal parameter when the nuisance
-functions are estimated by machine learning, and honest estimates of how effects vary.
-\vskip3pt
-\begin{enumerate}\itemsep2pt
-  \item Why plugging ML into a regression fails: regularization bias, shown in a
-        simulation; single versus double selection.
-  \item Neyman orthogonality, derived; why the product of errors is what matters.
-  \item Cross-fitting and the DML recipe; its variance; the ATE score.
-  \item The 401(k) data: OLS, single and double lasso, DML with three learners,
-        sensitivity to omitted confounders.
-  \item Heterogeneous effects: meta-learners, causal forests, BLP, GATES, RATE,
-        policy learning, on the 401(k) data.
-  \item Applications in social science: growth mindset, college and low-wage work.
-\end{enumerate}
-\vskip3pt
-{\footnotesize Scripts: \texttt{figs/w13\_sims.R}, \texttt{figs/w13\_401k.R}. Book: \srct{Chernozhukov, Hansen, Kallus, Spindler, and Syrgkanis (2024)}.}
-\end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[The Problem]{Why Naive ML Fails}
+\section[Causal Forests]{Heterogeneous Effects: Causal Forests}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Partially Linear Model\core}
-To see the problem without letting notation hide it, start with the simplest
-causal case there is: \emph{one} treatment effect to estimate, but completely
-flexible relationships between the controls, the treatment, and the outcome.
-That is the \alert{partially linear model}, the workhorse for the rest of the
-course:
-\begin{align*}
-  Y_i &= \theta\, D_i + g(W_i) + \epsilon_i, \qquad \E[\epsilon_i \mid D_i, W_i] = 0 \\
-  D_i &= m(W_i) + v_i, \qquad\qquad\ \ \E[v_i \mid W_i] = 0 .
-\end{align*}
-\vskip3pt
+\begin{frame}{Who Gains Most From College?}
+Brand and Xie (2010, Week 5) asked whether the returns to college are larger for those
+most or least likely to go. Two theories predict opposite answers:
 \begin{itemize}\itemsep3pt
-  \item $\theta$ is the target: the effect of $D$ holding $W$ fixed, and it is
-        assumed constant (relaxed in the last section).
-  \item $g$ and $m$ are \alert{nuisance functions}; we do not care about them,
-        but we must handle them. They may be highly nonlinear, and $W$ may be
-        high-dimensional.
-  \item Under conditional ignorability given $W$ (Week 5), $\theta$ is the ATE.
-  \item Week 1 solved this when $g$ and $m$ are linear and low-dimensional. The
-        question now is what happens when we estimate them with lasso or a forest.
+  \item \textbf{Positive selection}: those most likely to go gain most (they sort on gains).
+  \item \textbf{Negative selection}: those least likely to go gain most (they have the fewest
+        other routes out of low-wage work).
 \end{itemize}
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Attempt 1: Regularization Bias\adv}
-The naive approach: fit the partially linear model by ML to get $\hat g$, taking
-it from a joint fit of $Y$ on $(D_i, W_i)$ with $D_i$ left \emph{unpenalized} so
-that $\hat g$ targets the structural $g$. Then regress $Y_i - \hat g(W_i)$ on
-$D_i$.
-\begin{align*}
-  \hat\theta_{\text{naive}}
-  = \frac{\frac1n\sum_i D_i\big(Y_i - \hat g(W_i)\big)}{\frac1n\sum_i D_i^2} .
-\end{align*}
-Substituting the true model and rescaling,
-\begin{align*}
-  \sqrt n\big(\hat\theta_{\text{naive}} - \theta\big)
-  = \underbrace{\Big(\tfrac1n\textstyle\sum_i D_i^2\Big)^{-1}\tfrac{1}{\sqrt n}\sum_i D_i\epsilon_i}_{\dto\ \mathcal N(0,\Sigma)}
-  + \underbrace{\Big(\tfrac1n\textstyle\sum_i D_i^2\Big)^{-1}\tfrac{1}{\sqrt n}\sum_i D_i\big(g(W_i)-\hat g(W_i)\big)}_{\alert{\text{regularization bias}}} .
-\end{align*}
-\vskip2pt
-\begin{itemize}\itemsep2pt
-  \item Regularized estimators are \emph{deliberately biased} (Week 12), and
-        typically converge more slowly than the parametric $n^{-1/2}$.
-  \item Then the second term does not vanish on the $\sqrt n$ scale, the
-        nuisance bias is of the same order as, or larger than, the sampling noise
-        we are trying to describe.
-  \item \alert{The point estimate may be fine; the inference is not.} Confidence
-        intervals are centred in the wrong place, and collecting more data does
-        not fix it.
-  \item \textbf{A trap worth naming.} If you instead regress $Y$ on $W$ alone you
-        estimate $\ell(W) = \E[Y\mid W] = \theta\, m(W) + g(W)$, which already
-        contains the effect you are after. Subtracting that removes the signal.
-        And even with the true $\ell$, regressing $Y - \ell(W)$ on \emph{raw}
-        $D_i$ does not recover $\theta$: $D_i$ must be residualized too, which is
-        exactly what the next slide does.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Attempt 2: Partial Out Both Sides\core}
-Frisch--Waugh--Lovell says: residualize $Y$ \emph{and} $D$ on $W$, then regress.
-With ML estimates $\hat g$ and $\hat m$,
-\begin{align*}
-  \tilde Y_i = Y_i - \hat\ell(W_i), \qquad \tilde D_i = D_i - \hat m(W_i),
-  \qquad
-  \hat\theta = \frac{\frac1n\sum_i \tilde D_i \tilde Y_i}{\frac1n\sum_i \tilde D_i^2} ,
-\end{align*}
-where $\ell(W) = \E[Y\mid W]$.
-\vskip3pt
-The bias term now involves the \alert{product} of the two estimation errors:
-\begin{align*}
-  \text{bias} \approx \sqrt n \cdot \frac1n\sum_i
-  \big(m(W_i)-\hat m(W_i)\big)\big(\ell(W_i)-\hat \ell(W_i)\big) .
-\end{align*}
-\vskip2pt
-\alert{This vanishes when
-$\|\hat m - m\|_2\,\|\hat\ell - \ell\|_2 = o_p(n^{-1/2})$}, for which it is
-sufficient that \emph{each} converge faster than $n^{-1/4}$. Lasso and forests
-can do that under sparsity or smoothness assumptions.
-\textbf{First-order bias has become second-order.}
-\end{frame}
-
-\begin{frame}{Seeing the Bias: a Simulation}
-$Y = 0.5\,D + g(W) + \epsilon$, $D = m(W) + v$; random forests for the nuisances;
-300 draws \srcp{figs/w13\_sims.R}.
-\begin{center}\scriptsize
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{@{}lcccc@{}}
-\toprule
- & \multicolumn{2}{c}{A: smooth ($n = 500$)} & \multicolumn{2}{c}{B: very nonlinear ($n = 1{,}000$)} \\
-estimator & bias / sd & coverage & bias / sd & coverage \\
-\midrule
-OLS on $(D, W)$ & $-0.08$ & & $+11.2$ & \\
-naive plug-in ($Y - \hat g$ on raw $D$) & $-3.20$ & & $+6.40$ & \\
-partialling out, in-sample forests & $+0.11$ & 0.94 & $+3.57$ & 0.04 \\
-DML, 5-fold cross-fitting & $+0.28$ & 0.93 & $+3.96$ & 0.01 \\
-\midrule
-RMSE of $\hat m$, $\hat\ell$ & \multicolumn{2}{c}{0.41, \ 0.35} & \multicolumn{2}{c}{0.43, \ 1.02} \\
-\bottomrule
-\end{tabular}
-\end{center}
-\begin{itemize}\itemsep0pt\small
-  \item \textbf{A} (Chernozhukov et al.'s Figure 1 design): the naive plug-in is off by
-        three sds; partialling out is centred and covers.
-  \item \textbf{B}: forests cannot learn $g$ here (RMSE of $\hat\ell$ 1.02); DML is biased too.
-        \alert{Orthogonality makes errors multiply; it does not make bad estimates good.}
-  \item In-sample forests matched cross-fitting here; learners that overfit more do not.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{This Is Neyman Orthogonality Again\adv}
-The residualized moment condition is
-\begin{align*}
-  \E\Big[\psi(W_i;\theta,\eta)\Big] = 0, \qquad
-  \psi = \Big[\big(Y - \ell(W)\big) - \theta\big(D - m(W)\big)\Big]\,\big(D-m(W)\big) ,
-\end{align*}
-and it satisfies
-\begin{align*}
-  \left.\frac{\partial}{\partial\eta}\E\big[\psi(W_i;\theta_0,\eta)\big]\right|_{\eta=\eta_0} = 0 .
-\end{align*}
-\vskip3pt
+\vskip4pt
+What answering it takes:
 \begin{itemize}\itemsep3pt
-  \item \alert{You met this property in Week 6}: the AIPW estimator's bias was
-        the \emph{product} of the two nuisance errors, so first-order mistakes in
-        either one cancel. The partially linear case is the same statement for a
-        different moment.
-  \item And you derived it in \textbf{Week 1}: FWL is the linear special case, in
-        which $\hat m$ is an OLS projection and the ``adaptivity'' of $\hat\beta_1$
-        to estimation error in the residuals is exactly orthogonality.
-  \item \textbf{The thread of the whole course}: FWL $\to$ AIPW $\to$ DML. One
-        idea, three levels of generality.
+  \item Not one average effect, but the effect for each \emph{kind} of youth.
+  \item ``Kind'' is described by many pre-college variables: parents' income and schooling,
+        siblings, ability, race, expectations, school, \dots
+  \item Nobody knows in advance which of them, or which combinations, matter.
 \end{itemize}
+\vskip4pt
+{\small Brand, Xu, Koch, and Geraldo (2021) answer it with a causal forest on the NLSY79.}
 \end{frame}
 
-\begin{frame}{Orthogonality, Derived}
-Perturb the nuisances in some direction: $\ell_r = \ell_0 + r\,\delta_\ell$,
-$m_r = m_0 + r\,\delta_m$. With $V = D - m_0(W)$ and $\E[V\mid W] = 0$:
+\begin{frame}{From One Effect to Many\core}
+Each person has two potential outcomes; their difference is the person's effect (Week 5):
 \begin{align*}
-  \psi_r &= \big[Y - \ell_r - \theta_0(D - m_r)\big](D - m_r)
-   && \text{\footnotesize the score} \\
-  \frac{\partial}{\partial r}\E[\psi_r]\Big|_{r=0}
-  &= \E\big[(-\delta_\ell + \theta_0\delta_m)\,V\big] - \E\big[(Y - \ell_0 - \theta_0 V)\,\delta_m\big]
-   && \text{\footnotesize product rule} \\
-  &= 0 - \E[\epsilon\,\delta_m] = 0
-   && \text{\footnotesize $\E[V\mid W] = 0$, $\E[\epsilon\mid W] = 0$}
-\end{align*}
-\vskip-3pt
-Compare the naive score $\varphi = (Y - \theta D - g(W))\,D$:
-\begin{align*}
-  \frac{\partial}{\partial r}\E\big[(Y - \theta_0 D - g_0 - r\delta_g)D\big]\Big|_{r=0}
-  = -\E[\delta_g(W)\,D] = -\E[\delta_g(W)\,m_0(W)] \neq 0 .
+  \tau_i &= Y_i(1) - Y_i(0)
+   && \text{\footnotesize never observed for anyone} \\
+  \tau(x) &= \E\big[Y_i(1) - Y_i(0) \mid X_i = x\big]
+   && \text{\footnotesize the CATE: average effect among people with $X_i = x$} \\
+  \text{ATE} &= \E\big[\tau(X_i)\big]
+   && \text{\footnotesize average the CATEs over everyone}
 \end{align*}
 \vskip-2pt
-{\footnotesize A small error in $\hat g$ moves the naive moment at first order; it moves the orthogonal
-one only at second order, through products of errors.}
-\end{frame}
-
-\begin{frame}{Where the Product Comes From}
-Write $V = D - m(W)$, $\epsilon = Y - \ell(W) - \theta_0 V$, and the nuisance errors
-$\Delta_m = \hat m - m$, $\Delta_\ell = \hat\ell - \ell$. The cross-fitted score at $\theta_0$ is
-\begin{align*}
-  \big(Y_i - \hat\ell_i - \theta_0(D_i - \hat m_i)\big)\big(D_i - \hat m_i\big)
-  &= \big(\epsilon_i - \Delta_{\ell i} + \theta_0\Delta_{mi}\big)\big(V_i - \Delta_{mi}\big) .
-\end{align*}
-Multiply out and average:
-\begin{align*}
-  \tfrac1n\textstyle\sum_i\psi_i
-  = \underbrace{\tfrac1n\textstyle\sum \epsilon_i V_i}_{\text{CLT term}}
-  \underbrace{- \tfrac1n\textstyle\sum (\Delta_{\ell i} - \theta_0\Delta_{mi})V_i - \tfrac1n\textstyle\sum\epsilon_i\Delta_{mi}}_{\text{mean zero}}
-  + \underbrace{\tfrac1n\textstyle\sum (\Delta_{\ell i} - \theta_0\Delta_{mi})\Delta_{mi}}_{\text{product of errors}}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item The middle terms have mean zero because $\Delta$ was estimated on \emph{other}
-        folds: it is fixed given those folds, while $V_i$ and $\epsilon_i$ have mean
-        zero. That is what cross-fitting buys.
-  \item The last term is of order $\|\Delta_m\|\,\|\Delta_\ell\| + \|\Delta_m\|^2$; it must be
-        $o(n^{-1/2})$, which holds if each error is $o(n^{-1/4})$.
+\begin{itemize}\itemsep3pt
+  \item The college question is about $\tau(x)$: is the effect larger when $x$ describes a
+        disadvantaged youth?
+  \item Identification is Week 6's: if $D_i$ is as good as random given $X_i$, then
+        within each value of $x$,
+  \[
+    \tau(x) = \E[Y_i \mid D_i = 1, X_i = x] - \E[Y_i \mid D_i = 0, X_i = x] = m_1(x) - m_0(x).
+  \]
+  \item The problem is estimation: with 20 or more covariates, almost every $x$ is held by one
+        person. Week 6's cells run out.
 \end{itemize}
 \end{frame}
 
-
-\begin{frame}{Single Selection Versus Double Selection}
-{\footnotesize\color{gray}\srct{Belloni, Chernozhukov, and Hansen (2014)}}\vskip1pt
-\textbf{Single selection}: lasso of $Y$ on $W$ picks the controls; then OLS of
-$Y$ on $D$ and those controls.
-\begin{itemize}\itemsep0pt
-  \item A confounder that predicts $D$ strongly but $Y$ only moderately is
-        likely dropped: its coefficient in the $Y$-lasso is small, and $D$ is not
-        there to stand in for it. Omitted-variable bias returns.
+\begin{frame}{The Old Way: Subgroups Chosen by the Researcher}
+Split the sample by a variable you chose (mother's schooling, say) and estimate the
+effect in each part.
+\vskip4pt
+\begin{itemize}\itemsep5pt
+  \item Transparent, and fine for one or two variables chosen \emph{before} looking.
+  \item \textbf{Which variables?} 22 covariates and their combinations: mother's schooling
+        \emph{and} siblings \emph{and} ability. Two values each already make $2^{22} = 4$
+        million cells.
+  \item \textbf{Forking paths}: try twenty splits and report the one that ``works.'' With no
+        true differences, each test is significant 5\% of the time; at least one of twenty, 64\%.
+  \item \textbf{Goal}: let the data choose the splits, then estimate each subgroup's effect
+        so that the choosing does not contaminate the estimate.
 \end{itemize}
-\vskip2pt
-\textbf{Double selection}: union of the controls chosen to predict $Y$ \emph{and}
-those chosen to predict $D$; then OLS. A variable important for either equation
-is kept: the lasso version of partialling out both sides.
-\begin{center}\scriptsize
-\renewcommand{\arraystretch}{1.08}
-\begin{tabular}{@{}lccc@{}}
+\end{frame}
+
+\begin{frame}{Recap: Week 12's Tree Cuts the Squared Error\core}
+A node $P$ ($n$ people, mean $\bar Y_P$) is split into a left child $L$ ($n_L$, $\bar Y_L$) and a right child $R$ ($n_R$, $\bar Y_R$).
+The tree keeps the split with the largest drop in the sum of squared errors. For any group,
+\begin{align*}
+  \text{SSE} = \textstyle\sum_i (Y_i - \bar Y)^2 &= \textstyle\sum_i Y_i^2 - n\,\bar Y^2
+   && \text{\footnotesize expand the square; $\textstyle\sum_i Y_i = n\bar Y$}
+\end{align*}
+Subtract the children's SSE from the parent's:
+\begin{align*}
+  \text{SSE}_P - \text{SSE}_L - \text{SSE}_R
+  = \big(\textstyle\sum_{P} Y_i^2 - n\bar Y_P^2\big) - \big(\textstyle\sum_{L} Y_i^2 - n_L\bar Y_L^2\big)
+     - \big(\textstyle\sum_{R} Y_i^2 - n_R\bar Y_R^2\big)
+\end{align*}
+\vskip-14pt
+\begin{align*}
+  &= n_L\bar Y_L^2 + n_R\bar Y_R^2 - n\,\bar Y_P^2
+   && \text{\footnotesize same people: $\textstyle\sum_P = \sum_L + \sum_R$} \\
+  &= n_L(\bar Y_L - \bar Y_P)^2 + n_R(\bar Y_R - \bar Y_P)^2
+   && \text{\footnotesize $n\bar Y_P = n_L\bar Y_L + n_R\bar Y_R$}
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep3pt
+  \item The tree picks the split whose children's means sit \emph{farthest from the parent's mean}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Tree for Effects: Put $\hat\tau$ Where $\bar Y$ Was\core}
+Now the target is the effect. $\tau_i$ is never seen, but a group's average effect can be estimated by
+comparing its treated and untreated members:
+\begin{align*}
+  \hat\tau_\ell = \bar Y_{\ell,\,D=1} - \bar Y_{\ell,\,D=0}
+  \qquad \text{(difference in means among the people in leaf $\ell$)}
+\end{align*}
+For now, assume $D$ is as good as random inside each leaf (relaxed after the example). In the drop in SSE, put $\hat\tau$
+where $\bar Y$ was:
+\begin{align*}
+  \Delta
+  &= n_L\,(\hat\tau_L - \hat\tau_P)^2 + n_R\,(\hat\tau_R - \hat\tau_P)^2
+   && \text{\footnotesize larger $\Delta$: more different effects} \\
+  &\approx \tfrac{n_L\,n_R}{n}\,(\hat\tau_L - \hat\tau_R)^2
+   && \text{\footnotesize plug in $\hat\tau_P \approx (n_L\hat\tau_L + n_R\hat\tau_R)/n$}
+\end{align*}
+{\scriptsize ($\approx$: exact when both children have the parent's share treated.)}
+\begin{itemize}\itemsep3pt
+  \item A \textbf{causal tree} \srcp{Athey and Imbens 2016} keeps the split with the largest $\Delta$. Children with
+        the parent's effect: $\Delta = 0$.
+  \item A tiny child's $\hat\tau$ is noisy and can sit far from $\hat\tau_P$ by chance, so each child must keep a
+        minimum number of treated and untreated people (\texttt{grf}: \texttt{min.node.size}).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{One Split by Hand\core}
+Eight hypothetical people \srcp{figs/w13\_toy.R, A}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lcccccccc@{}}
 \toprule
-abortion and crime, 48 states $\times$ 12 years & violent & property & murder \\
+person & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\
 \midrule
-Donohue and Levitt (2001) & $-0.129$ (0.024) & $-0.091$ (0.018) & $-0.121$ (0.047) \\
-all 251 controls & $0.294$ (0.472) & $-0.068$ (0.157) & $0.321$ (1.109) \\
-double selection & $-0.087$ (0.181) & $-0.094$ (0.051) & $0.006$ (0.280) \\
+mother finished high school & 0 & 0 & 0 & 0 & 1 & 1 & 1 & 1 \\
+siblings & 4 & 1 & 2 & 5 & 3 & 4 & 1 & 2 \\
+college $D$ & 1 & 0 & 1 & 0 & 1 & 0 & 1 & 0 \\
+low-wage share $Y$ & .10 & .50 & .15 & .45 & .05 & .20 & .10 & .25 \\
 \bottomrule
 \end{tabular}
 \end{center}
-{\footnotesize Double selection keeps initial abortion rates and their trends, which predict
-abortion with $R^2 \approx 0.9$; the violent-crime and murder effects lose significance.}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+split & left: $\hat\tau_L$ & right: $\hat\tau_R$ & $\Delta = \frac{n_L n_R}{n}(\hat\tau_L - \hat\tau_R)^2$ \\
+\midrule
+none & \multicolumn{2}{c}{$\hat\tau_P = \tfrac{.40}{4} - \tfrac{1.40}{4} = -0.25$} & 0 \\
+mother high school? & $.125 - .475 = -0.35$ & $.075 - .225 = -0.15$ & $\tfrac{4\cdot4}{8}(0.20)^2 = \alert{0.08}$ \\
+3+ siblings? & $.075 - .325 = -0.25$ & $.125 - .375 = -0.25$ & $\tfrac{4\cdot4}{8}(0)^2 = 0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\small Siblings: both children keep the pooled $-0.25$, so $\Delta = 0$. Mother's schooling: each child moves
+0.10 from $-0.25$, so $\Delta = 4(0.10)^2 + 4(0.10)^2 = 0.08$. The tree splits on mother's schooling.}
 \end{frame}
 
+\begin{frame}{Before the Tree: Control for $X$\core}
+The split by hand compared graduates and non-graduates as if $D$ were random. It is not: a difference
+in means is OLS of $Y$ on $D$ without $X$, confounded as in Week 1.
+\vskip3pt
+\textbf{The fix}: control for $X$ \emph{before} growing any tree \srcp{Athey, Tibshirani, and Wager 2019}.
+\begin{enumerate}\itemsep3pt
+  \item Two ordinary regression forests (Week 12) predict $\hat m(x) \approx \E[Y\mid X = x]$ and
+        $\hat e(x) \approx \E[D\mid X = x]$; each person is predicted by trees that did not draw them.
+  \item Residualize once, for everyone, never again inside a leaf:
+        $\tilde Y_i = Y_i - \hat m(X_i)$, $\ \tilde D_i = D_i - \hat e(X_i)$.
+  \item Wherever a $\hat\tau$ appears, in the splitting rule $\Delta$ and in every leaf, use the residual-on-residual
+        slope in place of the difference in means:
+        \[ \hat\tau_\ell = \frac{\sum_{i\in\ell}\tilde D_i\,\tilde Y_i}{\sum_{i\in\ell}\tilde D_i^2} . \]
+\end{enumerate}
+\vskip-2pt
+{\small Week 1's FWL: this slope is the coefficient on $D$ controlling for $X$. So every $\hat\tau$ from here on is
+estimated holding $X$ fixed, with forests doing the controlling. Section 2 calls this DML.}
+\end{frame}
+
+\begin{frame}{Growing the Whole Tree\core}
+Start with everyone in one node. At every node:
+\vskip2pt
+\begin{enumerate}\itemsep4pt
+  \item For \textbf{every} covariate $X_j$ and \textbf{every} cut $s$ between its observed values: send
+        $X_{ij} \leq s$ left and the rest right; compute $\hat\tau_L$ and $\hat\tau_R$ (residual slopes)
+        and $\Delta(j, s)$.
+  \item Keep the $(j, s)$ with the largest $\Delta$. Skip any cut that leaves a child with too few
+        treated or untreated people; if no cut is left, the node is a leaf.
+  \item Repeat inside each child.
+\end{enumerate}
+\vskip4pt
+\textbf{Prediction.} A person with covariates $x$ follows the splits to one leaf. Their estimated effect
+$\hat\tau(x)$ is the slope $\hat\tau_\ell$ in that leaf.
+\vskip4pt
+{\small In the toy: the root tries mother's schooling ($\Delta = 0.08$) and siblings at 3+ ($\Delta = 0$), and splits on
+mother's schooling. A youth whose mother finished high school gets $\hat\tau(x) = -0.15$; one whose
+mother did not gets $-0.35$.}
+\end{frame}
+
+\begin{frame}{Another Fix: Weighting Inside Each Leaf}
+\begin{columns}[c]
+\begin{column}{0.62\linewidth}
+\includegraphics[width=\linewidth]{figs/brand_fig4.png}
+\end{column}
+\begin{column}{0.37\linewidth}
+\begin{itemize}\itemsep8pt
+  \item Box: effect of college on the share of years in low-wage work, (s.e.), share of the sample.
+  \item Leaf effects: the difference in means in the leaf, weighted by the inverse propensity
+        (Week 6), on the held-out half.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip2pt
+{\footnotesize \srct{Brand, Xu, Koch, and Geraldo (2021)}, Figure 4.}
+\end{frame}
+
+\begin{frame}{The Catch: the Search Inflates What It Finds\core}
+The rule trusts $\hat\tau_L$ and $\hat\tau_R$. If the same people choose the split and estimate the
+leaves: a simulation with \alert{no heterogeneity}, everyone's effect $-0.15$; 400 people,
+20 noise covariates; 2,000 draws \srcp{figs/w13\_toy.R, C}.
+\vskip1pt
+Each draw: on half A, pick the covariate whose split makes the two leaves' effects differ
+most; estimate both leaves on half A (\emph{adaptive}) and on half B (\emph{honest}).
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+& estimated on A (chose the split) & estimated on B (did not) \\
+\midrule
+leaf that looked more negative & $-0.241$ & $-0.151$ \\
+leaf that looked less negative & $-0.060$ & $-0.152$ \\
+gap between leaves (truth 0) & $0.181$ & $-0.001$ \\
+gap ``significant'' at 5\% & 63\% of draws & 5.1\% of draws \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt\small
+  \item The search keeps the split whose noise happened to separate the leaves most; the same
+        noise sits in the leaf estimates. Selection on the outcome (Week 5), inside one algorithm.
+  \item On fresh data, the noise is new and averages out.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Honesty: One Half Chooses, the Other Half Estimates\core}
+\begin{columns}[c]
+\begin{column}{0.38\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[draw=dukeblue,fill=dukeblue!12,minimum width=3.2cm,minimum height=1cm,align=center,font=\small] (A) at (0,1.4) {half A\\grow the tree};
+  \node[draw=accent,fill=accent!15,minimum width=3.2cm,minimum height=1cm,align=center,font=\small] (B) at (0,-0.4) {half B\\each person goes to the\\leaf of their $X$; estimate};
+  \draw[-{Stealth[length=2mm]},thick,gray] (A) -- node[right,font=\scriptsize]{splits only} (B);
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.6\linewidth}
+\begin{itemize}\itemsep4pt
+  \item Splits come from half A; every reported number comes from half B.
+  \item Why it works: half A's noise decided where the boxes are; half B's noise is fresh and
+        averages out. Simulation: half B gives $-0.151$ and $-0.152$ (truth $-0.15$).
+  \item Week 12's train--test split, used to protect \emph{inference}, not to tune.
+  \item Cost: half the data for each job (\texttt{grf}'s default is 50/50).
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{From One Tree to an Honest Forest\core}
+One tree is unstable: another sample gives another tree (Week 12). Grow many and average
+\srcp{Wager and Athey 2018}. For each tree $t = 1, \dots, T$ (2,000 or more):
+\begin{enumerate}\itemsep2pt
+  \item Draw a \textbf{subsample}: half of the $n$ people, \textbf{without replacement}.
+  \item Split the subsample in two (honesty): \textbf{half A} grows the tree, \textbf{half B} estimates each leaf.
+\end{enumerate}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize,
+  bx/.style={draw,minimum height=0.55cm,inner sep=1pt,align=center}]
+  \node[bx,draw=gray,fill=gray!8,minimum width=10cm] (all) at (0,0) {all $n$ people};
+  \node[bx,draw=dukeblue,fill=white,minimum width=5cm] (sub) at (-2.5,-1.0) {subsample of tree $t$: $n/2$ people};
+  \node[bx,draw=gray,dashed,minimum width=5cm,text=gray] (out) at (2.5,-1.0) {not drawn for tree $t$};
+  \node[bx,draw=dukeblue,fill=dukeblue!12,minimum width=2.5cm,text width=2.3cm] (A) at (-3.75,-2.0) {half A: grows};
+  \node[bx,draw=accent,fill=accent!15,minimum width=2.5cm,text width=2.3cm] (B) at (-1.25,-2.0) {half B: estimates};
+  \draw[-{Stealth[length=1.6mm]}] (sub.north |- all.south) -- (sub.north);
+  \draw[-{Stealth[length=1.6mm]}] (A.north |- sub.south) -- (A.north);
+  \draw[-{Stealth[length=1.6mm]}] (B.north |- sub.south) -- (B.north);
+\end{tikzpicture}
+\end{center}
+\vskip-10pt
+\begin{align*}
+  \hat\tau(x) = \frac1T\sum_{t=1}^T \hat\tau_t(x),
+  \qquad \hat\tau_t(x) = \text{half B's slope $\hat\tau_\ell$ in $x$'s leaf of tree $t$} .
+\end{align*}
+\end{frame}
+
+\begin{frame}{Why Subsample Half the People, Without Replacement?}
+\begin{itemize}\itemsep6pt
+  \item \textbf{Why not with replacement} (Week 12's bootstrap)? It draws some people twice: one copy
+        could land in half A, the other in half B, and the same noise would choose and estimate.
+  \item \textbf{Why not everyone?} Without replacement, drawing all $n$ gives every tree the same
+        people. Trees must see different people for their average to be more stable than one tree.
+  \item \textbf{Why a subsample of exactly $n/2$?} It behaves like a new sample. Take the mean of
+        $Y = 1, 3, 5, 7$:
+  \begin{itemize}\itemsep2pt
+    \item across samples, its variance is $s^2/n = 6.67/4 = 1.67$;
+    \item across the six possible subsamples of two, the means are $2, 3, 4, 4, 5, 6$: variance
+          $(4 + 1 + 0 + 0 + 1 + 4)/6 = 1.67$.
+  \end{itemize}
+  \item How much an estimate moves from one subsample to another is how much it would move from
+        one sample to another. This holds at $n/2$, not at other sizes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Every Person Gets an Effect Estimate: AIPW\core}
+The forest's own estimate for person $i$ is $\hat\tau(X_i)$: over the trees grown \emph{without} person $i$,
+the average of the leaf slope $\hat\tau_\ell$ where $X_i$ falls.
+\vskip4pt
+A person's effect does not have to be estimated leaf by leaf. Week 6's AIPW already gives every person a
+number, and it needs only three predictions, $\hat m_1$, $\hat m_0$, $\hat e$:
+\begin{align*}
+  \hat\tau_i^{\text{AIPW}} = \underbrace{\hat m_1(X_i) - \hat m_0(X_i)}_{\text{g-computation}}
+  + \underbrace{\frac{D_i\big(Y_i - \hat m_1(X_i)\big)}{\hat e(X_i)}
+  - \frac{(1-D_i)\big(Y_i - \hat m_0(X_i)\big)}{1 - \hat e(X_i)}}_{\text{weighted residual: the correction}}
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep3pt
+  \item Week 6 predicted $m_1$, $m_0$, $e$ with OLS and logit. Now forests predict them; each person is
+        predicted by trees grown without them.
+  \item Week 6: right on average at every $x$ if the outcome models or the propensity is right. Very noisy
+        for one person: like an observed $\tau_i$.
+  \item \alert{Use}: every summary below is a mean or an OLS slope with $\hat\tau_i^{\text{AIPW}}$ as the outcome.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Week 6's Picture, With Forests Predicting}
+\begin{columns}[c]
+\begin{column}{0.43\linewidth}
+\includegraphics[width=\linewidth]{figs/aipw_forest.pdf}
+\vskip-2pt
+{\scriptsize Week 6's simulation: controls' mean $3x^2$, effect $2x$; no controls above $0.9$, no treated
+below $0.3$ \srcp{figs/w13\_aipw\_forest.R}.}
+\end{column}
+\begin{column}{0.56\linewidth}
+\small
+\begin{itemize}\itemsep5pt
+  \item \textbf{Week 6}: a line per group; its shape was our choice. \textbf{Now}: a forest per group follows
+        the curve. At $x = 0.5$, $\hat m_1 - \hat m_0 = 1.03$ (truth $1.00$).
+  \item \textbf{Train--test split} (Week 12): forests fitted on four folds predict the fifth, so nobody's own
+        $Y$ predicts them.
+  \item \textbf{One person} (circle): treated, $x = 0.5$, $Y = 2.06$, $\hat m_1 = 1.79$, $\hat m_0 = 0.87$,
+        $\hat e = 0.25$: $\hat\tau_i^{\text{AIPW}} = 0.92 + 0.27/0.25 = 2.0$; truth $1.0$. Noisy for one person;
+        over $x \in [0.3, 0.9]$ the mean is $1.19$, the truth.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Is the Spread Real? The Calibration Test\core}
+Honesty stops the splits from exaggerating differences, but each leaf's estimate is still noisy.
+\vskip2pt
+\textbf{Check}: regress the AIPW estimate on the forest's prediction, centered at its mean $\bar\tau$:
+\begin{align*}
+  \hat\tau_i^{\text{AIPW}} = c + b\,\big(\hat\tau(X_i) - \bar\tau\big) + \text{error}
+\end{align*}
+\vskip-8pt
+\begin{columns}[c]
+\begin{column}{0.64\linewidth}
+\small
+\begin{itemize}\itemsep3pt
+  \item \textbf{Slope $b$}: when the forest predicts a larger effect, is the AIPW estimate larger?
+        $b = 1$: the differences are right in size. $b = 0$: they are noise. Test $b > 0$.
+  \item \textbf{Intercept $c$}: the regressor is centered, so $c$ is the mean AIPW estimate, the ATE.
+        \texttt{grf} prints $a = c/\bar\tau$; $a = 1$: the forest's average agrees.
+\end{itemize}
+\end{column}
+\begin{column}{0.34\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=2.6cm,y=1.5cm]
+  \draw[->,gray] (0,0) -- (1.08,0) node[below left,font=\scriptsize,text=black] {forest's $\hat\tau(X_i)$};
+  \draw[->,gray] (0,0) -- (0,1.1) node[above,font=\scriptsize,text=black] {mean of $\hat\tau_i^{\text{AIPW}}$};
+  \foreach \x/\y in {0.1/0.14,0.3/0.27,0.5/0.52,0.7/0.66,0.9/0.92} \fill[accent] (\x,\y) circle (1.6pt);
+  \draw[accent,thick] (0.05,0.05) -- (1,1) node[right,font=\scriptsize] {$b = 1$};
+  \foreach \x in {0.1,0.3,0.5,0.7,0.9} \fill[dukeblue] (\x,0.5) circle (1.6pt);
+  \draw[dukeblue,thick] (0.05,0.5) -- (1,0.5) node[right,font=\scriptsize] {$b = 0$};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\end{columns}
+\vskip3pt
+{\small If $b$ is not significant, report pre-specified groups, not individual $\hat\tau(X_i)$
+\srcp{\texttt{test\_calibration}, in residual form}.}
+\end{frame}
+
+\begin{frame}{Effects in Pre-Specified Groups}
+When the calibration test is weak, the person-level $\hat\tau(X_i)$ cannot be reported. Groups chosen
+\emph{before} looking can:
+\begin{align*}
+  \hat\tau_g = \frac1{n_g}\sum_{i\in g}\hat\tau_i^{\text{AIPW}} ,
+  \qquad \text{s.e.} = \frac{\text{sd of } \hat\tau_i^{\text{AIPW}} \text{ in } g}{\sqrt{n_g}} .
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep4pt
+  \item Each $\hat\tau_i^{\text{AIPW}}$ is right on average at every $x$, so their mean in $g$ estimates the group's
+        average effect; the s.e.\ is the usual one for a mean.
+  \item No forest prediction enters, and no search: the groups come from theory (parents' income,
+        mother's schooling, the propensity of college).
+  \item The difference between two groups has s.e.\ $\sqrt{\text{s.e.}_1^2 + \text{s.e.}_2^2}$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Does the Effect Change With One Variable?}
+\begin{columns}[c]
+\begin{column}{0.56\linewidth}
+Negative selection is a claim about direction: the effect is larger when the propensity
+of college is lower. Regress the AIPW estimates on that one variable $Z_i$:
+\begin{align*}
+  \hat\tau_i^{\text{AIPW}} = \beta_0 + \beta_1 Z_i + \text{error} .
+\end{align*}
+\end{column}
+\begin{column}{0.42\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=3.4cm,y=2.4cm]
+  \draw[->,gray] (0,0) -- (1.08,0) node[below left,font=\scriptsize,text=black] {$Z$ (propensity)};
+  \draw[->,gray] (0,0) -- (0,1.12) node[above,font=\scriptsize,text=black] {size of effect};
+  \foreach \x/\y in {0.05/0.25,0.12/0.2,0.2/0.42,0.28/0.33,0.35/0.5,0.45/0.48,0.55/0.62,0.63/0.7,0.72/0.66,0.8/0.85,0.9/0.82,0.97/0.93}
+    \fill[dukeblue!45] (\x,\y) circle (1.2pt);
+  \draw[dukeblue,thick] plot[smooth,domain=0:1] (\x,{0.22+0.3*\x+0.45*\x*\x});
+  \draw[accent,very thick] (0,0.17) -- (1,0.92);
+  \node[font=\scriptsize,text=dukeblue,align=left] at (0.3,0.95) {true $\tau$, any shape};
+  \node[font=\scriptsize,text=accent,anchor=west] at (0.6,0.42) {$\beta_0 + \beta_1 Z$};
+  \node[font=\scriptsize,text=dukeblue!60,anchor=west] at (0.02,0.08) {dots: $\hat\tau_i^{\text{AIPW}}$ (noisy)};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\end{columns}
+\vskip4pt
+\begin{itemize}\itemsep4pt
+  \item $\beta_1$ does not claim $\tau$ is linear in $Z$; it summarizes the direction in one number, with the
+        robust standard error from this regression.
+  \item Group means and this slope use only $\hat\tau_i^{\text{AIPW}}$: Week 6, with forests predicting. The causal
+        forest's part is to say \emph{where to look}: its $\hat\tau(X_i)$ ranks people (calibration, targeting).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Would Targeting Help? The TOC Curve}
+\begin{columns}[c]
+\begin{column}{0.54\linewidth}
+A scholarship reaches only a share $q$ of youths. Rank everyone by the forest's $\hat\tau(x)$, most benefit
+first \srcp{Yadlowsky et al.\ 2025}. For each $q$:
+\begin{enumerate}\itemsep1pt\small
+  \item Serve the top $q$ of the ranking.
+  \item Average $\hat\tau_i^{\text{AIPW}}$ over all of them.
+  \item Subtract the ATE, what a random $q$ would get.
+\end{enumerate}
+\vskip-4pt
+\begin{align*}
+  \text{TOC}(q) = \overline{\hat\tau^{\text{AIPW}}}_{\,\text{top } q} - \overline{\hat\tau^{\text{AIPW}}}
+\end{align*}
+\end{column}
+\begin{column}{0.44\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=4cm,y=1.9cm]
+  \fill[accent!15] (0,0) -- plot[smooth,domain=0.02:1] (\x,{0.12/(\x+0.12)-0.107}) -- (1,0) -- cycle;
+  \draw[->,gray] (0,0) -- (1.06,0) node[below left,font=\scriptsize,text=black] {share served $q$};
+  \draw[->,gray] (0,0) -- (0,0.95) node[above,font=\scriptsize,text=black] {TOC$(q)$};
+  \draw[accent,very thick] plot[smooth,domain=0.02:1] (\x,{0.12/(\x+0.12)-0.107});
+  \draw[dukeblue,thick,dashed] (0,0.01) -- (1,0.01);
+  \node[font=\scriptsize,text=dukeblue,anchor=south] at (0.85,0.25) {random: 0};
+  \draw[dukeblue,->] (0.85,0.25) -- (0.85,0.03);
+  \node[font=\scriptsize,text=accent,anchor=west] at (0.14,0.55) {good ranking};
+  \node[font=\scriptsize,anchor=west] at (0.06,0.12) {area = AUTOC};
+  \node[font=\scriptsize,below] at (1,0) {1};
+  \node[font=\scriptsize,below] at (0,0) {0};
+\end{tikzpicture}
+\end{center}
+{\scriptsize Hypothetical, for a gain; for a reduction it lies below 0.}
+\end{column}
+\end{columns}
+\vskip2pt
+\begin{itemize}\itemsep2pt\small
+  \item AUTOC: the area under the curve. Rank on half A, draw the curve on half B.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Who Gains Most From College?}
+\textbf{The question.} Brand, Xu, Koch, and Geraldo (2021, \textit{Sociological Methodology}):
+does a college degree protect people from low-wage work, and for whom most? Positive or
+negative selection?
+\vskip3pt
+\textbf{The data.} NLSY79: aged 14--17 in 1979, finished at least 12th grade.
+\begin{itemize}\itemsep2pt
+  \item Treatment $D_i$: a four-year degree by age 25.
+  \item Outcome $Y_i$: share of the survey years 1990--2014 (ages about 25--50) in which the
+        hourly wage was below two thirds of that year's median.
+  \item Controls $X_i$: 22 pre-college variables, 24 columns with missing-data flags (race, parents' income and schooling,
+        siblings, ability, college prep, locus of control, delinquency, expectations,
+        school disadvantage, early family formation).
+\end{itemize}
+\vskip2pt
+\textbf{The design.} Selection on observables; causal trees and a causal forest find the subgroups.
+\vskip3pt
+{\small We rebuilt their data from the public NLSY79 and ran every step of this section
+ourselves. All numbers that follow are ours.}
+\end{frame}
+
+\begin{frame}{Our Extract of the NLSY79}
+72 variables downloaded from NLS Investigator; \texttt{Data/build\_nlsy79\_brand.R}.
+Weighted means:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+& no college & college \\
+\midrule
+Black & .160 & .070 \\
+parents' income (\$100s) & 183 & 258 \\
+mother's schooling (years) & 11.4 & 13.3 \\
+father upper white-collar & .163 & .470 \\
+two parents at 14 & .713 & .845 \\
+expects college & .312 & .837 \\
+\midrule
+\textbf{share of years in low-wage work} & \textbf{.297} & \textbf{.096} \\
+$n$ & 3,358 & 755 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+{\small Graduates come from more advantaged homes and spend a third as many years in low-wage
+work. How much of the $-0.20$ gap is college, and for whom?}
+\end{frame}
+
+\begin{frame}{First, the Average Effect}
+Effect of college on the share of years in low-wage work \srcp{figs/w13\_brand.R, 1}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lc@{}}
+\toprule
+estimator & estimate (s.e.) \\
+\midrule
+difference in means & $-0.201$ (0.010) \\
+inverse propensity weighting, forest propensity & $-0.169$ (0.014) \\
+AIPW with forest predictions, ATE & $-0.154$ (0.013) \\
+AIPW with forest predictions, ATT (college graduates) & $-0.111$ (0.018) \\
+OLS with 24 linear controls & $-0.076$ (0.014) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep3pt\small
+  \item A degree cuts the share of low-wage years by about 15 points, against a no-college
+        level of about 30 points: half.
+  \item The ATT is smaller than the ATE. Graduates gain \emph{less} than the average person
+        would: already a hint of negative selection.
+  \item OLS is smallest: it weights each $\tau(x)$ by $e(x)(1-e(x))$ (Week 6), which favours
+        people whose propensity is near one half, not those least likely to go.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Overlap: Who Can We Learn About?}
+\begin{itemize}\itemsep4pt
+  \item The propensity $\hat e(x)$ here is predicted by a regression forest of $D$ on $X$, not a logit
+        (Week 6). 38\% of the sample has $\hat e < 0.05$, a less than one-in-twenty chance of finishing
+        college by 25 given their background.
+  \item For them, $\tau(x)$ rests on very few graduates who look like them: the estimate
+        leans on extrapolation (Week 6).
+  \item The ATE ($-0.154$) averages over everyone, including these; the ATT ($-0.111$)
+        averages over graduates, who are well represented.
+\end{itemize}
+\vskip4pt
+{\small Negative selection, larger effects for the least likely, is a claim about the region of
+weakest overlap. Report effects there with that caveat, or restrict to
+$0.05 \leq \hat e \leq 0.95$.}
+\end{frame}
+
+\begin{frame}{Honesty on the NLSY79}
+A depth-2 tree on half A (2,057 people), then the same leaves estimated on half B
+\srcp{figs/w13\_brand.R, 5}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+leaf & half A (chose) & half B (honest) & $n_B$ \\
+\midrule
+Black, parents' income $\geq$ \$6,038 & $-0.384$ & $-0.219$ (0.060) & 410 \\
+Black, parents' income $<$ \$6,038 & $-0.104$ & $-0.302$ (0.042) & 146 \\
+not Black, father's schooling $< 13.5$ & $-0.175$ & $-0.144$ (0.026) & 1,160 \\
+not Black, father's schooling $\geq 13.5$ & $-0.077$ & $-0.095$ (0.037) & 340 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep3pt\small
+  \item The most extreme half-A leaf ($-0.384$) shrinks by 40\% on fresh data; one leaf even
+        changes rank. The search inflated what it found, as in the simulation.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Causal Forest on the NLSY79}
+4,000 trees, 24 columns of $X$, survey weights \srcp{figs/w13\_brand.R, 2--3}:
+\begin{center}
+\includegraphics[width=0.62\linewidth]{figs/brand_cate_hist.pdf}
+\end{center}
+\vskip-6pt
+\begin{itemize}\itemsep1pt\small
+  \item Every one of the 4,113 estimates is negative; the middle half lies between $-0.16$
+        and $-0.10$; 5\% are below $-0.20$.
+  \item Nuisance forests: $\hat m$ explains 19\% of $Y$, $\hat e$ explains 34\% of $D$; equal
+        weights (plain residual on residual, survey-weighted) give $-0.113$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Is the Spread Real? Calibration on the NLSY79}
+The calibration regression of the scores on the forest's predictions \srcp{figs/w13\_brand.R, 3}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& estimate & s.e. & one-sided $p$ \\
+\midrule
+$a$: mean & 1.04 & 0.13 & $<0.001$ \\
+$b$: differential & 0.72 & 0.53 & 0.087 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep4pt
+  \item The average is right: $a = 1.04$ is within one s.e.\ of 1 (its $p$-value tests $a > 0$).
+  \item The person-by-person differences are suggestive, not conclusive: $b$ is positive but
+        its interval includes 0. Do not read individual $\hat\tau(x)$ as findings.
+  \item The evidence has to come from pre-specified groups.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Effects in Pre-Specified Groups}
+Average $\hat\tau_i^{\text{AIPW}}$ within groups chosen before looking \srcp{figs/w13\_brand.R, 4}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+groups (a) / (b) / (c) & (a) & (b) & (c) \\
+\midrule
+propensity: $<.2$ / $.2$--$.5$ / $\geq .5$ & $-.194$ & $-.068$ & $-.119$ \\
+parents' income: low / mid / high third & $-.208$ & $-.170$ & $-.115$ \\
+mother: $<$HS / HS / some college & $-.181$ & $-.157$ & $-.114$ \\
+ability: low / mid / high third & $-.254$ & $-.151$ & $-.104$ \\
+race: Black / Hispanic / white & $-.275$ & $-.154$ & $-.133$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt\small
+  \item Standard errors 0.015 to 0.034. In every row the least advantaged group gains most.
+  \item The difference between low and high ability, $-0.254 - (-0.104) = -0.15$, is
+        over 4 standard errors.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Effects by Propensity of College}
+\begin{columns}[c]
+\begin{column}{0.56\linewidth}
+\includegraphics[width=\linewidth]{figs/brand_gate_ps.pdf}
+\end{column}
+\begin{column}{0.42\linewidth}
+\small
+Group averages of $\hat\tau_i^{\text{AIPW}}$, 95\% intervals; dashed line: ATE.
+\begin{itemize}\itemsep3pt
+  \item Least likely to go (70\% of the sample): $-0.194$.
+  \item Best linear projection of $\tau(X)$ on $\hat e(X)$:
+  \[
+    -0.193 + 0.168\,\hat e
+  \]
+  (slope s.e.\ 0.057, $p = 0.003$).
+  \item Going from $\hat e = 0$ to $\hat e = 1$ shrinks the effect by 17 points.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Which Covariates Does the Forest Split On?}
+Share of splits on each variable (top 10 of 24), weighted toward early splits \srcp{figs/w13\_brand.R, 6}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lc|lc@{}}
+\toprule
+variable & importance & variable & importance \\
+\midrule
+ability (AFQT) & .241 & father white-collar & .055 \\
+father's schooling & .194 & locus of control & .043 \\
+mother's schooling & .119 & siblings & .041 \\
+school disadvantage & .088 & male & .029 \\
+parents' income & .083 & delinquency & .017 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep3pt\small
+  \item The forest \emph{used} ability and the parents' schooling most to separate effects,
+        the same variables whose groups differ in the previous tables.
+  \item Correlated variables (the parents' schooling and income) can trade places; low
+        importance is not ``no moderation.''
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Would Targeting Help on the NLSY79?}
+Ranking learned on half A, TOC curve on half B. Effects are reductions in low-wage work, so a useful
+ranking gives a curve \emph{below} 0
+\srcp{figs/w13\_brand.R, 7--8}:
+\begin{center}
+\includegraphics[width=0.58\linewidth]{figs/brand_toc.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep2pt\small
+  \item Serving the 20\% with the most negative forest $\hat\tau(x)$: $-0.09$ (s.e.\ 0.04) beyond the ATE.
+        Ranking by the propensity, lowest first: $-0.14$ (0.04).
+  \item AUTOC: forest $-0.044$ (0.015), propensity $-0.057$ (0.016). One number, the chance of going,
+        ranks as well as the 4,000-tree forest.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What the NLSY79 Shows}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Negative selection}: the least likely to go gain most. Propensity below .2:
+        $-0.194$; at .5 or above: $-0.119$; projection slope $0.168$ ($p = 0.003$); ATT
+        $-0.111$ vs.\ ATE $-0.154$.
+  \item The same gradient by ability, parents' income, mother's schooling, and race.
+  \item Person-level $\hat\tau(x)$ are noisy (calibration $p = 0.087$); the evidence is in the
+        pre-specified groups.
+\end{itemize}
+\vskip4pt
+\textbf{What the forest cannot settle}
+\begin{itemize}\itemsep4pt
+  \item Unmeasured confounding may differ across groups: motivation among low-propensity
+        graduates. Sensitivity analysis by group (Week 6 logic).
+  \item The largest effects sit where overlap is thinnest.
+  \item The ``effect'' bundles the degree with everything that comes with it (networks,
+        location, partners).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reporting Heterogeneous Effects: a Checklist\core}
+\begin{enumerate}\itemsep4pt
+  \item State the identifying assumption and show overlap; say where $\hat e$ is near 0 or 1.
+  \item Report the average effect first (ATE and ATT), from the doubly robust scores.
+  \item Test before reading: the calibration test, with its $p$-value, whatever it says.
+  \item Report effects for a \emph{short, pre-specified} list of groups, from the scores.
+  \item Label data-found subgroups (trees) as exploratory; estimate them honestly and
+        check stability across random splits.
+  \item Interpret importance as ``used by the forest,'' never as ``causes the heterogeneity.''
+  \item For targeting, report a held-out TOC curve and AUTOC, and compare with a simple rule.
+\end{enumerate}
+\vskip4pt
+{\small Code: \texttt{grf} (\texttt{causal\_forest}, \texttt{average\_treatment\_effect},
+\texttt{test\_calibration}, \texttt{best\_linear\_projection}, \texttt{rank\_average\_treatment\_effect});
+\texttt{htetree} for causal trees. Lab 13, Part 1.}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[DML]{Double Machine Learning}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{The Second Ingredient: Cross-Fitting\core}
-Orthogonality is not quite enough. If $\hat m$ is fitted on the \emph{same}
-observations where it is evaluated, its errors correlate with those units'
-outcomes, \alert{overfitting bias}, which orthogonality does not remove.
+\begin{frame}{Back to One Number}
+Often the question is a single effect, with many controls:
+\begin{itemize}\itemsep3pt
+  \item Do poorer countries grow faster than richer ones, given 60 characteristics of each
+        country?
+  \item Does a training program raise earnings, given ten years of earnings history?
+  \item Does price lower demand, given everything written about the product?
+\end{itemize}
 \vskip3pt
-\begin{block}{Cross-fitting}
-Split the sample into $K$ folds. For each fold $k$: estimate
-$\hat\ell^{(-k)}, \hat m^{(-k)}$ on the \emph{other} folds, and form residuals
-only for observations \emph{in} fold $k$. Then pool.
+The \alert{partially linear model}: one effect, everything else flexible.
+\begin{align*}
+  Y_i &= \tau\, D_i + g(X_i) + \epsilon_i, \qquad \E[\epsilon_i \mid D_i, X_i] = 0 \\
+  D_i &= e(X_i) + v_i, \qquad\qquad\ \ \E[v_i \mid X_i] = 0
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item $\tau$: the target. $g$ and $e$: \textbf{nuisance functions}, needed but not of interest;
+        any shape, $X$ possibly large. For binary $D$, $e(X)$ is the propensity score.
+  \item Under ignorability given $X$, $\tau$ is causal (a weighted average of the $\tau(x)$
+        when effects vary; AIPW targets the ATE).
+  \item Week 1: linear $g$, $e$, few controls. Now: estimate $g$ and $e$ by ML.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Week 1's FWL, Written as a Normal Equation\core}
+OLS of $Y$ on $D$ and $X$. Let $\tilde D_i$ be the residual from regressing $D$ on $X$, and $\tilde Y_i$ the residual
+from regressing $Y$ on $X$. The OLS residual is uncorrelated with every regressor, hence with $\tilde D_i$:
+\begin{align*}
+  0 &= \textstyle\sum_i \tilde D_i\,\big(Y_i - \hat\tau D_i - X_i'\hat\beta\big)
+   && \text{\footnotesize $\tilde D_i$ is $D_i$ minus a combination of $X_i$} \\
+  &= \textstyle\sum_i \tilde D_i\,\big(Y_i - \hat\tau D_i\big)
+   && \text{\footnotesize $\tilde D_i$ is uncorrelated with $X_i$} \\
+  &= \textstyle\sum_i \tilde D_i\,\big(\tilde Y_i - \hat\tau\,\tilde D_i\big)
+   && \text{\footnotesize $Y_i - \tilde Y_i$ and $D_i - \tilde D_i$ are linear in $X_i$}
+\end{align*}
+Solve the last line:
+\begin{align*}
+  \hat\tau = \frac{\sum_i \tilde D_i\,\tilde Y_i}{\sum_i \tilde D_i^2} .
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item The normal equation says: choose $\tau$ so that what is left of $Y$, after $X$ and $\tau D$, is uncorrelated
+        with what is left of $D$ after $X$.
+  \item $X$ enters only through two predictions, of $Y$ and of $D$. Here both are linear.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DML: the Same Equation, as a Moment Condition}
+Replace the two linear predictions (``double'') by any functions of $X$: $\ell(x) = \E[Y_i\mid X_i = x]$,
+$e(x) = \E[D_i\mid X_i = x]$; together $\eta = (\ell, e)$. A \textbf{moment condition} is a population average
+that is zero at the true parameter:
+\begin{align*}
+  \E\big[\psi(W_i; \tau, \eta)\big] = 0, \qquad
+  \psi(W_i; \tau, \eta) = \Big(Y_i - \ell(X_i) - \tau\,\big(D_i - e(X_i)\big)\Big)\big(D_i - e(X_i)\big) .
+\end{align*}
+$\psi$ is the \textbf{score}; $W_i = (Y_i, D_i, X_i)$. It holds at the true $\tau$ in $Y_i = \tau D_i + g(X_i) + \epsilon_i$:
+\begin{align*}
+  \ell(X_i) &= \tau\,e(X_i) + g(X_i)
+   && \text{\footnotesize take $\E[\,\cdot\mid X_i]$ of the model} \\
+  Y_i - \ell(X_i) - \tau\big(D_i - e(X_i)\big) &= \epsilon_i
+   && \text{\footnotesize subtract: $g$ drops out} \\
+  \E\big[\psi\big] = \E\big[\epsilon_i\,(D_i - e(X_i))\big] &= 0
+   && \text{\footnotesize $\E[\epsilon_i\mid D_i, X_i] = 0$}
+\end{align*}
+\vskip-4pt
+\textbf{Estimator}: replace $\E$ by the sample average and $\eta$ by ML predictions $(\hat\ell, \hat e)$; solve for $\tau$:
+$\hat\tau = \sum_i\tilde D_i\tilde Y_i / \sum_i\tilde D_i^2$. FWL's normal equation was this, with linear predictions.
+\end{frame}
+
+\begin{frame}{Neyman Orthogonality}
+The score, with predictions $\eta = (\ell, e)$:
+\begin{align*}
+  \psi(W_i; \tau, \eta) = \Big(Y_i - \ell(X_i) - \tau\,\big(D_i - e(X_i)\big)\Big)\big(D_i - e(X_i)\big) .
+\end{align*}
+\vskip-4pt
+\begin{block}{Proved \srcp{Chernozhukov et al.\ 2018}}
+This score is \textbf{Neyman orthogonal}: at the true $\ell$ and $e$,
+$\ \partial_\eta\, \E\big[\psi(W_i; \tau, \eta)\big] = 0$.
 \end{block}
-\vskip3pt
-\begin{align*}
-  \hat\theta_{\text{DML}} =
-  \frac{\frac1n\sum_{k}\sum_{i \in \mathcal I_k}
-        \big(D_i - \hat m^{(-k)}(W_i)\big)\big(Y_i - \hat\ell^{(-k)}(W_i)\big)}
-       {\frac1n\sum_{k}\sum_{i \in \mathcal I_k}\big(D_i - \hat m^{(-k)}(W_i)\big)^2}
-\end{align*}
 \vskip2pt
-This is the same device as cross-validation in Week 12, but used to protect
-\emph{inference}, not to select a tuning parameter.
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{The DML Recipe\core}
-\begin{enumerate}\itemsep3pt
-  \item Split the sample into $K$ folds (typically $K = 5$; split on the
-        \emph{independent unit} if data are clustered).
-  \item On the training folds, estimate $\hat\ell(W) = \hat\E[Y\mid W]$ and
-        $\hat m(W) = \hat\E[D\mid W]$ with any ML method, lasso, random forest,
-        boosting, or an ensemble.
-  \item On the held-out fold, form residuals $\tilde Y_i$ and $\tilde D_i$.
-  \item Pool across folds and regress $\tilde Y$ on $\tilde D$.
-  \item With independent observations, the standard error is the usual
-        heteroskedasticity-robust one from that final bivariate regression:
-        \alert{orthogonality is what makes it valid} despite the ML first stage.
-        \emph{With clustered data, keeping clusters intact within folds is not
-        enough}, the score variance must also be clustered at the independent unit.
-  \item Repeat the whole split several times with different seeds and take the
-        median; the answer should not depend on the partition.
-\end{enumerate}
-\vskip3pt
-\srct{Chernozhukov et al.\ (2018)}. In \texttt{R}: \texttt{DoubleML} with
-\texttt{mlr3} learners.
-\end{frame}
-
-\begin{frame}{The DML Variance}
-Write the score as $\psi = (\tilde Y - \theta\tilde D)\tilde D$ with
-$\tilde Y = Y - \ell(W)$, $\tilde D = D - m(W)$. A linear score gives a ratio, and a
-ratio gives a sandwich:
-\begin{align*}
-  \hat\theta - \theta_0
-  &= \frac{\frac1n\sum_i (\tilde Y_i - \theta_0\tilde D_i)\tilde D_i}{\frac1n\sum_i \tilde D_i^2}
-   && \text{\footnotesize subtract $\theta_0$ from the ratio} \\
-  \sqrt n(\hat\theta - \theta_0) &\dto N\Big(0,\ \frac{\E[\psi^2]}{J^2}\Big),
-  \qquad J = \E[\tilde D^2]
-   && \text{\footnotesize CLT on top; LLN below}
-\end{align*}
+\textbf{In plain language}: if $\ell$ and $e$ are estimated with a small error, the moment condition does not
+move, and so $\hat\tau$ is not biased by it.
 \begin{itemize}\itemsep2pt
-  \item The estimate of $\E[\psi^2]/J^2$ is the heteroskedasticity-robust variance
-        of the final residual-on-residual regression (Week 2), computed with
-        cross-fitted residuals.
-  \item Orthogonality is what lets the estimated $\hat\ell, \hat m$ stand in for the
-        true ones without adding a term to this variance.
-  \item With $S$ repeated splits: take the median estimate, and inflate the
-        variance by the spread across splits.
+  \item \textbf{Why}: both $Y$ and $D$ are residualized. An error in $\hat\ell$ or $\hat e$ is a function of $X$, and it
+        enters multiplied by a residual that $X$ cannot predict. On average the product is zero: FWL's logic.
+  \item \textbf{What is left}: (error in $\hat\ell$) $\times$ (error in $\hat e$), far smaller than either error.
+  \item \textbf{Not every score has this}: multiply by $D_i$ in place of $D_i - e(X_i)$, and an error in
+        $\hat\ell$ biases $\hat\tau$ one for one.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{The ATE Score: AIPW Is DML}
-Binary $D$, no constant-effect assumption: target the ATE with outcome models
-$m_d(x) = \E[Y\mid D=d, X=x]$ and propensity $e(x)$ (Week 6):
-\begin{align*}
-  \psi_i = m_1(X_i) - m_0(X_i)
-  + \frac{D_i\,(Y_i - m_1(X_i))}{e(X_i)}
-  - \frac{(1-D_i)(Y_i - m_0(X_i))}{1 - e(X_i)} - \theta .
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item Orthogonal in $(m_0, m_1, e)$: the error is
-        $\E\big[(\hat e - e)(\hat m_1 - m_1)/\hat e\big]$ plus the analogous term
-        for $m_0$, a product.
-  \item With cross-fitted ML for the three functions, this is DML for the
-        \textbf{interactive regression model}. It estimates the ATE even when effects vary;
-        the partially linear model estimates a variance-weighted average of them.
-  \item Weights $1/\hat e$ explode near 0 or 1: check overlap, trim, or
-        target the ATT or the overlap-weighted effect (Week 6).
-\end{itemize}
-\end{frame}
-
-\begin{frame}{DML for Instruments: the Partially Linear IV Model}
-$Y = \theta D + g(W) + \epsilon$ with $\E[\epsilon\mid Z, W] = 0$; $D$ endogenous,
-$Z$ an instrument valid only conditional on $W$ (Week 7):
-\begin{align*}
-  \psi = \big[(Y - \ell(W)) - \theta(D - r(W))\big]\big(Z - q(W)\big),
-  \qquad
-  \hat\theta = \frac{\sum_i (Z_i - \hat q)(Y_i - \hat\ell)}{\sum_i (Z_i - \hat q)(D_i - \hat r)}
-\end{align*}
-with $\ell, r, q$ the conditional means of $Y, D, Z$ given $W$, cross-fitted.
-\begin{itemize}\itemsep3pt
-  \item A Wald ratio of residuals: partial $W$ out of $Y$, $D$, and $Z$ by ML, then IV.
-  \item Card's proximity instrument (Week 7) is credible only given region,
-        urbanicity, and family background; this lets them enter flexibly.
-  \item Weak-instrument problems survive: a small $\sum(Z - \hat q)(D - \hat r)$ is
-        still a small denominator; Anderson--Rubin logic still applies.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Folds, Clusters, and Panels}
-\begin{itemize}\itemsep4pt
-  \item Cross-fitting assumes the held-out fold is independent of the training
-        folds. With students in schools or person-years in a panel, \alert{split by
-        school or person}; otherwise the same person's other years leak into
-        the nuisance fit and the overfitting bias returns.
-  \item The variance must also be clustered at that level (sum the score within
-        cluster before squaring).
-  \item \textbf{Repeated splits}: the estimate depends on the random partition;
-        repeat $S$ times, report the median, and add the between-split spread to
-        the variance. The 401(k) estimates use 5 folds $\times$ 5 repetitions.
-  \item \textbf{How many folds}: 5 is typical; 2 wastes data in each nuisance fit.
-        DML2 (pool the score across folds) is preferred over averaging
-        fold-specific estimates.
-\end{itemize}
-\end{frame}
-
-
-
-\begin{frame}[allowframebreaks,t]{What the Theory Requires, and What It Does Not\core}
-\begin{columns}[T]
-\begin{column}{0.47\textwidth}
-\textbf{Requires}
-\begin{itemize}\small\itemsep2pt
-  \item Conditional ignorability given $W$ (unchanged!).
-  \item Overlap: $\hat m(W)$ bounded away from 0 and 1 for binary $D$.
-  \item Nuisance convergence fast enough that the \emph{product} of the two
-        rates is $o(n^{-1/2})$; each faster than $n^{-1/4}$ is sufficient but not
-        necessary. Approximate sparsity for lasso, smoothness for forests.
-  \item Orthogonal moment $+$ cross-fitting.
-\end{itemize}
+\begin{frame}{Why We Care: Errors in the Predictions Barely Move $\hat\tau$}
+\begin{columns}[c]
+\begin{column}{0.56\linewidth}
+\includegraphics[width=\linewidth]{figs/orth_surfaces.pdf}
+{\scriptsize Mean of the score at the true $\tau = 0.5$ when the outcome prediction is off by $a$ and $\hat e$ by $b$
+\srcp{figs/w13\_surfaces.R}. Left: DML's score, flat at $(0, 0)$. Right: the score that multiplies by $D$, a tilted plane.}
 \end{column}
-\begin{column}{0.49\textwidth}
-\textbf{Does not require}
-\begin{itemize}\small\itemsep2pt
-  \item Correct functional form for $g$ or $m$.
-  \item Knowing which of the $p$ covariates matter.
-  \item $p \ll n$. High-dimensional $W$ is the point.
-  \item Consistent \emph{model selection}, lasso may pick the wrong variables
-        and $\hat\theta$ is still fine.
+\begin{column}{0.42\linewidth}
+\small
+\begin{itemize}\itemsep4pt
+  \item ML predictions are biased on purpose, and improve with $n$ more slowly than a standard error
+        shrinks (Week 12).
+  \item Tilted plane: that bias passes to $\hat\tau$ one for one. The interval is centered in the wrong
+        place, however large $n$.
+  \item Flat surface: only error $\times$ error passes. Errors of 0.1 move the score by 0.005, not 0.05.
+  \item So $\hat\tau$ has the usual standard error and 95\% interval, as if $\ell$ and $e$ were known.
 \end{itemize}
 \end{column}
 \end{columns}
-\vskip5pt
-\begin{alertblock}{The assumption that does not go away}
-\alert{DML does not identify anything.} It is an estimation technology for a
-parameter already identified by the arguments of Weeks 5--11. If $W$ omits a
-confounder, no amount of machine learning helps.
-\end{alertblock}
 \end{frame}
 
-\begin{frame}{Running Example: 401(k) Eligibility and Wealth}
-\textbf{The question.} Does being eligible for a 401(k) plan raise household
-net financial assets? Eligibility is set by the employer, so it is not randomly
-assigned: it is plausibly ignorable only after conditioning on income, age, and
-other characteristics that predict both job choice and saving
-\srcp{Poterba, Venti, and Wise 1994; Chernozhukov et al.\ 2018}.
+\begin{frame}{Cross-Fitting: Why\core}
+Orthogonality covers prediction errors that do not depend on person $i$'s own noise.
+If $\hat\ell$ and $\hat e$ are trained on person $i$, they partly memorize $i$: \alert{overfitting bias}.
+\vskip4pt
+\begin{itemize}\itemsep5pt
+  \item Extreme case: a deep tree gives $\hat e(X_i) = D_i$. Every $\tilde D_i = 0$: nothing is left to compare.
+  \item Milder: a flexible $\hat\ell$ is pulled toward $Y_i$ itself, so $\tilde Y_i$ has lost part of $i$'s own
+        $\epsilon_i$ and part of the effect. The residuals are no longer what $X$ fails to predict.
+  \item The fix is Week 12's test set: predict each person from a model that never saw them. Then the
+        prediction error is a function of $X_i$ only, unrelated to $\epsilon_i$.
+  \item A single train--test split would waste half the people. Rotate the roles instead, so that everyone is
+        predicted once and everyone is used to train.
+\end{itemize}
 \vskip3pt
-\textbf{The data.} SIPP 1991, 9,915 households (\texttt{hdm::pension}). 37\% eligible.
-Controls: age, income, education, family size, married, two earners, defined-benefit
-pension, IRA, home owner.
-\vskip3pt
-\textbf{Why ML}: the confounders enter through income and age in ways no one
-would write down; a linear model in nine controls is a strong functional-form claim.
-\vskip3pt
-\textbf{Plan}: raw gap; OLS; single vs.\ double lasso on a 139-column dictionary;
-DML, partially linear and interactive, with lasso, forests, and boosting.
+{\small The causal forest did the same job: each person was predicted by trees that did not draw them.}
 \end{frame}
 
-\begin{frame}{401(k): One Effect, Many Estimators}
-Effect of eligibility on net financial assets, dollars (robust se) \srcp{figs/w13\_401k.R}:
-\begin{center}\scriptsize
-\renewcommand{\arraystretch}{0.95}
-\begin{tabular}{@{}llcc@{}}
-\toprule
-estimator & nuisances & estimate & se \\
-\midrule
-difference in means & none & 19,559 & 1,413 \\
-OLS, 9 linear controls & linear & 5,896 & 1,524 \\
-single selection (lasso of $Y$ only) & 9 of 139 terms & 8,099 & \\
-double selection & 14 of 139 terms & 8,956 & 1,290 \\
-\midrule
-DML, partially linear & lasso (139 terms) & 9,609 & 1,343 \\
- & random forest & 8,965 & 1,306 \\
- & boosting & 9,907 & 1,368 \\
-DML, interactive (ATE) & lasso & 9,319 & 3,065 \\
- & random forest & 8,022 & 1,214 \\
- & boosting & 8,232 & 1,239 \\
-\bottomrule
-\end{tabular}
+\begin{frame}{Cross-Fitting: How\core}
+\begin{center}
+\begin{tikzpicture}[x=1.55cm,y=0.38cm,every node/.append style={scale=0.85}]
+  \foreach \r in {1,...,5} {
+    \foreach \c in {1,...,5} {
+      \ifnum\r=\c \node[foldres] at (\c,-\r) {predict};
+      \else \node[foldfit] at (\c,-\r) {fit}; \fi }
+    \node[font=\scriptsize,anchor=east] at (0.45,-\r) {round \r}; }
+  \foreach \c in {1,...,5} \node[font=\scriptsize] at (\c,-0.2) {fold \c};
+\end{tikzpicture}
 \end{center}
 \vskip-4pt
-{\footnotesize Flexible adjustment lands near \$8,000--10,000 whatever the learner; Chernozhukov et al.\
-(2018) report 9,247 and 8,105 with forests. The partially linear model weights effects by
-$\Var(D\mid X)$; the interactive one targets the ATE (lasso's se is large: propensities near 0.04).}
-\end{frame}
-
-\begin{frame}{How Robust? Sensitivity for DML}
-\srct{Chernozhukov, Cinelli, Newey, Sharma, and Syrgkanis (forthcoming)} extend
-Week 6's omitted-variable sensitivity to DML: how strong would an unobserved
-confounder have to be?
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Bound the bias by two partial $R^2$'s: how much of the residual variation
-        in the outcome, and in the treatment (its Riesz representer), the confounder
-        explains, $C_Y^2$ and $C_D^2$.
-  \item 401(k), DML with forests: partially linear estimate 9,002 (se 1,394);
-        \textbf{robustness value} 5.4\%: a confounder explaining 5.4\% of both
-        residual variations would bring the estimate to zero.
-  \item A confounder as strong as $C_Y^2 \approx 4\%$, $C_D^2 \approx 3\%$ (their
-        benchmark, calibrated on observed variables): bias at most 4,196; bounds
-        [4,808; 13,196]. Still positive.
-\end{itemize}
-\vskip3pt
-{\footnotesize Same logic as Cinelli and Hazlett (Week 6), with the treatment equation
-replaced by the Riesz representer, which covers the ATE score as well as the partially
-linear one.}
-\end{frame}
-
-
-\begin{frame}[allowframebreaks,t]{Where DML Plugs In}
-The same two ingredients, an orthogonal score plus cross-fitting, apply to
-almost every design in this course:
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{lll}
-\toprule
-Design & Nuisance functions & Week \\
-\midrule
-Partially linear regression & $\E[Y\mid W]$, $\E[D\mid W]$ & 1 \\
-Interactive / ATE under CIA (AIPW) & $\E[Y\mid D,W]$, $\Pr(D=1\mid W)$ & 6 \\
-Instrumental variables & $\E[Y\mid W]$, $\E[D\mid W]$, $\E[Z\mid W]$ & 7 \\
-Regression discontinuity & $\E[Y\mid W]$ within the bandwidth & 9 \\
-Conditional DID & outcome trend and propensity, by cohort & 10 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip4pt
-\begin{itemize}\itemsep2pt
-  \item For IV: residualize $Y$, $D$, \emph{and} $Z$ on $W$ using ML, then run
-        2SLS on the residuals. This is what lets us replace AJR's ``linear in
-        distance from the equator plus continent dummies'' with something
-        flexible.
-  \item For conditional DID: this is precisely the doubly robust
-        Callaway--Sant'Anna estimator from Week 10, with ML nuisances.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Recent Directions}
-\begin{itemize}\itemsep4pt
-  \item \textbf{Automatic debiasing} \srcp{Chernozhukov, Newey, and Singh 2022}: every
-        orthogonal score in this lecture is ``plug-in $+$ a weight $\times$ residual''.
-        The weight (the Riesz representer: $1/e(X)$ terms for the ATE) can be
-        learned directly by lasso, without deriving its formula, for any linear
-        functional (average derivatives, policy effects).
-  \item \textbf{Deep learning for causal effects}: networks with a shared representation
-        of $X$ and one output head per treatment arm, sometimes with a third head
-        for the propensity; train, then plug the heads into the AIPW score
-        \srcp{Koch et al.\ 2025, a primer for sociologists}.
-  \item \textbf{Text and images as confounders}: embeddings (Week 12) enter $W$; the
-        orthogonal score makes small errors in those representations second order.
-  \item \textbf{Software}: \texttt{DoubleML} (R, Python), \texttt{grf}, and
-        \texttt{hdm}; the textbook is \srct{Chernozhukov, Hansen, Kallus, Spindler,
-        and Syrgkanis (2024)}.
-\end{itemize}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[HTE]{Heterogeneous Treatment Effects}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}\sectionpage\end{frame}
-
-\begin{frame}{From ATE to CATE\core}
-Drop the constant-effect assumption. The target becomes the
-\alert{conditional average treatment effect}
-\begin{align*}
-  \tau(x) = \E\big[Y_i(1) - Y_i(0) \mid X_i = x\big] .
-\end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Sociologically this is often the substantive question: \emph{for whom}
-        does college pay off, \emph{which} neighbourhoods benefit, \emph{who} is
-        harmed.
-  \item \alert{The naive approach, run subgroup regressions, report the
-        significant ones, is a multiple-testing disaster} and does not
-        replicate. It is the specification search of Week 2 with more rooms to
-        search.
-  \item The modern approach: build an orthogonal, doubly robust
-        \emph{pseudo-outcome} whose conditional mean is $\tau(x)$, then use ML to
-        estimate that conditional mean, with honest sample splitting so that
-        the subgroups are not chosen using the same data that tests them.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Meta-Learners: Five Ways to Estimate $\tau(x)$}
-With $\mu_d(x) = \E[Y\mid D=d, X=x]$ and $e(x) = \Pr(D=1\mid X=x)$:
-\begin{center}\scriptsize
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{7.4cm}>{\raggedright\arraybackslash}p{3.4cm}@{}}
-\toprule
-learner & recipe & weakness \\
-\midrule
-S & one model $\hat\mu(x, d)$; $\hat\tau(x) = \hat\mu(x,1) - \hat\mu(x,0)$ & regularization can shrink $d$ out \\
-T & separate $\hat\mu_1$, $\hat\mu_0$; subtract & errors of two fits add \\
-X & impute each unit's effect from the \emph{other} group's model, then smooth, weighted by $e(x)$ \srcp{Künzel et al.\ 2019} & good when groups differ in size \\
-R & minimize $\sum_i\big[(Y_i - \hat\ell(X_i)) - (D_i - \hat e(X_i))\tau(X_i)\big]^2$ \srcp{Nie and Wager 2021} & needs orthogonal residuals \\
-DR & regress the AIPW pseudo-outcome $\Gamma_i$ on $X_i$ \srcp{Kennedy 2023} & extreme $1/\hat e$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\begin{itemize}\itemsep0pt\small
-  \item R and DR are \emph{orthogonal}: their error beyond an oracle is a product,
-        $(\hat e - e)(\hat\mu_d - \mu_d)$, as in DML.
-  \item The R-learner is Robinson's partialling out with $\theta$ replaced by $\tau(X)$.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{The Doubly Robust Score as a Pseudo-Outcome\core}
-Take the AIPW summand from Week 6, unit by unit:
-\begin{align*}
-  \Gamma_i = \hat m_1(X_i) - \hat m_0(X_i)
-  + \frac{D_i\big(Y_i - \hat m_1(X_i)\big)}{\hat e(X_i)}
-  - \frac{(1-D_i)\big(Y_i-\hat m_0(X_i)\big)}{1-\hat e(X_i)} .
-\end{align*}
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item Its \emph{average} is the AIPW estimate of the ATE; that was Week 6.
-  \item With the \emph{true} nuisance functions, its conditional mean is exactly
-        the CATE: $\E[\Gamma_i \mid X_i = x] = \tau(x)$. With cross-fitted
-        estimates it holds approximately, at a rate governed by the same product
-        condition as before.
-  \item So: construct $\Gamma_i$ with cross-fitted nuisances, then \alert{regress
-        $\Gamma_i$ on $X_i$ by any method you like}.
-  \begin{itemize}\itemsep1pt
-    \item Regress on a few chosen covariates $\to$ \textbf{group average treatment
-          effects} (GATEs) with valid standard errors.
-    \item Regress with a forest $\to$ a nonparametric CATE surface.
-    \item Regress on a constant $\to$ back to the ATE.
-  \end{itemize}
-  \item \alert{This one construction unifies the whole section.}
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Causal Forests\core}
-\srct{Wager and Athey (2018)}, \srct{Athey, Tibshirani, and Wager (2019)}: a
-random forest whose splits are chosen to maximize \emph{heterogeneity in the
-treatment effect} rather than in the outcome.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Honesty}: within each tree, one subsample chooses the splits and a
-        \emph{disjoint} subsample estimates the effects in the resulting leaves.
-        This is what delivers asymptotic normality and valid pointwise intervals
-, without it, leaves are selected \emph{because} they show large
-        effects.
-  \item \textbf{Local centering}: residualize $Y$ and $D$ on $X$ first (i.e.\
-        orthogonalize), exactly as in DML.
-  \item Output: an estimate $\hat\tau(x)$ for every unit, with standard errors,
-        plus variable-importance measures for \emph{effect} heterogeneity.
-  \item \texttt{grf::causal\_forest()}.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{How a Causal Forest Estimates $\tau(x)$}
-A forest defines \alert{weights}: $\alpha_i(x)$ = how often unit $i$ shares a leaf
-with the point $x$, averaged over trees. Then solve a local, residualized
-regression:
-\begin{align*}
-  \hat\tau(x) = \frac{\sum_i \alpha_i(x)\,\big(D_i - \hat e(X_i)\big)\big(Y_i - \hat\ell(X_i)\big)}
-                     {\sum_i \alpha_i(x)\,\big(D_i - \hat e(X_i)\big)^2}
-\end{align*}
-\begin{itemize}\itemsep3pt
-  \item The partially linear (Robinson) estimator, but weighted toward units near
-        $x$: DML made local. With $\alpha_i(x) = 1/n$ it is the DML estimate.
-  \item Splits are chosen to make $\hat\tau$ differ most between children
-        (a gradient approximation keeps it fast) \srcp{Athey, Tibshirani, and Wager 2019}.
-  \item \textbf{Honesty}: half of each tree's subsample chooses the splits, the other
-        half fills the leaves. \textbf{Subsampling} (not bootstrap) gives the
-        variance for pointwise intervals \srcp{Wager and Athey 2018}.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Reporting Heterogeneity Honestly\core}
-An estimated $\hat\tau(x)$ that varies is not by itself evidence of
-heterogeneity, noise varies too.
-\vskip3pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Calibration test}: regress the doubly robust scores on
-        $\hat\tau(X_i)$ (out of fold). A slope near 1 indicates real, well-calibrated
-        heterogeneity; a slope near 0 says your CATE surface is noise.
-        \texttt{grf::test\_calibration()}.
-  \item \textbf{Sorted group ATEs}: rank units by $\hat\tau$, form quantile
-        groups, and report the doubly robust ATE \emph{within each group} using
-        held-out data. Then test whether the top and bottom groups differ.
-  \item \textbf{Pre-specify} the moderators you care about wherever possible, and
-        label exploratory heterogeneity as exploratory.
-  \item \alert{Effect heterogeneity is where causal ML is most useful and most
-        abused.} The honest-splitting discipline is not optional.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Testing for Heterogeneity: BLP and GATES \srcp{Chernozhukov, Demirer, Duflo, and Fernández-Val 2025}}
-Given a proxy $S(X)$ for the CATE, built on one half of the data, use the other half:
-\begin{align*}
-  \textbf{BLP:}\quad &\Gamma_i = \beta_1 + \beta_2\big(S(X_i) - \bar S\big) + \text{error}
-   && \text{\footnotesize $\beta_1$: ATE; $\beta_2 = 1$ if $S$ is the true CATE} \\
-  \textbf{GATES:}\quad &\gamma_k = \E\big[\Gamma_i \mid S(X_i) \in \text{quintile } k\big]
-   && \text{\footnotesize effects in groups sorted by $S$}
-\end{align*}
-\begin{itemize}\itemsep2pt
-  \item $\beta_2 = 0$ means no detectable heterogeneity along $S$; the test is valid even
-        if $S$ is a bad estimate (a bad $S$ just has low power).
-  \item \textbf{CLAN}: compare covariate means between the most and least affected groups.
-  \item Repeat over many splits and report medians (with adjusted $p$-values).
-\end{itemize}
-\vskip2pt
-{\footnotesize India immunization incentives (25 vs.\ 78 villages): ATE 2.8 shots per village per
-month; most-affected fifth $+13.2$, least-affected $-8.0$, significantly negative.}
-\end{frame}
-
-\begin{frame}{Heterogeneity in the 401(k) Data}
-Causal forest on the nine controls; doubly robust scores for every comparison
-\srcp{figs/w13\_401k.R}:
+\begin{enumerate}\itemsep2pt\small
+  \item Split the people into $K = 5$ folds (whole clusters together, if clustered).
+  \item Round $k$: fit $\hat\ell$ and $\hat e$ on the four other folds, with any ML method; predict for fold $k$;
+        form $\tilde Y_i$, $\tilde D_i$ there.
+  \item After five rounds everyone has residuals from models that never saw them. Regress $\tilde Y$ on $\tilde D$
+        once, on everyone: $\hat\tau = \sum_i\tilde D_i\tilde Y_i/\sum_i\tilde D_i^2$.
+  \item Standard error: the robust one from that regression. Repeat over several random splits; report the median.
+\end{enumerate}
 \vskip-2pt
+{\small \srct{Chernozhukov et al.\ (2018)}. The held-out predictions also tell how well each learner predicts: used next.}
+\end{frame}
+
+\begin{frame}{An Example: Do Poor Countries Catch Up?}
+\textbf{The question.} The convergence hypothesis (Solow): among countries with the same characteristics,
+poorer ones grow faster. In $Y_i = \tau D_i + g(X_i) + \epsilon_i$, convergence is $\tau < 0$.
+\vskip3pt
+\textbf{The data.} Barro and Lee (1994): 90 countries \srcp{\texttt{hdm::GrowthData}}.
+\begin{itemize}\itemsep2pt
+  \item $Y$: growth of GDP per capita over a decade (log change; mean 0.045, sd 0.051).
+  \item $D$: log GDP per capita at the start, 1965.
+  \item $X$: 60 country characteristics (schooling, trade openness, investment, government spending,
+        political instability, population) and their squares: \alert{120 controls}.
+\end{itemize}
+\vskip3pt
+\textbf{The problem.} 120 controls, 90 countries \srcp{figs/w13\_growth.R, 1}:
+\begin{itemize}\itemsep2pt
+  \item No controls: $0.001$. Rich and poor countries differ in everything else.
+  \item OLS \alert{cannot be estimated}: 122 coefficients from 90 countries. The fit is perfect, every
+        residual is 0, and no standard error exists.
+  \item DML: let a learner decide how much of the 120 to use. Which learner?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Which Learner? Judge by Held-Out Predictions\core}
+Four learners, 5 folds \srcp{figs/w13\_growth.R, 2}. Out-of-fold $R^2$: share of variance predicted for
+countries the model never saw; below 0 is worse than predicting the mean.
 \begin{center}
-\includegraphics[width=0.66\linewidth]{figs/k401_gates.pdf}
+\includegraphics[width=0.85\linewidth]{figs/growth_learners.pdf}
 \end{center}
-\vskip-10pt
-\begin{itemize}\itemsep0pt\small
-  \item ATE 7,964 (1,124). Calibration: mean prediction 1.10 (good); differential
-        prediction 0.03 ($p = 0.47$): the forest's own ranking carries no detectable signal.
-  \item By pre-specified income quintile: 3,946 (904) at the bottom to 19,326 (4,656)
-        at the top. Partly scale: dollars of saving rise with income.
-  \item RATE on a held-out half: ranking by the forest 1,253 (1,928); by income
-        9,661 (5,974). Targeting gains are not established.
+\vskip-8pt
+\begin{itemize}\itemsep2pt\small
+  \item Best for $Y$: forest (0.17); the lasso is below 0 ($-0.15$). Best for $D$: lasso (0.83).
+        Growth is hard to predict; initial GDP is easy.
+  \item The four estimates agree: $-0.033$ to $-0.042$, every interval below 0.
 \end{itemize}
 \end{frame}
 
-
-\begin{frame}{Should We Target? Rank-Weighted ATEs \srcp{Yadlowsky et al.\ 2025}}
-A prioritization rule $S(X)$ ranks units; treat the top share $u$ first.
-\begin{align*}
-  \text{TOC}(u) &= \E\big[\tau(X)\mid S(X)\ \text{in the top } u\big] - \text{ATE}
-   && \text{\footnotesize gain from targeting the top $u$} \\
-  \text{RATE} &= \int_0^1 \alpha(u)\,\text{TOC}(u)\,du
-   && \text{\footnotesize AUTOC: $\alpha = 1$; Qini: $\alpha(u) = u$}
-\end{align*}
+\begin{frame}{Which Estimate to Report\core}
+\begin{enumerate}\itemsep2pt
+  \item \textbf{Drop learners that predict worse than the mean} on held-out data. Here: the lasso for $Y$.
+  \item \textbf{Pick the best learner for each prediction separately}; they need not be the same. Forest for $Y$,
+        lasso for $D$:
+        \[ \hat\tau = -0.045 \ \ (\text{s.e. } 0.014), \qquad 95\% \text{ interval } [-0.073,\ -0.018] . \]
+  \item \textbf{Check that the answer is not fragile.}
+  \begin{itemize}\itemsep2pt
+    \item Other learners that predict: ridge $-0.033$, forest $-0.041$, boosting $-0.042$.
+    \item Redrawing the random folds 20 times: $-0.053$ to $-0.007$.
+    \item Stacking (average the learners, weights from held-out fit): $-0.051$ (0.015) \srcp{figs/w13\_growth\_stack.R}.
+  \end{itemize}
+\end{enumerate}
+\vskip3pt
 \begin{itemize}\itemsep3pt
-  \item RATE $> 0$: the rule finds units with larger effects. Estimate $S$ on one
-        sample, RATE on another.
-  \item Works for any rule: a forest's $\hat\tau(x)$, a risk score, or income.
-\end{itemize}
-\vskip3pt
-\textbf{Policy learning} \srcp{Athey and Wager 2021}: choose a treatment rule
-$\pi(x) \in \{0, 1\}$ from a simple class (a depth-2 tree) to maximize
-$\frac1n\sum_i (2\pi(X_i) - 1)\,\Gamma_i$; regret shrinks like
-$\sqrt{\text{complexity}/n}$. The DR scores again do the work.
-\end{frame}
-
-\begin{frame}{Intervals for Individual Effects \srcp{Lei and Candès 2021}}
-$\hat\tau(x)$ with a standard error describes the \emph{average} effect among
-people like $x$. A person's own effect $Y_i(1) - Y_i(0)$ varies around it.
-\vskip3pt
-\begin{itemize}\itemsep4pt
-  \item Weighted split conformal (Week 12): build a prediction interval for the
-        missing $Y_i(1)$ or $Y_i(0)$, reweighting calibration cases by the
-        propensity to correct for covariate shift between groups.
-  \item Combine the two intervals into an interval for the individual effect,
-        with coverage guaranteed if the propensity is known (randomized
-        experiments), approximately otherwise.
-  \item Typical finding: individual intervals are wide, often covering zero,
-        even when the CATE is precisely estimated. Statements about ``who
-        benefits'' are about groups.
+  \item Convergence: a country 10\% richer in 1965 grew about 0.005 less. OLS could not be estimated.
+  \item Choose by prediction, never by $\hat\tau$. An omitted confounder is still omitted.
 \end{itemize}
 \end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Applications]{Applications}
+\section[DML in Designs]{DML Inside the Designs of Weeks 6--10}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{In the Literature: Growth Mindset in Schools \srcp{Athey and Wager 2019}}
-\textbf{The question.} A short online intervention teaches students that
-intelligence can grow. For whom does it raise achievement?
-\vskip3pt
-\textbf{The data.} \alert{Simulated} from a model fit to the National Study of
-Learning Mindsets (a randomized study) by the organizers of a 2018 workshop:
-10,391 students in 76 schools. The simulated data show selection, so the authors
-treat them as observational. A demonstration of method, not a finding about mindsets.
-\vskip3pt
-\textbf{The design.} A causal forest with propensity and outcome forests for
-local centering, clustered by school; heterogeneity checked by the calibration
-test and by pre-specified school-level moderators.
-\vskip3pt
+\begin{frame}{One Idea for Every Design\core}
+Every design so far has controls $X$ that enter linearly. DML changes only that step:
+\begin{center}
+\begin{tikzpicture}[font=\small,
+  bx/.style={draw,rounded corners=2pt,align=center,minimum height=1.05cm,inner sep=4pt}]
+  \node[bx,fill=dukeblue!12,draw=dukeblue] (a) at (0,0) {predict each variable\\of the design from $X$\\(cross-fitted ML)};
+  \node[bx,fill=dukeblue!12,draw=dukeblue] (b) at (4.1,0) {replace it by\\its residual\\$\text{variable} - \text{prediction}$};
+  \node[bx,fill=accent!15,draw=accent] (c) at (8.2,0) {run the design's\\usual estimator\\on the residuals};
+  \draw[-{Stealth[length=2mm]},thick] (a) -- (b);
+  \draw[-{Stealth[length=2mm]},thick] (b) -- (c);
+\end{tikzpicture}
+\end{center}
+\begin{itemize}\itemsep2pt
+  \item Which variables: those the design compares. $Y$ and $D$ for selection on observables and
+        for DiD (with $Y$ the change); $Y$, $D$, and the instrument $Z$ for IV ($\tilde Z$ multiplies the
+        score where $\tilde D$ did); only $Y$ for RD, predicted without the running variable, which
+        would otherwise absorb the jump.
+  \item The design's identifying assumption is unchanged; only the form of the controls changes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Difference-in-Differences: Recap, and Where $X$ Enters\core}
+Week 10's 2$\times$2: two groups, before and after. With $\Delta Y_i = Y_{i,\text{after}} - Y_{i,\text{before}}$,
+\begin{align*}
+  \hat\tau = \overline{\Delta Y}_{\text{treated}} - \overline{\Delta Y}_{\text{control}}
+  \qquad \text{(OLS of $\Delta Y_i$ on $D_i$)} .
+\end{align*}
+\begin{itemize}\itemsep2pt
+  \item Differencing removes every stable difference between units. The assumption left is
+        \textbf{parallel trends}: without treatment, both groups would have changed by the same amount.
+  \item It fails when the groups differ in $X$ that predict the \emph{change}. Then assume it only among
+        units with the same $X$ (conditional parallel trends):
+  \[
+    \E[\Delta Y_i(0)\mid D_i = 1, X_i] = \E[\Delta Y_i(0)\mid D_i = 0, X_i] .
+  \]
+  \item That is selection on observables with $\Delta Y$ as the outcome: $\Delta Y_i = \tau D_i + g(X_i) + \epsilon_i$. So DML
+        applies as it stands: predict $\Delta Y$ and $D$ from pre-treatment $X$ (cross-fitted), then regress
+        residual on residual.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Divorce 2$\times$2}
+Week 10's data: unilateral divorce laws and female suicide, per million women \srcp{Stevenson and
+Wolfers 2006; figs/w13\_did\_divorce.R}.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& before: 1964--68 & after: 1974--78 & change \\
+\midrule
+treated: 25 states adopting 1969--73 & 59.7 & 67.5 & 7.8 \\
+control: 8 states with no law through 1978 & 45.8 & 49.7 & 3.9 \\
+\midrule
+difference in differences & & & 3.9 \ (s.e.\ 2.7) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep4pt
+  \item The adopting states started 14 points higher: they are different states. If what makes them
+        different also predicts the trend, 3.9 is not the effect of the law.
+  \item $X$: 19 state characteristics, all from 1964--68: the suicide rate itself, income, unemployment,
+        women's employment, age and race shares, welfare, crime, prisoners, the divorce rate.
+  \item Linear controls: 19 coefficients from 33 states. Estimate $1.0$ (s.e.\ 4.5), 12 degrees of freedom left.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DML in the Divorce 2$\times$2}
+\begin{columns}[c]
+\begin{column}{0.56\linewidth}
+\includegraphics[width=\linewidth]{figs/design_did.pdf}
+\end{column}
+\begin{column}{0.42\linewidth}
+\small
+Out-of-fold $R^2$, 5 folds:
+\begin{center}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+learner & $\Delta Y$ & $D$ \\
+\midrule
+OLS & $-2.80$ & $-5.07$ \\
+lasso & $-0.13$ & $0.00$ \\
+ridge & $0.01$ & $-0.03$ \\
+forest & $\alert{0.23}$ & $\alert{0.11}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\end{columns}
+\vskip2pt
+\begin{itemize}\itemsep2pt\small
+  \item Only the forest predicts better than the mean: use it for both. $X$ predicts a quarter of the
+        change, and a tenth of who adopted.
+  \item Residual on residual: $\hat\tau = 1.8$ (s.e.\ 2.4); redrawing the random folds 50 times, $-0.3$ to $4.2$.
+  \item Half of the raw $3.9$ was states with rising suicide adopting early. No estimate is distinguishable
+        from 0: 33 states, the first years after adoption only.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Selection on Observables: From OLS to DML}
+College and low-wage work on the NLSY79, 24 controls, unweighted \srcp{figs/w13\_designs.R, 1}.
+\begin{center}
+\includegraphics[width=0.66\linewidth]{figs/design_sel.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep2pt\small
+  \item \textbf{OLS}: $Y$ on $D$ and the 24 controls, entered linearly: $-0.092$ (0.015).
+  \item \textbf{DML}: the same model, $Y_i = \tau D_i + g(X_i) + \epsilon_i$, with $g$ free. The two ML predictions are
+        of the \emph{outcome}, $\E[Y\mid X]$, and of the \emph{treatment}, $\E[D\mid X]$. Residual on residual
+        (right panel): $-0.128$ (0.012).
+  \item Both report one $\tau$: a variance-weighted average of the $\tau(x)$, not the ATE.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Selection on Observables: From AIPW to DML}
+Week 6's AIPW, which targets the ATE (or the ATT):
+\begin{align*}
+  \hat\tau_{\text{AIPW}} = \frac1n\sum_i\Big[\hat m_1(X_i) - \hat m_0(X_i)
+  + \frac{D_i\,(Y_i - \hat m_1(X_i))}{\hat e(X_i)} - \frac{(1 - D_i)\,(Y_i - \hat m_0(X_i))}{1 - \hat e(X_i)}\Big]
+\end{align*}
+\vskip-2pt
+\begin{itemize}\itemsep3pt
+  \item Again two predictions: the \emph{outcome} in each arm, $\hat m_1$ and $\hat m_0$, and the \emph{treatment}, $\hat e$.
+  \item Week 6: OLS for $\hat m_d$, logit for $\hat e$. DML: the same formula, with ML for both, cross-fitted.
+  \item AIPW's score is Neyman orthogonal; that is what double robustness was. Nothing else changes.
+\end{itemize}
 \begin{center}\small
 \renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}lc@{}}
+\begin{tabular}{@{}lcc@{}}
 \toprule
-AIPW average effect & 0.247 \ ($\pm 0.04$) \\
-above- minus below-median predicted effect & 0.053 \ ($\pm 0.071$) \\
-calibration: differential prediction & 0.322 \ (se 0.307, $p = 0.29$) \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{frame}
-
-\begin{frame}{Athey and Wager: What the Forest Could and Could Not Say}
-\begin{itemize}\itemsep4pt
-  \item The overall effect is clear. The forest's own ranking of students does
-        not separate large from small effects: the omnibus test finds no
-        heterogeneity it can trust.
-  \item One \textbf{pre-specified} school characteristic, the school's average
-        fixed mindset, shows credible moderation in a test on school-level DR
-        scores ($t = -3.02$, $p = 0.004$); the authors add that it is unclear
-        whether it survives controls for other school covariates.
-  \item The forest split on that variable often (24\% of depth-weighted
-        splits), but splits are not tests: the test came from the DR scores.
-  \item Lesson for practice: a CATE surface that varies is not evidence of
-        heterogeneity; report the calibration test, and keep a short list of
-        moderators chosen before looking.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{In the Literature: Brand, Xu, Koch, and Geraldo (2021)}
-\textbf{The question.} Who benefits most from college, in avoiding low-wage work?
-Theories of positive selection (those likeliest to go gain most) and negative
-selection (the disadvantaged gain most) predict opposite patterns.
-\vskip3pt
-\textbf{The data.} NLSY79, ages 14--17 in 1979, completed at least 12th grade:
-4,548 respondents. Outcome: share of 1990--2014 spent in low-wage work (below
-two thirds of the median hourly wage).
-\vskip3pt
-\textbf{The design.} \emph{Causal trees} with honest splitting: one half of the
-sample grows the tree, the other estimates the effect in each leaf, with
-propensity-score matching inside leaves; sensitivity analysis for unobserved
-confounding.
-\vskip3pt
-\textbf{Average effect}: college reduces time in low-wage work by about 18
-percentage points (matching), 17 (causal forest).
-\end{frame}
-
-\begin{frame}{Brand et al.: Who Gains Most}
-The tree's first split is mother's education:
-\vskip3pt
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{@{}lc@{}}
-\toprule
-leaf & effect of college (pts) \\
+NLSY79 & ATE & ATT \\
 \midrule
-mother without a high-school degree & $-26$ pts \\
-\quad and a large family & $-33$ pts \\
-mother high school or more, low income & $-19$ pts \\
-\quad father did not attend college & $-21$ pts \\
-all respondents & $-17$ to $-18$ pts \\
+AIPW, OLS and logit \srcp{figs/w13\_aipw\_nlsy.R} & $-0.177$ (0.018) & $-0.110$ (0.016) \\
+AIPW with forests, cross-fitted (DML) & $-0.193$ (0.013) & $-0.117$ (0.015) \\
 \bottomrule
 \end{tabular}
 \end{center}
-\vskip3pt
-\begin{itemize}\itemsep2pt
-  \item Larger effects for the more disadvantaged: \alert{negative selection}, and a
-        case for expanding access at the margin where college is least likely.
-  \item The leaves are found by the algorithm, not by the authors' hypotheses;
-        honest estimation keeps the effects in each leaf from being selected
-        because they are large.
+{\small The forest in Section 1 computed this same AIPW, person by person.}
+\end{frame}
+
+\begin{frame}{Regression Discontinuity: the Senate}
+Only $Y$ is residualized ($D$ is set by the cutoff): predict the vote from four pre-determined
+covariates, not the margin; subtract; run \texttt{rdrobust} \srcp{Noack, Olma, and Rothe 2024}:
+\begin{center}
+\includegraphics[width=0.71\linewidth]{figs/design_rd.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep2pt\small
+  \item Jump: none 7.82 [4.43, 11.42]; linear 6.97 [3.55, 10.43]; forest 5.87 [2.09, 9.31]
+        \srcp{figs/w13\_designs.R, 3}.
+  \item The prediction jumps 1.94 (s.e.\ 1.17): slight imbalance, within noise. $7.82 - 1.94 = 5.88$.
 \end{itemize}
-{\footnotesize Numbers from the 2019 working version; see also \srct{Brand, Zhou, and Xie (2023)} for a review.}
+\end{frame}
+
+\begin{frame}{Instrumental Variables: Card's Proximity Instrument}
+Card (1995): residualize log wage, schooling, and $Z$ = college nearby on 12 controls; then IV =
+reduced-form slope / first-stage slope \srcp{figs/w13\_designs\_pics.R, 4}:
+\begin{center}
+\includegraphics[width=0.71\linewidth]{figs/design_iv.pdf}
+\end{center}
+\vskip-8pt
+\begin{itemize}\itemsep2pt\small
+  \item This split: $0.043 / 0.282 = 0.153$. Five splits: forests $0.148$ (0.072); lasso $0.078$ (0.056);
+        2SLS $0.081$ (0.057) \srcp{figs/w13\_designs.R, 4}.
+  \item First stage 0.84 years with no controls, 0.28 after forests: a weak, learner-dependent ratio.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Linear or DML: Which to Report?\core}
+Same design, same assumption; they differ only in how $X$ enters.
+\vskip2pt
+\begin{itemize}\itemsep3pt
+  \item \textbf{They agree}: functional form did not matter. Report the familiar one; DML is the check.
+  \item \textbf{They disagree, and DML is stable across learners and splits}: the linear model likely got
+        the form of $X$ wrong. Report DML, if its learners predict $Y$ and $D$ better out of fold than
+        the linear regression (NLSY79: $-0.128$ over $-0.092$).
+  \item \textbf{DML disagrees with itself across learners}: the design is thin (Card: lasso 0.078,
+        forests 0.148). Trust neither much; report both and the residual first stage.
+  \item \textbf{Like with like}: OLS and partially linear DML target a variance-weighted average;
+        AIPW the ATE or ATT.
+\end{itemize}
+\vskip2pt
+{\small Neither fixes an omitted confounder or poor overlap. Report the learner, folds, splits, out-of-fold fit, and a second learner. DML pays most with many
+controls (growth: 120); least with few cases or controls (the Senate, the divorce 2$\times$2).}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Representations]{Representations: From PCA to BERT}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{When the Confounder Is Written Down}
+Some confounders are not columns but text or images:
+\begin{itemize}\itemsep3pt
+  \item The effect of price on demand must hold product quality fixed; quality is in the
+        description \srcp{Bajari et al.\ 2025}.
+  \item The effect of being censored on a blogger's later posting must hold the \emph{content}
+        of the censored post fixed \srcp{Roberts, Stewart, and Nielsen 2020}.
+  \item The effect of nearby violence on test scores must hold neighbourhood quality fixed;
+        street images may record it.
+\end{itemize}
+\vskip4pt
+The plan:
+\begin{enumerate}\itemsep3pt
+  \item Turn each text into a list of numbers, a \textbf{representation} $W_i$: principal
+        components $\to$ autoencoders $\to$ word vectors (Week 12) $\to$ BERT.
+  \item Put $W_i$ in the role of $X$ in Section 2: $Y_i = \tau D_i + g(W_i) + \epsilon_i$, with
+        $g$ an unknown function of 768 numbers. DML handles the rest.
+\end{enumerate}
+\end{frame}
+
+\subsection{Principal Components}
+\begin{frame}{Feature Extraction: Principal Components\core}
+\begin{itemize}\itemsep6pt
+  \item We want to turn complex objects, such as text or images, into a relatively small set of
+        numerical features.
+  \item Principal components are an early, classic example of such features (\emph{embeddings}).
+  \item Principal components are weighted sums of the original variables, chosen to be the
+        ``best'' at reproducing the data: each new direction is orthogonal to the previous ones.
+  \item A small number of principal components often captures most of the variation in the
+        original variables, and so gives a useful low-dimensional summary.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Principal Components: the Setup\core}
+A sample of $n$ observations $W_1, \dots, W_n$ of a centered vector with $d$ entries,
+$W_i = (W_{i1}, \dots, W_{id})'$, each entry with mean 0. Their covariance matrix:
+\[
+  \Sigma_n = \frac1n\sum_{i=1}^n W_i W_i' \qquad (d \times d).
+\]
+\textbf{With $d = 2$, written out:}
+\begin{align*}
+  \Sigma_n &= \frac1n\sum_{i=1}^n
+  \begin{pmatrix} W_{i1} \\ W_{i2} \end{pmatrix}
+  \begin{pmatrix} W_{i1} & W_{i2} \end{pmatrix}
+  = \frac1n\sum_{i=1}^n \begin{pmatrix} W_{i1}^2 & W_{i1}W_{i2} \\ W_{i2}W_{i1} & W_{i2}^2 \end{pmatrix}
+   && \text{\footnotesize multiply} \\
+  &= \begin{pmatrix} \Var(W_1) & \Cov(W_1, W_2) \\ \Cov(W_1, W_2) & \Var(W_2) \end{pmatrix}
+   && \text{\footnotesize means are 0}
+\end{align*}
+{\small Diagonal: each variable's variance. Off the diagonal: how the variables move together.
+For standardized SEI and prestige: 1, 1, and their correlation 0.82.}
+\end{frame}
+
+\begin{frame}{What $\Sigma_n$ Describes, and Why Decompose It\core}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.05cm,y=1.05cm]
+  \draw[->,gray] (-2,0) -- (2.1,0) node[below,font=\scriptsize,text=black] {SEI};
+  \draw[->,gray] (0,-2) -- (0,2.1) node[left,font=\scriptsize,text=black] {prestige};
+  \foreach \a/\b in {-1.5/-1.2,-1.1/-1.3,-0.9/-0.5,-0.6/-0.8,-0.4/-0.1,-0.2/-0.5,0.1/0.3,0.2/-0.1,0.4/0.6,0.6/0.3,0.8/1.0,1.0/0.7,1.3/1.4,1.5/1.1,-1.3/-0.8,0.0/0.1,1.35/0.4}
+    \fill[dukeblue!45] (\a,\b) circle (1.4pt);
+  \draw[dukeblue,thick,rotate=45] (0,0) ellipse (1.9 and 0.6);
+  \draw[accent,very thick,-{Stealth[length=2mm]}] (0,0) -- (1.2,1.2) node[above right,font=\scriptsize] {$c_1$, $\lambda_1 = 1.82$};
+  \draw[accent,thick,dashed,-{Stealth[length=2mm]}] (0,0) -- (-0.42,0.42) node[above left,font=\scriptsize] {$c_2$, $\lambda_2 = 0.18$};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+\small
+\textbf{$\Sigma_n$ is the shape of the cloud.} Standardized SEI and prestige:
+$\Sigma_n = \left(\begin{smallmatrix} 1 & 0.82 \\ 0.82 & 1 \end{smallmatrix}\right)$. Diagonal: spread along
+each axis. Off-diagonal: the tilt; the two variables largely repeat each other.
+\vskip4pt
+\textbf{Decomposing $\Sigma_n$ finds the cloud's own axes} $c_k$ and the spread $\lambda_k$ along each:
+\[
+  \Sigma_n \begin{pmatrix}1\\1\end{pmatrix} = \begin{pmatrix}1 + 0.82\\0.82 + 1\end{pmatrix} = 1.82\begin{pmatrix}1\\1\end{pmatrix},
+\]
+so $c_1 = (1, 1)'/\sqrt2$, $\lambda_1 = 1.82$; likewise $c_2 = (1, -1)'/\sqrt2$, $\lambda_2 = 0.18$.
+\vskip4pt
+\textbf{Why}: the long axis holds $1.82/2 = 91\%$ of the variance. Keep it, drop the short one: two
+numbers become one, little lost. With $d = 768$, keep the few longest axes.
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Principal Directions and Components\core}
+\begin{itemize}\itemsep4pt
+  \item The \textbf{eigenvectors} $c_k$ (each of length 1) and \textbf{eigenvalues} $\lambda_k$ of
+        $\Sigma_n$ solve
+  \[
+    \Sigma_n c_k = \lambda_k c_k, \qquad k = 1, \dots, d .
+  \]
+        Software (\texttt{prcomp}) finds them. $c_1$ is the direction in which the data vary
+        most; $\lambda_k$ is the variance along $c_k$; the $\lambda_k$ add up to the total variance.
+  \item Keep the $K$ largest ($K \ll d$): $C_K = [c_1, \dots, c_K]$, a $d \times K$ matrix.
+  \item \textbf{Project} $W_i$ on each principal direction. With $d = 2$, written out:
+  \[
+    X_{ki} = c_k' W_i = c_{k1} W_{i1} + c_{k2} W_{i2} :
+  \]
+        a weighted sum of the variables, the $k$-th \textbf{principal component}.
+  \item Person $i$'s compressed features: $X_i^K = (X_{1i}, \dots, X_{Ki})' = C_K' W_i$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Principal Components: a Picture\core}
+\begin{columns}[c]
+\begin{column}{0.5\linewidth}
+\includegraphics[width=\linewidth]{figs/pca_sei_prestige.pdf}
+\end{column}
+\begin{column}{0.48\linewidth}
+\small
+$W_i$ = (SEI, prestige), standardized; 600 of 3,509 GSS respondents \srcp{figs/w12\_repr.R, A}.
+\begin{itemize}\itemsep3pt
+  \item $c_1 = (0.707, 0.707)'$ (red): the direction of most variation; $\lambda_1 = 1.82$,
+        91\% of the total variance of 2.
+  \item Green person: $W_i = (1.35, 0.40)'$.
+        $X_{1i} = 0.707(1.35) + 0.707(0.40) = 1.24$: one number instead of two.
+  \item The green segment is what that one number misses; $c_2$ (dashed) would keep it.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Reconstruction\core}
+\begin{itemize}\itemsep5pt
+  \item $X_i^K$ is the compressed feature vector of the original $W_i$.
+  \item Approximate $W_i$ by projecting $X_i^K$ back to the $d$-dimensional space:
+  \[
+    \hat W_i = C_K X_i^K .
+  \]
+  \item With $d = 2$ and $K = 1$, written out: $\hat W_i = c_1 X_{1i}$, i.e.\
+        $\hat W_{i1} = c_{11} X_{1i}$ and $\hat W_{i2} = c_{12} X_{1i}$.
+        Green person: $\hat W_i = (0.707 \times 1.24,\ 0.707 \times 1.24)' = (0.87, 0.87)'$.
+  \item The choice of $K$ sets how much of the original information (variance) is kept:
+        the share $\sum_{k \leq K} \lambda_k \big/ \sum_k \lambda_k$.
+  \item A common use: compressing images (next).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Principal Components as Compression}
+A 120 $\times$ 160 image: each pixel row is a unit, each of the 160 columns a variable
+\srcp{figs/w12\_repr.R, C}:
+\vskip2pt
+\begin{center}
+\includegraphics[width=0.96\linewidth]{figs/pca_image.pdf}
+\end{center}
+\vskip-4pt
+\begin{itemize}\itemsep2pt\small
+  \item Numbers stored: 19,200 for the original; with $K$ components, $K$ scores per row,
+        $K$ loadings per column, and 160 means: 720 at $K = 2$, 1,560 at $K = 5$,
+        4,360 at $K = 15$.
+  \item At $K = 15$, 23\% of the numbers keep 98\% of the variance, and the text reads cleanly.
+  \item On a document-by-word count table the same algebra is \textit{latent semantic
+        analysis} \srcp{Deerwester et al.\ 1990}; on a user-by-item table, a recommender.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Principal Components as an Encoder--Decoder Network\core}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.55cm,y=0.68cm]
+  \foreach \i in {1,...,7} {
+    \node[nnin,minimum size=6.4mm,font=\scriptsize] (in\i) at (0,{4-\i}) {$W_{i\i}$};
+    \node[nnout,minimum size=6.4mm,font=\scriptsize] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
+  \foreach \k in {1,2,3} \node[nnhid,minimum size=6.4mm,font=\scriptsize] (h\k) at (1,{2-\k}) {$E_{i\k}$};
+  \foreach \i in {1,...,7} \foreach \k in {1,2,3} {\draw[nnlink] (in\i) -- (h\k); \draw[nnlink] (h\k) -- (out\i);}
+  \node[nnhead] at (0,3.75) {input};
+  \node[nnhead] at (1,3.75) {encoding};
+  \node[nnhead] at (2,3.75) {decoding};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+\small
+The approximation of $W_i$ from $W_i$ is a prediction exercise: a shallow one-layer
+\emph{linear} network,
+\[
+  \underset{d\times 1}{W_i} \;\mapsto\; C_K'W_i := \underset{K\times 1}{E_i}
+  \;\mapsto\; A'E_i := \underset{d\times 1}{\hat W_i}.
+\]
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item Step 1 \textbf{encodes} the input into $K$ numbers; step 2 \textbf{decodes} them
+        back to the original space: an encoder--decoder network, an \textbf{autoencoder}.
+  \item For principal components, $A = C_K'$, so $\hat W_i = C_K E_i = C_K X_i^K$.
+  \item The weights into each hidden unit are a principal direction $c_k$; the hidden units'
+        outputs are the principal components; the decoder rebuilds the input.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Reading the Weights}
+\begin{columns}[T]
+\begin{column}{0.49\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.25cm,y=0.6cm]
+  \foreach \i in {1,...,7} {
+    \node[nnin,minimum size=5.6mm,font=\tiny] (in\i) at (0,{4-\i}) {$W_{i\i}$};
+    \node[nnout,minimum size=5.6mm,font=\tiny] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
+  \foreach \k in {1,2,3} \node[nnhid,minimum size=5.6mm,font=\tiny] (h\k) at (1,{2-\k}) {$E_{i\k}$};
+  \foreach \i in {1,...,7} {\draw[nnlink] (in\i) -- (h2); \draw[nnlink] (in\i) -- (h3);}
+  \foreach \i in {1,...,7} \foreach \k in {1,2,3} \draw[nnlink] (h\k) -- (out\i);
+  \foreach \i in {1,...,7} \draw[dukeblue,line width=0.9pt] (in\i) -- (h1);
+\end{tikzpicture}
+\end{center}
+{\footnotesize Weights \emph{into one hidden unit} (blue): a principal direction $c_1$. The unit's
+output is the first principal component.}
+\end{column}
+\begin{column}{0.49\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=1.25cm,y=0.6cm]
+  \foreach \i in {1,...,7} {
+    \node[nnin,minimum size=5.6mm,font=\tiny] (in\i) at (0,{4-\i}) {$W_{i\i}$};
+    \node[nnout,minimum size=5.6mm,font=\tiny] (out\i) at (2,{4-\i}) {$\hat W_{i\i}$};}
+  \foreach \k in {1,2,3} \node[nnhid,minimum size=5.6mm,font=\tiny] (h\k) at (1,{2-\k}) {$E_{i\k}$};
+  \foreach \i in {2,...,7} \foreach \k in {1,2,3} \draw[nnlink] (in\i) -- (h\k);
+  \foreach \i in {1,...,7} \foreach \k in {1,2,3} \draw[nnlink] (h\k) -- (out\i);
+  \foreach \k in {1,2,3} \draw[accent,line width=0.9pt] (in1) -- (h\k);
+\end{tikzpicture}
+\end{center}
+{\footnotesize Weights \emph{out of one input} (orange): that feature's weight on each latent
+dimension, its loadings $c_{11}, c_{21}, c_{31}$.}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{From Principal Components to Deep Autoencoders}
+\begin{center}
+\begin{tikzpicture}[x=2.0cm,y=0.5cm]
+  \foreach \i in {1,...,5} \node[nnin,minimum size=4.4mm] (a\i) at (0,{3-\i}) {};
+  \foreach \i in {1,...,7} \node[nnhid,minimum size=4.4mm] (b\i) at (1,{4-\i}) {};
+  \foreach \i in {1,2,3}   \node[nnhid,minimum size=4.4mm,fill=dukeblue!45] (c\i) at (2,{2-\i}) {};
+  \foreach \i in {1,...,6} \node[nnhid,minimum size=4.4mm] (d\i) at (3,{3.5-\i}) {};
+  \foreach \i in {1,...,5} \node[nnout,minimum size=4.4mm] (e\i) at (4,{3-\i}) {};
+  \foreach \i in {1,...,5} \foreach \j in {1,...,7} \draw[nnlink] (a\i) -- (b\j);
+  \foreach \i in {1,...,7} \foreach \j in {1,2,3} \draw[nnlink] (b\i) -- (c\j);
+  \foreach \i in {1,2,3} \foreach \j in {1,...,6} \draw[nnlink] (c\i) -- (d\j);
+  \foreach \i in {1,...,6} \foreach \j in {1,...,5} \draw[nnlink] (d\i) -- (e\j);
+  \node[nnhead] at (0,3.9) {input\\$W_i$};
+  \node[nnhead] at (1,3.9) {encoding 1\\$E^1_i$};
+  \node[nnhead] at (2,3.9) {encoding 2\\$E^2_i$ (code)};
+  \node[nnhead] at (3,3.9) {decoding 1\\$D^1_i$};
+  \node[nnhead] at (4,3.9) {output\\$\hat W_i$};
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror},thick,dukeblue] (-0.1,-3.6) -- (2.1,-3.6)
+     node[midway,below=4pt,font=\footnotesize]{encoder: kept};
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror},thick,accent] (2.3,-3.6) -- (4.1,-3.6)
+     node[midway,below=4pt,font=\footnotesize]{decoder: discarded after training};
+\end{tikzpicture}
+\end{center}
+\vskip-4pt
+\[
+  W_i \;\overset{g_1}{\longmapsto}\; E^1_i \;\overset{g_2}{\longmapsto}\; E^2_i
+  \;\overset{g_3}{\longmapsto}\; D^1_i \;\overset{g_4}{\longmapsto}\; \hat W_i
+\]
+\vskip-4pt
+\begin{itemize}\itemsep1pt\small
+  \item Each $g$ is a layer: weighted sums, then a nonlinear activation (ReLU). One linear
+        layer is PCA; nonlinear layers keep more of $W_i$ in the same $K$. The trained
+        encoder turns any new unit into its code.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Change What the Network Predicts\core}
+\begin{itemize}\itemsep2pt
+  \item With encoder $e(\cdot)$ and decoder $d(\cdot)$, an autoencoder minimizes the
+        rebuilding loss $\E\big[\text{loss}\big(W,\ d(e(W))\big)\big]$. It must rebuild
+        \emph{everything}: font, word order, typos, lighting.
+  \item Keep the encoder, but predict another target $A$:
+        $\E\big[\text{loss}\big(A,\ f(e(W))\big)\big]$. The code keeps what predicts $A$:
+  \begin{center}\small
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{@{}lll@{}}
+  \toprule
+  model & trained to predict & the code ends up holding \\
+  \midrule
+  autoencoder & the input itself & whatever varies most \\
+  word2vec & the words near each word & what a word's company says \\
+  BERT & words hidden from a sentence & meaning in context \\
+  Gebru et al.\ CNN & a car's make and model & visual traits of cars \\
+  \bottomrule
+  \end{tabular}
+  \end{center}
+  \item The task is a choice: for price effects, a description's code should hold product
+        type and quality, not its wording.
+  \item All but the last are \textbf{self-supervised} (slide on the three kinds): the
+        target comes free from the data, so they train on billions of words.
+\end{itemize}
+\end{frame}
+
+\subsection{Words in Context}
+
+\begin{frame}{From Word Vectors to Words in Context}
+Week 12's word2vec gives every word one list of numbers, learned by predicting its neighbours.
+Two problems for a whole text:
+\begin{itemize}\itemsep4pt
+  \item \textbf{One vector per word}: \emph{bank} gets the same numbers in ``river bank'' and
+        ``bank loan''; \emph{set} in ``a Lego set'' and ``set the table''.
+  \item \textbf{No order}: averaging word vectors gives ``dog bites man'' and ``man bites dog''
+        the same text vector.
+\end{itemize}
+\vskip4pt
+\begin{itemize}\itemsep4pt
+  \item The fix: let each word's vector depend on the other words in its sentence.
+  \item Recurrent networks do it by reading one word at a time; \textbf{attention} does it by
+        letting every word look at every other word at once. Attention is what BERT, and every
+        large language model since, is built from.
+\end{itemize}
+\end{frame}
+\begin{frame}{Attention: Look at Every Word at Once\core}
+\begin{quote}\small
+The survey asked parents about the new school. \textbf{It} was badly underfunded.
+\end{quote}
+\vskip-2pt
+A reader links \emph{It} to \emph{school}, eight words back; a recurrent network must
+carry that link through every word between. \textbf{Self-attention}
+\srcp{Vaswani et al.\ 2017} lets each word look at all others directly. Each word gets
+three lists of $D$ numbers, weighted sums of its word vector with learned weights:
+a \textbf{query} $q$ (what it looks for), a \textbf{key} $k$ (what it offers), a
+\textbf{value} $v$ (what it passes on). For word $i$:
+\begin{align*}
+  \text{score}_{ij} &= \frac{\sum_{d} q_{id} k_{jd}}{\sqrt D}
+   && \text{\footnotesize how well word $j$ answers word $i$} \\
+  \text{weight}_{ij} &= \frac{\exp(\text{score}_{ij})}{\sum_{j'}\exp(\text{score}_{ij'})}
+   && \text{\footnotesize softmax: positive, sums to 1 over $j$} \\
+  \text{new vector}_{i} &= \textstyle\sum_j \text{weight}_{ij}\, v_{j}
+   && \text{\footnotesize weighted average of the values}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Attention by Hand: Two Banks}
+$D = 2$; query of \emph{bank} $(1, 1)$; keys: the $(0, 0)$, river $(2, 0)$, loan
+$(0, 2)$, bank $(0.5, 0.5)$; values: the $(0, 0)$, river $(1, 0)$, loan $(0, 1)$, bank
+$(0.5, 0.5)$ \srcp{figs/w12\_repr.R, G; hypothetical}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}l|ccc|ccc@{}}
+\toprule
+& \multicolumn{3}{c|}{``the river bank''} & \multicolumn{3}{c}{``the bank loan''} \\
+& the & river & bank & the & bank & loan \\
+\midrule
+score $= \sum_d q_d k_{jd}/\sqrt 2$ & 0 & $2/\sqrt2 = 1.41$ & $1/\sqrt2 = 0.71$ & 0 & 0.71 & 1.41 \\
+$\exp(\text{score})$ & 1.00 & 4.11 & 2.03 & 1.00 & 2.03 & 4.11 \\
+weight & 0.14 & \alert{0.58} & 0.28 & 0.14 & 0.28 & \alert{0.58} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-6pt
+\begin{align*}
+  \text{river bank: } & 0.14(0, 0) + 0.58(1, 0) + 0.28(0.5, 0.5) = (0.72, 0.14) \\
+  \text{bank loan: }  & 0.14(0, 0) + 0.28(0.5, 0.5) + 0.58(0, 1) = (0.14, 0.72)
+\end{align*}
+\begin{itemize}\itemsep1pt\small
+  \item Same word, two outputs: \emph{bank} leans toward nature in one sentence, money in the other.
+  \item BERT: $D = 64$, 12 sets of $q, k, v$ per layer, 12 layers; a position vector adds word order.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Attention, Drawn}
+Arrows from \emph{bank} to each word it attends to; width $\propto$ weight
+\srcp{figs/w12\_repr.R, G}:
+\vskip2pt
+\begin{center}
+\begin{tikzpicture}
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a0) at (0.00,0) {the};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a1) at (1.95,0) {river};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a2) at (3.90,0) {bank};
+  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.6] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (a0.north);
+  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (a1.north);
+  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (a2.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (a2.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
+  \node[font=\footnotesize] at (1.95,-1.75) {``the river bank'': new vector $(0.72, 0.14)$};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b0) at (6.60,0) {the};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b1) at (8.55,0) {bank};
+  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b2) at (10.50,0) {loan};
+  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (b0.north);
+  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (b1.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (b1.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
+  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (b2.north);
+  \node[font=\footnotesize] at (8.55,-1.75) {``the bank loan'': new vector $(0.14, 0.72)$};
+\end{tikzpicture}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep3pt\small
+  \item \emph{bank} sends most of its attention to the word that tells it which sense it
+        is: \emph{river} in one sentence, \emph{loan} in the other.
+  \item Every word does this at once, in every layer, with 12 different query--key
+        pairs per layer: each can look for a different kind of relation.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Position Vectors: Telling Attention the Word Order\core}
+Attention is a weighted average over a sentence's words, and an average ignores order:
+``dog bites man'' and ``man bites dog'' contain the same three vectors. \textbf{Fix}: add to each
+word's vector a \textbf{position vector}, one learned list of numbers per slot $1, \dots, 512$:
+\begin{align*}
+  h^{(0)}_i = \underbrace{\text{word vector of word } i}_{\text{what the word is}}
+  + \underbrace{\text{position vector of slot } i}_{\text{where it stands}} .
+\end{align*}
+Toy, two numbers: dog $(1, 0)$, man $(0, 1)$, bites $(0, 0)$; positions $(0.2, 0)$, $(0, 0)$, $(0, 0.2)$
+(hypothetical):
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& slot 1 & slot 2 & slot 3 \\
+\midrule
+``dog bites man'' & dog $(1.2, 0)$ & bites $(0, 0)$ & man $(0, 1.2)$ \\
+``man bites dog'' & man $(0.2, 1)$ & bites $(0, 0)$ & dog $(1, 0.2)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\small The same word enters with different numbers in different slots, so queries, keys, and every later
+vector can depend on order. BERT: 768 numbers per word and per slot, all learned.}
+\end{frame}
+
+
+\begin{frame}{Inside One Layer\core}
+\begin{columns}[c]
+\begin{column}{0.4\linewidth}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize,
+  st/.style={draw,rounded corners=2pt,align=center,minimum width=3.3cm,minimum height=0.55cm,inner sep=2pt}]
+  \node[st,fill=white,draw=dukeblue] (in) at (0,0) {$h_1, \dots, h_n$: one vector per word};
+  \node[st,fill=accent!15,draw=accent] (at) at (0,-0.95) {\textbf{1. attention}\\words exchange information};
+  \node[st,fill=gray!10,draw=gray] (ad1) at (0,-1.85) {\textbf{2.} add $h_i$ back, rescale};
+  \node[st,fill=dukeblue!12,draw=dukeblue] (ff) at (0,-2.8) {\textbf{3. Week 12's network}\\on each word separately};
+  \node[st,fill=gray!10,draw=gray] (ad2) at (0,-3.75) {\textbf{4.} add back, rescale};
+  \node[st,fill=white,draw=dukeblue] (out) at (0,-4.6) {new $h_1, \dots, h_n$ $\to$ next layer};
+  \foreach \a/\b in {in/at,at/ad1,ad1/ff,ff/ad2,ad2/out} \draw[-{Stealth[length=1.6mm]},thick] (\a) -- (\b);
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.58\linewidth}
+\small
+For word $i$ with input vector $h_i$ (768 numbers):
+\begin{enumerate}\itemsep3pt
+  \item \textbf{Attention.} $q_i, k_i, v_i$: weighted sums of $h_i$'s entries (hidden units without
+        a bend). $a_i = \sum_j \text{weight}_{ij} v_j$. 12 heads of 64 numbers side by side: 768.
+  \item \textbf{Add, rescale.} $h_i + a_i$: the word plus what it learned from the others; rescale
+        its 768 numbers to mean 0, sd 1.
+  \item \textbf{Week 12's network}: 768 inputs, 3,072 hidden units with a ReLU-like bend, 768
+        outputs; the \emph{same} weights for every word.
+  \item \textbf{Add, rescale} again: word $i$'s input to the next layer.
+\end{enumerate}
+\end{column}
+\end{columns}
+\vskip4pt
+{\small Step 1 is the only place words see each other; step 3 is the only bend. BERT stacks 12 such
+layers: each word's vector is refined by its context 12 times.}
+\end{frame}
+
+\begin{frame}{BERT: Learn by Filling In Blanks\core}
+\begin{columns}[c]
+\begin{column}{0.47\linewidth}
+\begin{center}
+\begin{tikzpicture}[x=0.9cm,y=0.85cm]
+  \foreach \w [count=\i] in {[CLS],The,survey,was,[MASK]} {
+    \node[font=\scriptsize,text height=1.6ex,text depth=0.4ex] (t\i) at (\i,0) {\w};
+    \node[nnin,minimum size=5mm] (e\i) at (\i,0.85) {};
+    \node[nnhid,minimum size=5mm] (a\i) at (\i,2.15) {};
+    \node[nnhid,minimum size=5mm] (b\i) at (\i,3.45) {};
+    \draw[nnedge] (t\i) -- (e\i);}
+  \foreach \i in {1,...,5} \foreach \j in {1,...,5} {\draw[nnlink] (e\i) -- (a\j); \draw[nnlink] (a\i) -- (b\j);}
+  \node[nnout,minimum size=5mm] (p) at (5,4.6) {};
+  \node[above=1pt of p,font=\scriptsize,text=accent] {``fielded''};
+  \draw[nnedge] (b5) -- (p);
+  \node[nnhid,minimum size=5mm,fill=dukeblue!45] (c) at (1,4.6) {};
+  \node[above=1pt of c,font=\scriptsize,text=dukeblue] {768 numbers};
+  \draw[nnedge] (b1) -- (c);
+  \node[font=\scriptsize,align=left,anchor=west] at (5.45,0.85) {word +\\position};
+  \node[font=\scriptsize,align=left,anchor=west] at (5.45,2.8) {attention\\layers};
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.51\linewidth}
+\small
+\textbf{BERT} \srcp{Devlin et al.\ 2019}: a stack of attention layers, trained on books
+and Wikipedia.
+\begin{itemize}\itemsep3pt
+  \item \textbf{Training task}: hide 15\% of the words behind \texttt{[MASK]} and predict
+        them from \emph{both} sides; also predict whether sentence B followed sentence A.
+  \item Nobody labels anything: the hidden words are the labels.
+  \item \textbf{Output}: a vector for every word, read in its sentence. The vector of
+        the extra first token \texttt{[CLS]} (768 numbers) serves as the vector of the
+        whole text.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}{From the Last Layer to a Prediction, and Back}
+Training BERT on ``The survey was \texttt{[MASK]} in 2020'':
+\begin{enumerate}\itemsep5pt
+  \item \textbf{Forward.} Word $+$ position vectors $\to$ 12 layers $\to$ a 768-number vector $h^{(12)}$ at the
+        \texttt{[MASK]} slot, built from every other word in the sentence.
+  \item \textbf{Predict.} Score every word $w$ of the 30,522-word vocabulary,
+        $\text{score}_w = \sum_d u_{wd}\, h^{(12)}_d$, and take a softmax: Week 12's word2vec output, a
+        multinomial logit over the vocabulary.
+  \item \textbf{Loss.} $-\log P(\text{the hidden word})$, e.g.\ $-\log P(\text{fielded})$.
+  \item \textbf{Backward.} Backpropagation (Week 12) sends the error through all 12 layers: it
+        updates the query, key, and value weights, the feed-forward weights, the word vectors, and
+        the position vectors.
+\end{enumerate}
+\vskip4pt
+{\small Repeat over billions of words: 110 million weights in BERT-base. What makes a good guess at the
+blank (who did what, in which sense of each word) is what the vectors end up holding.}
+\end{frame}
+
+
+\subsection{Text as a Control}
+
+\begin{frame}{Running Example: Price and Demand for Toys}
+\textbf{The question.} How much does demand fall when price rises: the price elasticity
+$\tau$ in
+\[
+  \underbrace{\log q_i}_{Y_i} = \tau\,\underbrace{\log p_i}_{D_i} + g(W_i) + \epsilon_i .
+\]
+\vskip-2pt
+\textbf{The confounder.} Better toys cost more \emph{and} sell more. Quality, brand, and type
+are in the description, not in a column.
+\vskip3pt
+\textbf{The data.} 8,003 toys on Amazon UK with at least one review (PromptCloud, used in
+\srct{Chernozhukov et al.\ 2024}'s notebooks):
+\begin{itemize}\itemsep2pt
+  \item $D_i$: log price (s.d.\ 1.13). $Y_i$: log share of all reviews, a proxy for sales (s.d.\ 1.25).
+  \item Text: ``name $|$ manufacturer $|$ description''.
+  \item $W_i$: BERT (\texttt{bert-base-uncased}), first 128 tokens, average of the last layer's
+        word vectors: 768 numbers per toy, no fine-tuning \srcp{Data/build\_amazon\_toys\_bert.py}.
+  \item Also: the category tree (``Hobbies $>$ Model Trains''): 6 large categories, 236 subcategories.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Raw Relation}
+\begin{columns}[c]
+\begin{column}{0.58\linewidth}
+\includegraphics[width=\linewidth]{figs/amazon_scatter.pdf}
+\end{column}
+\begin{column}{0.4\linewidth}
+\small
+\begin{itemize}\itemsep4pt
+  \item Slope $-0.063$ (se 0.012): 10\% higher price, 0.6\% fewer reviews.
+  \item Far smaller than the toy-car demand elasticities of $-1.1$ to $-1.6$ in \srct{Chernozhukov et al.\ (2024, Ch.\ 10)}: suspicious.
+  \item A toy-car set and a board game differ in price \emph{and} in how many people buy and
+        review them. The slope mixes products.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{The BERT Vectors Know What the Product Is}
+First two principal components of the 768 numbers, four largest categories
+\srcp{figs/w13\_amazon.R, 2}:
+\begin{center}
+\includegraphics[width=0.58\linewidth]{figs/amazon_pca.pdf}
+\end{center}
+\vskip-6pt
+{\small Nobody told BERT the categories, yet toys of one category sit together. The first 10
+components hold 40\% of the variation in the 768 numbers, the first 50 hold 70\%.}
+\end{frame}
+
+\begin{frame}{How Much Does the Text Predict?}
+Cross-fitted predictions from the 768 numbers, 5 folds \srcp{figs/w13\_amazon.R, 3}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+learner, inputs & $R^2$ for $\log p$: $\hat e(W)$ & $R^2$ for $\log q$: $\hat\ell(W)$ \\
+\midrule
+lasso, 768 numbers & 0.46 & 0.15 \\
+lasso, first 50 principal components & 0.39 & 0.12 \\
+forest, first 50 principal components & 0.48 & 0.16 \\
+lasso, categories $+$ 768 numbers & 0.47 & 0.15 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep3pt\small
+  \item The description predicts almost half of the variation in price: it carries the
+        product's type and quality, so it is the right kind of control.
+  \item It predicts little of demand: what sells is not in the words.
+  \item Compression costs: 50 components predict less than all 768 numbers. Unsupervised
+        compression keeps what \emph{varies} in the text, not what predicts price.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Elasticity Estimates \srcp{figs/w13\_amazon.R, 1 and 3}}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}llc@{}}
+\toprule
+estimator & controls & elasticity (se) \\
+\midrule
+OLS & none & $-0.063$ (0.012) \\
+OLS & 6 category dummies & $-0.039$ (0.014) \\
+OLS & 236 subcategory dummies & $-0.039$ (0.015) \\
+OLS & first 10 / 50 principal components & $-0.032$ / $-0.049$ (0.014) \\
+OLS & all 768 numbers & $-0.065$ (0.016) \\
+\midrule
+DML, lasso & 768 numbers & $-0.065$ (0.015) \\
+DML, forest & first 50 components & $-0.071$ (0.016) \\
+DML, lasso & categories $+$ 768 numbers & $-0.070$ (0.015) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt\small
+  \item Every estimate is between $-0.03$ and $-0.07$: the text, used any way, does not change the answer.
+  \item With 8,003 products, OLS on 768 columns still works; with 2,000 it would not, and DML would.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why Still So Small? What the Text Cannot Hold}
+\begin{itemize}\itemsep5pt
+  \item Controlling for the description removes confounding by \emph{what the product is}. It
+        cannot remove confounding by what is not written.
+  \item \srct{Chernozhukov et al.\ (2024, Ch.\ 10)} redo this with proprietary panel data on toy cars:
+        multimodal embeddings (text, images, tables), fine-tuned to predict price and quantity.
+  \begin{itemize}\itemsep2pt
+    \item Cross-sectional estimates with rich embeddings: $-0.1$ to $-0.3$, still implausibly small.
+    \item The key confounder is \textbf{last period's sales}: popular products build visibility
+          and price accordingly. Adding lagged quantity and price: $-0.69$
+          (90\% CI about $[-0.78, -0.54]$) for sales rank.
+    \item Embeddings then matter for \emph{heterogeneity}: elasticities differ across product
+          types.
+  \end{itemize}
+  \item By category, from our DML residuals: games $-0.20$ (0.05), hobbies $-0.06$ (0.03),
+        die-cast vehicles $0.00$ (0.03).
+\end{itemize}
+\vskip3pt
+{\small The lesson of the whole day, in one example: a better $g(W)$ fixes functional form; it cannot
+add a confounder that $W$ does not contain.}
+\end{frame}
+
+\begin{frame}{Make the Representation Predict the Nuisances}
+Two ways to use a pretrained BERT for $\hat\ell(W)$ and $\hat e(W)$ \srcp{Chernozhukov et al.\ 2024, Ch.\ 10}:
+\vskip3pt
+\begin{enumerate}\itemsep4pt
+  \item \textbf{Feature extraction} (what we did): freeze BERT, take its 768 numbers, feed them to
+        a lasso or forest.
+  \item \textbf{Fine-tuning}: put a regression layer on top of BERT and update \emph{all} BERT's weights
+        to predict $\log p$ (one copy) and $\log q$ (another copy), with early stopping on a
+        validation set.
+\end{enumerate}
+\vskip3pt
+\begin{itemize}\itemsep4pt
+  \item Orthogonality says the bias is (error in $\hat e$) $\times$ (error in $\hat\ell$): better
+        nuisance predictions mean a smaller remaining bias. So train the representation to predict
+        \emph{the nuisances}, not to rebuild the text.
+  \item Cross-fitting still applies: fine-tune on folds that exclude the products being
+        predicted. Fine-tuning a 110-million-weight model memorizes easily.
+  \item Same structure as Week 12's ``change what the network predicts.''
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Generative AI for Causal Inference}
+\par{\footnotesize\color{gray}Imai and Nakamura (2026), \textit{PNAS} 123(36): e2530532123}\vskip4pt
+\textbf{The question.} How to adjust for a confounder that is a text or image, without
+choosing a representation by hand or fine-tuning one on a small sample?
+\vskip3pt
+\textbf{The idea.} Ask an open-source generative model to \emph{reproduce} each document
+(``You are a text generator who simply repeats the input text''), and keep its internal state:
+\begin{itemize}\itemsep2pt
+  \item $R_i$: the hidden state at the last token. LLaMA 3 (8 billion weights): 4,096 numbers.
+        Stable Diffusion for images: 16,384 numbers instead of 786,432 pixels.
+  \item The model writes the document out of $R_i$, deterministically: so $R_i$ holds
+        \emph{everything} in the document, including any confounder in it.
+\end{itemize}
+\vskip3pt
+\textbf{The catch.} Adjusting for all of $R_i$ breaks overlap: it also predicts treatment
+almost perfectly (Week 6). Keep only the part of $R_i$ that matters for the outcome.
+\end{frame}
+
+\begin{frame}{Imai and Nakamura: the Estimator}
+\begin{enumerate}\itemsep4pt
+  \item \textbf{Deconfounder}: a network maps $R_i$ to a few numbers $f(R_i)$, which feed two
+        heads, $\mu_0$ and $\mu_1$, predicting $Y$ for the untreated and treated. Fit by least squares:
+  \[
+    \min\ \frac1n\sum_i \Big(Y_i - \mu_{D_i}\big(f(R_i), Z_i\big)\Big)^2 .
+  \]
+        No head predicts $D$: what predicts only treatment is discarded.
+  \item \textbf{Propensity}: a second network, $\hat\pi\big(f(R_i), Z_i\big)$.
+  \item \textbf{ATT}: Week 6's ATT AIPW score, with $\hat\mu_0$ and $\hat\pi$, 2-fold
+        cross-fitting; standard errors from the score.
+\end{enumerate}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item Generative AI supplies the representation; DML supplies the inference.
+  \item Assumptions: ignorability given $Z$ and the confounding features of the text;
+        overlap given $f(R)$; the model reproduces the text.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Imai and Nakamura: Censorship on Weibo}
+Reanalysis of \srct{Roberts, Stewart, and Nielsen (2020)}: 75,324 Weibo posts by 4,155 users.
+Does being censored change what a user does in the next four weeks? Confounders: the post's text
+(LLaMA 3), date, and the user's prior four weeks. ATT, s.e.\ clustered by user (Tables S3, S4 of the arXiv v4):
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+outcome over the next 4 weeks & GPI, LLaMA 3 & text matching \\
+\midrule
+censorship rate & 0.012 (0.000) & 0.004 (0.001) \\
+missing-post rate & 0.065 (0.003) & 0.050 (0.016) \\
+number of posts & $-16.2$ (2.60) & 11.5 (41.2) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip2pt
+\begin{itemize}\itemsep2pt\small
+  \item Text matching (topic model $+$ coarsened exact matching) keeps 879 posts; GPI uses all.
+  \item Censored users post about 16 fewer times in the next month: evidence of
+        \textbf{self-censorship}, which the original analysis could not detect.
+  \item Adding a list of 60 sensitive keywords as a control barely moves GPI's estimate
+        (8\% for posts); it moves text matching's by more than 500\%.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Imai and Nakamura: What to Take Away}
+\begin{itemize}\itemsep5pt
+  \item The pipeline is today's: a representation of the text, flexible nuisance functions,
+        an orthogonal score, cross-fitting.
+  \item What is new is where $W$ comes from: an open-source model's own state, which by
+        construction contains the whole document.
+  \item \textbf{Cautions they report}
+  \begin{itemize}\itemsep2pt
+    \item Tuning matters: in their simulation an over-sized deconfounder lets overlap fail
+          again (coverage 0.76 instead of 0.97).
+    \item Representations differ: a Sentence-BERT representation reverses the sign of the
+          censorship effect.
+    \item Reproduction can fail; larger models are not always better.
+  \end{itemize}
+  \item For sociology: posts, speeches, court records, photos can enter a causal analysis as
+        controls (or as treatments), with standard errors.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -990,46 +2094,41 @@ all respondents & $-17$ to $-18$ pts \\
 
 \begin{frame}{Where This Leaves the Course}
 \begin{itemize}\itemsep4pt
-  \item \textbf{One idea, three appearances.} FWL (Week 1) $\to$ double
-        robustness and Neyman orthogonality (Week 6) $\to$ DML and causal forests
-        (today). Each generalizes the last; none replaces identification.
-  \item \textbf{ML relaxes functional-form assumptions, not identifying
-        assumptions.} That is a real and substantial gain, many published
-        identification arguments lean on linearity they never defended, but it
-        is a bounded one.
-  \item \textbf{The binding constraint is still the design.} A causal forest on a
-        confounded comparison estimates heterogeneity in a bias.
+  \item \textbf{One idea, three appearances.} FWL (Week 1) $\to$ double robustness (Week 6)
+        $\to$ DML and causal forests (today): predict what the controls predict, compare what is left.
+  \item \textbf{ML relaxes functional-form assumptions, not identifying assumptions.} Brand et al.'s
+        forest, the convergence estimate, the toy elasticities all inherit their
+        design's assumption.
+  \item \textbf{Heterogeneity needs discipline}: honest estimation, calibration tests,
+        pre-specified groups.
+  \item \textbf{Representations turn text and images into controls}; DML turns those controls
+        into valid inference. The binding constraint is still what the data contain.
 \end{itemize}
 \vskip4pt
 \begin{block}{Next week}
-Synthesis, and a review for the final exam.
+Review for the final exam. Lab 13: Brand et al.'s causal forest; DML on the NLSY79 with
+\texttt{DoubleML} and \texttt{ddml}; DML in the designs of Weeks 7--10.
 \end{block}
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{References}
 \footnotesize
 \begin{itemize}\itemsep2pt
-\item Athey, Susan and Guido W. Imbens. 2017. ``The State of Applied Econometrics: Causality and Policy Evaluation.'' \textit{Journal of Economic Perspectives} 31(2): 3--32.
+\item Athey, Susan and Guido Imbens. 2016. ``Recursive Partitioning for Heterogeneous Causal Effects.'' \textit{PNAS} 113(27): 7353--7360.
 \item Athey, Susan, Julie Tibshirani, and Stefan Wager. 2019. ``Generalized Random Forests.'' \textit{Annals of Statistics} 47(2): 1148--1178.
-\item Athey, Susan and Stefan Wager. 2019. ``Estimating Treatment Effects with Causal Forests: An Application.'' \textit{Observational Studies} 5.
-\item Athey, Susan and Stefan Wager. 2021. ``Policy Learning with Observational Data.'' \textit{Econometrica} 89(1): 133--161.
-\item Bach, Philipp, Malte S. Kurz, Victor Chernozhukov, Martin Spindler, and Sven Klaassen. 2024. ``DoubleML: An Object-Oriented Implementation of Double Machine Learning in R.'' \textit{Journal of Statistical Software} 108(3).
-\item Belloni, Alexandre, Victor Chernozhukov, and Christian Hansen. 2014. ``High-Dimensional Methods and Inference on Structural and Treatment Effects.'' \textit{Journal of Economic Perspectives} 28(2): 29--50.
-\item Belloni, Alexandre, Victor Chernozhukov, and Christian Hansen. 2014. ``Inference on Treatment Effects after Selection among High-Dimensional Controls.'' \textit{Review of Economic Studies} 81(2): 608--650.
+\item Bajari, Patrick, Zhihao Cen, Victor Chernozhukov, Manoj Manukonda, Suhas Vijaykumar, Jin Wang, Ramon Huerta, et al. 2025. ``Hedonic Prices and Quality Adjusted Price Indices Powered by AI.'' \textit{Journal of Econometrics} 251(1): 105652.
+\item Barro, Robert J. and Jong-Wha Lee. 1994. ``Sources of Economic Growth.'' \textit{Carnegie-Rochester Conference Series on Public Policy} 40: 1--46.
+\item Brand, Jennie E. and Yu Xie. 2010. ``Who Benefits Most from College? Evidence for Negative Selection in Heterogeneous Economic Returns to Higher Education.'' \textit{American Sociological Review} 75(2): 273--302.
 \item Brand, Jennie E., Jiahui Xu, Bernard Koch, and Pablo Geraldo. 2021. ``Uncovering Sociological Effect Heterogeneity Using Tree-Based Machine Learning.'' \textit{Sociological Methodology} 51(2): 189--223.
-\item Brand, Jennie E., Xiang Zhou, and Yu Xie. 2023. ``Recent Developments in Causal Inference and Machine Learning.'' \textit{Annual Review of Sociology} 49: 81--110.
+\item Card, David. 1995. ``Using Geographic Variation in College Proximity to Estimate the Return to Schooling.'' In \textit{Aspects of Labour Market Behaviour}, edited by L. N. Christofides, E. K. Grant, and R. Swidinsky. University of Toronto Press.
 \item Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins. 2018. ``Double/Debiased Machine Learning for Treatment and Structural Parameters.'' \textit{The Econometrics Journal} 21(1): C1--C68.
-\item Chernozhukov, Victor, Carlos Cinelli, Whitney Newey, Amit Sharma, and Vasilis Syrgkanis. Forthcoming. ``Long Story Short: Omitted Variable Bias in Causal Machine Learning.'' \textit{Review of Economics and Statistics}.
-\item Chernozhukov, Victor, Mert Demirer, Esther Duflo, and Iván Fernández-Val. 2025. ``Fisher--Schultz Lecture: Generic Machine Learning Inference on Heterogeneous Treatment Effects in Randomized Experiments, with an Application to Immunization in India.'' \textit{Econometrica} 93(4): 1121--1164.
 \item Chernozhukov, Victor, Christian Hansen, Nathan Kallus, Martin Spindler, and Vasilis Syrgkanis. 2024. \textit{Applied Causal Inference Powered by ML and AI}. arXiv:2403.02467.
-\item Chernozhukov, Victor, Whitney K. Newey, and Rahul Singh. 2022. ``Automatic Debiased Machine Learning of Causal and Structural Effects.'' \textit{Econometrica} 90(3): 967--1027.
-\item Kennedy, Edward H. 2023. ``Towards Optimal Doubly Robust Estimation of Heterogeneous Causal Effects.'' \textit{Electronic Journal of Statistics} 17(2): 3008--3049.
-\item Koch, Bernard J., Tim Sainburg, Pablo Geraldo, Song Jiang, Yizhou Sun, and Jacob Gates Foster. 2025. ``A Primer on Deep Learning for Causal Inference.'' \textit{Sociological Methods \& Research} 54(2): 397--447.
-\item Künzel, Sören R., Jasjeet S. Sekhon, Peter J. Bickel, and Bin Yu. 2019. ``Metalearners for Estimating Heterogeneous Treatment Effects Using Machine Learning.'' \textit{PNAS} 116(10): 4156--4165.
-\item Lei, Lihua and Emmanuel J. Candès. 2021. ``Conformal Inference of Counterfactuals and Individual Treatment Effects.'' \textit{Journal of the Royal Statistical Society Series B}: 911--938.
-\item Nie, Xinkun and Stefan Wager. 2021. ``Quasi-Oracle Estimation of Heterogeneous Treatment Effects.'' \textit{Biometrika} 108(2): 299--319.
-\item Poterba, James M., Steven F. Venti, and David A. Wise. 1994. ``401(k) Plans and Tax-Deferred Saving.'' In \textit{Studies in the Economics of Aging}, edited by D. A. Wise. University of Chicago Press.
-\item Robinson, Peter M. 1988. ``Root-N-Consistent Semiparametric Regression.'' \textit{Econometrica} 56(4): 931--954.
+\item Devlin, Jacob, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. ``BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.'' \textit{Proceedings of NAACL-HLT 2019}: 4171--4186.
+\item Deerwester, Scott, Susan T. Dumais, George W. Furnas, Thomas K. Landauer, and Richard Harshman. 1990. ``Indexing by Latent Semantic Analysis.'' \textit{Journal of the American Society for Information Science} 41(6): 391--407.
+\item Imai, Kosuke and Kentaro Nakamura. 2026. ``Leveraging Generative AI for Causal Inference with Unstructured Data.'' \textit{PNAS} 123(36): e2530532123.
+\item Noack, Claudia, Tomasz Olma, and Christoph Rothe. 2024. ``Flexible Covariate Adjustments in Regression Discontinuity Designs.'' arXiv:2107.07942.
+\item Roberts, Margaret E., Brandon M. Stewart, and Richard A. Nielsen. 2020. ``Adjusting for Confounding with Text Matching.'' \textit{American Journal of Political Science} 64(4): 887--903.
+\item Vaswani, Ashish, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, \L{}ukasz Kaiser, and Illia Polosukhin. 2017. ``Attention Is All You Need.'' \textit{Advances in Neural Information Processing Systems} 30.
 \item Wager, Stefan and Susan Athey. 2018. ``Estimation and Inference of Heterogeneous Treatment Effects Using Random Forests.'' \textit{Journal of the American Statistical Association} 113(523): 1228--1242.
 \item Yadlowsky, Steve, Scott Fleming, Nigam Shah, Emma Brunskill, and Stefan Wager. 2025. ``Evaluating Treatment Prioritization Rules via Rank-Weighted Average Treatment Effects.'' \textit{Journal of the American Statistical Association} 120(549): 38--51.
 \end{itemize}
