@@ -43,17 +43,18 @@ options(digits = 4, scipen = 999, width = 76)
 
 # Goals
 
-The three parts follow the lecture, up to "DML in Designs."
+The four parts follow the lecture. Part 3 takes one design, staggered difference-in-differences, in detail.
 
 1.  **Causal forest**: the effect of a college degree on the share of a career spent in low-wage work, for whom (Brand, Xu, Koch, and Geraldo 2021), from the public NLSY79.
 2.  **Double machine learning**: one effect with 120 controls and 90 countries (the convergence hypothesis). Which learner to use, judged by held-out predictions, and which estimate to report.
-3.  **DML inside designs**: difference-in-differences, selection on observables, regression discontinuity, instrumental variables. For each: the linear estimate, the DML estimate, and which to report.
+3.  **DML in a staggered design**: Callaway and Sant'Anna's group-time effects and the event study (Week 10), first with linear predictions (`did`), then with cross-fitted machine learning (`ddml`), on the minimum-wage county panel.
+4.  **Many columns into a few numbers** (not on the exam): principal components to measure health from four indicators; BERT from R, and a product description as a control.
 
 Three packages do the cross-fitting for you:
 
--   `grf`: forests in which every person is predicted by trees grown without them. Causal forests, AIPW estimates, calibration, TOC curves.
--   `DoubleML`: folds (redrawn several times), the orthogonal scores, and standard errors, with any `mlr3` learner. Partially linear (PLR), AIPW (IRM), partially linear IV (PLIV).
--   `ddml`: the same estimators plus **stacking**, a weighted mix of several learners with weights chosen by cross-validation. Use it when you do not want to bet on one learner.
+- `grf`: forests in which every person is predicted by trees grown without them. Causal forests, AIPW estimates, calibration, TOC curves.
+- `DoubleML`: folds (redrawn several times), the orthogonal scores, and standard errors, with any `mlr3` learner. Partially linear (PLR), AIPW (IRM), partially linear IV (PLIV).
+- `ddml`: the same estimators plus **stacking**, a weighted mix of several learners with weights chosen by cross-validation. Use it when you do not want to bet on one learner. Part 3 needs version 0.9 or later for `ddml_attgt()`; CRAN has an older one, so install with `remotes::install_github("thomaswiemann/ddml")`.
 
 ```{r}
 #| label: packages
@@ -66,8 +67,7 @@ library(ddml)           ## double machine learning with stacked learners
 library(ranger)         ## random forests
 library(hdm)            ## the growth data (Part 2)
 library(sandwich)       ## robust standard errors
-library(rdrobust)       ## regression discontinuity (Week 9)
-library(ivreg)          ## 2SLS and Card's data (Week 7)
+library(did)            ## Callaway and Sant'Anna (Week 10) and the minimum-wage panel
 lgr::get_logger("mlr3")$set_threshold("warn")   ## silence mlr3's progress messages
 ```
 
@@ -299,16 +299,22 @@ vi <- variable_importance(cf)              ## share of splits, early splits weig
 head(data.frame(variable = xvars, importance = round(vi, 3))[order(-vi), ], 8)
 ```
 
+The forest already predicts each person from trees grown without them (`tau_hat`), so one forest is enough: rank people by `tau_hat`, and `rank_average_treatment_effect()` compares the AIPW effect among the top share $q$ with the ATE (the TOC curve). The AUTOC is the area under that curve.
+
 ```{r}
 #| label: rate
-#| fig-cap: "TOC curve on half B: effect among the top q by the half-A forest, minus the ATE. Negative = larger reductions in low-wage work."
-## learn a ranking on half A, evaluate it on half B (never on the same people)
-cf_A <- causal_forest(X[A, ], Y[A], D[A], sample.weights = w[A], num.trees = 2000, seed = 723)
-cf_B <- causal_forest(X[B, ], Y[B], D[B], sample.weights = w[B], num.trees = 2000, seed = 723)
-priority <- -predict(cf_A, X[B, ])$predictions   ## most negative effect = served first
-rate_cf <- rank_average_treatment_effect(cf_B, priority)
-rate_cf                                           ## AUTOC
-rank_average_treatment_effect(cf_B, -e_hat[B])    ## a one-number rule: lowest propensity first
+#| fig-cap: "TOC curve: effect among the top q ranked by the forest, minus the ATE. Negative = larger reductions in low-wage work."
+## Each person has one AIPW estimate (aipw); the mean of all is the ATE.
+## The ranking does not change anyone's estimate. It decides WHO is averaged:
+##   TOC(q) = mean of aipw among the top share q of the ranking, minus the ATE
+##   AUTOC  = the average of TOC(q) over q from 0 to 1 (area under the curve)
+## A random ranking gives TOC(q) near 0 at every q, so AUTOC near 0.
+## A ranking that puts the largest reductions first gives AUTOC below 0.
+## rank by the forest's estimate: most negative effect first
+rate_cf <- rank_average_treatment_effect(cf, -tau_hat)
+rate_cf                                      ## the AUTOC, with its s.e.
+## a one-number rule for comparison: lowest propensity first
+rank_average_treatment_effect(cf, -e_hat)
 plot(rate_cf, main = "")
 ```
 
@@ -406,10 +412,10 @@ Instead of picking one learner, `ddml` mixes them. It finds non-negative weights
 ```{r}
 #| label: ddml
 stack_learners <- list(
-  list(fun = mdl_glmnet, args = list(alpha = 1)),           ## lasso
-  list(fun = mdl_glmnet, args = list(alpha = 0)),           ## ridge
-  list(fun = mdl_ranger, args = list(num.trees = 500)),     ## random forest
-  list(fun = mdl_xgboost, args = list(nrounds = 200, learning_rate = 0.05, max_depth = 2)))  ## boosting
+  list(what = mdl_glmnet, args = list(alpha = 1)),           ## learner_1: lasso
+  list(what = mdl_glmnet, args = list(alpha = 0)),           ## learner_2: ridge
+  list(what = mdl_ranger, args = list(num.trees = 500)),     ## learner_3: random forest
+  list(what = mdl_xgboost, args = list(nrounds = 200, learning_rate = 0.05, max_depth = 2)))  ## learner_4: boosting
 set.seed(723)
 stack <- ddml_plm(y = g$Outcome, D = g$gdpsh465, X = as.matrix(g[, gx]),
   learners = stack_learners,
@@ -417,189 +423,324 @@ stack <- ddml_plm(y = g$Outcome, D = g$gdpsh465, X = as.matrix(g[, gx]),
   ensemble_type = "nnls",      ## stacked weights
   shortstack = TRUE,           ## weights from the cross-fitted predictions
   silent = TRUE)
-round(summary(stack)[, , 1], 4)    ## row D_r is tau-hat
-w <- cbind(Y = stack$weights$y_X[, 1], D = stack$weights$D1_X[, 1])
-rownames(w) <- names(learners_g)
-round(w, 2)                        ## weight of each learner for E[Y | X] and E[D | X]
+summary(stack)                     ## row D1 is tau-hat
+diagnostics(stack)                 ## per learner: out-of-fold R2 and stacking weight; y_X is E[Y | X], D1_X is E[D | X]
 ```
 
 A learner with weight 0 adds nothing once the others are in. The stacked estimate agrees with the hand-picked one, which is the robustness check that matters.
 
-# Part 3: DML Inside Designs
+# Part 3: DML in a Staggered Design
 
-Each design: predict its variables from $X$ by cross-fitted ML, take residuals, run the design's usual estimator. Compare with the linear version.
+Week 10: with staggered adoption, Callaway and Sant'Anna (2021) estimate one clean 2-by-2 per cohort $g$ and year $t$, $\text{ATT}(g, t)$, then average the blocks. With covariates, each block is an AIPW estimate of an ATT on the change in $Y$, and AIPW needs two predictions: the change an adopting unit would have had, and the propensity. `did` makes them with a linear regression and a logit. DML keeps every other step and makes the two predictions with cross-fitted machine learning.
 
-## Difference-in-differences: unilateral divorce and female suicide
+## The data
 
-Week 10's data (Stevenson and Wolfers 2006). A 2-by-2: 25 states that adopted unilateral divorce in 1969--73 against 8 states with no such law through 1978; before = 1964--68, after = 1974--78. $Y$ = change in the female suicide rate (per million women). Parallel trends is assumed only among states with the same $X$: 19 state characteristics, all measured in 1964--68.
+`did::mpdta` (Callaway and Sant'Anna's example): 500 counties, 2003--07. $Y$ = log teen employment (`lemp`). The treatment is a state minimum wage above the federal one, first in 2004, 2006, or 2007 (`first.treat`; 0 = never in these years). Covariates: log county population (`lpop`) and census region, read from the state part of the county code.
 
 ```{r}
-#| label: did-data
-dv <- subset(bacondecomp::divorce, sex == 2)             ## women
-dv$y <- dv$suiciderate_jag * 1e6                         ## suicides per million women
-st <- dv[dv$year == 1964, c("st", "divyear")]            ## divyear = adoption year
-st$D <- ifelse(st$divyear >= 1969 & st$divyear <= 1973, 1,     ## treated: adopted 1969-73
-        ifelse(st$divyear >= 1979, 0, NA))                     ## control: no law through 1978
-st <- st[!is.na(st$D), ]
-sx <- c("lnpersinc", "stateur", "femep", "fshare", "shblack", "sa14t19", "sa20t29",
-        "sa30t39", "sa40t49", "sa50t59", "sa60t69", "afdcmax", "afdcrolls", "murderrate",
-        "violentcrimerate", "propertycrimerate", "prison", "drate")
-pre <- subset(dv, year %in% 1964:1968); post <- subset(dv, year %in% 1974:1978)
-smean <- function(df, v) tapply(df[[v]], df$st, mean, na.rm = TRUE)[st$st]   ## state means
-s2 <- data.frame(D = st$D, y_pre = smean(pre, "y"), y_post = smean(post, "y"))
-for (v in sx) s2[[v]] <- smean(pre, v)                   ## covariates: 1964-68 means only
-s2$dY <- s2$y_post - s2$y_pre                            ## the change
-dx <- c("y_pre", sx)                                     ## 19 controls
-round(aggregate(cbind(y_pre, y_post, dY) ~ D, s2, mean), 1)    ## the 2x2
+#| label: mw-data
+data(mpdta, package = "did")
+## state code = county code without its last three digits
+fips <- mpdta$countyreal %/% 1000
+mpdta$south <- as.numeric(fips %in% c(12, 13, 22, 24, 37, 40, 45, 47, 48,
+                                      51, 54))
+mpdta$west  <- as.numeric(fips %in% c(8, 16, 30, 32, 35, 49))
+## every other county is in the Midwest
+head(mpdta[, c("countyreal", "year", "lemp", "first.treat", "lpop",
+               "south", "west")], 5)
 ```
 
-The raw difference in differences, then all 19 controls entered linearly (33 states):
+## `att_gt()` with linear predictions
 
 ```{r}
-#| label: did-linear
-raw <- lm(dY ~ D, s2)
-lin <- lm(as.formula(paste("dY ~ D +", paste(dx, collapse = "+"))), s2)
-se <- function(f) sqrt(vcovHC(f, type = "HC1")["D", "D"])
-round(rbind(raw = c(coef(raw)[["D"]], se(raw)), linear = c(coef(lin)[["D"]], se(lin))), 2)
+#| label: cs-linear
+set.seed(723)                           ## did bootstraps its s.e.
+cs_lin <- att_gt(
+  yname = "lemp", tname = "year", idname = "countyreal",
+  gname = "first.treat",                ## adoption year, 0 = never treated
+  control_group = "nevertreated",       ## controls: counties never treated
+  base_period = "universal",            ## each block vs. year g - 1
+  xformla = ~ lpop + south + west,      ## covariates, entered linearly
+  est_method = "dr",                    ## AIPW: OLS + logit (default)
+  data = mpdta)
+round(data.frame(g = cs_lin$group, t = cs_lin$t,
+                 att = cs_lin$att, se = cs_lin$se), 3)
 ```
 
-DML: partial $X$ out of the change and out of $D$. As in Part 2, first ask which learner predicts on held-out states.
+Each row is one block. Rows with $t < g$ are placebo blocks; $t = g - 1$ is the base year, 0 by construction.
+
+## The DML version: `ddml_attgt()`
+
+The same blocks, with a stack of the linear model and a random forest (Part 2) for each prediction. `ddml_attgt()` wants one row per county: a matrix of outcomes with one column per year, the covariates, and the adoption year (`Inf` = never).
 
 ```{r}
-#| label: did-dml
-data_d <- DoubleMLData$new(data.table::as.data.table(s2[, c("dY", "D", dx)]),
-                           y_col = "dY", d_cols = "D", x_cols = dx)
-learners_d <- list(OLS = lrn("regr.lm"),
-  lasso  = lrn("regr.cv_glmnet", alpha = 1, s = "lambda.min", nfolds = 5),
-  ridge  = lrn("regr.cv_glmnet", alpha = 0, s = "lambda.min", nfolds = 5),
-  forest = lrn("regr.ranger", num.trees = 500))
-R <- 50                                    ## 33 states: redraw the random folds many times
-fit_d <- function(ly, ld) {
-  set.seed(723)
-  m <- DoubleMLPLR$new(data_d, ml_l = ly$clone(), ml_m = ld$clone(), n_folds = 5, n_rep = R)
-  suppressWarnings(m$fit(store_predictions = TRUE))   ## glmnet warns on tiny training sets
-  list(m = m, row = c(
-    R2_dY = mean(sapply(1:R, function(k) r2(s2$dY, m$predictions$ml_l[, k, 1]))),
-    R2_D  = mean(sapply(1:R, function(k) r2(s2$D,  m$predictions$ml_m[, k, 1]))),
-    estimate = m$coef[[1]], se = m$se[[1]]))
-}
-res_d <- lapply(learners_d, function(l) fit_d(l, l))
-round(t(sapply(res_d, `[[`, "row")), 3)
-round(range(res_d$forest$m$all_coef), 2)    ## the forest estimate across the 50 redraws of the folds
-```
-
-Only the forest predicts better than the mean, for both the change and adoption, so it is the one to report. The estimate is about half the raw one, and neither is distinguishable from 0: 33 states, and only the first years after adoption.
-
-## Selection on observables: college and low-wage work
-
-Back to the NLSY79 (unweighted from here on): OLS with the 24 columns of $X$ entered linearly, then the partially linear DML with forests.
-
-```{r}
-#| label: nlsy-plr
-ols_n <- lm(Y ~ D + X)
-c(estimate = coef(ols_n)[["D"]], se = sqrt(vcovHC(ols_n, type = "HC1")["D", "D"]))
-data_n <- DoubleMLData$new(d[, c("lowwage", "college", xvars)],
-  y_col = "lowwage", d_cols = "college", x_cols = xvars)
-forest   <- lrn("regr.ranger", num.trees = 500, min.node.size = 5)     ## regression forest
-forest_c <- lrn("classif.ranger", num.trees = 500, min.node.size = 5)  ## classification forest (propensity)
-lasso    <- lrn("regr.cv_glmnet", s = "lambda.min")                    ## lasso, lambda by CV
-boost    <- lrn("regr.xgboost", nrounds = 300, eta = 0.05, max_depth = 3)  ## boosted trees
+#| label: attgt-ml
+mpdta <- mpdta[order(mpdta$countyreal, mpdta$year), ]  ## sort: county, year
+Ymat  <- matrix(mpdta$lemp, ncol = 5, byrow = TRUE)    ## counties x years
+first <- mpdta[mpdta$year == 2003, ]                   ## one row per county
+forest <- list(what = mdl_ranger,
+               args = list(num.trees = 500, min.node.size = 5))
+logit  <- list(what = mdl_glm, args = list(family = binomial))
 set.seed(723)
-plr <- DoubleMLPLR$new(data_n, ml_l = forest, ml_m = forest, n_folds = 5, n_rep = 5)
-plr$fit()
-plr$summary()
+cs_ml <- suppressWarnings(              ## warns: 2004 cohort is small
+  ddml_attgt(
+    y = Ymat, t = 2003:2007,
+    X = as.matrix(first[, c("lpop", "south", "west")]),
+    G = ifelse(first$first.treat == 0, Inf, first$first.treat),
+    learners    = list(list(what = ols), forest),   ## for the change in Y
+    learners_qX = list(logit, forest),              ## for the propensity
+    control_group = "nevertreated",     ## as in att_gt() above
+    sample_folds = 5,                   ## cross-fitting folds
+    ensemble_type = "nnls",             ## stacking weights (Part 2)
+    shortstack = TRUE, silent = TRUE))
+summary(cs_ml)                          ## base years are not listed
 ```
 
-The partially linear model targets a variance-weighted average of $\tau(x)$, as OLS does. The AIPW score (`DoubleMLIRM`) targets the ATE or the ATT with the same predictions.
+The blocks are close to the linear ones: with three covariates, OLS and the logit already predict about as well as the forest (`diagnostics(cs_ml)` shows each learner's out-of-fold $R^2$ and weight).
+
+## The event study and one ATT
+
+`aggte()` averages the blocks for `did`. For `ddml`, `lincom_weights_did()` builds the same weights (`type` as in `aggte()`) and `lincom()` applies them.
 
 ```{r}
-#| label: irm-nlsy
-res <- sapply(c("ATE", "ATTE"), function(s) {
-  set.seed(723)
-  m <- DoubleMLIRM$new(data_n,
-    ml_g = forest,              ## E[Y | D, X], one model per arm
-    ml_m = forest_c,            ## the propensity e(X)
-    score = s,                  ## "ATE" or "ATTE" (the ATT)
-    trimming_threshold = 0.01,  ## propensities clipped to [0.01, 0.99]
-    n_folds = 5)
-  m$fit(); c(estimate = m$coef[[1]], se = m$se[[1]])
-})
-round(res, 3)
+#| label: fig-es
+#| fig-cap: "Event study with machine-learning predictions (ddml): estimates by years since adoption, with a uniform 95% band."
+## weights that turn blocks into years since adoption
+wd <- lincom_weights_did(cs_ml, type = "dynamic")
+es_ml <- lincom(cs_ml, R = wd$R, inf_func_R = wd$inf_func_R,
+                labels = wd$labels)
+plot(es_ml, uniform = TRUE, ylab = "ATT", main = "")
 ```
-
-## Regression discontinuity: the Senate
-
-Only the outcome is residualized, on pre-determined covariates and **not** on the running variable (which would absorb the jump). Then the usual `rdrobust`.
 
 ```{r}
-#| label: rd
-data(rdrobust_RDsenate)
-cv <- c("demvoteshlag1", "demvoteshlag2", "presdemvoteshlag1", "dopen")  ## Week 9's covariates
-s <- rdrobust_RDsenate[complete.cases(rdrobust_RDsenate[, c("vote", "margin", cv)]), ]
-## cross-fitted prediction of the vote from the covariates only
-set.seed(723)
-fold <- sample(rep(1:5, length.out = nrow(s))); eta <- numeric(nrow(s))
-for (k in 1:5) {
-  tr <- fold != k & abs(s$margin) < 40          ## learn from races within 40 points
-  f <- ranger(vote ~ ., data = s[tr, c("vote", cv)], num.trees = 1000, seed = 723)
-  eta[fold == k] <- predict(f, s[fold == k, cv])$predictions
-}
-r_none   <- rdrobust(s$vote, s$margin)                          ## no covariates
-r_linear <- rdrobust(s$vote, s$margin, covs = as.matrix(s[, cv]))  ## linear covariates
-r_forest <- rdrobust(s$vote - eta, s$margin)                    ## forest-adjusted outcome
-rd_row <- function(r) round(c(estimate = r$coef[1], ci_low = r$ci[3, 1], ci_high = r$ci[3, 2]), 2)
-rbind(none = rd_row(r_none), linear = rd_row(r_linear), forest = rd_row(r_forest))
-rd_row(rdrobust(eta, s$margin))                 ## the jump in the prediction itself
+#| label: overall
+## weights that turn all post-adoption blocks into one ATT
+ws <- lincom_weights_did(cs_ml, type = "simple")
+summary(lincom(cs_ml, R = ws$R, inf_func_R = ws$inf_func_R,
+               labels = ws$labels))
 ```
-
-`ddml::crosspred()` does the same cross-fitting for any outcome and any list of learners, if you prefer not to write the loop.
-
-## Instrumental variables: Card's proximity instrument
-
-```{r}
-#| label: pliv
-data("SchoolingReturns", package = "ivreg")
-cr <- transform(SchoolingReturns,
-  lwage = log(wage), near = as.integer(nearcollege == "yes"),
-  black = as.integer(ethnicity == "afam"), smsa_ = as.integer(smsa == "yes"),
-  south_ = as.integer(south == "yes"), smsa66_ = as.integer(smsa66 == "yes"),
-  south66_ = as.integer(south66 == "yes"), married_ = as.integer(married == "yes"),
-  lib14 = as.integer(library14 == "yes"), both14 = as.integer(parents14 == "both"),
-  famed = as.integer(fameducation))
-wv <- c("age", "black", "smsa_", "south_", "smsa66_", "south66_", "married_",
-        "lib14", "both14", "famed", "feducation", "meducation")
-cr <- cr[complete.cases(cr[, c("lwage", "education", "near", wv)]), ]
-## 2SLS with linear controls
-iv <- ivreg(as.formula(paste("lwage ~ education +", paste(wv, collapse = "+"),
-                             "| near +", paste(wv, collapse = "+"))), data = cr)
-coef(summary(iv))["education", 1:2]
-## partially linear IV: residualize Y, D, and Z on X, then IV
-data_c <- DoubleMLData$new(cr[, c("lwage", "education", "near", wv)], y_col = "lwage",
-                           d_cols = "education", z_cols = "near", x_cols = wv)
-fit_pliv <- function(learner) {
-  set.seed(723)
-  m <- DoubleMLPLIV$new(data_c,
-    ml_l = learner$clone(),    ## E[Y | X]
-    ml_m = learner$clone(),    ## E[Z | X]
-    ml_r = learner$clone(),    ## E[D | X]
-    n_folds = 5, n_rep = 5)
-  m$fit(store_predictions = TRUE)
-  ## residual first stage from the first split: slope of D - r(X) on Z - m(X)
-  z_res <- cr$near - m$predictions$ml_m[, 1, 1]
-  d_res <- cr$education - m$predictions$ml_r[, 1, 1]
-  c(estimate = m$coef[[1]], se = m$se[[1]], first_stage = sum(z_res * d_res) / sum(z_res^2))
-}
-round(rbind(lasso = fit_pliv(lasso), forest = fit_pliv(forest)), 3)
-```
-
-With forests, little of the instrument's variation survives partialling out (a weak residual first stage), so the ratio is noisy and moves with the learner.
 
 ## Linear or DML?
 
--   **They agree**: the functional form of $X$ did not matter; report the familiar estimate and DML as a check.
--   **They disagree, and DML is stable across learners and redraws of the folds**: report DML, if its learners predict $Y$ and $D$ better out of fold than the linear model (out-of-fold $R^2$; `ddml`'s stacking weight on `ols`).
--   **DML disagrees with itself** across learners: the design is thin. Report both, and the residual first stage or overlap.
--   Neither fixes an omitted confounder.
+- **They agree**: the functional form of $X$ did not matter; report the familiar estimate and DML as a check.
+- **They disagree, and DML is stable across learners and redraws of the folds**: report DML, if its learners predict $Y$ and $D$ better out of fold than the linear model (out-of-fold $R^2$; `ddml`'s stacking weight on `ols`).
+- **DML disagrees with itself** across learners: the design is thin. Report both, and the residual first stage or overlap.
+- Neither fixes an omitted confounder.
+
+# Part 4: Many Columns Into a Few Numbers
+
+Not on the exam. Two uses of compression from the lecture: measuring a latent trait with principal components, and controlling for a text with BERT.
+
+## Principal components: one health score from four indicators
+
+Health is not a column. Several columns each record part of it. `MASS::Pima.tr` and `Pima.te`: 532 Pima women with plasma glucose (`glu`), diastolic blood pressure (`bp`), triceps skin fold (`skin`), and body mass index (`bmi`).
+
+```{r}
+#| label: pca-data
+h <- rbind(MASS::Pima.tr, MASS::Pima.te)     ## 532 women, one row each
+H <- scale(h[, c("glu", "bp", "skin", "bmi")])   ## standardize columns
+round(cor(H), 2)                             ## Sigma_n
+```
+
+Every correlation is positive: the four indicators partly repeat each other. `prcomp()` finds the cloud's axes.
+
+```{r}
+#| label: pca-fit
+pc <- prcomp(H)
+round(summary(pc)$importance[2, ], 3)    ## variance share of each axis
+```
+
+The first direction puts a positive weight on all four indicators: a woman scores high on it when all of them are high. It holds half of the variance of four columns. Read it as one score of metabolic health (higher = worse).
+
+```{r}
+#| label: pca-score
+round(pc$rotation[, 1], 2)               ## PC1's weight on each indicator
+## a component's sign is arbitrary: orient it so that higher = worse health
+h$score <- pc$x[, 1] * sign(sum(pc$rotation[, 1]))
+## does the score mean anything? compare women with and without diabetes
+round(tapply(h$score, h$type, mean), 2)
+```
+
+Nobody told `prcomp()` who has diabetes, yet the score separates the two groups. Four columns became one number, to use as an outcome, a predictor, or a control.
+
+## BERT from R: a text into 768 numbers
+
+`reticulate` runs Python from R, so the embedding is a few lines of R. `py_require()` tells `reticulate` which Python packages the session needs; it downloads them into its own private Python the first time (a few minutes, once). Call it before anything else touches Python: if your session has already started Python without these packages, restart R first. `torch$set_num_threads(1L)` matters: R packages such as `xgboost` and `ranger` bring their own threading library, PyTorch brings another, and on a Mac R crashes when both run in parallel. The chunk is not run when the lab is rendered (about ten minutes for 8,003 products); its output is saved in `Data/amazon_toys.rds`.
+
+```{r}
+#| label: bert-r
+#| eval: false
+library(reticulate)
+py_require(c("torch", "transformers"))   ## Python packages for this session
+transformers <- import("transformers"); torch <- import("torch")
+torch$set_num_threads(1L)   ## one thread: several crash R on a Mac
+tok  <- transformers$AutoTokenizer$from_pretrained("bert-base-uncased")
+bert <- transformers$AutoModel$from_pretrained("bert-base-uncased")$eval()
+texts <- c("Monopoly board game | Hasbro | The property trading game.",
+           "Hornby train set | Hornby | A classic starter set.")
+## words -> rows of the word table (ids), cut at 128 tokens
+batch <- tok(texts, padding = TRUE, truncation = TRUE,
+             max_length = 128L, return_tensors = "pt")
+with(torch$no_grad(), {                  ## no training: BERT stays frozen
+  out <- bert(input_ids = batch$input_ids,
+              attention_mask = batch$attention_mask)
+})
+## last layer: one 768-vector per token; token 0 is [CLS]
+W <- out$last_hidden_state[, 0, ]$numpy()
+dim(W)                                   ## 2 texts x 768 numbers
+```
+
+## The text as a control: OLS or DML
+
+The lecture's example: the price elasticity of demand for 2,000 Amazon toys, with the description's 768 numbers as controls.
+
+```{r}
+#| label: toys-data
+a <- readRDS("../Data/amazon_toys.rds")
+set.seed(723)
+a <- a[sample(nrow(a), 2000), ]              ## the lecture's 2,000 toys
+E <- as.matrix(a[, grep("^e[0-9]+$", names(a))])   ## the 768 BERT numbers
+substr(a$text[1], 1, 70)                     ## one product's text
+round(E[1, 1:5], 3)                          ## the start of its vector
+```
+
+OLS with all 768 columns runs, and fits its own sample well. Its predictions for toys it has not seen are worse than the mean:
+
+```{r}
+#| label: toys-ols
+ols_none <- lm(ln_q ~ ln_p, a)               ## log demand on log price
+ols_768  <- lm(a$ln_q ~ a$ln_p + E)
+rbind(none = coef(summary(ols_none))[2, 1:2],
+      controls_768 = coef(summary(ols_768))[2, 1:2])
+r2 <- function(y, yhat) 1 - mean((y - yhat)^2) / mean((y - mean(y))^2)
+set.seed(723); fold <- sample(rep(1:5, length.out = nrow(a)))
+p_hat <- numeric(nrow(a))                    ## held-out predictions of price
+for (k in 1:5) {
+  b <- coef(lm(a$ln_p[fold != k] ~ E[fold != k, ])); b[is.na(b)] <- 0
+  p_hat[fold == k] <- cbind(1, E[fold == k, ]) %*% b
+}
+c(R2_in_sample = summary(lm(a$ln_p ~ E))$r.squared,
+  R2_held_out  = r2(a$ln_p, p_hat))
+```
+
+DML with the lasso (Part 2's learner), cross-fitted:
+
+```{r}
+#| label: toys-dml
+data_a <- DoubleMLData$new(data.frame(ln_q = a$ln_q, ln_p = a$ln_p, E),
+                           y_col = "ln_q", d_cols = "ln_p",
+                           x_cols = colnames(E))
+set.seed(723)
+plr_a <- DoubleMLPLR$new(data_a, ml_l = learners_g$lasso$clone(),
+                         ml_m = learners_g$lasso$clone(), n_folds = 5)
+plr_a$fit(store_predictions = TRUE)
+plr_a$summary()
+## what the text predicts for held-out toys
+c(R2_price  = r2(a$ln_p, plr_a$predictions$ml_m[, 1, 1]),
+  R2_demand = r2(a$ln_q, plr_a$predictions$ml_l[, 1, 1]))
+```
+
+OLS with 768 controls is residual on residual with overfitted predictions: its standard error is large. DML does the same residual on residual with lasso predictions made for held-out toys.
+
+## A neural network on the frozen vectors
+
+Feature extraction leaves the choice of learner open. The lasso above is linear in the 768 numbers. A neural network with a hidden layer (Week 12) can bend: here 768 inputs, 4 hidden units with a logistic activation, one linear output, fitted by `nnet`. Choose the weight decay on a validation set, and report the fit on toys used for neither.
+
+```{r}
+#| label: nn-tune
+library(nnet)
+set.seed(723)
+part <- sample(rep(c("train", "valid", "test"), c(1200, 400, 400)))
+tr <- part == "train"; va <- part == "valid"; te <- part == "test"
+net <- function(y, rows, decay) {      ## one network, trained on `rows`
+  set.seed(723)
+  nnet(E[rows, ], y[rows],
+       size = 4,                       ## 4 hidden units, logistic activation
+       linout = TRUE,                  ## linear output unit
+       decay = decay,                  ## weight decay (L2 penalty)
+       maxit = 300, MaxNWts = 10000, trace = FALSE)
+}
+decays <- c(1, 10, 30, 100)
+tune <- function(y) {                  ## validation and test R2 by decay
+  fits <- lapply(decays, function(dc) net(y, tr, dc))
+  v <- sapply(fits, function(f) r2(y[va], predict(f, E[va, ])))
+  list(valid = round(v, 3), decay = decays[which.max(v)],
+       test = r2(y[te], predict(fits[[which.max(v)]], E[te, ])))
+}
+length(net(a$ln_p, tr, 10)$wts)        ## weights in one network
+(tune_p <- tune(a$ln_p))               ## log price
+(tune_q <- tune(a$ln_q))               ## log demand
+```
+
+## DML with the network, step by step
+
+The steps of Part 2, with the network making both predictions: (1) split the toys into 5 folds; (2) for each fold, train one network for log price and one for log demand on the other four folds, and predict the fold's toys; (3) subtract the predictions to get the two residuals; (4) regress the demand residual on the price residual.
+
+```{r}
+#| label: nn-dml
+set.seed(723)
+fold <- sample(rep(1:5, length.out = nrow(a)))       ## (1) five folds
+p_hat <- q_hat <- numeric(nrow(a))
+for (k in 1:5) {                                     ## (2) cross-fit
+  in_k <- fold == k
+  p_hat[in_k] <- predict(net(a$ln_p, !in_k, tune_p$decay), E[in_k, ])
+  q_hat[in_k] <- predict(net(a$ln_q, !in_k, tune_q$decay), E[in_k, ])
+}
+c(R2_price = r2(a$ln_p, p_hat), R2_demand = r2(a$ln_q, q_hat))
+res_p <- a$ln_p - p_hat                              ## (3) residuals
+res_q <- a$ln_q - q_hat
+dml_nn <- lm(res_q ~ res_p)                          ## (4) final step
+round(c(elasticity = coef(dml_nn)[[2]],
+        se = sqrt(vcovHC(dml_nn, type = "HC1")[2, 2])), 3)
+```
+
+Compare with the lasso: if the network predicts held-out toys no better, the relation between the 768 numbers and price is close to linear, and the two DML estimates agree.
+
+## Full fine-tuning (code only)
+
+The lecture's second way: put a new output layer on BERT and train \emph{everything}, BERT's 110 million weights included, to predict log price (and a second copy for log demand). The `[CLS]` vector itself then changes to hold what predicts price. The chunk is not run: on a laptop one pass over 1,600 toys takes many minutes, and several passes are needed. It was tested on a few toys.
+
+```{r}
+#| label: finetune
+#| eval: false
+library(reticulate)
+py_require(c("torch", "transformers"))
+transformers <- import("transformers"); torch <- import("torch")
+torch$set_num_threads(1L)
+tok  <- transformers$AutoTokenizer$from_pretrained("bert-base-uncased")
+bert <- transformers$AutoModel$from_pretrained("bert-base-uncased")
+head <- torch$nn$Linear(768L, 1L)      ## new output layer on [CLS]
+## everything is trained: BERT's weights and the new layer's
+params <- c(iterate(bert$parameters()), iterate(head$parameters()))
+opt <- torch$optim$AdamW(params, lr = 1e-5)   ## small steps
+rows <- which(tr)                      ## the training toys
+invisible(bert$train())
+for (epoch in 1:3) {                   ## passes over the training toys
+  rows <- sample(rows)
+  for (b in split(rows, ceiling(seq_along(rows) / 16))) {  ## 16 at a time
+    batch <- tok(a$text[b], padding = TRUE, truncation = TRUE,
+                 max_length = 128L, return_tensors = "pt")
+    out  <- bert(input_ids = batch$input_ids,
+                 attention_mask = batch$attention_mask)
+    pred <- head(out$last_hidden_state[, 0, ])$squeeze(1L)
+    y    <- torch$tensor(a$ln_p[b], dtype = torch$float32)
+    loss <- torch$nn$functional$mse_loss(pred, y)   ## squared error
+    opt$zero_grad(); loss$backward(); opt$step()    ## backpropagation
+  }
+}
+## predictions for held-out toys: BERT in evaluation mode, no gradients
+invisible(bert$eval())
+with(torch$no_grad(), {
+  batch <- tok(a$text[te], padding = TRUE, truncation = TRUE,
+               max_length = 128L, return_tensors = "pt")
+  out <- bert(input_ids = batch$input_ids,
+              attention_mask = batch$attention_mask)
+  p_ft <- as.vector(head(out$last_hidden_state[, 0, ])$numpy())
+})
+r2(a$ln_p[te], p_ft)
+```
+
+For DML, fine-tune inside the cross-fitting loop: for each fold, start again from the pretrained BERT, train on the other four folds, predict the fold. In practice the validation toys decide when to stop.
 
 # Exercises
 
@@ -607,6 +748,7 @@ With forests, little of the instrument's variation survives partialling out (a w
 2.  **Honesty.** Rerun the honest-tree chunk with five different seeds. Do the splits change? Do the honest leaf estimates?
 3.  **A pre-specified moderator.** Pick one moderator not used above (siblings, or the locus of control `rotter`) before looking. Report its group effects and its best linear projection, by `grf` and by `lm()` on `aipw`.
 4.  **Redrawing the folds, and learners.** Rerun the best growth specification with `n_rep = 50`. How much do the 50 estimates vary? Then rerun `ddml_plm` with `shortstack = FALSE`. Do the stacking weights change?
-5.  **DiD with stacking.** Rerun the divorce 2-by-2 with `ddml_plm()` and the four `stack_learners`. Which learners get weight? Compare with the forest estimate.
-6.  **Card.** Rerun the partially linear IV with `boost` and with `ddml_pliv()` and the four `stack_learners`. Which learner gets the most weight for $E[Z\mid X]$? Is the estimate closer to the lasso or the forest one?
-7.  **RD.** Replace the forest in the RD chunk by `ddml::crosspred()` with the four `stack_learners`. Does the adjusted estimate move? Does the interval narrow?
+5.  **Control group.** Rerun `att_gt()` and `ddml_attgt()` with `control_group = "notyettreated"`. Which blocks gain controls? Does the event study move?
+6.  **Which covariate matters?** Tabulate adoption cohort by region (one row per county). Then rerun both with `south` and `west` only, and with no covariates (`xformla = ~ 1` in `att_gt()`). Which blocks change, and for which cohort?
+7.  **Learners.** Add boosting (`mdl_xgboost`) to `learners` and `learners_qX`. Print `diagnostics(cs_ml)` for two blocks. Does any tree learner get weight, and does the event study change?
+8.  **How many components?** Use the first 10, then the first 50, principal components of the 768 BERT numbers as controls in OLS. Compare with the two OLS estimates and with DML.

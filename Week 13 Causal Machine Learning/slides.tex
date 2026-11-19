@@ -1348,32 +1348,34 @@ controls (growth: 120); least with few cases or controls (the Senate, the divorc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{When the Confounder Is Written Down}
-Some confounders are not columns but text or images:
-\begin{itemize}\itemsep3pt
-  \item The effect of price on demand must hold product quality fixed; quality is in the
-        description \srcp{Bajari et al.\ 2025}.
-  \item The effect of being censored on a blogger's later posting must hold the \emph{content}
-        of the censored post fixed \srcp{Roberts, Stewart, and Nielsen 2020}.
-  \item The effect of nearby violence on test scores must hold neighbourhood quality fixed;
-        street images may record it.
-\end{itemize}
+\begin{frame}{Why Summarize Many Columns in a Few Numbers?}
+\begin{block}{Compression is intelligence}
+Much of intelligence is summarizing: reducing high-dimensional data to the few numbers that
+matter. Sutskever (2023): to predict the next word, a network must learn ``some representation of the
+process that produced the text.''
+\end{block}
 \vskip4pt
-The plan:
-\begin{enumerate}\itemsep3pt
-  \item Turn each text into a list of numbers, a \textbf{representation} $W_i$: principal
-        components $\to$ autoencoders $\to$ word vectors (Week 12) $\to$ BERT.
-  \item Put $W_i$ in the role of $X$ in Section 2: $Y_i = \tau D_i + g(W_i) + \epsilon_i$, with
-        $g$ an unknown function of 768 numbers. DML handles the rest.
+Two uses in social science:
+\begin{enumerate}\itemsep4pt
+  \item \textbf{Measure a latent trait.} Status, ability, and ideology are not columns. Several columns
+        record each with noise (SEI and prestige; ten survey items).
+  \item \textbf{Control for a confounder.} Product quality is in the description
+        \srcp{Bajari et al.\ 2025}: 30,522 word columns, 8,003 products.
 \end{enumerate}
+\vskip4pt
+Either way, compress the columns into a few numbers $W_i$: principal components, autoencoders,
+BERT. As a control, $W_i$ replaces $X$ in DML: $Y_i = \tau D_i + g(W_i) + \epsilon_i$.
+\vskip3pt
+{\small\textcolor{accent}{\textbf{Not on the exam}: this whole section, from PCA to BERT.}}
 \end{frame}
 
 \subsection{Principal Components}
-\begin{frame}{Feature Extraction: Principal Components\core}
+\begin{frame}{Feature Extraction: Principal Components}
 \begin{itemize}\itemsep6pt
-  \item We want to turn complex objects, such as text or images, into a relatively small set of
-        numerical features.
-  \item Principal components are an early, classic example of such features (\emph{embeddings}).
+  \item We want to turn many columns (survey items on one trait, the words of a text, the pixels
+        of an image) into a relatively small set of numerical features.
+  \item Principal components are an early, classic example of such features (\emph{embeddings}),
+        long used in social science to build one index of a latent trait from several measures.
   \item Principal components are weighted sums of the original variables, chosen to be the
         ``best'' at reproducing the data: each new direction is orthogonal to the previous ones.
   \item A small number of principal components often captures most of the variation in the
@@ -1381,60 +1383,82 @@ The plan:
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Principal Components: the Setup\core}
-A sample of $n$ observations $W_1, \dots, W_n$ of a centered vector with $d$ entries,
-$W_i = (W_{i1}, \dots, W_{id})'$, each entry with mean 0. Their covariance matrix:
-\[
-  \Sigma_n = \frac1n\sum_{i=1}^n W_i W_i' \qquad (d \times d).
-\]
-\textbf{With $d = 2$, written out:}
+\begin{frame}{Principal Components: the Setup}
+\begin{columns}[c]
+\begin{column}{0.4\linewidth}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & SEI & prestige \\
+\midrule
+person 1 & $W_{11}$ & $W_{12}$ \\
+person 2 & $W_{21}$ & $W_{22}$ \\
+$\ \vdots$ & $\vdots$ & $\vdots$ \\
+\textcolor{accent}{\textbf{person $i$}} & \textcolor{accent}{$W_{i1}$} & \textcolor{accent}{$W_{i2}$} \\
+$\ \vdots$ & $\vdots$ & $\vdots$ \\
+person $n$ & $W_{n1}$ & $W_{n2}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\begin{column}{0.58\linewidth}
+\small
+\begin{itemize}\itemsep4pt
+  \item A data frame: each row a person, each column a variable. Here $d = 2$ columns; the health items of a survey may give 10 or 20.
+  \item Each column is standardized: mean 0, s.d.\ 1.
+  \item $W_i$ is \textbf{row $i$}, one person's numbers, written as a column vector:
+        $W_i = \begin{pmatrix} W_{i1} \\ W_{i2} \end{pmatrix}$.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip2pt
+The covariance matrix of the columns ($d \times d$):
+{\small
 \begin{align*}
-  \Sigma_n &= \frac1n\sum_{i=1}^n
-  \begin{pmatrix} W_{i1} \\ W_{i2} \end{pmatrix}
-  \begin{pmatrix} W_{i1} & W_{i2} \end{pmatrix}
-  = \frac1n\sum_{i=1}^n \begin{pmatrix} W_{i1}^2 & W_{i1}W_{i2} \\ W_{i2}W_{i1} & W_{i2}^2 \end{pmatrix}
-   && \text{\footnotesize multiply} \\
-  &= \begin{pmatrix} \Var(W_1) & \Cov(W_1, W_2) \\ \Cov(W_1, W_2) & \Var(W_2) \end{pmatrix}
-   && \text{\footnotesize means are 0}
-\end{align*}
-{\small Diagonal: each variable's variance. Off the diagonal: how the variables move together.
-For standardized SEI and prestige: 1, 1, and their correlation 0.82.}
+  \Sigma_n = \frac1n\sum_{i=1}^n W_i W_i'
+  = \begin{pmatrix} \Var(\text{SEI}) & \Cov(\text{SEI}, \text{prestige}) \\ \Cov(\text{SEI}, \text{prestige}) & \Var(\text{prestige}) \end{pmatrix}
+  = \begin{pmatrix} 1 & 0.82 \\ 0.82 & 1 \end{pmatrix}
+\end{align*}}
+\vskip-4pt
+{\small Diagonal: each column's variance, 1 after standardizing. Off the diagonal: how two columns move
+together, here their correlation.}
 \end{frame}
 
-\begin{frame}{What $\Sigma_n$ Describes, and Why Decompose It\core}
+\begin{frame}{What $\Sigma_n$ Describes, and Why Decompose It}
 \begin{columns}[c]
-\begin{column}{0.44\linewidth}
+\begin{column}{0.5\linewidth}
 \begin{center}
-\begin{tikzpicture}[x=1.05cm,y=1.05cm]
+\begin{tikzpicture}[x=1.0cm,y=1.0cm]
   \draw[->,gray] (-2,0) -- (2.1,0) node[below,font=\scriptsize,text=black] {SEI};
   \draw[->,gray] (0,-2) -- (0,2.1) node[left,font=\scriptsize,text=black] {prestige};
   \foreach \a/\b in {-1.5/-1.2,-1.1/-1.3,-0.9/-0.5,-0.6/-0.8,-0.4/-0.1,-0.2/-0.5,0.1/0.3,0.2/-0.1,0.4/0.6,0.6/0.3,0.8/1.0,1.0/0.7,1.3/1.4,1.5/1.1,-1.3/-0.8,0.0/0.1,1.35/0.4}
     \fill[dukeblue!45] (\a,\b) circle (1.4pt);
   \draw[dukeblue,thick,rotate=45] (0,0) ellipse (1.9 and 0.6);
-  \draw[accent,very thick,-{Stealth[length=2mm]}] (0,0) -- (1.2,1.2) node[above right,font=\scriptsize] {$c_1$, $\lambda_1 = 1.82$};
-  \draw[accent,thick,dashed,-{Stealth[length=2mm]}] (0,0) -- (-0.42,0.42) node[above left,font=\scriptsize] {$c_2$, $\lambda_2 = 0.18$};
+  \draw[accent,very thick,-{Stealth[length=2mm]}] (0,0) -- (1.2,1.2);
+  \node[font=\scriptsize,text=accent,align=left,anchor=west] at (0.55,1.85) {long axis $c_1$\\spread $\lambda_1 = 1.82$ (91\%)};
+  \draw[accent,thick,dashed,-{Stealth[length=2mm]}] (0,0) -- (-0.42,0.42);
+  \node[font=\scriptsize,text=accent,align=left,anchor=east] at (-0.3,0.95) {short axis $c_2$\\$\lambda_2 = 0.18$ (9\%)};
+  \node[font=\scriptsize,text=dukeblue,anchor=west] at (0.35,-1.5) {$\Sigma_n = \begin{pmatrix} 1 & 0.82 \\ 0.82 & 1 \end{pmatrix}$};
 \end{tikzpicture}
 \end{center}
 \end{column}
-\begin{column}{0.54\linewidth}
+\begin{column}{0.48\linewidth}
 \small
-\textbf{$\Sigma_n$ is the shape of the cloud.} Standardized SEI and prestige:
-$\Sigma_n = \left(\begin{smallmatrix} 1 & 0.82 \\ 0.82 & 1 \end{smallmatrix}\right)$. Diagonal: spread along
-each axis. Off-diagonal: the tilt; the two variables largely repeat each other.
-\vskip4pt
-\textbf{Decomposing $\Sigma_n$ finds the cloud's own axes} $c_k$ and the spread $\lambda_k$ along each:
-\[
-  \Sigma_n \begin{pmatrix}1\\1\end{pmatrix} = \begin{pmatrix}1 + 0.82\\0.82 + 1\end{pmatrix} = 1.82\begin{pmatrix}1\\1\end{pmatrix},
-\]
-so $c_1 = (1, 1)'/\sqrt2$, $\lambda_1 = 1.82$; likewise $c_2 = (1, -1)'/\sqrt2$, $\lambda_2 = 0.18$.
-\vskip4pt
-\textbf{Why}: the long axis holds $1.82/2 = 91\%$ of the variance. Keep it, drop the short one: two
-numbers become one, little lost. With $d = 768$, keep the few longest axes.
+\begin{itemize}\itemsep4pt
+  \item \textbf{$\Sigma_n$ is the shape of the cloud.} Diagonal: the spread along each variable.
+        Off the diagonal: the tilt. A strong tilt: the two variables largely repeat each other.
+  \item \textbf{The cloud has its own axes}: a long one, along which people differ most, and a
+        short one across it.
+  \item \textbf{Decomposing $\Sigma_n$ finds them}: directions $c_k$, spread $\lambda_k$ along each.
+  \item \textbf{Why}: keep each person's position on the long axis, drop the short one. Two numbers
+        become one, little is lost. With 768 columns, keep the few longest axes.
+\end{itemize}
 \end{column}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Principal Directions and Components\core}
+\begin{frame}{Principal Directions and Components}
 \begin{itemize}\itemsep4pt
   \item The \textbf{eigenvectors} $c_k$ (each of length 1) and \textbf{eigenvalues} $\lambda_k$ of
         $\Sigma_n$ solve
@@ -1453,7 +1477,7 @@ numbers become one, little lost. With $d = 768$, keep the few longest axes.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Principal Components: a Picture\core}
+\begin{frame}{Principal Components: a Picture}
 \begin{columns}[c]
 \begin{column}{0.5\linewidth}
 \includegraphics[width=\linewidth]{figs/pca_sei_prestige.pdf}
@@ -1472,7 +1496,7 @@ $W_i$ = (SEI, prestige), standardized; 600 of 3,509 GSS respondents \srcp{figs/w
 \end{columns}
 \end{frame}
 
-\begin{frame}{Reconstruction\core}
+\begin{frame}{Reconstruction}
 \begin{itemize}\itemsep5pt
   \item $X_i^K$ is the compressed feature vector of the original $W_i$.
   \item Approximate $W_i$ by projecting $X_i^K$ back to the $d$-dimensional space:
@@ -1506,7 +1530,7 @@ A 120 $\times$ 160 image: each pixel row is a unit, each of the 160 columns a va
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Principal Components as an Encoder--Decoder Network\core}
+\begin{frame}{Principal Components as an Encoder--Decoder Network}
 \begin{columns}[c]
 \begin{column}{0.44\linewidth}
 \begin{center}
@@ -1613,7 +1637,7 @@ dimension, its loadings $c_{11}, c_{21}, c_{31}$.}
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Change What the Network Predicts\core}
+\begin{frame}{Change What the Network Predicts}
 \begin{itemize}\itemsep2pt
   \item With encoder $e(\cdot)$ and decoder $d(\cdot)$, an autoencoder minimizes the
         rebuilding loss $\E\big[\text{loss}\big(W,\ d(e(W))\big)\big]$. It must rebuild
@@ -1629,14 +1653,11 @@ dimension, its loadings $c_{11}, c_{21}, c_{31}$.}
   autoencoder & the input itself & whatever varies most \\
   word2vec & the words near each word & what a word's company says \\
   BERT & words hidden from a sentence & meaning in context \\
-  Gebru et al.\ CNN & a car's make and model & visual traits of cars \\
   \bottomrule
   \end{tabular}
   \end{center}
-  \item The task is a choice: for price effects, a description's code should hold product
-        type and quality, not its wording.
-  \item All but the last are \textbf{self-supervised} (slide on the three kinds): the
-        target comes free from the data, so they train on billions of words.
+  \item All three are \textbf{self-supervised}: the target comes free from the data, so they
+        can train on billions of words.
 \end{itemize}
 \end{frame}
 
@@ -1654,153 +1675,261 @@ Two problems for a whole text:
 \vskip4pt
 \begin{itemize}\itemsep4pt
   \item The fix: let each word's vector depend on the other words in its sentence.
-  \item Recurrent networks do it by reading one word at a time; \textbf{attention} does it by
-        letting every word look at every other word at once. Attention is what BERT, and every
-        large language model since, is built from.
+  \item \textbf{Attention} does it by letting every word look at every other word at once.
+        It is what BERT, and every large language model since, is built from.
 \end{itemize}
 \end{frame}
-\begin{frame}{Attention: Look at Every Word at Once\core}
-\begin{quote}\small
-The survey asked parents about the new school. \textbf{It} was badly underfunded.
-\end{quote}
-\vskip-2pt
-A reader links \emph{It} to \emph{school}, eight words back; a recurrent network must
-carry that link through every word between. \textbf{Self-attention}
-\srcp{Vaswani et al.\ 2017} lets each word look at all others directly. Each word gets
-three lists of $D$ numbers, weighted sums of its word vector with learned weights:
-a \textbf{query} $q$ (what it looks for), a \textbf{key} $k$ (what it offers), a
-\textbf{value} $v$ (what it passes on). For word $i$:
-\begin{align*}
-  \text{score}_{ij} &= \frac{\sum_{d} q_{id} k_{jd}}{\sqrt D}
-   && \text{\footnotesize how well word $j$ answers word $i$} \\
-  \text{weight}_{ij} &= \frac{\exp(\text{score}_{ij})}{\sum_{j'}\exp(\text{score}_{ij'})}
-   && \text{\footnotesize softmax: positive, sums to 1 over $j$} \\
-  \text{new vector}_{i} &= \textstyle\sum_j \text{weight}_{ij}\, v_{j}
-   && \text{\footnotesize weighted average of the values}
-\end{align*}
+\begin{frame}{Attention: Every Word Looks at Every Other Word}
+``The river bank.'' ``The loan bank.'' A reader knows which \emph{bank} from the other words.
+\textbf{Self-attention} \srcp{Vaswani et al.\ 2017} does the same with numbers: each word's new vector
+is a weighted average over all the words in its sentence, with the largest weights on the words that
+matter to it.
+\vskip5pt
+The next frames follow \emph{bank} in ``the river bank'' from its starting numbers to its new vector,
+with all weights taken as known \srcp{figs/w13\_attention.R; hypothetical weights}. Then: how the
+weights are learned.
+\vskip4pt
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize,
+  st/.style={draw=dukeblue,fill=dukeblue!10,rounded corners=2pt,align=center,minimum width=2.0cm,minimum height=1.0cm,inner sep=2pt},
+  lb/.style={align=center,text=black!70}]
+  \node[st] (s1) at (0,0) {starting\\vector $h$};
+  \node[st,draw=accent,fill=accent!12] (s2) at (2.75,0) {query $q$, key $k$,\\value $v$};
+  \node[st] (s3) at (5.5,0) {attention\\weights};
+  \node[st] (s4) at (8.25,0) {new vector};
+  \node[st,draw=gray,fill=gray!10,dashed] (s5) at (11.0,0) {training:\\hide a word};
+  \foreach \a/\b in {s1/s2,s2/s3,s3/s4,s4/s5} \draw[-{Stealth[length=2mm]},thick] (\a) -- (\b);
+  \node[lb] at (0,-0.95) {word row +\\position row};
+  \node[lb] at (2.75,-0.95) {three small\\networks on $h$};
+  \node[lb] at (5.5,-0.95) {query meets\\every key};
+  \node[lb] at (8.25,-0.95) {weighted average\\of the values};
+  \node[lb] at (11.0,-0.95) {predict it,\\adjust the weights};
+\end{tikzpicture}
+\end{center}
 \end{frame}
 
-\begin{frame}{Attention by Hand: Two Banks}
-$D = 2$; query of \emph{bank} $(1, 1)$; keys: the $(0, 0)$, river $(2, 0)$, loan
-$(0, 2)$, bank $(0.5, 0.5)$; values: the $(0, 0)$, river $(1, 0)$, loan $(0, 1)$, bank
-$(0.5, 0.5)$ \srcp{figs/w12\_repr.R, G; hypothetical}:
+\begin{frame}{Where Each Word's Starting Vector Comes From}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize,
+  tb/.style={draw=dukeblue,fill=dukeblue!8,minimum width=3.1cm,minimum height=0.4cm,inner sep=1pt,anchor=north west},
+  pb/.style={draw=gray,fill=gray!10,minimum width=3.1cm,minimum height=0.4cm,inner sep=1pt,anchor=north west},
+  tk/.style={draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.7cm,minimum height=0.5cm},
+  hv/.style={draw=accent,thick,rounded corners=2pt,fill=accent!15,minimum width=1.7cm,minimum height=0.5cm},
+  rl/.style={anchor=east,text=black!70}]
+  \node[anchor=south west,font=\scriptsize\bfseries,text=dukeblue] at (0,0.0) {word table: one row per word};
+  \foreach \w/\v [count=\i] in {the/{$(0.1, 0.1)$},river/{$(0.9, -0.1)$},loan/{$(-0.1, 0.9)$},$\cdots$/{}} {
+    \node[tb] at (0,{-0.4*(\i-1)}) {\makebox[1.2cm][l]{\w}\makebox[1.6cm][l]{\v}};}
+  \node[tb,draw=accent,fill=accent!15] at (0,-1.6) {\makebox[1.2cm][l]{bank}\makebox[1.6cm][l]{$(0.2, 0.2)$}};
+  \node[anchor=south west,font=\scriptsize\bfseries,text=gray] at (0,-2.62) {position table: one row per slot};
+  \foreach \w/\v [count=\i] in {slot 1/{$(-0.1, -0.1)$},slot 2/{$(0.1, 0.1)$},slot 3/{$(0.05, 0.05)$}} {
+    \node[pb] at (0,{-2.62-0.4*(\i-1)}) {\makebox[1.2cm][l]{\w}\makebox[1.6cm][l]{\v}};}
+  \node[rl] at (5.7,-0.3) {sentence};
+  \node[rl] at (5.7,-1.2) {word row};
+  \node[rl] at (5.7,-1.9) {$+$ slot row};
+  \node[rl] at (5.7,-2.9) {$= h$};
+  \foreach \w/\wv/\pv/\h [count=\i] in {the/{(0.1, 0.1)}/{(-0.1, -0.1)}/{(0, 0)},river/{(0.9, -0.1)}/{(0.1, 0.1)}/{(1, 0)},bank/{(0.2, 0.2)}/{(0.05, 0.05)}/{(0.25, 0.25)}} {
+    \node[tk] (t\i) at ({4.5+2.1*\i},-0.3) {\w};
+    \node (w\i) at ({4.5+2.1*\i},-1.2) {$\wv$};
+    \node (p\i) at ({4.5+2.1*\i},-1.9) {$\pv$};
+    \node[hv] (h\i) at ({4.5+2.1*\i},-2.9) {$h_{\i} = \h$};
+    \draw[-{Stealth[length=1.6mm]},thick] (t\i) -- (w\i);
+    \draw[-{Stealth[length=1.6mm]},thick] (p\i) -- (h\i);}
+\end{tikzpicture}
+\end{center}
+\vskip4pt
+\begin{itemize}\itemsep2pt\small
+  \item \textbf{Word table}: Week 12's lookup. word2vec: 300 numbers per word; BERT: 768.
+  \item \emph{bank} has one row: the same word numbers in ``the river bank'' and ``the loan bank''.
+  \item \textbf{Position table}: one learned row per slot, as long as a word row (BERT: 512 slots, 768 numbers each), added to the word row. Without
+        it, ``dog bites man'' and ``man bites dog'' would be the same three vectors.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Query, Key, Value: Three Small Networks on $h$}
+Each word's $h = (h_1, h_2)$ enters three one-layer networks (Week 12) with no bend:
+\vskip-2pt
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize,x=1cm,y=1cm,
+  ed/.style={-{Stealth[length=1.5mm]},line width=0.6pt},
+  zr/.style={-{Stealth[length=1.5mm]},gray!45,dashed,line width=0.4pt}]
+  \foreach \nm/\x/\col/\ttl in {q/0/accent/{query $q$: what I look for},k/4.3/dukeblue/{key $k$: what I offer},v/8.6/gray/{value $v$: what I pass on}} {
+    \node[font=\scriptsize\bfseries,text=\col] at (\x+1,1.05) {\ttl};
+    \node[nnin,minimum size=5.5mm] (\nm i1) at (\x,0.45) {$h_1$};
+    \node[nnin,minimum size=5.5mm] (\nm i2) at (\x,-0.45) {$h_2$};
+    \node[circle,draw=\col,fill=\col!15,thick,minimum size=5.5mm,inner sep=0pt] (\nm o1) at (\x+2,0.45) {$\nm_1$};
+    \node[circle,draw=\col,fill=\col!15,thick,minimum size=5.5mm,inner sep=0pt] (\nm o2) at (\x+2,-0.45) {$\nm_2$};}
+  \draw[ed,accent] (qi1) -- node[above=-1pt,text=black] {2} (qo1);
+  \draw[ed,accent] (qi2) -- node[below=-1pt,text=black] {2} (qo2);
+  \draw[ed,accent] (qi1) -- node[pos=0.27,above right=-3pt,text=black] {2} (qo2);
+  \draw[ed,accent] (qi2) -- node[pos=0.27,below right=-3pt,text=black] {2} (qo1);
+  \draw[ed,dukeblue] (ki1) -- node[above=-1pt,text=black] {2} (ko1);
+  \draw[ed,dukeblue] (ki2) -- node[below=-1pt,text=black] {2} (ko2);
+  \draw[zr] (ki1) -- (ko2); \draw[zr] (ki2) -- (ko1);
+  \draw[ed,gray] (vi1) -- node[above=-1pt,text=black] {1} (vo1);
+  \draw[ed,gray] (vi2) -- node[below=-1pt,text=black] {1} (vo2);
+  \draw[zr] (vi1) -- (vo2); \draw[zr] (vi2) -- (vo1);
+  \node[font=\scriptsize] at (1,-1.3) {$q = \begin{pmatrix} 2 & 2 \\ 2 & 2 \end{pmatrix}\begin{pmatrix} h_1 \\ h_2 \end{pmatrix}$};
+  \node[font=\scriptsize] at (5.3,-1.3) {$k = \begin{pmatrix} 2 & 0 \\ 0 & 2 \end{pmatrix}\begin{pmatrix} h_1 \\ h_2 \end{pmatrix}$};
+  \node[font=\scriptsize] at (9.6,-1.3) {$v = \begin{pmatrix} 1 & 0 \\ 0 & 1 \end{pmatrix}\begin{pmatrix} h_1 \\ h_2 \end{pmatrix}$};
+\end{tikzpicture}
+\end{center}
+\vskip-10pt
 \begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}l|ccc|ccc@{}}
+\renewcommand{\arraystretch}{0.9}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-& \multicolumn{3}{c|}{``the river bank''} & \multicolumn{3}{c}{``the bank loan''} \\
-& the & river & bank & the & bank & loan \\
+word & starting vector $h$ & query $q$ & key $k$ & value $v$ \\
 \midrule
-score $= \sum_d q_d k_{jd}/\sqrt 2$ & 0 & $2/\sqrt2 = 1.41$ & $1/\sqrt2 = 0.71$ & 0 & 0.71 & 1.41 \\
-$\exp(\text{score})$ & 1.00 & 4.11 & 2.03 & 1.00 & 2.03 & 4.11 \\
-weight & 0.14 & \alert{0.58} & 0.28 & 0.14 & 0.28 & \alert{0.58} \\
+the & $(0, 0)$ & $(0, 0)$ & $(0, 0)$ & $(0, 0)$ \\
+river & $(1, 0)$ & $(2, 2)$ & $(2, 0)$ & $(1, 0)$ \\
+bank & $(0.25, 0.25)$ & $(1, 1)$ & $(0.5, 0.5)$ & $(0.25, 0.25)$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip-6pt
+{\small Numbers on the arrows are weights (dashed: 0), set by hand here; a real model learns them.
+\emph{bank}: $q_1 = 2(0.25) + 2(0.25) = 1$. The same three networks serve every word.}
+\end{frame}
+
+\begin{frame}{Attention Weights: the Query of \emph{bank} Meets Every Key}
+\begin{center}
+\begin{tikzpicture}[x=2.55cm,y=0.64cm,font=\small,
+  wd/.style={draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.5cm,minimum height=6mm},
+  rl/.style={anchor=east,align=right,font=\footnotesize}]
+  \node[draw=accent,thick,fill=accent!15,rounded corners=2pt,minimum height=6mm,inner xsep=6pt] (q) at (2,2.0)
+    {query of \emph{bank}: $q = (1, 1)$};
+  \foreach \w/\x in {the/1,river/2,bank/3} \node[wd] (w\x) at (\x,0.3) {\w};
+  \foreach \x in {1,2,3} \draw[-{Stealth[length=2mm]},accent,thick] (q) -- (w\x.north);
+  \node[rl] at (0.45,0.3) {word $j$};
+  \node[rl] at (0.45,-0.8) {its key $k_j$};
+  \node[rl] at (0.45,-1.8) {score $= (q_1 k_{j1} + q_2 k_{j2})/\sqrt2$};
+  \node[rl] at (0.45,-2.8) {$\exp(\text{score})$};
+  \node[rl] at (0.45,-3.8) {weight $= \exp(\text{score})/7.14$};
+  \foreach \x/\k/\s/\e/\wt in {1/{(0, 0)}/{0}/{1.00}/{0.14},2/{(2, 0)}/{2/\sqrt2 = 1.41}/{4.11}/{0.58},3/{(0.5, 0.5)}/{1/\sqrt2 = 0.71}/{2.03}/{0.28}} {
+    \node at (\x,-0.8) {$\k$};
+    \node at (\x,-1.8) {$\s$};
+    \node at (\x,-2.8) {\e};
+    \node at (\x,-3.8) {\textbf{\wt}};}
+  \fill[accent!75] (0.75,-5.6) rectangle (1.25,{-5.6+0.14*1.8});
+  \fill[accent!75] (1.75,-5.6) rectangle (2.25,{-5.6+0.58*1.8});
+  \fill[accent!75] (2.75,-5.6) rectangle (3.25,{-5.6+0.28*1.8});
+  \draw[gray] (0.6,-5.6) -- (3.4,-5.6);
+\end{tikzpicture}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep1pt\small
+  \item The score is large when a word's key points the same way as the query: \emph{river} scores highest.
+  \item The last two rows are Week 4's multinomial logit: weights are positive and sum to 1.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The New Vector: a Weighted Average of the Values}
+\begin{center}
+\begin{tikzpicture}[font=\small,
+  wd/.style={draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.3cm,minimum height=6mm},
+  nv/.style={draw=accent,thick,rounded corners=2pt,fill=accent!15,minimum height=6mm,inner xsep=4pt,font=\footnotesize}]
+  \node[wd] (a0) at (0,0) {the};
+  \node[wd] (a1) at (1.9,0) {river};
+  \node[wd] (a2) at (3.8,0) {bank};
+  \node[font=\scriptsize] at (0,0.62) {$v = (0, 0)$};
+  \node[font=\scriptsize] at (1.9,0.62) {$v = (1, 0)$};
+  \node[font=\scriptsize] at (3.8,0.62) {$v = (0.25, 0.25)$};
+  \node[nv] (ao) at (1.9,-2.0) {average $(0.65, 0.07)$};
+  \draw[accent!80,line width=1.6pt,-{Stealth[length=2.4mm]}] (a0.south) -- node[left,font=\scriptsize,text=black] {0.14} (ao.north west);
+  \draw[accent!80,line width=6.4pt,-{Stealth[length=3mm]}] (a1.south) -- node[right,font=\scriptsize,text=black,xshift=2pt] {0.58} (ao.north);
+  \draw[accent!80,line width=3.2pt,-{Stealth[length=2.6mm]}] (a2.south) -- node[right,font=\scriptsize,text=black,xshift=2pt] {0.28} (ao.north east);
+  \node[font=\footnotesize] at (1.9,-2.75) {``the river bank''};
+  \node[wd] (b0) at (6.5,0) {the};
+  \node[wd] (b1) at (8.4,0) {loan};
+  \node[wd] (b2) at (10.3,0) {bank};
+  \node[font=\scriptsize] at (6.5,0.62) {$v = (0, 0)$};
+  \node[font=\scriptsize] at (8.4,0.62) {$v = (0, 1)$};
+  \node[font=\scriptsize] at (10.3,0.62) {$v = (0.25, 0.25)$};
+  \node[nv] (bo) at (8.4,-2.0) {average $(0.07, 0.65)$};
+  \draw[accent!80,line width=1.6pt,-{Stealth[length=2.4mm]}] (b0.south) -- node[left,font=\scriptsize,text=black] {0.14} (bo.north west);
+  \draw[accent!80,line width=6.4pt,-{Stealth[length=3mm]}] (b1.south) -- node[right,font=\scriptsize,text=black,xshift=2pt] {0.58} (bo.north);
+  \draw[accent!80,line width=3.2pt,-{Stealth[length=2.6mm]}] (b2.south) -- node[right,font=\scriptsize,text=black,xshift=2pt] {0.28} (bo.north east);
+  \node[font=\footnotesize] at (8.4,-2.75) {``the loan bank''};
+\end{tikzpicture}
+\end{center}
+\vskip-8pt
 \begin{align*}
-  \text{river bank: } & 0.14(0, 0) + 0.58(1, 0) + 0.28(0.5, 0.5) = (0.72, 0.14) \\
-  \text{bank loan: }  & 0.14(0, 0) + 0.28(0.5, 0.5) + 0.58(0, 1) = (0.14, 0.72)
+  \text{average of the values} &= 0.14\,(0, 0) + 0.58\,(1, 0) + 0.28\,(0.25, 0.25) = (0.65, 0.07) \\
+  \text{new vector of \emph{bank}} &= \underbrace{(0.25, 0.25)}_{\text{its own } h} + (0.65, 0.07) = (0.90, 0.32)
 \end{align*}
 \begin{itemize}\itemsep1pt\small
-  \item Same word, two outputs: \emph{bank} leans toward nature in one sentence, money in the other.
-  \item BERT: $D = 64$, 12 sets of $q, k, v$ per layer, 12 layers; a position vector adds word order.
+  \item In ``the loan bank'' the same steps give $(0.32, 0.90)$: same word, same weights, another
+        sentence, another vector. One row in the word table, two senses in context.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Attention, Drawn}
-Arrows from \emph{bank} to each word it attends to; width $\propto$ weight
-\srcp{figs/w12\_repr.R, G}:
+\begin{frame}{How the Weights Are Learned: Hide a Word, Predict It}
+So far every weight was given. In training they start random, and the text itself supplies the answers:
 \vskip2pt
 \begin{center}
-\begin{tikzpicture}
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a0) at (0.00,0) {the};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a1) at (1.95,0) {river};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (a2) at (3.90,0) {bank};
-  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.6] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (a0.north);
-  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (a2.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (a1.north);
-  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (a2.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (a2.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
-  \node[font=\footnotesize] at (1.95,-1.75) {``the river bank'': new vector $(0.72, 0.14)$};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b0) at (6.60,0) {the};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b1) at (8.55,0) {bank};
-  \node[draw=dukeblue,thick,rounded corners=2pt,fill=white,minimum width=1.25cm,minimum height=6mm,font=\small] (b2) at (10.50,0) {loan};
-  \draw[accent!80,line width=2.0pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.14} (b0.north);
-  \draw[accent!80,line width=3.4pt,-{Stealth[length=2.6mm]}] (b1.south east) .. controls +(0.45,-0.8) and +(-0.45,-0.8) .. (b1.south west) node[pos=0.5,below,font=\scriptsize,text=black] {0.28};
-  \draw[accent!80,line width=6.4pt,-{Stealth[length=2.6mm]}] (b1.north) to[out=90,in=90,looseness=0.75] node[pos=0.5,above,font=\scriptsize,text=black] {0.58} (b2.north);
-  \node[font=\footnotesize] at (8.55,-1.75) {``the bank loan'': new vector $(0.14, 0.72)$};
+\begin{tikzpicture}[font=\scriptsize,
+  st/.style={draw=dukeblue,fill=dukeblue!10,rounded corners=2pt,align=center,minimum width=2.15cm,minimum height=1.0cm,inner sep=2pt}]
+  \node[st,fill=white] (s1) at (0,0) {the river\\\textbf{flooded}};
+  \node[st,draw=accent,fill=accent!12] (s2) at (2.75,0) {the river\\\texttt{[MASK]}};
+  \node[st] (s3) at (5.5,0) {new vector\\of \texttt{[MASK]}\\$(0.90, 0.32)$};
+  \node[st] (s4) at (8.25,0) {$P(\text{flooded})$\\$= 0.80$};
+  \node[st,draw=accent,fill=accent!12] (s5) at (11.0,0) {loss\\$-\log 0.80$\\$= 0.22$};
+  \foreach \a/\b in {s1/s2,s2/s3,s3/s4,s4/s5} \draw[-{Stealth[length=2mm]},thick] (\a) -- (\b);
+  \node[text=black!70] at (1.375,0.75) {hide};
+  \node[text=black!70,align=center] at (4.125,0.85) {the same\\steps};
+  \node[text=black!70,align=center] at (6.875,0.85) {next\\frame};
+  \draw[-{Stealth[length=2mm]},thick,accent] (s5.south) -- ++(0,-0.55) -| (s2.south);
+  \node[text=accent] at (6.9,-1.3) {backpropagation (Week 12) adjusts every weight to lower the loss};
 \end{tikzpicture}
 \end{center}
-\vskip4pt
-\begin{itemize}\itemsep3pt\small
-  \item \emph{bank} sends most of its attention to the word that tells it which sense it
-        is: \emph{river} in one sentence, \emph{loan} in the other.
-  \item Every word does this at once, in every layer, with 12 different query--key
-        pairs per layer: each can look for a different kind of relation.
+\vskip-2pt
+\begin{itemize}\itemsep1pt\small
+  \item \textbf{\texttt{[MASK]} is one more word in the word table}: ``a word is hidden here'', not
+        which one. Here its row equals \emph{bank}'s, so the last frames' arithmetic carries over.
+  \item \textbf{What is adjusted}: the word and position tables, the query, key, and value networks,
+        the output vectors. Nobody tells a query what to look for.
+  \item \textbf{No labels needed}: any sentence gives a blank and its answer.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Position Vectors: Telling Attention the Word Order\core}
-Attention is a weighted average over a sentence's words, and an average ignores order:
-``dog bites man'' and ``man bites dog'' contain the same three vectors. \textbf{Fix}: add to each
-word's vector a \textbf{position vector}, one learned list of numbers per slot $1, \dots, 512$:
-\begin{align*}
-  h^{(0)}_i = \underbrace{\text{word vector of word } i}_{\text{what the word is}}
-  + \underbrace{\text{position vector of slot } i}_{\text{where it stands}} .
-\end{align*}
-Toy, two numbers: dog $(1, 0)$, man $(0, 1)$, bites $(0, 0)$; positions $(0.2, 0)$, $(0, 0)$, $(0, 0.2)$
-(hypothetical):
-\begin{center}\small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{@{}lccc@{}}
-\toprule
-& slot 1 & slot 2 & slot 3 \\
-\midrule
-``dog bites man'' & dog $(1.2, 0)$ & bites $(0, 0)$ & man $(0, 1.2)$ \\
-``man bites dog'' & man $(0.2, 1)$ & bites $(0, 0)$ & dog $(1, 0.2)$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-{\small The same word enters with different numbers in different slots, so queries, keys, and every later
-vector can depend on order. BERT: 768 numbers per word and per slot, all learned.}
-\end{frame}
-
-
-\begin{frame}{Inside One Layer\core}
-\begin{columns}[c]
-\begin{column}{0.4\linewidth}
+\begin{frame}{The Output Layer: Predicting the Hidden Word}
+An output layer as in Week 12: one unit per word of the vocabulary, then a softmax.
+\vskip2pt
 \begin{center}
-\begin{tikzpicture}[font=\scriptsize,
-  st/.style={draw,rounded corners=2pt,align=center,minimum width=3.3cm,minimum height=0.55cm,inner sep=2pt}]
-  \node[st,fill=white,draw=dukeblue] (in) at (0,0) {$h_1, \dots, h_n$: one vector per word};
-  \node[st,fill=accent!15,draw=accent] (at) at (0,-0.95) {\textbf{1. attention}\\words exchange information};
-  \node[st,fill=gray!10,draw=gray] (ad1) at (0,-1.85) {\textbf{2.} add $h_i$ back, rescale};
-  \node[st,fill=dukeblue!12,draw=dukeblue] (ff) at (0,-2.8) {\textbf{3. Week 12's network}\\on each word separately};
-  \node[st,fill=gray!10,draw=gray] (ad2) at (0,-3.75) {\textbf{4.} add back, rescale};
-  \node[st,fill=white,draw=dukeblue] (out) at (0,-4.6) {new $h_1, \dots, h_n$ $\to$ next layer};
-  \foreach \a/\b in {in/at,at/ad1,ad1/ff,ff/ad2,ad2/out} \draw[-{Stealth[length=1.6mm]},thick] (\a) -- (\b);
+\begin{tikzpicture}[font=\scriptsize,x=1cm,y=1cm,
+  ed/.style={-{Stealth[length=1.5mm]},line width=0.6pt,dukeblue},
+  zr/.style={-{Stealth[length=1.5mm]},gray!45,dashed,line width=0.4pt}]
+  \node[font=\scriptsize,text=black!70,align=center] at (0,2.0) {new vector\\of \texttt{[MASK]}};
+  \node[nnin,minimum size=8mm] (i1) at (0,0.9) {0.90};
+  \node[nnin,minimum size=8mm] (i2) at (0,-0.5) {0.32};
+  \node[font=\scriptsize,text=black!70] at (3.2,2.0) {one unit per word};
+  \foreach \w/\y in {flooded/1.4,defaulted/0.2,the/-1.0} \node[nnout,minimum size=8mm,font=\tiny] (o\w) at (3.2,\y) {};
+  \node[anchor=west] at (3.7,1.4) {flooded};
+  \node[anchor=west] at (3.7,0.2) {defaulted};
+  \node[anchor=west] at (3.7,-1.0) {the};
+  \draw[ed] (i1) -- node[above,text=black] {3} (oflooded);
+  \draw[ed] (i2) -- node[below,text=black,pos=0.6] {3} (odefaulted);
+  \draw[zr] (i1) -- (odefaulted); \draw[zr] (i2) -- (oflooded); \draw[zr] (i1) -- (othe); \draw[zr] (i2) -- (othe);
+  \node[font=\scriptsize,text=black!70] at (6.6,2.0) {score};
+  \node at (6.6,1.4) {$3 \times 0.897 = 2.69$};
+  \node at (6.6,0.2) {$3 \times 0.321 = 0.96$};
+  \node at (6.6,-1.0) {$0$};
+  \node[font=\scriptsize,text=black!70] at (9.9,2.0) {probability (softmax)};
+  \foreach \p/\y in {0.80/1.4,0.14/0.2,0.05/-1.0} {
+    \fill[accent!75] (8.6,\y-0.22) rectangle ({8.6+2.6*\p},\y+0.22);
+    \node[anchor=west] at ({8.6+2.6*\p},\y) {\p};}
+  \draw[gray] (8.6,-1.4) -- (8.6,1.8);
 \end{tikzpicture}
 \end{center}
-\end{column}
-\begin{column}{0.58\linewidth}
-\small
-For word $i$ with input vector $h_i$ (768 numbers):
-\begin{enumerate}\itemsep3pt
-  \item \textbf{Attention.} $q_i, k_i, v_i$: weighted sums of $h_i$'s entries (hidden units without
-        a bend). $a_i = \sum_j \text{weight}_{ij} v_j$. 12 heads of 64 numbers side by side: 768.
-  \item \textbf{Add, rescale.} $h_i + a_i$: the word plus what it learned from the others; rescale
-        its 768 numbers to mean 0, sd 1.
-  \item \textbf{Week 12's network}: 768 inputs, 3,072 hidden units with a ReLU-like bend, 768
-        outputs; the \emph{same} weights for every word.
-  \item \textbf{Add, rescale} again: word $i$'s input to the next layer.
-\end{enumerate}
-\end{column}
-\end{columns}
-\vskip4pt
-{\small Step 1 is the only place words see each other; step 3 is the only bend. BERT stacks 12 such
-layers: each word's vector is refined by its context 12 times.}
+\vskip-2pt
+\begin{itemize}\itemsep2pt\small
+  \item Numbers on the arrows are weights (dashed: 0), hypothetical.
+  \item \textbf{Loss}: $-\log P(\text{flooded}) = -\log 0.80 = 0.22$. A wrong guess costs more.
+  \item ``The loan \texttt{[MASK]}'': the vector is $(0.32, 0.90)$; the same layer gives \emph{defaulted} 0.80.
+\end{itemize}
 \end{frame}
 
-\begin{frame}{BERT: Learn by Filling In Blanks\core}
+\begin{frame}{BERT: Learn by Filling In Blanks}
 \begin{columns}[c]
 \begin{column}{0.47\linewidth}
 \begin{center}
@@ -1820,44 +1949,25 @@ layers: each word's vector is refined by its context 12 times.}
   \draw[nnedge] (b1) -- (c);
   \node[font=\scriptsize,align=left,anchor=west] at (5.45,0.85) {word +\\position};
   \node[font=\scriptsize,align=left,anchor=west] at (5.45,2.8) {attention\\layers};
+  \node[font=\scriptsize,align=left,anchor=west] at (5.45,4.6) {output\\layer};
 \end{tikzpicture}
 \end{center}
 \end{column}
 \begin{column}{0.51\linewidth}
 \small
-\textbf{BERT} \srcp{Devlin et al.\ 2019}: a stack of attention layers, trained on books
-and Wikipedia.
+\textbf{BERT} \srcp{Devlin et al.\ 2019}: the same pieces, stacked.
 \begin{itemize}\itemsep3pt
-  \item \textbf{Training task}: hide 15\% of the words behind \texttt{[MASK]} and predict
-        them from \emph{both} sides; also predict whether sentence B followed sentence A.
-  \item Nobody labels anything: the hidden words are the labels.
-  \item \textbf{Output}: a vector for every word, read in its sentence. The vector of
-        the extra first token \texttt{[CLS]} (768 numbers) serves as the vector of the
-        whole text.
+  \item \textbf{12 attention layers}, one on top of another: each word's vector is revised by its
+        sentence 12 times. 768 numbers per word, 110 million weights.
+  \item \textbf{Training}: hide 15\% of the words behind \texttt{[MASK]}; the output layer of the
+        last frame sits on top of each blank. Trained on books and Wikipedia; the hidden
+        words are the labels.
+  \item \textbf{Output}: a vector for every word, read in its sentence. The vector of the extra
+        first token \texttt{[CLS]} serves as the vector of the whole text.
 \end{itemize}
 \end{column}
 \end{columns}
 \end{frame}
-
-
-\begin{frame}{From the Last Layer to a Prediction, and Back}
-Training BERT on ``The survey was \texttt{[MASK]} in 2020'':
-\begin{enumerate}\itemsep5pt
-  \item \textbf{Forward.} Word $+$ position vectors $\to$ 12 layers $\to$ a 768-number vector $h^{(12)}$ at the
-        \texttt{[MASK]} slot, built from every other word in the sentence.
-  \item \textbf{Predict.} Score every word $w$ of the 30,522-word vocabulary,
-        $\text{score}_w = \sum_d u_{wd}\, h^{(12)}_d$, and take a softmax: Week 12's word2vec output, a
-        multinomial logit over the vocabulary.
-  \item \textbf{Loss.} $-\log P(\text{the hidden word})$, e.g.\ $-\log P(\text{fielded})$.
-  \item \textbf{Backward.} Backpropagation (Week 12) sends the error through all 12 layers: it
-        updates the query, key, and value weights, the feed-forward weights, the word vectors, and
-        the position vectors.
-\end{enumerate}
-\vskip4pt
-{\small Repeat over billions of words: 110 million weights in BERT-base. What makes a good guess at the
-blank (who did what, in which sense of each word) is what the vectors end up holding.}
-\end{frame}
-
 
 \subsection{Text as a Control}
 
@@ -1871,15 +1981,16 @@ $\tau$ in
 \textbf{The confounder.} Better toys cost more \emph{and} sell more. Quality, brand, and type
 are in the description, not in a column.
 \vskip3pt
-\textbf{The data.} 8,003 toys on Amazon UK with at least one review (PromptCloud, used in
-\srct{Chernozhukov et al.\ 2024}'s notebooks):
-\begin{itemize}\itemsep2pt
-  \item $D_i$: log price (s.d.\ 1.13). $Y_i$: log share of all reviews, a proxy for sales (s.d.\ 1.25).
+\textbf{The data.} 2,000 toys sold on Amazon UK, a random sample of 8,003 listings
+\srcp{PromptCloud; figs/w13\_amazon.R}:
+\begin{itemize}\itemsep3pt
+  \item $D_i$: log price. $Y_i$: log share of all reviews, a proxy for sales.
   \item Text: ``name $|$ manufacturer $|$ description''.
-  \item $W_i$: BERT (\texttt{bert-base-uncased}), first 128 tokens, average of the last layer's
-        word vectors: 768 numbers per toy, no fine-tuning \srcp{Data/build\_amazon\_toys\_bert.py}.
-  \item Also: the category tree (``Hobbies $>$ Model Trains''): 6 large categories, 236 subcategories.
+  \item $W_i$: the text goes through BERT as it comes (no fine-tuning); $W_i$ is the last layer's
+        vector of the \texttt{[CLS]} token, 768 numbers per toy.
 \end{itemize}
+\vskip3pt
+768 controls for 2,000 toys.
 \end{frame}
 
 \begin{frame}{The Raw Relation}
@@ -1890,8 +2001,7 @@ are in the description, not in a column.
 \begin{column}{0.4\linewidth}
 \small
 \begin{itemize}\itemsep4pt
-  \item Slope $-0.063$ (se 0.012): 10\% higher price, 0.6\% fewer reviews.
-  \item Far smaller than the toy-car demand elasticities of $-1.1$ to $-1.6$ in \srct{Chernozhukov et al.\ (2024, Ch.\ 10)}: suspicious.
+  \item Slope $-0.083$ (se 0.026): 10\% higher price, 0.8\% fewer reviews.
   \item A toy-car set and a board game differ in price \emph{and} in how many people buy and
         review them. The slope mixes products.
 \end{itemize}
@@ -1901,144 +2011,129 @@ are in the description, not in a column.
 
 \begin{frame}{The BERT Vectors Know What the Product Is}
 First two principal components of the 768 numbers, four largest categories
-\srcp{figs/w13\_amazon.R, 2}:
+\srcp{figs/w13\_amazon.R, 4}:
 \begin{center}
 \includegraphics[width=0.58\linewidth]{figs/amazon_pca.pdf}
 \end{center}
 \vskip-6pt
 {\small Nobody told BERT the categories, yet toys of one category sit together. The first 10
-components hold 40\% of the variation in the 768 numbers, the first 50 hold 70\%.}
+components hold 42\% of the variation in the 768 numbers, the first 50 hold 71\%.}
 \end{frame}
 
-\begin{frame}{How Much Does the Text Predict?}
-Cross-fitted predictions from the 768 numbers, 5 folds \srcp{figs/w13\_amazon.R, 3}:
+\begin{frame}{Predicting Price and Demand From 768 Numbers: OLS vs.\ Lasso}
+$R^2$ for $\log p$ and $\log q$ predicted from the 768 numbers \srcp{figs/w13\_amazon.R, 1 and 2}:
 \begin{center}\small
-\renewcommand{\arraystretch}{1.12}
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}lcc@{}}
 \toprule
-learner, inputs & $R^2$ for $\log p$: $\hat e(W)$ & $R^2$ for $\log q$: $\hat\ell(W)$ \\
+ & $R^2$ for price & $R^2$ for demand \\
 \midrule
-lasso, 768 numbers & 0.46 & 0.15 \\
-lasso, first 50 principal components & 0.39 & 0.12 \\
-forest, first 50 principal components & 0.48 & 0.16 \\
-lasso, categories $+$ 768 numbers & 0.47 & 0.15 \\
+OLS, same 2,000 toys it was fitted on & 0.69 & 0.51 \\
+OLS, toys held out (5 folds) & $-0.09$ & $-0.60$ \\
+lasso, toys held out (5 folds) & 0.37 & 0.11 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \vskip2pt
-\begin{itemize}\itemsep3pt\small
-  \item The description predicts almost half of the variation in price: it carries the
-        product's type and quality, so it is the right kind of control.
-  \item It predicts little of demand: what sells is not in the words.
-  \item Compression costs: 50 components predict less than all 768 numbers. Unsupervised
-        compression keeps what \emph{varies} in the text, not what predicts price.
+\begin{itemize}\itemsep4pt
+  \item OLS looks excellent on its own sample and predicts new toys worse than the mean does
+        ($R^2 < 0$): with 768 coefficients for 2,000 toys, it fits noise (Week 12).
+  \item Lasso keeps the columns that predict held-out toys: the description carries over a third
+        of the variation in price, and a tenth of demand.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Elasticity Estimates \srcp{figs/w13\_amazon.R, 1 and 3}}
+\begin{frame}{The Elasticity: OLS vs.\ DML}
 \begin{center}\small
-\renewcommand{\arraystretch}{1.1}
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}llc@{}}
 \toprule
 estimator & controls & elasticity (se) \\
 \midrule
-OLS & none & $-0.063$ (0.012) \\
-OLS & 6 category dummies & $-0.039$ (0.014) \\
-OLS & 236 subcategory dummies & $-0.039$ (0.015) \\
-OLS & first 10 / 50 principal components & $-0.032$ / $-0.049$ (0.014) \\
-OLS & all 768 numbers & $-0.065$ (0.016) \\
-\midrule
-DML, lasso & 768 numbers & $-0.065$ (0.015) \\
-DML, forest & first 50 components & $-0.071$ (0.016) \\
-DML, lasso & categories $+$ 768 numbers & $-0.070$ (0.015) \\
+OLS & none & $-0.083$ (0.026) \\
+OLS & the 768 numbers & $-0.043$ (0.043) \\
+DML, lasso, 5 folds & the 768 numbers & $-0.075$ (0.032) \\
 \bottomrule
 \end{tabular}
 \end{center}
+{\footnotesize\color{gray}figs/w13\_amazon.R, 1 and 3}
 \vskip2pt
-\begin{itemize}\itemsep2pt\small
-  \item Every estimate is between $-0.03$ and $-0.07$: the text, used any way, does not change the answer.
-  \item With 8,003 products, OLS on 768 columns still works; with 2,000 it would not, and DML would.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Why Still So Small? What the Text Cannot Hold}
-\begin{itemize}\itemsep5pt
-  \item Controlling for the description removes confounding by \emph{what the product is}. It
-        cannot remove confounding by what is not written.
-  \item \srct{Chernozhukov et al.\ (2024, Ch.\ 10)} redo this with proprietary panel data on toy cars:
-        multimodal embeddings (text, images, tables), fine-tuned to predict price and quantity.
-  \begin{itemize}\itemsep2pt
-    \item Cross-sectional estimates with rich embeddings: $-0.1$ to $-0.3$, still implausibly small.
-    \item The key confounder is \textbf{last period's sales}: popular products build visibility
-          and price accordingly. Adding lagged quantity and price: $-0.69$
-          (90\% CI about $[-0.78, -0.54]$) for sales rank.
-    \item Embeddings then matter for \emph{heterogeneity}: elasticities differ across product
-          types.
-  \end{itemize}
-  \item By category, from our DML residuals: games $-0.20$ (0.05), hobbies $-0.06$ (0.03),
-        die-cast vehicles $0.00$ (0.03).
-\end{itemize}
-\vskip3pt
-{\small The lesson of the whole day, in one example: a better $g(W)$ fixes functional form; it cannot
-add a confounder that $W$ does not contain.}
-\end{frame}
-
-\begin{frame}{Make the Representation Predict the Nuisances}
-Two ways to use a pretrained BERT for $\hat\ell(W)$ and $\hat e(W)$ \srcp{Chernozhukov et al.\ 2024, Ch.\ 10}:
-\vskip3pt
-\begin{enumerate}\itemsep4pt
-  \item \textbf{Feature extraction} (what we did): freeze BERT, take its 768 numbers, feed them to
-        a lasso or forest.
-  \item \textbf{Fine-tuning}: put a regression layer on top of BERT and update \emph{all} BERT's weights
-        to predict $\log p$ (one copy) and $\log q$ (another copy), with early stopping on a
-        validation set.
-\end{enumerate}
-\vskip3pt
 \begin{itemize}\itemsep4pt
-  \item Orthogonality says the bias is (error in $\hat e$) $\times$ (error in $\hat\ell$): better
-        nuisance predictions mean a smaller remaining bias. So train the representation to predict
-        \emph{the nuisances}, not to rebuild the text.
-  \item Cross-fitting still applies: fine-tune on folds that exclude the products being
-        predicted. Fine-tuning a 110-million-weight model memorizes easily.
-  \item Same structure as Week 12's ``change what the network predicts.''
+  \item \textbf{OLS with 768 controls}: by FWL it is residual on residual with OLS's in-sample
+        predictions. Those overfit, so the residuals have lost real variation in price along with
+        the confounding: the estimate is noisy (se 0.043) and not distinguishable from 0.
+  \item \textbf{DML}: the same residual-on-residual, with lasso predictions made for held-out toys.
+        Only what the text really predicts is removed: $-0.075$, se 0.032.
+  \item The pipeline: text $\to$ BERT $\to$ 768 numbers $\to$ lasso, cross-fitted $\to$ residual on residual.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Two Ways to Use a Pretrained BERT}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize,x=1cm,y=1cm,
+  bx/.style={draw,rounded corners=2pt,align=center,minimum width=3.6cm,inner sep=2pt},
+  frz/.style={bx,draw=gray,fill=gray!18,minimum height=0.95cm},
+  upd/.style={bx,draw=accent,fill=accent!20,minimum height=0.95cm},
+  hd/.style={bx,draw=accent,fill=accent!20,minimum height=0.6cm},
+  ar/.style={-{Stealth[length=1.6mm]},thick}]
+  \foreach \i/\x/\ttl in {1/0/{1. Feature extraction},2/6/{2. Full fine-tuning}} {
+    \node[font=\footnotesize\bfseries,text=dukeblue] at (\x,2.95) {\ttl};
+    \node[bx,draw=dukeblue,fill=white,minimum height=0.5cm] (t\i) at (\x,-0.85) {product description};}
+  \node[frz] (b1) at (0,0.2) {BERT\\\textbf{frozen}};
+  \node[upd] (b2) at (6,0.2) {BERT\\\textbf{updated}};
+  \node[bx,draw=dukeblue,fill=dukeblue!10,minimum height=0.6cm] (h1) at (0,1.3) {save \texttt{[CLS]}: 768 columns};
+  \node[hd] (h2) at (6,1.3) {new output layer: \textbf{trained}};
+  \node[hd] (o1) at (0,2.25) {lasso, forest, or network: \textbf{trained}};
+  \node (o2) at (6,2.25) {predicted $\log p$ (or $\log q$)};
+  \foreach \i in {1,2} {\draw[ar] (t\i) -- (b\i); \draw[ar] (b\i) -- (h\i); \draw[ar] (h\i) -- (o\i);}
+\end{tikzpicture}
+\end{center}
+\vskip-2pt
+\begin{itemize}\itemsep3pt\small
+  \item Orange: trained on our data \srcp{Chernozhukov et al.\ 2024, BERT notebook}.
+  \item \textbf{Feature extraction} (what we did): BERT is a fixed machine that turns each text into
+        768 columns; any Week 12 learner then predicts $\log p$ and $\log q$ from them.
+  \item \textbf{Full fine-tuning}: a new output layer on top, and all 110 million weights move in small
+        steps, so the \texttt{[CLS]} vector itself changes to hold what predicts price.
+  \item For DML: choose by out-of-fold $R^2$ for $Y$ and $D$, and cross-fit the training too.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{In the Literature: Generative AI for Causal Inference}
 \par{\footnotesize\color{gray}Imai and Nakamura (2026), \textit{PNAS} 123(36): e2530532123}\vskip4pt
-\textbf{The question.} How to adjust for a confounder that is a text or image, without
-choosing a representation by hand or fine-tuning one on a small sample?
-\vskip3pt
-\textbf{The idea.} Ask an open-source generative model to \emph{reproduce} each document
-(``You are a text generator who simply repeats the input text''), and keep its internal state:
-\begin{itemize}\itemsep2pt
-  \item $R_i$: the hidden state at the last token. LLaMA 3 (8 billion weights): 4,096 numbers.
-        Stable Diffusion for images: 16,384 numbers instead of 786,432 pixels.
-  \item The model writes the document out of $R_i$, deterministically: so $R_i$ holds
-        \emph{everything} in the document, including any confounder in it.
-\end{itemize}
-\vskip3pt
-\textbf{The catch.} Adjusting for all of $R_i$ breaks overlap: it also predicts treatment
-almost perfectly (Week 6). Keep only the part of $R_i$ that matters for the outcome.
+\textbf{The question.} Does being censored ($D_i$) change what a Weibo user posts afterwards ($Y_i$)?
+The confounder is the \emph{content} of the censored post: a text.
+\vskip4pt
+\textbf{The representation.} Ask an open-source language model (LLaMA 3) to repeat the post, and keep
+its internal vector at the last word: $R_i$, 4,096 numbers. The model writes the post back out of
+$R_i$, so $R_i$ holds what the post says.
+\vskip4pt
+\textbf{The design, in our notation.} Selection on observables (Week 6), with the text in the
+controls: among posts with the same $R_i$ and the same covariates $Z_i$ (date, the user's past
+posting), who gets censored is as good as random.
+\[
+  X_i = (R_i, Z_i) : \qquad Y_i(0) \perp D_i \mid X_i .
+\]
+{\small $R_i$ plays the role of BERT's $W_i$ in the toys example: a list of numbers that stands in for a text.}
 \end{frame}
 
-\begin{frame}{Imai and Nakamura: the Estimator}
-\begin{enumerate}\itemsep4pt
-  \item \textbf{Deconfounder}: a network maps $R_i$ to a few numbers $f(R_i)$, which feed two
-        heads, $\mu_0$ and $\mu_1$, predicting $Y$ for the untreated and treated. Fit by least squares:
-  \[
-    \min\ \frac1n\sum_i \Big(Y_i - \mu_{D_i}\big(f(R_i), Z_i\big)\Big)^2 .
-  \]
-        No head predicts $D$: what predicts only treatment is discarded.
-  \item \textbf{Propensity}: a second network, $\hat\pi\big(f(R_i), Z_i\big)$.
-  \item \textbf{ATT}: Week 6's ATT AIPW score, with $\hat\mu_0$ and $\hat\pi$, 2-fold
-        cross-fitting; standard errors from the score.
-\end{enumerate}
-\vskip4pt
+\begin{frame}{Imai and Nakamura: the Estimator Is Week 6's AIPW}
+Two predictions from $X_i = (R_i, Z_i)$, each by a neural network, cross-fitted on 2 folds:
+\[
+  \hat m_0(X_i) : \text{predicted } Y \text{ if not censored}, \qquad
+  \hat e(X_i) : \text{predicted } \Pr(\text{censored}) .
+\]
+Then the doubly robust ATT (Week 6; today's DML with a binary treatment):
+\[
+  \widehat{\text{ATT}} = \frac{1}{n_1}\sum_{i=1}^n \Big[ D_i - (1 - D_i)\,\frac{\hat e(X_i)}{1 - \hat e(X_i)} \Big]
+  \big(Y_i - \hat m_0(X_i)\big) .
+\]
 \begin{itemize}\itemsep3pt
-  \item Generative AI supplies the representation; DML supplies the inference.
-  \item Assumptions: ignorability given $Z$ and the confounding features of the text;
-        overlap given $f(R)$; the model reproduces the text.
+  \item Censored posts: outcome minus the prediction without censorship. Uncensored posts: their
+        prediction errors, weighted by the odds of being censored.
+  \item \textbf{Their one addition}: with 4,096 numbers, $\hat e$ predicts censorship almost perfectly
+        and overlap fails. So the outcome network first squeezes $R_i$ into a few numbers $f(R_i)$,
+        and the propensity uses $f(R_i)$ in place of $R_i$: only what predicts $Y$ is controlled for.
 \end{itemize}
 \end{frame}
 
@@ -2068,25 +2163,6 @@ number of posts & $-16.2$ (2.60) & 11.5 (41.2) \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Imai and Nakamura: What to Take Away}
-\begin{itemize}\itemsep5pt
-  \item The pipeline is today's: a representation of the text, flexible nuisance functions,
-        an orthogonal score, cross-fitting.
-  \item What is new is where $W$ comes from: an open-source model's own state, which by
-        construction contains the whole document.
-  \item \textbf{Cautions they report}
-  \begin{itemize}\itemsep2pt
-    \item Tuning matters: in their simulation an over-sized deconfounder lets overlap fail
-          again (coverage 0.76 instead of 0.97).
-    \item Representations differ: a Sentence-BERT representation reverses the sign of the
-          censorship effect.
-    \item Reproduction can fail; larger models are not always better.
-  \end{itemize}
-  \item For sociology: posts, speeches, court records, photos can enter a causal analysis as
-        controls (or as treatments), with standard errors.
-\end{itemize}
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Wrap-Up]{Wrap-Up}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2104,11 +2180,6 @@ number of posts & $-16.2$ (2.60) & 11.5 (41.2) \\
   \item \textbf{Representations turn text and images into controls}; DML turns those controls
         into valid inference. The binding constraint is still what the data contain.
 \end{itemize}
-\vskip4pt
-\begin{block}{Next week}
-Review for the final exam. Lab 13: Brand et al.'s causal forest; DML on the NLSY79 with
-\texttt{DoubleML} and \texttt{ddml}; DML in the designs of Weeks 7--10.
-\end{block}
 \end{frame}
 
 \begin{frame}[allowframebreaks,t]{References}

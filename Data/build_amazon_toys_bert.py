@@ -7,8 +7,8 @@ follows that repository's notebook "DoubleML_and_Feature_Engineering_with_BERT":
   price -> log price (ln_p); number of reviews -> log market share (ln_q), the demand proxy;
   text = product name | manufacturer | product description.
 
-Embedding: bert-base-uncased, text truncated at 128 tokens, mean of the last-layer token
-vectors over non-padding tokens (768 numbers per product). No fine-tuning.
+Embedding: bert-base-uncased, text truncated at 128 tokens, the last-layer vector of the
+first token, [CLS] (768 numbers per product). No fine-tuning.
 
 Run once (needs torch + transformers):
   python Data/build_amazon_toys_bert.py Data/amazon_toys_raw.csv Data/amazon_toys_bert.csv.gz
@@ -37,7 +37,7 @@ d = d[["uniq_id", "ln_p", "ln_q", "category", "amazon_category_and_sub_category"
 d = d[np.isfinite(d["ln_p"])].reset_index(drop=True)
 print("products:", len(d))
 
-# --- BERT, mean-pooled last layer ----------------------------------------------
+# --- BERT, last-layer [CLS] vector ---------------------------------------------
 torch.manual_seed(723)
 tok = AutoTokenizer.from_pretrained("bert-base-uncased")
 bert = AutoModel.from_pretrained("bert-base-uncased").eval()
@@ -47,8 +47,7 @@ with torch.no_grad():
         batch = tok(list(d["text"].iloc[i:i + 64]), padding=True, truncation=True,
                     max_length=128, return_tensors="pt")
         h = bert(**batch).last_hidden_state                     # (batch, tokens, 768)
-        m = batch["attention_mask"].unsqueeze(-1).float()       # 1 for real tokens
-        emb.append(((h * m).sum(1) / m.sum(1)).numpy())         # mean over real tokens
+        emb.append(h[:, 0, :].numpy())                          # the [CLS] token's vector
         if i % 1280 == 0:
             print(i, flush=True)
 E = np.vstack(emb)

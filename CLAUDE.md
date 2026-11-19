@@ -701,6 +701,118 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   the word 'splits' confusing for repeated cross-fitting: say 'redrawing the random folds'. Lab 13 Part 2 matched.
   Lab 13 Part 2 REWRITTEN on GrowthData (OLS; five mlr3 learners with out-of-fold R2; best per nuisance; ddml stack);
   cross-fitting by hand DROPPED (user: redundant); NLSY OLS/PLR moved to the top of Part 3.
+  2026-11-17 (user): Week 13 control-for-X frame moved to slide 11 ('Before the Tree: Control for X': two regression
+  forests, residualize once, every tau-hat a residual slope), Brand tree at 13; Lab 13 Part 1 reordered to match
+  (pushed d45560e). Then: six frames after 'From Word Vectors to Words in Context': recurrent network, 'Why a Plain
+  Recurrent Network Forgets', 'LSTM: a Memory Cell With Three Gates' (tikz), 'LSTM by Hand' (figs/w13_lstm.R ->
+  lstm_memory.pdf; hand-set hypothetical gates; cell .96 -> .93 at the verb vs plain .03/.47; period clears to .01),
+  ELMo, 'How ELMo Is Used' (Bajari et al. 2025: ELMo 'nearly as well as BERT', R2 80-90%; no sociology use of ELMo
+  found by web search, said so on the slide). Deck 101 pp. Folder cleaned: 401(k) + w13_sims scripts git rm'd, unused
+  paper figures and representations_from_w12.tex moved to papers/unused/ (gitignored). Dropbox can serve a stale copy
+  of a file mid-session (it reverted a lab edit once): re-read before trusting.
+  2026-11-18 (user: LSTM too complex, drop ELMo; attention still unclear, show q, k, v from start to prediction):
+  the six recurrent/LSTM/ELMo frames DROPPED (refs Hochreiter, Peters removed; figs/w13_lstm.R deleted). Attention
+  REBUILT as five frames on one toy, "the river [MASK]" -> flooded (figs/w13_attention.R, hand-set hypothetical
+  weights): pipeline picture -> 'From a Word's Vector to Its Query, Key, and Value' (h (0,0)/(1,0)/(.25,.25); q = (2h1+2h2,
+  2h1+2h2), k = 2h, v = h) -> 'Attention Weights' (scores 0/1.41/.71, weights .14/.58/.28, bars) -> 'The New Vector'
+  (average (.65,.07), + own h = (.90,.32); "the loan [MASK]" gives (.32,.90)) -> 'From the New Vector to the Predicted
+  Word' (u flooded (3,0), defaulted (0,3), the (0,0); P .80/.14/.05; loss .22). Old 'Two Banks' and 'Attention, Drawn'
+  frames replaced. A trained version of the toy was tried and left out: the toy can be solved without attention, so the
+  attention weight does not rise in training. Deck 96 pp.
+  LAB 13 PART 3 REPLACED 2026-11-18 (user: DML = OLS-to-DML plus CS-DiD and the event study with DML, packages only):
+  Part 2 (growth, OLS -> DML, stacking) kept; Part 3 = 'DML in a Staggered Design' on did::mpdta (500 counties, X = lpop
+  + region from the state FIPS; the 2004 cohort is all Midwest): att_gt none vs linear DR -> one block ATT(2004,2004)
+  three ways (raw -0.011, DRDID::drdid_panel -0.016, ddml_att forest -0.013) -> ddml_attgt (stack ols/logit + ranger,
+  nevertreated) -> event study by hand (e = 1 is the 20/40 weighted mean) and lincom_weights_did + lincom: e = 2
+  none -0.137, linear -0.091, ML -0.095; simple ATT -0.040/-0.025/-0.023 -> ddml_replicate (5 redraws). Divorce 2x2,
+  NLSY PLR/IRM, RD, PLIV chunks DROPPED from the lab (slides keep them). NEEDS ddml >= 0.9 (GitHub
+  thomaswiemann/ddml; CRAN is 0.3.1): ddml_attgt, lincom, diagnostics; learners are list(what = ...), weights in
+  $ensemble_weights. The system R library still has 0.3.1 (install was blocked in-session; rendered with a scratch
+  copy via R_LIBS): the user must run remotes::install_github("thomaswiemann/ddml") before rendering.
+  2026-11-18 later (user: keep it minimal): Lab 13 TOC/AUTOC uses ONE forest (rank by the forest's own tau_hat,
+  rank_average_treatment_effect(cf, -tau_hat): -0.047 (0.013); propensity rule -0.056 (0.014)); no cf_A/cf_B. The
+  SLIDES still say 'rank on half A, curve on half B' (-0.044/-0.057, figs/brand_toc.pdf): not yet changed. Part 3
+  cut to four chunks: data, att_gt (linear DR, universal base), ddml_attgt (matrix built by sort + matrix(), no
+  reshape), event-study plot + simple ATT via lincom_weights_did/lincom (-0.023 (0.011)). DROPPED: one block three
+  ways, no-covariate att_gt, diagnostics chunk, event study by hand, comparison table, ddml_replicate. ddml's
+  ols/mdl_glm fail with a single-column X. Lab code lines must stay <= 73 characters or they wrap. 20 pp.
+  2026-11-18 (user): Representations opens with 'Why Summarize Many Columns in a Few Numbers?' (block 'Compression
+  is intelligence': NOT a verbatim Sutskever quote; the block quotes his March 2023 GTC line 'some representation
+  of the process that produced the text' from NVIDIA's write-up; two uses: measure a latent trait, control for a
+  confounder); PCA opener mentions latent-trait indices. ATTENTION made slower (user: people still confused; NN
+  pictures and matrices welcome): pipeline -> NEW 'Where Each Word's Starting Vector Comes From' (word table +
+  position table; [MASK] is one more row of the word table; toy position rows are zeros; word2vec 300, BERT
+  30,522 x 768) -> Position Vectors (MOVED here) -> 'Query, Key, Value: Three Small Networks on h' (three 2-2
+  networks with weights on the arrows + W_Q, W_K, W_V matrices + table) -> Attention Weights -> New Vector -> NEW
+  'All Words at Once: the Same Steps as Matrix Products' (S, A, H + AV; figs/w13_attention.R section B) ->
+  prediction -> Inside One Layer -> BERT. New frames unstarred. Deck 98 pp.
+  Then (user): Representations section is NOT EXAMINED (orange note on its first slide; all 12 blue stars in the
+  section removed). Slide 72 opens with the toy itself ('The river [MASK].' 'The loan [MASK].'); the 'It ... school'
+  sentence is gone. 'Position Vectors' frame MERGED into 'Where Each Word's Starting Vector Comes From': non-zero
+  position rows (slot 1 (-.1,-.1), slot 2 (.1,.1), slot 3 (.05,.05)) with word rows the (.1,.1), river (.9,-.1),
+  loan (-.1,.9), [MASK] (.2,.2), chosen so h is unchanged ((0,0), (1,0), (.25,.25)). Deck 97 pp.
+  Then (user: masking first is confusing; matrix frame too complex): attention frames now follow the word BANK in
+  'the river bank' / 'the loan bank' with all weights taken as known (same numbers: bank h (.25,.25), new vector
+  (.90,.32) vs (.32,.90)); 'All Words at Once' matrix frame DROPPED (script section B kept). Masking enters only
+  after: NEW 'How the Weights Are Learned: Hide a Word, Predict It' (the river flooded -> the river [MASK] -> same
+  steps -> P(flooded) .80 -> loss .22 -> backprop; [MASK]'s row set equal to bank's) -> 'From the Blank's New
+  Vector to the Predicted Word'. Deck 97 pp.
+  Then (user): prediction frame = 'The Output Layer: Predicting the Hidden Word' (2-input, 3-output network with
+  bars); 'Inside One Layer' and 'From the Last Layer to a Prediction, and Back' DROPPED; BERT frame says 12 stacked
+  attention layers + that output layer. TOYS EXAMPLE REDONE: W = BERT last-layer [CLS] vector (was mean-pooled;
+  Data/build_amazon_toys_bert.py changed, Data/amazon_toys.rds rebuilt in a scratch venv made with reticulate's uv,
+  python 3.12 + torch + transformers), random 2,000 of the 8,003 toys (set.seed(723)), figs/w13_amazon.R rewritten:
+  raw -0.083 (0.026); OLS with 768 controls -0.043 (0.043), in-sample R2 .69 price / .51 demand, held-out -0.09 /
+  -0.60; lasso held-out .37 / .11; DML lasso -0.075 (0.032); PCA 42% / 71%. Frames: Running Example, Raw Relation,
+  BERT Vectors Know, 'Predicting Price and Demand From 768 Numbers: OLS vs. Lasso', 'The Elasticity: OLS vs. DML'.
+  DROPPED: 'Why Still So Small?' and every Chernozhukov et al. 2024 comparison. 'Make the Representation Predict the
+  Nuisances' REPLACED by 'Three Ways to Use a Pretrained BERT' (tikz: feature extraction / linear probing / full
+  fine-tuning; orange = trained). Imai & Nakamura rewritten in course notation: X = (R, Z), selection on observables,
+  'the Estimator Is Week 6's AIPW' (ATT formula; their one addition = f(R) for overlap). Parked lab part updated to
+  [CLS]. Deck 94 pp.
+  Then (user): 'Imai and Nakamura: What to Take Away' and the wrap-up 'Next week' block DROPPED. Deck 93 pp.
+  Then (user): 'Principal Components: the Setup' starts from a data frame (rows = people, W_i = row i as a column
+  vector; columns named SEI / prestige, standardized; Sigma_n = (1, .82; .82, 1)); 'What Sigma_n Describes' = figure
+  with the numbers on it + intuition only; 'Change What the Network Predicts' loses the Gebru CNN row and the 'task
+  is a choice' bullet. LAB 13 PART 4 added (not examined): PCA health score from MASS::Pima.tr/.te (glu, bp, skin,
+  bmi; PC1 49.5%, loadings .38/.41/.58/.60; diabetics .84 vs -.42) -> BERT from R via reticulate (eval: false,
+  tested: reproduces the stored [CLS] vector) -> toys 2,000: OLS -0.083 / -0.043 (0.042), OLS held-out R2 -0.09,
+  DoubleMLPLR lasso. Exercise 8 = PCs as controls. Lab 24 pp.
+  Then: user trimmed Lab 13 Part 4's PCA chunks (no eigen-by-hand); score oriented with sign(sum(loadings)) since a
+  component's sign is arbitrary; lab13_part4_text_parked.qmd DELETED (its content is Part 4 now).
+  Then: Lab 13 Part 4 BERT chunk calls reticulate::py_require(c('torch', 'transformers')) (reticulate provisions its
+  own Python; restart R if Python already started); NEW 'Linear probing' section = cv.glmnet(alpha = 0) on the frozen
+  [CLS] vectors, 1,600 train / 400 held out: R2 for price .39 vs .01 without weight decay.
+  Then (user: weird, it is just the lasso residualization): Lab 13's separate 'Linear probing' section DROPPED; one
+  sentence after the DML says the lasso on frozen [CLS] vectors is a linear probe (690S: linear probing = freeze the
+  encoder, train only a linear head; fine-tuning = update both). Slide 'Three Ways' still shows three columns.
+  Then: 'Three Ways' slide follows the CML notebook (PM5/DoubleML_and_Feature_Engineering_with_BERT.ipynb, read
+  2026-11-18): (1) feature extractor = frozen BERT pooled output + LassoCV; (2) linear probing = frozen BERT + Dense(1)
+  with L2 1e-3, Adam 1e-3, early stopping; (3) fine-tuning starts from the probe's weights, all layers trainable,
+  Adam 1e-5. The notebook uses pooler_output ([CLS] through a dense + tanh layer), sample splitting, no cross-fitting.
+  2026-11-19 (user: build the real probe, then the full DML steps): Lab 13 Part 4 ends with 'Linear probing' =
+  nnet(size = 0, skip = TRUE, linout = TRUE) on the 768 frozen [CLS] numbers (769 weights), decay grid
+  0/1/10/30/100/300 chosen on a 400-toy validation set (R2 -.67 ... .36), test R2 .39; then 'DML with the linear
+  probe, step by step' (5 folds, probes for log price and log demand, residual on residual, HC1): -0.070 (0.034)
+  vs lasso DML -0.075 (0.032).
+  Then (user): slide = 'TWO Ways to Use a Pretrained BERT' (feature extraction with any learner / full fine-tuning);
+  linear probing is not taught (it is feature extraction with a linear learner). Lab 13 Part 4: the nnet linear
+  probe REPLACED by 'A neural network on the frozen vectors' (nnet size 4, logistic hidden units, 3,081 weights,
+  decay chosen on validation = 30: test R2 price .37, demand .10) + 'DML with the network, step by step'
+  (-0.078 (0.032)) + 'Full fine-tuning (code only)' (reticulate torch loop, AdamW 1e-5, eval: false; tested on 48
+  toys for one pass).
+- Week 14 (40 pp, REBUILT 2026-11-17, user: topics not covered + 30 min on research practice; old synthesis deck in git
+  8687915): (1) Marginal structural models (DAG D1 -> L -> D2 -> Y with U; figs/w14_msm.R: truth -2.77/-1.99, no L
+  -2.10/-5.48, control L -1.29/-2.03, stabilized weights -2.86/-2.02; Wodtke, Harding & Elwert 2011 ASR, numbers read
+  from the PMC text: log-odds -0.70/-0.42/-0.53 Black, -0.58/-0.21/-0.27 non-Black, 96->76%, 95->87%). (2) GMM
+  (figs/w14_gmm.R on Card's data, controls partialled out: near4 alone .094, near2 alone .508, 2SLS .110, two-step GMM
+  .109 (.051), J 3.19 p .074; gmm_objective.pdf). (3) SEM on lavaan::PoliticalDemocracy (figs/w14_sem.R: loading by
+  hand sqrt(.977 x .812/1.782) = .667 = lavaan; 66 moments, 31 parameters, chi2 38.1 df 35; std paths .45/.89/.18 vs
+  OLS on averaged ratings .38/.78/.20; EM for the one-factor model .462 -> .667 in 100 rounds). (4) How Research Gets
+  Done: four kinds of questions, Three Questions (kept), Snow (Freedman 1991; 315 vs 37 per 10,000 houses), Pager,
+  designs found in institutions, Silberzahn 2018 / Breznau 2022, Choosing a Method, Never a Solution. (5) Final exam
+  frames kept (date Dec 3 from the syllabus; design + inference tables moved here). Syllabus still says 'Synthesis and
+  Exam Review'; folder name unchanged. New frames unstarred.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
@@ -728,6 +840,8 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
 ## Gotchas
+- PyTorch through reticulate SEGFAULTS R on this Mac when xgboost/ranger/grf are loaded in the same session (two
+  OpenMP runtimes). Fix: `torch$set_num_threads(1L)` right after `import("torch")` (in Lab 13's BERT chunk).
 - FEMA RD paper (Week 9 figs/fema): raw + derived DATA live in `figs/fema/data/` (gitignored), scripts in `figs/fema/pipeline/code/`
   (data/code is a symlink to it), rebuild with `pipeline/download_raw.sh` then `pipeline/rebuild.sh`. The session scratchpad is wiped
   on restart (2026-10-26): never leave data only there.
