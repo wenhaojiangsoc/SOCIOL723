@@ -1,0 +1,633 @@
+---
+title: "\\textbf{Lab 14: Structural Equation Models, Latent Variables, and Marginal Structural Models}"
+subtitle: "SOCIOL 723, Social Statistics II, Week 14 (to work through on your own: no Thursday session)"
+author: "Wenhao Jiang"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    classoption: ["11pt"]
+    geometry: "top=1in, bottom=1in, left=1.1in, right=1.1in"
+    number-sections: true
+    toc: true
+    toc-depth: 2
+    colorlinks: true
+    keep-tex: true
+    include-in-header:
+      text: |
+        \usepackage[T1]{fontenc}
+        \usepackage{lmodern}
+        \usepackage{amsmath,amssymb,bm}
+        \usepackage{booktabs}
+        \DeclareMathOperator{\Var}{Var}
+        \DeclareMathOperator{\Cov}{Cov}
+        \newcommand{\E}{E}
+        \usepackage{setspace}
+        \setstretch{1.12}
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},breaklines,breakanywhere,breaksymbolleft={},breaksymbolright={}}
+        \RecustomVerbatimEnvironment{verbatim}{Verbatim}{breaklines,breakanywhere,breaksymbolleft={},breaksymbolright={}}
+execute:
+  echo: true
+  warning: false
+  message: false
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(comment = "#>", collapse = TRUE, fig.width = 6,
+                      fig.height = 3.3, fig.align = "center", dpi = 200)
+options(digits = 4, scipen = 999, width = 76, show.signif.stars = FALSE)
+```
+
+# Goals
+
+The three parts follow Tuesday's lecture, in the same order and on the same data.
+
+1.  **Structural equation models**: Blau and Duncan's (1967) status-attainment model, fitted from the ten correlations they published. Paths by hand, a test of fit by putting the left-out arrows back in, then `lavaan`: correlated errors estimated as an instrumental variable, direct and indirect effects, and why fit says nothing about direction.
+2.  **Latent variables and the EM algorithm**: Bollen's (1989) four ratings of democracy in 75 countries. Democracy as a number (one latent variable in the path diagram, against principal components), then as a type (latent classes): maximum likelihood by a general search, the nine numbers and each country's type, then the EM algorithm by hand as a second search, and `poLCA`.
+3.  **Marginal structural models**: the lecture's two-period simulation. Two regressions that fail, the collider in numbers, plain and stabilized weights by hand, then `WeightIt`; five periods at the end.
+
+```{r}
+#| label: packages
+library(lavaan)      ## structural equation models
+library(poLCA)       ## latent class analysis
+library(sandwich)    ## robust standard errors
+library(WeightIt)    ## weights for treatments over time
+```
+
+# Part 1: Structural Equation Models
+
+## The data are ten correlations
+
+Blau and Duncan (1967) studied about 20,700 men aged 20 to 64 in 1962. Five variables: father's education `V`, father's occupational status `X`, the man's own education `U`, the status of his first job `W`, and the status of his occupation in 1962 `Y`. All we need is their published correlation matrix.
+
+```{r}
+#| label: bd-data
+nm <- c("V", "X", "U", "W", "Y")
+R <- diag(5); dimnames(R) <- list(nm, nm)
+## the ten correlations, as published (their Table 5.1)
+R["X", "V"] <- 0.516
+R["U", "V"] <- 0.453; R["U", "X"] <- 0.438
+R["W", "V"] <- 0.332; R["W", "X"] <- 0.417; R["W", "U"] <- 0.538
+R["Y", "V"] <- 0.322; R["Y", "X"] <- 0.405; R["Y", "U"] <- 0.596
+R["Y", "W"] <- 0.541
+R[upper.tri(R)] <- t(R)[upper.tri(R)]     ## make it symmetric
+n <- 20700
+R
+```
+
+## From an equation to correlations
+
+The education equation is $U = a_1 V + a_2 X + e_U$. Multiplying by $V$ and by $X$ and averaging gives two equations in two unknowns: $r_{UV} = a_1 + a_2 r_{XV}$ and $r_{UX} = a_1 r_{XV} + a_2$.
+
+```{r}
+#| label: bd-hand
+rXV <- R["X", "V"]; rUV <- R["U", "V"]; rUX <- R["U", "X"]
+## solve the two equations by substitution
+a1 <- (rUV - rUX * rXV) / (1 - rXV^2)
+a2 <- (rUX - rUV * rXV) / (1 - rXV^2)
+round(c(a1 = a1, a2 = a2), 3)
+```
+
+These are OLS's normal equations (Week 1). With more regressors the same solution is one line. The standard error also needs only the correlations and $n$: the residual variance, times the regressor's diagonal element of the inverse correlation matrix, over $n$.
+
+```{r}
+#| label: bd-ols
+## OLS from a correlation matrix: outcome y, regressors x, sample n
+ols <- function(y, x, n) {
+  Ri <- solve(R[x, x, drop = FALSE])
+  b  <- drop(Ri %*% R[x, y])               ## slopes
+  s2 <- 1 - sum(b * R[x, y])               ## residual variance
+  se <- sqrt(s2 * diag(Ri) / n)
+  round(cbind(est = b, se = se, t = b / se), 3)
+}
+ols("U", c("V", "X"), n)                   ## education
+ols("W", c("U", "X"), n)                   ## first job
+ols("Y", c("U", "X", "W"), n)              ## occupation in 1962
+```
+
+## Two correlations the model did not use
+
+The model has no arrow from father's education to the first job. So it implies $r_{WV} = b_1 r_{UV} + b_2 r_{XV}$.
+
+```{r}
+#| label: bd-implied
+b <- ols("W", c("U", "X"), n)[, "est"]
+c(implied  = b[["U"]] * R["U", "V"] + b[["X"]] * R["X", "V"],
+  observed = R["W", "V"])
+```
+
+The model misses by 0.017. Is that more than sampling noise?
+
+## A test of fit: put the arrows back in
+
+The model claims that $V$'s coefficient is zero in the first-job equation and in the 1962-occupation equation. Add $V$ to each and read its $t$-statistic.
+
+```{r}
+#| label: bd-test
+ols("W", c("U", "X", "V"), n)["V", ]
+ols("Y", c("U", "X", "W", "V"), n)["V", ]
+```
+
+Both are beyond 1.96 in absolute value: the model as drawn is rejected. Both are also tiny, 0.025 and $-0.014$ of a standard deviation. With 20,700 men almost any gap is detected. The same correlations in a sample of 500:
+
+```{r}
+#| label: bd-test500
+ols("W", c("U", "X", "V"), 500)["V", ]
+ols("Y", c("U", "X", "W", "V"), 500)["V", ]
+```
+
+## The same with `lavaan`
+
+`lavaan` fits all equations at once. Its model syntax uses `~` for "is regressed on".
+
+```{r}
+#| label: bd-lavaan
+m0 <- '
+  U ~ V + X
+  W ~ U + X
+  Y ~ U + X + W
+'
+## sample.cov and sample.nobs: fit from a covariance (here correlation)
+## matrix; fixed.x = FALSE: V and X's correlation is an unknown too
+f0 <- sem(m0, sample.cov = R, sample.nobs = n, fixed.x = FALSE,
+          sample.cov.rescale = FALSE)
+pe <- parameterEstimates(f0)
+pe[pe$op == "~", c("lhs", "rhs", "est", "se", "z")]
+```
+
+The estimates are the by-hand answers. The software's test of fit is one number for all left-out arrows together, the chi-square, with one degree of freedom per left-out arrow:
+
+```{r}
+#| label: bd-fit
+fitMeasures(f0, c("chisq", "df", "pvalue"))
+## observed minus implied correlations: the two gaps
+round(resid(f0, type = "raw")$cov, 3)
+## the same gaps with 500 men
+f500 <- sem(m0, sample.cov = R, sample.nobs = 500, fixed.x = FALSE,
+            sample.cov.rescale = FALSE)
+fitMeasures(f500, c("chisq", "df", "pvalue"))
+```
+
+Because the chi-square rejects almost any model in a large sample, papers also report how large the misfit is. RMSEA is the chi-square beyond its degrees of freedom, per degree of freedom, with the sample size taken out (below 0.06 is read as a close fit). SRMR is the typical gap between an observed and an implied correlation (below 0.08).
+
+```{r}
+#| label: bd-fitmeasures
+round(fitMeasures(f0, c("rmsea", "srmr")), 3)
+## RMSEA by hand: sqrt((chi-square - df) / (df x n))
+sqrt((18.119 - 2) / (2 * n))
+## SRMR by hand: root mean squared gap over the 15 variances and
+## correlations (lower triangle with the diagonal)
+gap <- resid(f0, type = "raw")$cov
+sqrt(sum(gap[lower.tri(gap, diag = TRUE)]^2) / 15)
+```
+
+The test rejects; both measures say the misfit is negligible.
+
+## An unobserved cause of education and the first job
+
+Suppose something unobserved (ability, say) raises both education and the first job. The errors of the two equations are then correlated, and OLS for the first-job equation is biased. The path diagram draws a two-headed arrow between the two errors. In `lavaan`, `~~` frees that correlation.
+
+The first-job equation can still be estimated, because father's education `V` affects the first job only through education: it is Week 7's instrument, with father's occupation `X` as a control.
+
+```{r}
+#| label: bd-iv
+## reduced form: first job on V and X; first stage: education on V and X
+rf <- ols("W", c("V", "X"), n)["V", 1]
+fs <- ols("U", c("V", "X"), n)["V", 1]
+round(c(reduced_form = rf, first_stage = fs, ratio = rf / fs,
+        ols = ols("W", c("U", "X"), n)["U", 1]), 3)
+```
+
+```{r}
+#| label: bd-corr
+mC <- '
+  U ~ V + X
+  W ~ U + X
+  Y ~ U + X + W
+  U ~~ W           # the errors of U and W may be correlated
+'
+fC <- sem(mC, sample.cov = R, sample.nobs = n, fixed.x = FALSE,
+          sample.cov.rescale = FALSE)
+pC <- parameterEstimates(fC, standardized = TRUE)
+keep <- pC$op == "~" | (pC$op == "~~" & pC$lhs != pC$rhs)
+pC[keep, c("lhs", "op", "rhs", "est", "se", "std.all")]
+fitMeasures(fC, c("chisq", "df"))
+```
+
+`lavaan` returns the ratio, 0.515 against 0.440 from OLS. The price: the arrow from `V` to the first job can no longer be tested, since `V` is now what identifies the equation. One degree of freedom is left.
+
+## Direct, indirect, and total effects
+
+Label a path by writing `name*` in front of the variable, and define new quantities with `:=`. `lavaan` attaches a standard error to each.
+
+```{r}
+#| label: bd-indirect
+mI <- '
+  U ~ a1*V + a2*X
+  W ~ b1*U + b2*X
+  Y ~ c1*U + c2*X + c3*W
+  U_total    := c1 + b1*c3                  # education on Y
+  X_indirect := a2*(c1 + b1*c3) + b2*c3     # father occ., via U and W
+  X_total    := c2 + a2*(c1 + b1*c3) + b2*c3
+  V_total    := a1*(c1 + b1*c3)             # father educ., all indirect
+'
+fI <- sem(mI, sample.cov = R, sample.nobs = n, fixed.x = FALSE,
+          sample.cov.rescale = FALSE)
+pI <- parameterEstimates(fI)
+pI[pI$op == ":=", c("lhs", "est", "se", "ci.lower", "ci.upper")]
+```
+
+Father's and son's occupations correlate 0.405. The direct path is 0.115; most of the father's advantage is passed on through schooling.
+
+## Fit is not direction
+
+Reverse one arrow: let the 1962 occupation "cause" the first job.
+
+```{r}
+#| label: bd-reversed
+mR <- '
+  U ~ V + X
+  Y ~ U + X
+  W ~ U + X + Y
+'
+fR <- sem(mR, sample.cov = R, sample.nobs = n, fixed.x = FALSE,
+          sample.cov.rescale = FALSE)
+rbind(original = fitMeasures(f0, c("chisq", "df")),
+      reversed = fitMeasures(fR, c("chisq", "df")))
+```
+
+The fit is identical. The correlations cannot tell the two models apart; the order in time does.
+
+# Part 2: Latent Variables and the EM Algorithm
+
+## A latent variable in the path diagram
+
+Bollen's (1989) democracy data ship with `lavaan` as `PoliticalDemocracy`: 75 developing countries. We use four expert ratings: `A` press freedom, `B` freedom of political opposition, `C` fairness of elections (all for 1960), and `D` effectiveness of the legislature (the 1965 rating, `y8`). "Democracy" itself is in no column. The 1960 legislature rating, `y4`, comes from the same source and year as `B`, so the two share more than democracy; exercise 4 returns to it.
+
+```{r}
+#| label: lv-data
+d <- PoliticalDemocracy[, c("y1", "y2", "y3", "y8")]
+names(d) <- c("A", "B", "C", "D")
+dz <- as.data.frame(scale(d))        ## standardized, as in Part 1
+Rd <- cor(dz); round(Rd, 3)          ## six observed correlations
+```
+
+The model is one equation per rating, $A = \lambda_A T + e_A$ and so on, with $T$ unobserved. Multiplying two equations and averaging gives $r_{AB} = \lambda_A \lambda_B$. Three correlations are enough for one loading: $r_{AB}\, r_{AC} / r_{BC} = \lambda_A^2$.
+
+```{r}
+#| label: lv-hand
+## lambda_A from each pair of the other ratings
+sqrt(c(BC = Rd["A", "B"] * Rd["A", "C"] / Rd["B", "C"],
+       BD = Rd["A", "B"] * Rd["A", "D"] / Rd["B", "D"],
+       CD = Rd["A", "C"] * Rd["A", "D"] / Rd["C", "D"]))
+```
+
+Three different answers: six correlations, four unknowns, so the model is overidentified. `lavaan` uses all six at once. `=~` reads "is measured by".
+
+```{r}
+#| label: lv-cfa
+## std.lv = TRUE: the variance of T is set to 1
+fT <- cfa("T =~ A + B + C + D", data = dz, std.lv = TRUE)
+st <- standardizedSolution(fT)
+st[st$op == "=~", c("lhs", "rhs", "est.std", "se")]
+fitMeasures(fT, c("chisq", "df", "pvalue", "rmsea", "srmr"))
+## the gaps: observed minus implied correlations
+round(resid(fT, type = "cor")$cov, 3)
+```
+
+The test does not reject: one latent variable accounts for the six correlations, with gaps no larger than 0.08.
+
+## Against principal components
+
+```{r}
+#| label: lv-pca
+pc <- prcomp(dz)
+round(abs(pc$rotation[, 1]), 3)      ## weights of the first component
+## the two scores nearly coincide
+abs(cor(pc$x[, 1], lavPredict(fT)))
+```
+
+PCA is a weighted sum of the ratings and assumes nothing about how they are related to one another. The latent variable model assumes that every correlation among them comes from $T$, a claim that was just tested.
+
+## Democracy as a type: latent classes
+
+Now let $T$ be a type instead of a number. Latent class analysis works with categorical indicators, so each rating is split at its median: 1 if a country is rated high, 0 if low.
+
+```{r}
+#| label: lca-data
+X <- sapply(d, function(v) as.numeric(v > median(v)))
+round(colMeans(X), 2)           ## share rated high, by rating
+table(high_ratings = rowSums(X))
+```
+
+If the four ratings were unrelated, the number of countries rated high on all four would be 75 times the product of the four shares:
+
+```{r}
+#| label: lca-indep
+c(expected = 75 * prod(colMeans(X)), observed = sum(rowSums(X) == 4))
+```
+
+Many more are. The hypothesis: two types of countries, and within a type the four ratings are unrelated.
+
+## The model, and a general search
+
+Nine unknowns: the share of type 1, and for each type the probability of a high rating on each of the four. The probability of a country's four ratings is a mixture: the share of type 1 times the probability of the ratings in type 1, plus the same for type 2. Maximum likelihood picks the nine numbers that make the 75 observed patterns most likely. Hand the log likelihood to `optim()`:
+
+```{r}
+#| label: lca-optim
+## probability of a country's four ratings if it is of a type with
+## rating probabilities p
+lik <- function(p) apply(X, 1, function(x) prod(p^x * (1 - p)^(1 - x)))
+## the nine unknowns on the logit scale, so they stay between 0 and 1
+nll <- function(th) {
+  q <- plogis(th)             ## q[1] = share; q[2:5], q[6:9] = types
+  -sum(log(q[1] * lik(q[2:5]) + (1 - q[1]) * lik(q[6:9])))
+}
+o <- optim(qlogis(c(0.5, rep(0.6, 4), rep(0.4, 4))), nll,
+           method = "BFGS", control = list(maxit = 1000))
+q <- plogis(o$par)
+round(c(logLik = -o$value, share_type1 = q[1]), 3)
+round(rbind(type1 = q[2:5], type2 = q[6:9]), 2)
+```
+
+These nine numbers are what a paper reports. Type 1, about four countries in ten, is rated high on nearly everything; type 2 on little.
+
+## Which country is which type?
+
+The nine numbers describe types, not countries. Bayes' rule turns them into each country's probability of being type 1.
+
+```{r}
+#| label: lca-post
+l1 <- q[1] * lik(q[2:5]); l2 <- (1 - q[1]) * lik(q[6:9])
+g_ml <- l1 / (l1 + l2)
+## a country rated high on A, B, D and low on C
+round(g_ml[which(X[, 1] == 1 & X[, 2] == 1 & X[, 3] == 0 &
+                 X[, 4] == 1)[1]], 2)
+round(tapply(g_ml, rowSums(X), mean), 2)   ## by number of high ratings
+## to classify: assign each country to its more likely type
+table(ifelse(g_ml > 0.5, "type 1", "type 2"))
+## how sharp: countries with probability above 0.9 for their type
+sum(pmax(g_ml, 1 - g_ml) > 0.9)
+## agreement with the numeric score of the factor model
+cor(g_ml, lavPredict(fT))
+```
+
+## A second search: the EM algorithm
+
+EM reaches the same nine numbers by alternating two easy problems. Only the nine numbers are guessed.
+
+```{r}
+#| label: lca-start
+pi1 <- 0.5              ## share of type 1
+p1  <- rep(0.6, 4)      ## type 1 is rated high 60% of the time
+p2  <- rep(0.4, 4)      ## type 2: 40%
+```
+
+**E step.** Given the nine numbers, Bayes' rule gives each country's probability $g_i$ of being type 1, exactly as above.
+
+```{r}
+#| label: lca-e
+g <- pi1 * lik(p1) / (pi1 * lik(p1) + (1 - pi1) * lik(p2))
+## by number of high ratings
+round(tapply(g, rowSums(X), mean), 3)
+```
+
+**M step.** Given each country's $g_i$, the nine numbers are weighted counts: each country counts as $g_i$ of a country in type 1 and $1 - g_i$ in type 2.
+
+```{r}
+#| label: lca-m
+pi1 <- mean(g)                              ## share of type 1
+p1  <- colSums(g * X) / sum(g)              ## type 1, each rating
+p2  <- colSums((1 - g) * X) / sum(1 - g)    ## type 2, each rating
+round(c(pi1 = pi1), 3); round(rbind(p1, p2), 2)
+```
+
+Repeat the two steps until nothing moves. The log likelihood rises at every round.
+
+```{r}
+#| label: lca-em
+em <- function(pi1, p1, p2, rounds = 500) {
+  ll <- numeric(rounds)
+  for (s in 1:rounds) {
+    l1 <- pi1 * lik(p1); l2 <- (1 - pi1) * lik(p2)
+    ll[s] <- sum(log(l1 + l2))              ## log likelihood so far
+    g   <- l1 / (l1 + l2)                   ## E step
+    pi1 <- mean(g)                          ## M step
+    p1  <- colSums(g * X) / sum(g)
+    p2  <- colSums((1 - g) * X) / sum(1 - g)
+  }
+  list(pi1 = pi1, p1 = p1, p2 = p2, g = g, ll = ll)
+}
+f <- em(0.5, rep(0.6, 4), rep(0.4, 4))
+round(f$ll[c(1, 2, 3, 6, 11, 21, 51)], 1)   ## rounds 0, 1, 2, 5, ...
+round(c(type1 = f$pi1, type2 = 1 - f$pi1), 3)
+round(rbind(type1 = f$p1, type2 = f$p2), 2)
+```
+
+The same maximum, the same share, and the same nine numbers as the general search.
+
+## Does it fit?
+
+The logic of Part 1: compare what the model implies with what is observed. Here the data are the counts of the 16 patterns of ratings.
+
+```{r}
+#| label: lca-fit
+pat <- expand.grid(A = 0:1, B = 0:1, C = 0:1, D = 0:1)
+pat$n <- apply(pat, 1, function(x)
+  sum(apply(X, 1, function(r) all(r == x))))
+## the model's probability of a pattern: a mixture of the two types
+pr <- function(x) f$pi1 * prod(f$p1^x * (1 - f$p1)^(1 - x)) +
+  (1 - f$pi1) * prod(f$p2^x * (1 - f$p2)^(1 - x))
+pat$implied <- 75 * apply(pat[, 1:4], 1, pr)
+round(pat[order(-rowSums(pat[, 1:4])), ], 1)
+## Pearson chi-square; 15 free shares - 9 unknowns = 6 df
+X2 <- sum((pat$n - pat$implied)^2 / pat$implied)
+round(c(X2 = X2, p = 1 - pchisq(X2, 6)), 2)
+```
+
+Two types are not rejected. With 75 countries over 16 patterns the test is rough, and cannot detect small gaps.
+
+## The same with `poLCA`
+
+`poLCA()` runs the same EM. `nrep = 10` starts it from ten random guesses and keeps the best, because EM stops at the nearest peak of the likelihood, which need not be the highest. The order of the classes is arbitrary.
+
+```{r}
+#| label: lca-pkg
+values <- as.data.frame(X + 1)      ## poLCA wants categories 1, 2
+set.seed(723)
+## left side: the indicators; right side: 1 = no covariates
+pl <- poLCA(cbind(A, B, C, D) ~ 1, data = values, nclass = 2,
+            nrep = 10, verbose = FALSE)
+round(pl$P, 3)                              ## class shares
+## probability of a high rating (coded 2), by class and rating
+round(sapply(pl$probs, function(m) m[, 2]), 2)
+round(c(logLik = pl$llik, X2 = pl$Chisq, df = pl$resid.df,
+        BIC = pl$bic), 2)
+```
+
+## How many types?
+
+The number of types is not estimated. Fit the model for each number and compare.
+
+```{r}
+#| label: lca-k
+tab <- sapply(1:3, function(k) {
+  set.seed(723)
+  m <- poLCA(cbind(A, B, C, D) ~ 1, data = values, nclass = k,
+             nrep = 20, verbose = FALSE)
+  c(types = k, unknowns = m$npar, logLik = m$llik, X2 = m$Chisq,
+    df = m$resid.df, BIC = m$bic)
+})
+round(t(tab), 1)
+```
+
+One type is rejected, two fit, and a third raises the likelihood by about two for five more unknowns: BIC picks two.
+
+# Part 3: Marginal Structural Models
+
+## The simulation
+
+$D_1$, $D_2$: living in a poor neighborhood in childhood and in adolescence. $L$: low family income between the two periods. $U$: an unmeasured family disadvantage. $Y$: a test score. By construction $D_1$ lowers the score by 2 directly and by $5 \times 0.2 = 1$ through income, $-3$ in all; $D_2$ lowers it by 2.
+
+```{r}
+#| label: msm-sim
+sim <- function(n) {
+  U  <- rbinom(n, 1, 0.5)
+  D1 <- rbinom(n, 1, 0.5)                       ## a coin flip
+  ## low income: more likely after D1 = 1 and with U = 1
+  L  <- rbinom(n, 1, 0.1 + 0.2 * D1 + 0.4 * U)
+  ## low income decides where the family lives next
+  D2 <- rbinom(n, 1, 0.2 + 0.1 * D1 + 0.6 * L)
+  Y  <- 50 - 2 * D1 - 2 * D2 - 5 * L - 3 * U + rnorm(n, 0, 3)
+  data.frame(U, D1, L, D2, Y)
+}
+set.seed(723); d <- sim(20000)
+```
+
+## Two regressions
+
+```{r}
+#| label: msm-reg
+r1 <- lm(Y ~ D1 + D2, d)          ## income left out
+r2 <- lm(Y ~ D1 + D2 + L, d)      ## income controlled
+round(rbind(truth = c(D1 = -3, D2 = -2), no_L = coef(r1)[2:3],
+            with_L = coef(r2)[2:3]), 2)
+```
+
+Without $L$, $D_2$ is confounded. With $L$, $D_2$ is right and $D_1$ is far from $-3$. Over-control removes the path through income and should leave $-2$. The rest is the collider:
+
+```{r}
+#| label: collider
+## D1 was a coin flip: U does not differ by D1
+round(tapply(d$U, d$D1, mean), 2)
+## within income groups it does
+round(tapply(d$U, list(L = d$L, D1 = d$D1), mean), 2)
+```
+
+Among families with the same income, those from a poor neighborhood have less unmeasured disadvantage. Holding $L$ fixed makes $D_1$ look less harmful than it is.
+
+## Weights by hand
+
+```{r}
+#| label: msm-weights
+## probability of D2 = 1 given the past (D1 and L), from a logit
+den <- fitted(glm(D2 ~ D1 * L, binomial, d))
+## plain weight = 1 / probability of the D2 the child actually got
+d$w  <- ifelse(d$D2 == 1, 1 / den, 1 / (1 - den))
+## stabilized: the numerator is the same probability given D1 only
+num  <- fitted(glm(D2 ~ D1, binomial, d))
+d$sw <- ifelse(d$D2 == 1, num / den, (1 - num) / (1 - den))
+## the weights in each (D1, L, D2) cell
+round(aggregate(cbind(pr_D2 = den, w, sw) ~ D2 + L + D1, d, mean), 2)
+rbind(w = summary(d$w), sw = summary(d$sw))
+```
+
+Read the rows with `D1 = 1`: a low-income family in a non-poor neighborhood has a plain weight near 10 and a stabilized weight near 4. The stabilized weights average 1.
+
+Does income still decide $D_2$ in the weighted samples?
+
+```{r}
+#| label: msm-balance
+## share in a poor neighborhood in period 2, by income, among D1 = 1
+d1 <- d[d$D1 == 1, ]
+sh <- function(wt) tapply(d1$D2 * wt, d1$L, sum) / tapply(wt, d1$L, sum)
+round(rbind(raw = sh(rep(1, nrow(d1))), plain = sh(d1$w),
+            stabilized = sh(d1$sw)), 2)
+```
+
+Plain weights make both income groups half and half. Stabilized weights give both the share among all children with $D_1 = 1$. Either way income no longer predicts $D_2$.
+
+The marginal structural model is the weighted regression of $Y$ on the treatments, without $L$. Robust standard errors, because the weights make the errors unequal.
+
+```{r}
+#| label: msm-fit
+r3 <- lm(Y ~ D1 + D2, d, weights = w)
+r4 <- lm(Y ~ D1 + D2, d, weights = sw)
+se <- function(m) sqrt(diag(vcovHC(m, type = "HC1")))
+round(cbind(plain = coef(r3), se = se(r3),
+            stabilized = coef(r4), se = se(r4)), 2)
+```
+
+## The same with `WeightIt`
+
+`weightitMSM()` takes one formula per period, each with that period's treatment on the left and the past on the right, and multiplies the periods' weights. `stabilize = TRUE` puts the probability given the treatment history in the numerator. `lm_weightit()` fits the weighted regression with standard errors that account for the weights having been estimated.
+
+```{r}
+#| label: msm-pkg
+W <- weightitMSM(list(D1 ~ 1,            ## period 1: a coin flip
+                      D2 ~ D1 * L),      ## period 2: given the past
+                 data = d, method = "glm", stabilize = TRUE)
+summary(W$weights)
+fit <- lm_weightit(Y ~ D1 + D2, data = d, weightit = W)
+round(summary(fit)$coefficients[, 1:2], 2)
+```
+
+## Five periods: why stabilize
+
+Now income changes before every period. The neighborhood is sticky (it mostly repeats last period's) and responds to income. Each period of exposure costs 2 directly and 1 through next period's income: the true slope on the number of periods exposed is $-3$. The weights are built period by period and multiplied.
+
+```{r}
+#| label: msm-five
+sim5 <- function(n, K = 5) {
+  U <- rbinom(n, 1, 0.5); Dp <- rep(0, n)   ## Dp: last period's D
+  w <- sw <- rep(1, n); cumD <- sumL <- rep(0, n)
+  for (k in 1:K) {
+    L <- rbinom(n, 1, 0.1 + 0.2 * Dp + 0.4 * U)
+    D <- rbinom(n, 1, 0.1 + 0.6 * Dp + 0.2 * L)
+    ## this period's probabilities, with and without income
+    den <- fitted(glm(D ~ Dp * L, binomial))
+    num <- fitted(glm(D ~ Dp, binomial))
+    w  <- w  * ifelse(D == 1, 1 / den, 1 / (1 - den))
+    sw <- sw * ifelse(D == 1, num / den, (1 - num) / (1 - den))
+    cumD <- cumD + D; sumL <- sumL + L; Dp <- D
+  }
+  ## income after the last period also responds to it
+  sumL <- sumL + rbinom(n, 1, 0.1 + 0.2 * Dp + 0.4 * U)
+  Y <- 50 - 2 * cumD - 5 * sumL - 3 * U + rnorm(n, 0, 3)
+  data.frame(Y, cumD, w, sw)
+}
+set.seed(723); d5 <- sim5(5000)
+rbind(plain = summary(d5$w), stabilized = summary(d5$sw))
+m0 <- lm(Y ~ cumD, d5)
+m1 <- lm(Y ~ cumD, d5, weights = w)
+m2 <- lm(Y ~ cumD, d5, weights = sw)
+round(rbind(no_weights = c(coef(m0)[2], se = se(m0)[2]),
+            plain      = c(coef(m1)[2], se = se(m1)[2]),
+            stabilized = c(coef(m2)[2], se = se(m2)[2])), 2)
+```
+
+The largest plain weight is in the thousands: one child stands for thousands. A move that is rare for everyone gets a huge plain weight whatever the family's income; in the stabilized weight the rarity is in the numerator and the denominator, and cancels. Both weighted estimates aim at $-3$, and the stabilized one is several times more precise.
+
+# Exercises
+
+1.  **The first-job equation by hand.** Write the two equations that $b_1$ and $b_2$ solve, put in the correlations, and solve them by substitution. Check against `ols("W", c("U", "X"), n)`.
+2.  **One arrow at a time.** Add only $V \to W$ to model `m0` in `lavaan`. How many degrees of freedom are left, and what does the chi-square say now? Compare it with the square of the $t$-statistic for $V \to Y$ in Part 1.
+3.  **A different story, the same fit?** Write a model in which the first job affects education (`U ~ V + X + W`, `W ~ X`, `Y ~ U + X + W`). Does it fit as well as `m0`? Count its unknowns and say which correlations it leaves over.
+4.  **A shared source.** Refit the one-latent-variable model with the 1960 legislature rating `y4` in place of `y8`. What does the test of fit say now, and which pair of ratings has the largest gap? Add a two-headed arrow between the errors of `B` and `D` (`B ~~ D`), as Bollen does because the two ratings come from the same source. How many degrees of freedom are left, and does the model fit?
+5.  **A covariate for the types.** `poLCA`'s `election` data hold twelve ratings of two presidential candidates. Fit `cbind(MORALG, CARESG, KNOWG, MORALB, CARESB, KNOWB) ~ 1` with two and with three classes (`nrep = 10`), choose by BIC, and name the classes. Then replace `~ 1` by `~ PARTY`: how does party identification move the class shares?
+6.  **No collider without U.** Change `sim()` so that $U$ does not affect income (drop `+ 0.4 * U`). Which of the two regressions is now right for $D_2$? For $D_1$? Explain with the DAG.
+7.  **Truncating weights.** In the five-period data, set plain weights above their 99th percentile to the 99th percentile and refit. What do you gain and what do you give up?

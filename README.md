@@ -499,6 +499,7 @@ checkable procedure.
 - [Slides: Week 11 — Synthetic Control](./Week%2011%20Synthetic%20Control/slides.pdf)
 - [Lab 11: Synthetic Control](./Week%2011%20Synthetic%20Control/lab11.pdf)
 - [Problem Set 4](./Homework/homework4/homework4.pdf) — assigned Fri Nov 6, due Fri Nov 20 (difference-in-differences and synthetic control)
+- [Problem Set 5](./Homework/homework5/homework5.pdf) — assigned Tue Nov 24, due Fri Dec 11 (prediction, double machine learning, and causal forests)
 
 ### Reading
 *Required*: Abadie, Diamond, and Hainmueller (2010). &nbsp;·&nbsp;
@@ -586,24 +587,30 @@ understanding why is the point of the week.
 </details>
 
 <details>
-  <summary><h2>Week 14 &nbsp;·&nbsp; Synthesis and Exam Review</h2></summary>
+  <summary><h2>Week 14 &nbsp;·&nbsp; Structural Equations, Treatments Over Time, and Research Practice</h2></summary>
 
 ### Roadmap
-- **Three questions, in order**: what am I estimating; what would have to be
-  true; how do I estimate it and how uncertain am I. Most methodological disputes
-  are disagreements about the first two conducted as if they were about the third.
-- **One idea recurring**: FWL → AIPW → DML, and partialling out as the
-  through-line.
-- Every design in one table — assumption, estimand, main threat — and every
-  inference choice in another.
-- A **decision guide** you can run on your own data, and a list of things that
-  are never a solution (more controls without a DAG; robust standard errors for a
-  bias problem; a non-significant specification test as confirmation; machine
-  learning for an identification problem).
-- The **final exam**: what it covers, how it is run, and how to prepare for it.
+- **Structural equation models**: Blau and Duncan's (1967) status-attainment
+  model fitted from ten published correlations. Paths from normal equations,
+  a test of fit by putting the left-out arrows back in, RMSEA and SRMR,
+  correlated errors estimated as an instrumental variable, direct and
+  indirect effects, and what fit does not show.
+- **Latent variables and the EM algorithm**: Bollen's (1989) democracy
+  ratings. A latent variable as one more equation in the path diagram, how it
+  differs from principal components, latent classes by maximum likelihood,
+  classifying countries, and EM as a second way to the same estimates.
+- **Treatments that unfold over time**: time-varying confounding,
+  over-control and collider bias, inverse-probability-of-treatment weights,
+  stabilized weights, and marginal structural models (Wodtke, Harding, and
+  Elwert 2011).
+- **Research practice**: starting from a question, from a puzzle in reading,
+  from a method, or from new data, and why the question is what defines a
+  researcher.
+- The **final exam**: format and rules.
 
 ### Materials
-- [Slides: Week 14 — Synthesis](./Week%2014%20Synthesis/slides.pdf)
+- [Slides: Week 14](./Week%2014%20Synthesis/slides.pdf)
+- [Lab 14: Structural Equation Models, Latent Variables, and Marginal Structural Models](./Week%2014%20Synthesis/lab14.pdf) (to work through on your own)
 
 No Thursday lab (Thanksgiving recess). **Cumulative final exam**: Thursday, December 3, 9:05–11:35 AM. Students may take the exam for the full 35%, or elect the project option: exam 25% plus a 6–10 page project memo (10%) with replication code, due Friday, December 11.
 

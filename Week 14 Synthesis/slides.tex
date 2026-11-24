@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SOCIOL 723 -- Social Statistics II
-%% Week 14 -- Synthesis and Exam Review
+%% Week 14 -- Further Methods (SEM, latent classes and EM, marginal structural models) and Research Practice
 %% Wenhao Jiang, Duke University, Fall 2026
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -17,6 +17,7 @@
 \usepackage{amsmath,amsfonts,amssymb,bm}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \usepackage[english]{babel}
@@ -126,12 +127,21 @@
 \setbeamerfont{author}{size=\large}
 \setbeamerfont{date}{size=\large}
 \title[SOCIOL 723]{SOCIOL 723: Social Statistics II\\[-2pt]}
-\subtitle{Week 14, Synthesis and Exam Review\\[-6pt]}
+\subtitle{Week 14, Further Methods and Research Practice\\[-6pt]}
 \author[Jiang]{Wenhao Jiang\vspace{-2.5em}}
 \institute[Duke]{}
 \titlegraphic{\includegraphics[height=1.3cm]{../Misc/duke_logo.png}}
 \date{Department of Sociology, Fall 2026}
 
+
+\tikzset{
+  dag/.style={>=Stealth,thick,
+    every node/.style={circle,draw=dukeblue,fill=white,inner sep=1pt,
+                       minimum size=9mm,font=\small}},
+  unobs/.style={draw=gray,dashed},
+  lab/.style={draw=none,fill=none,rectangle,inner sep=2pt,font=\footnotesize},
+  arr/.style={->,dukeblue,thick},
+  uarr/.style={->,gray,thick}}
 
 \begin{document}
 
@@ -139,244 +149,1415 @@
   \titlepage
 \end{frame}
 
-\begin{frame}{Today}
-\begin{itemize}\itemsep6pt
-  \item A synthesis: what the semester was actually about.
-  \item A decision guide you can use on your own data.
-  \item The final exam: what it covers, how it is run, and how to prepare.
-\end{itemize}
-\vskip8pt
-\begin{block}{Logistics}
-No lab Thursday November 26 (Thanksgiving recess). \\
-\textbf{Cumulative final exam}: date and time TBD, set by class poll.
-\end{block}
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Synthesis]{What the Semester Was About}
+\section[SEM]{Structural Equation Models}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{Three Questions, in Order\core}
-\begin{enumerate}\itemsep5pt
-  \item \textbf{What am I trying to estimate?} A unit-specific quantity and a
-        target population. ATE, ATT, LATE, the effect at a cutoff, $\tau(x)$.
-        Weeks 5 and 13.
-  \item \textbf{What would have to be true for my estimate to recover it?}
-        Ignorability, exclusion, continuity, parallel trends. Weeks 5--11.
-  \item \textbf{How do I estimate it, and how uncertain am I?} Least squares,
-        maximum likelihood, weighting, orthogonal scores, cross-fitting. Weeks
-        1--4, 6, 12--13.
-\end{enumerate}
+\begin{frame}{Several Equations at Once}
+\begin{columns}[c]
+\begin{column}{0.40\linewidth}
+\centering
+\begin{tikzpicture}[dag,
+    pl/.style={draw=none,fill=white,rectangle,inner sep=1.5pt,minimum size=0pt,font=\normalsize}]
+  \node (X) at (0cm,0cm) {$X$}; \node (M) at (1.8cm,1.9cm) {$M$}; \node (Y) at (3.6cm,0cm) {$Y$};
+  \draw[arr] (X)--node[pl,above left=0pt]{$a$}(M);
+  \draw[arr] (M)--node[pl,above right=0pt]{$b$}(Y);
+  \draw[arr] (X)--node[pl,below=2pt]{$c$}(Y);
+  \node[lab] at (0cm,-0.75cm) {father's status};
+  \node[lab] at (1.8cm,2.65cm) {education};
+  \node[lab] at (3.6cm,-0.75cm) {own status};
+\end{tikzpicture}
+\vskip4pt
+$M_i = a X_i + e_{Mi}$\\[2pt]
+$Y_i = c X_i + b M_i + e_{Yi}$
+\end{column}
+\begin{column}{0.58\linewidth}
+A \textbf{structural equation model} writes one regression equation for every variable an arrow
+points into, and treats the equations as one system.
+\begin{itemize}\itemsep5pt
+  \item \textbf{OLS is the smallest one}: a single equation, a single outcome.
+  \item \textbf{Mediation analysis is one too} (Week 5): the two equations on the left. Direct
+        effect $c$, indirect effect $a \times b$, total $c + ab$.
+  \item \textbf{More variables, more equations}: Blau and Duncan drew status attainment with five
+        variables and three equations. Today's example.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip5pt
+\begin{itemize}\itemsep3pt
+  \item Later today: variables that are not observed at all (latent variables).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Blau and Duncan (1967)}
+\textbf{The question.} Blau and Duncan (1967), \textit{The American Occupational Structure}: how
+does a father's position reach his son's? Directly, or through the son's schooling and first job?
+\par\vskip3pt
+\textbf{The data.} ``Occupational Changes in a Generation'', a supplement to the March 1962 Current
+Population Survey: about 20,700 men aged 20 to 64. Five variables:
+\begin{itemize}\itemsep1pt
+  \item $V$ father's education, $X$ father's occupational status;
+  \item $U$ the man's own education, $W$ the status of his first job, $Y$ the status of his
+        occupation in 1962.
+\end{itemize}
+\textbf{Why it matters.} The founding study of status-attainment research, and the study that
+brought path analysis into sociology. Its answer, that origins work mostly through schooling,
+set the agenda of stratification research for decades.
+\par\vskip3pt
+\textbf{For us.} Everything can be recomputed from the ten correlations they published.
+\end{frame}
+
+\begin{frame}{The Model: Three Equations}
+\begin{columns}[c]
+\begin{column}{0.50\linewidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.86,every node/.append style={transform shape},
+    pl/.style={draw=none,fill=white,rectangle,inner sep=1.5pt,minimum size=0pt,font=\normalsize}]
+  \node (V) at (0,1.6) {$V$};  \node (X) at (0,-1.6) {$X$};
+  \node (U) at (3.0,1.6) {$U$}; \node (W) at (6.0,1.6) {$W$};
+  \node (Y) at (6.0,-1.6) {$Y$};
+  \draw[arr] (V)--node[pl,above=2pt]{$a_1$}(U);
+  \draw[arr] (X)--node[pl,pos=0.3]{$a_2$}(U);
+  \draw[arr] (U)--node[pl,above=2pt]{$b_1$}(W);
+  \draw[arr] (X)--node[pl,pos=0.82]{$b_2$}(W);
+  \draw[arr] (X)--node[pl,below=2pt]{$c_2$}(Y);
+  \draw[arr] (U)--node[pl,pos=0.25]{$c_1$}(Y);
+  \draw[arr] (W)--node[pl,right=2pt]{$c_3$}(Y);
+  \draw[<->,gray,thick] (V) to[bend right=40] (X);
+  \node[lab] at (0,2.35) {father's education};
+  \node[lab] at (0,-2.35) {father's occupation};
+  \node[lab] at (3.0,2.35) {own education};
+  \node[lab] at (6.0,2.35) {first job};
+  \node[lab] at (5.6,-2.35) {occupation, 1962};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.48\linewidth}
+All variables standardized (mean 0, variance 1):
+\begin{align*}
+  U_i &= a_1 V_i + a_2 X_i + e_{Ui} \\
+  W_i &= b_1 U_i + b_2 X_i + e_{Wi} \\
+  Y_i &= c_1 U_i + c_2 X_i + c_3 W_i + e_{Yi}
+\end{align*}
+\vskip-6pt
+\begin{itemize}\itemsep2pt
+  \item Each error is unrelated to the variables on the right of its equation and to the other
+        errors. $V$ and $X$ are correlated; the model does not say why.
+  \item \textbf{Two arrows are left out}: $V \to W$ and $V \to Y$. Father's education reaches the
+        son's jobs only through his schooling.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{The Data Are Ten Correlations}
+With standardized variables every variance is 1, and the data enter only through the correlations
+\srcp{Blau and Duncan 1967, Table 5.1}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & $V$ father's educ. & $X$ father's occ. & $U$ education & $W$ first job \\
+\midrule
+$X$ father's occupation & 0.516 \\
+$U$ own education & 0.453 & 0.438 \\
+$W$ first job & 0.332 & 0.417 & 0.538 \\
+$Y$ occupation in 1962 & 0.322 & 0.405 & 0.596 & 0.541 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep4pt
+  \item Five variables: $5 \times 4 / 2 = 10$ correlations.
+  \item The model has \textbf{8 unknowns}: seven path coefficients
+        ($a_1, a_2, b_1, b_2, c_1, c_2, c_3$) and the correlation of $V$ and $X$.
+  \item Estimation $=$ find the 8 unknowns that reproduce the 10 correlations.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{From an Equation to Correlations}
+Take the education equation, $U = a_1 V + a_2 X + e_U$. Multiply both sides by $V$ and average
+over men; then do the same with $X$:
+\begin{align*}
+  E[U V] &= a_1 E[V^2] + a_2 E[X V] + E[e_U V]
+    && \text{\footnotesize multiply by $V$, average} \\
+  r_{UV} &= a_1 + a_2\, r_{XV}
+    && \text{\footnotesize variances are 1; $e_U$ unrelated to $V$} \\
+  r_{UX} &= a_1\, r_{XV} + a_2
+    && \text{\footnotesize the same with $X$}
+\end{align*}
+\vskip-4pt
+Put in the observed correlations: two equations, two unknowns.
+\begin{align*}
+  0.453 &= a_1 + 0.516\, a_2, \qquad 0.438 = 0.516\, a_1 + a_2
+  \quad\Longrightarrow\quad \hat a_1 = 0.309, \;\; \hat a_2 = 0.278 .
+\end{align*}
+\begin{itemize}\itemsep3pt
+  \item These are Week 1's normal equations: the answer is the OLS regression of $U$ on $V$ and $X$.
+  \item The same steps for the other two equations \srcp{figs/w14\_sem.R}:
+        $\hat b_1 = 0.440$, $\hat b_2 = 0.224$; $\hat c_1 = 0.395$, $\hat c_2 = 0.115$,
+        $\hat c_3 = 0.281$.
+  \item 8 of the 10 correlations are used.
+\end{itemize}
+\vskip-2pt
+\end{frame}
+
+\begin{frame}{Two Correlations the Model Did Not Use}
+The model also says what the two unused correlations, $r_{WV}$ and $r_{YV}$, must be. Multiply the
+first-job equation $W = b_1 U + b_2 X + e_W$ by $V$ and average:
+\begin{align*}
+  r_{WV} &= b_1\, r_{UV} + b_2\, r_{XV}
+    && \text{\footnotesize no arrow $V \to W$} \\
+         &= 0.440 \times 0.453 + 0.224 \times 0.516 = 0.315
+    && \text{\footnotesize the model's prediction}
+\end{align*}
+\vskip-4pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & implied by the model & observed & difference \\
+\midrule
+$r_{WV}$: father's education, first job & 0.315 & 0.332 & 0.017 \\
+$r_{YV}$: father's education, occupation 1962 & 0.327 & 0.322 & $-0.005$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt
+  \item 10 numbers, 8 unknowns: the model is \textbf{overidentified}. The 2 left over test the
+        2 arrows left out.
+  \item The question for a test of fit: is 0.017 more than sampling noise?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Test of Fit: Is the Gap More Than Chance?}
+The model drew no arrow $V \to W$: it claims the coefficient of $V$ in the first-job equation is
+exactly 0. The implied $r_{WV}$ equals the observed one only if that claim is right.
+\vskip3pt
+So test the claim directly. Put each left-out arrow back in and look at its $t$-statistic (Week 1)
+\srcp{figs/w14\_sem.R}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+arrow added & coefficient & s.e. & $t$ \\
+\midrule
+$V \to W$: father's education $\to$ first job & 0.025 & 0.007 & 3.7 \\
+$V \to Y$: father's education $\to$ occupation in 1962 & $-0.014$ & 0.006 & $-2.2$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt
+  \item Both $|t| > 1.96$: the gaps are not sampling noise. The model is \textbf{rejected}.
+  \item Software reports the same test as one number for all left-out arrows at once, the
+        \textbf{chi-square test of fit}: 18.1 with 2 degrees of freedom (one per left-out arrow),
+        $p < 0.001$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What a Paper Reports About Fit}
+The chi-square grows with $n$ for the same gaps. Papers add two measures of how \emph{large} the
+misfit is \srcp{figs/w14\_sem.R; rules of thumb: Hu and Bentler 1999}.
+\vskip4pt
+\textbf{RMSEA}: the chi-square beyond what chance alone gives (its degrees of freedom), per
+degree of freedom, with the sample size taken out.
+\vskip-4pt
+\[ \text{RMSEA} = \sqrt{\frac{\chi^2 - \text{df}}{\text{df} \times n}}
+   = \sqrt{\frac{18.1 - 2}{2 \times 20{,}700}} = 0.020
+   \qquad \text{\footnotesize (below 0.06 is read as a close fit)} \]
+\vskip-4pt
+\textbf{SRMR}: the typical gap between an observed and an implied correlation. Five variables
+give 15 variances and correlations; the model misses two, by 0.017 and $-0.005$.
+\vskip-4pt
+\[ \text{SRMR} = \sqrt{\frac{\text{sum of squared gaps}}{15}}
+   = \sqrt{\frac{0.017^2 + 0.005^2}{15}} = 0.005
+   \qquad \text{\footnotesize (below 0.08)} \]
+\vskip-4pt
+\begin{itemize}\itemsep2pt
+  \item The test rejects; both measures say the misfit is negligible.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Rejected, but by How Much?}
+\begin{itemize}\itemsep6pt
+  \item The rejected arrows are tiny. One standard deviation more of father's education moves the
+        first job by 0.025 standard deviations, holding the son's education and the father's
+        occupation fixed. The arrows the model kept run from 0.115 to 0.440.
+  \item With 20,700 men almost any gap is detected (Week 3: a large $n$ rejects everything). The
+        same correlations in a sample of 500:
+\end{itemize}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & $t$ for $V \to W$ & $t$ for $V \to Y$ & chi-square test of fit \\
+\midrule
+$n = 20{,}700$ & 3.7 & $-2.2$ & 18.1, $p < 0.001$ \\
+$n = 500$ & 0.6 & $-0.3$ & 0.4, $p = 0.80$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep6pt
+  \item The substantive reading stands: father's education reaches the son's jobs almost entirely
+        through the son's schooling.
+  \item Report the size of the gaps (0.017 and $-0.005$) next to the test, not the $p$-value alone.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Estimated Model}
+\begin{columns}[c]
+\begin{column}{0.56\linewidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.86,every node/.append style={transform shape},
+    pl/.style={draw=none,fill=white,rectangle,inner sep=1.5pt,minimum size=0pt,font=\normalsize}]
+  \node (V) at (0,1.6) {$V$};  \node (X) at (0,-1.6) {$X$};
+  \node (U) at (3.0,1.6) {$U$}; \node (W) at (6.0,1.6) {$W$};
+  \node (Y) at (6.0,-1.6) {$Y$};
+  \draw[arr] (V)--node[pl,above=2pt]{0.309}(U);
+  \draw[arr] (X)--node[pl,pos=0.3]{0.278}(U);
+  \draw[arr] (U)--node[pl,above=2pt]{0.440}(W);
+  \draw[arr] (X)--node[pl,pos=0.86]{0.224}(W);
+  \draw[arr] (X)--node[pl,below=2pt]{0.115}(Y);
+  \draw[arr] (U)--node[pl,pos=0.72]{0.395}(Y);
+  \draw[arr] (W)--node[pl,right=2pt]{0.281}(Y);
+  \draw[<->,gray,thick] (V) to[bend right=40] node[pl,left=1pt]{0.516} (X);
+  \draw[uarr] (3.0,3.0)--node[pl,right=1pt]{0.859}(U);
+  \draw[uarr] (6.0,3.0)--node[pl,right=1pt]{0.818}(W);
+  \draw[uarr] (7.5,-1.6)--node[pl,above=1pt]{0.753}(Y);
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.42\linewidth}
+This is the figure a paper prints, and Blau and Duncan's own.
+\begin{itemize}\itemsep3pt
+  \item On each arrow: the path coefficient, in standard deviations.
+  \item Gray arrows from outside: everything the model does not explain, $\sqrt{1 - R^2}$.
+        $R^2$ is 0.26 for education, 0.33 for the first job, 0.43 for the 1962 occupation.
+  \item Schooling is the largest path into both jobs.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip-3pt
+\begin{itemize}\itemsep2pt
+  \item Software (\texttt{lavaan}, Mplus, Stata's \texttt{sem}) fits all equations at once by
+        maximum likelihood. Here that is OLS, equation by equation.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{An Unobserved Cause of Education and the First Job}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.68,every node/.append style={transform shape},
+    pl/.style={draw=none,fill=white,rectangle,inner sep=1.5pt,minimum size=0pt,font=\normalsize},
+    er/.style={draw=gray,dashed,minimum size=7mm}]
+  \node (V) at (0,1.15) {$V$};  \node (X) at (0,-1.15) {$X$};
+  \node (U) at (3.0,1.15) {$U$}; \node (W) at (6.0,1.15) {$W$};
+  \node (Y) at (6.0,-1.15) {$Y$};
+  \node[er] (eU) at (3.0,2.45) {$e_U$}; \node[er] (eW) at (6.0,2.45) {$e_W$};
+  \draw[uarr] (eU)--(U); \draw[uarr] (eW)--(W);
+  \draw[<->,accent,line width=1.4pt] (eU) to[bend left=30] node[pl,above=0pt]{$-0.09$} (eW);
+  \draw[arr] (V)--node[pl,above=2pt]{0.309}(U);
+  \draw[arr] (X)--node[pl,pos=0.3]{0.278}(U);
+  \draw[arr] (U)--node[pl,above=2pt]{\textbf{0.515}}(W);
+  \draw[arr] (X)--node[pl,pos=0.86]{\textbf{0.192}}(W);
+  \draw[arr] (X)--node[pl,below=2pt]{0.115}(Y);
+  \draw[arr] (U)--node[pl,pos=0.72]{0.395}(Y);
+  \draw[arr] (W)--node[pl,right=2pt]{0.281}(Y);
+  \draw[<->,gray,thick] (V) to[bend right=40] (X);
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.54\linewidth}
+An unmeasured trait (ability) raises both schooling and the first job: $e_U$ and $e_W$ are
+correlated, and OLS of $W$ on $U$ and $X$ is biased.
+\begin{itemize}\itemsep3pt
+  \item \textbf{In the figure}: a two-headed arrow between the two errors. Its correlation is
+        one more unknown.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip5pt
+\textbf{Estimation.} Week 7's IV: $V$ is the instrument for $U$, with $X$ as a control. $V$ moves
+$U$ and has no arrow into $W$.
+\vskip-8pt
+\[ \hat b_1 = \frac{\text{reduced form: coefficient of $V$ in $W$ on $V$, $X$}}
+                   {\text{first stage: coefficient of $V$ in $U$ on $V$, $X$}}
+   = \frac{0.159}{0.309} = 0.515 \]
+\vskip-6pt
+\begin{itemize}\itemsep2pt
+  \item OLS gave 0.440. Software returns the same 0.515 (s.e.\ 0.022) \srcp{figs/w14\_sem.R}.
+  \item The price: ``no arrow $V \to W$'' now identifies $b_1$ and is no longer tested. With no
+        left-out arrow to use, the model cannot be estimated.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Direct, Indirect, and Total Effects}
+An effect along a chain of arrows is the product of its path coefficients; a total effect is the
+sum over chains (Week 5). On occupation in 1962 \srcp{figs/w14\_sem.R}:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}llc@{}}
+\toprule
+\textbf{own education} & direct, $c_1$ & 0.395 \\
+ & through the first job, $b_1 c_3 = 0.440 \times 0.281$ & 0.123 \\
+ & total & 0.518 \\
+\midrule
+\textbf{father's occupation} & direct, $c_2$ & 0.115 \\
+ & through education, $a_2 \times 0.518$ & 0.144 \\
+ & through the first job alone, $b_2 c_3$ & 0.063 \\
+ & total & 0.322 \\
+\midrule
+\textbf{father's education} & all through the son's education, $a_1 \times 0.518$ & 0.160 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt
+  \item Father's and son's occupations correlate 0.405. Only 0.115 is a direct path: most of the
+        father's advantage is passed on through schooling.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What Fit Does Not Show}
+\begin{itemize}\itemsep8pt
+  \item \textbf{Fit is not direction.} Reverse one arrow, occupation in 1962 $\to$ first job. The
+        reversed model reproduces the ten correlations exactly as well: same gaps, same test
+        (18.1). The correlations cannot tell the two apart. Time order does.
+  \item \textbf{Fit is not identification.} ``Errors unrelated to each other'' means no unmeasured
+        cause of both education and occupation. Ability is one (Week 5). If it exists, $c_1$ is
+        biased, and the fit does not change.
+  \item \textbf{The test checks only the arrows left out.} A model with every arrow drawn fits
+        perfectly and tests nothing.
+  \item So far every variable in the model was observed. Next: a variable that is not.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Latent Classes]{Latent Variables and the EM Algorithm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{A Latent Variable in the Path Diagram}
+\begin{columns}[c]
+\begin{column}{0.36\linewidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.72,every node/.append style={transform shape},
+    pl/.style={draw=none,fill=white,rectangle,inner sep=1.5pt,minimum size=0pt,font=\normalsize}]
+  \node[unobs] (T) at (0cm,0cm) {$T$};
+  \node (A) at (2.8cm,1.8cm) {$A$}; \node (B) at (2.8cm,0.6cm) {$B$};
+  \node (C) at (2.8cm,-0.6cm) {$C$}; \node (D) at (2.8cm,-1.8cm) {$D$};
+  \draw[arr] (T)--node[pl,pos=0.62]{$\lambda_A$}(A); \draw[arr] (T)--node[pl,pos=0.62]{$\lambda_B$}(B);
+  \draw[arr] (T)--node[pl,pos=0.62]{$\lambda_C$}(C); \draw[arr] (T)--node[pl,pos=0.62]{$\lambda_D$}(D);
+  \foreach \k/\y in {A/1.8,B/0.6,C/-0.6,D/-1.8} \draw[uarr] (4.0cm,\y cm) -- (\k);
+  \node[lab] at (4.35cm,1.8cm) {$e_A$}; \node[lab] at (4.35cm,0.6cm) {$e_B$};
+  \node[lab] at (4.35cm,-0.6cm) {$e_C$}; \node[lab] at (4.35cm,-1.8cm) {$e_D$};
+  \node[lab] at (-0.1cm,-0.95cm) {democracy};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.62\linewidth}
+``Democracy'' is not a column in any dataset. Bollen (1989): 75 developing countries in the
+early 1960s, four expert ratings.
+$A$ press freedom, $B$ freedom of political opposition, $C$ fairness of elections, $D$
+effectiveness of the legislature.
+\end{column}
+\end{columns}
+\vskip2pt
+One more equation per rating, as in Blau and Duncan. The only difference: $T$ has no data.
+\vskip-4pt
+\[ A_i = \lambda_A T_i + e_{Ai}, \quad B_i = \lambda_B T_i + e_{Bi}, \quad
+   C_i = \lambda_C T_i + e_{Ci}, \quad D_i = \lambda_D T_i + e_{Di} \]
+\vskip-4pt
+\begin{itemize}\itemsep3pt
+  \item $T$ is a \textbf{latent variable}, the ratings its \textbf{indicators}, each $\lambda$ a
+        \textbf{loading}: how strongly a rating follows $T$.
+  \item Each error is unrelated to $T$ and to the other errors. $T$ has no units: its
+        variance is set to 1.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Where the Loadings Come From}
+Slide 7's step: multiply the equations for $A$ and $B$, and average over countries.
+\begin{align*}
+  E[A B] &= \lambda_A \lambda_B E[T^2] + \lambda_A E[T e_B] + \lambda_B E[T e_A] + E[e_A e_B] \\
+  r_{AB} &= \lambda_A \lambda_B \qquad \text{\footnotesize (variance of $T$ is 1; errors unrelated)}
+\end{align*}
+\vskip-6pt
+The same for every pair: six observed correlations, four unknown loadings. Take three of them:
+\[ \frac{r_{AB}\, r_{AC}}{r_{BC}} = \frac{\lambda_A \lambda_B \cdot \lambda_A \lambda_C}{\lambda_B \lambda_C}
+   = \lambda_A^2 \quad\Longrightarrow\quad
+   \hat\lambda_A = \sqrt{\frac{0.604 \times 0.679}{0.451}} = 0.95 . \]
+\vskip-4pt
+\begin{itemize}\itemsep3pt
+  \item Other triples give 0.82 (with $B$, $D$) and 0.92 (with $C$, $D$)
+        \srcp{figs/w14\_factor.R}: overidentified, as with Blau and Duncan.
+  \item Software uses all six correlations at once: 0.89, 0.69, 0.73, 0.76 for $A$ to $D$. Check:
+        $0.89 \times 0.69 = 0.62$, observed 0.60.
+  \item \textbf{Test of fit}: do the three answers disagree by more than chance? $6 - 4 = 2$
+        degrees of freedom, chi-square 4.0, $p = 0.14$: \textbf{not rejected}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{How This Differs From Principal Components}
+\begin{columns}[t]
+\begin{column}{0.47\linewidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.62,every node/.append style={transform shape}]
+  \node (P) at (0cm,0cm) {$PC$};
+  \node (A) at (2.6cm,1.5cm) {$A$}; \node (B) at (2.6cm,0.5cm) {$B$};
+  \node (C) at (2.6cm,-0.5cm) {$C$}; \node (D) at (2.6cm,-1.5cm) {$D$};
+  \foreach \k in {A,B,C,D} \draw[arr] (\k) -- (P);
+  \draw[<->,gray,thick] (A.east) to[bend left=50] (B.east);
+  \draw[<->,gray,thick] (B.east) to[bend left=50] (C.east);
+  \draw[<->,gray,thick] (C.east) to[bend left=50] (D.east);
+  \draw[<->,gray,thick] (A.east) to[bend left=70] (D.east);
+\end{tikzpicture}
+
+{\small \textbf{PCA} (Week 13)}
+\end{column}
+\begin{column}{0.47\linewidth}
+\centering
+\begin{tikzpicture}[dag,scale=0.62,every node/.append style={transform shape}]
+  \node[unobs] (T) at (0cm,0cm) {$T$};
+  \node (A) at (2.6cm,1.5cm) {$A$}; \node (B) at (2.6cm,0.5cm) {$B$};
+  \node (C) at (2.6cm,-0.5cm) {$C$}; \node (D) at (2.6cm,-1.5cm) {$D$};
+  \foreach \k/\y in {A/1.5,B/0.5,C/-0.5,D/-1.5} {\draw[arr] (T) -- (\k); \draw[uarr] (3.8cm,\y cm) -- (\k);}
+\end{tikzpicture}
+
+{\small \textbf{Latent variable}}
+\end{column}
+\end{columns}
+\vskip8pt
+\begin{itemize}\itemsep8pt
+  \item \textbf{PCA} is a weighted sum of $A$ to $D$. It assumes nothing about how $A$ to $D$ are
+        related to one another (gray arcs: any relation is allowed).
+  \item \textbf{A latent variable} assumes that every correlation among $A$ to $D$ comes from $T$.
+  \item On these data the two scores are nearly the same: they correlate 0.99
+        \srcp{figs/w14\_factor.R}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why Use a Latent Variable, Then?}
+For an index or a control variable, PCA is enough, and simpler (Week 13). A latent variable is
+used for two things PCA does not do.
+\begin{itemize}\itemsep10pt
+  \item \textbf{It can be wrong, so it can be checked.} PCA always returns a first component, even
+        from four unrelated columns. The latent variable model has a test of fit: here one
+        latent variable for the four ratings was not rejected.
+  \item \textbf{$T$ does not have to be a number.} A component is always a scale, from less to more.
+        A latent variable can be a set of \emph{types} that differ in kind and cannot be lined
+        up on one scale. PCA has no counterpart. This is latent class analysis, next.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Democracy as a Type: Latent Classes}
+So far $T$ was a number: more or less democracy. Another view: countries come in \emph{kinds}.
+Then $T$ is a type, and the model is \textbf{latent class analysis} (Goodman 1974).
+\vskip3pt
+The same 75 countries and four ratings, each now split at its median: 1 if a country is rated
+high, 0 if low \srcp{figs/w14\_lca.R}.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+number of high ratings & 0 & 1 & 2 & 3 & 4 \\
+\midrule
+countries observed & 26 & 15 & 6 & 12 & 16 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt
+  \item Rated high: 49\%, 41\%, 39\%, and 40\% of countries on $A$ to $D$.
+  \item If the four ratings were unrelated, 2 countries would be high on all four. 16 are.
+  \item A hypothesis: \textbf{two types} of countries. Nobody recorded which country is which.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Latent Class Model}
+Two ingredients:
+\begin{itemize}\itemsep2pt
+  \item \textbf{How common each type is}: a share $\pi$ of type 1, $1 - \pi$ of type 2.
+  \item \textbf{How each type is rated}: $p_{A1}$ is the probability that a type-1 country is rated
+        high on $A$; likewise $p_{B1}, \dots, p_{D2}$. Eight numbers.
+\end{itemize}
+The path-diagram assumption again: given the type, the ratings are unrelated, so their
+probabilities multiply. A country is one type or the other, so the two cases add:
+\[ \Pr(A = 1, B = 1, C = 1, D = 1) = \pi\, p_{A1}\, p_{B1}\, p_{C1}\, p_{D1}
+     + (1 - \pi)\, p_{A2}\, p_{B2}\, p_{C2}\, p_{D2} . \]
+\vskip-4pt
+For a rating of 0, put $1 - p$ in place of $p$.
+\begin{itemize}\itemsep3pt
+  \item \textbf{Nine unknowns} ($\pi$ and eight $p$'s) imply a probability for each of the 16
+        patterns of ratings. The data are the 16 observed counts.
+  \item The steps of a real analysis: choose the indicators; fit the model with 1, 2, 3, \dots\
+        types; choose the number of types; read and name them; relate them to other variables.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Estimating the Nine Numbers}
+\textbf{Maximum likelihood} (Week 3): choose the nine numbers that make the observed ratings most
+likely. Country $i$'s contribution is the probability of its own four ratings:
+\[ \log L = \sum_{i=1}^{75} \log \Big[ \pi \Pr(\text{ratings}_i \mid \text{type 1})
+     + (1 - \pi) \Pr(\text{ratings}_i \mid \text{type 2}) \Big] . \]
+\vskip-4pt
+\begin{itemize}\itemsep4pt
+  \item The logarithm of a \emph{sum}: setting derivatives to zero gives no formula, unlike OLS.
+        The maximum has to be found by a search.
+  \item \textbf{A general search}, as Newton's method for the logit (Week 4). It works: from our
+        starting guess R's \texttt{optim} arrives at $\log L = -157.72$ \srcp{figs/w14\_lca.R}.
+  \item A second search, the \textbf{EM algorithm}, reaches the same nine numbers and is what
+        latent class software runs. First the result, then EM.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Result: Nine Numbers}
+What the search returns, and what a paper reports: the share of each type and its probability
+of a high rating on each indicator \srcp{figs/w14\_lca.R}.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & share of countries & $A$ press & $B$ opposition & $C$ elections & $D$ legislature \\
+\midrule
+type 1 & 0.42 & 0.92 & 0.78 & 0.79 & 0.89 \\
+type 2 & 0.58 & 0.18 & 0.15 & 0.10 & 0.05 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep5pt
+  \item Type 1 is rated high on nearly everything, type 2 on little. Calling them ``democratic''
+        and ``not'' is our reading: the model returns numbers, the names are ours.
+  \item Check with slide 22's formula. Four high ratings:
+        $0.42 \times 0.92 \times 0.78 \times 0.79 \times 0.89
+        + 0.58 \times 0.18 \times 0.15 \times 0.10 \times 0.05 = 0.21$, or 16 of 75 countries.
+        Observed: 16.
+  \item The nine numbers describe the two types. They do not yet say which country is which.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Which Country Is Which Type?}
+Bayes' rule, with the nine numbers. A country rated high on $A$, $B$, $D$ and low on $C$:
+\begin{align*}
+  \text{type 1 and these ratings:} \quad & 0.42 \times 0.92 \times 0.78 \times (1 - 0.79) \times 0.89 = 0.0563 \\
+  \text{type 2 and these ratings:} \quad & 0.58 \times 0.18 \times 0.15 \times (1 - 0.10) \times 0.05 = 0.0007 \\
+  \Pr(\text{type 1} \mid \text{ratings}) &= \frac{0.0563}{0.0563 + 0.0007} = 0.99
+\end{align*}
+\vskip-4pt
+\begin{itemize}\itemsep4pt
+  \item Every country gets a probability, not a label: above 0.95 with three or four high
+        ratings, below 0.1 with one or none.
+  \item \textbf{To classify}, assign each country to its more likely type: 31 countries to type 1,
+        44 to type 2. Report how sharp the assignment is: here 69 of 75 countries have a
+        probability above 0.9 for their type.
+  \item The two views of $T$ agree: the probability of type 1 correlates 0.85 with the numeric
+        score of the factor model.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Second Search: Two Easy Problems}
+The EM algorithm reaches the same nine numbers without a general optimizer. It starts from the
+observation that the hard problem splits into two easy ones.
+\begin{itemize}\itemsep5pt
+  \item \textbf{If we knew the nine numbers}, Bayes' rule gives each country's probability of being
+        type 1: the last slide. It works for any nine numbers, not only the final ones. Say
+        $\pi = 0.5$, type 1 is rated high 60\% of the time, type 2 40\%. For a country with four
+        high ratings:
+        \[ \Pr(\text{type 1} \mid 1,1,1,1) =
+           \frac{0.5 \times 0.6^4}{0.5 \times 0.6^4 + 0.5 \times 0.4^4} = 0.84 . \]
+  \item \textbf{If we knew each country's type}, the nine numbers are counting. $\pi$ is the share
+        of countries in type 1. The probability for rating $A$ in type 1 is the share of type-1
+        countries rated high on $A$.
+  \item We know neither. Each problem is easy given the answer to the other.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The EM Algorithm: Guess, Then Alternate}
+Only the nine numbers are guessed, once, at the start. Then two steps repeat, each using the
+other's output (Dempster, Laird, and Rubin 1977).
+\begin{itemize}\itemsep3pt
+  \item \textbf{E step}. \emph{Compute} each country's probability of being type 1, $g_i$, from the
+        current nine numbers by Bayes' rule. Nothing is guessed here.
+  \item \textbf{M step}. Recompute the nine numbers by counting. With known types a country
+        would count 1 toward its own type, 0 toward the other. Now it counts $g_i$ toward type 1
+        and $1 - g_i$ toward type 2.
+\end{itemize}
+\vskip4pt
+The M step on three hypothetical countries:
+\begin{columns}[c]
+\begin{column}{0.30\linewidth}
+\begin{center}\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+country & $g_i$ & $A_i$ \\
+\midrule
+1 & 0.9 & 1 \\
+2 & 0.5 & 1 \\
+3 & 0.1 & 0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\begin{column}{0.68\linewidth}
+\small
+Countries in type 1: $\sum_i g_i = 0.9 + 0.5 + 0.1 = 1.5$ of 3, so $\pi = 0.5$.\\[4pt]
+Of these, rated high on $A$: $\sum_i g_i A_i = 0.9 + 0.5 = 1.4$, so\\
+$\Pr(A = 1 \mid \text{type 1}) = \sum_i g_i A_i / \sum_i g_i = 1.4 / 1.5 = 0.93$.\\[4pt]
+Type 2, with $1 - g_i$ in place of $g_i$: $(0.1 + 0.5) / 1.5 = 0.40$.
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{EM on the Democracy Ratings}
+The guess: $\pi = 0.5$; type 1 is rated high with probability 0.60 on each of $A$ to $D$, type 2
+with 0.40. First round: the E step gives a country with four high ratings $g_i = 0.84$; the M
+step then gives $\pi = 0.45$ and new probabilities for all four ratings. The table follows
+rating $B$ only, to save space \srcp{figs/w14\_lca.R}.
+\vskip2pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+round & 0 & 1 & 2 & 5 & 10 & 20 & 50 \\
+\midrule
+share of type 1, $\pi$ & 0.50 & 0.45 & 0.44 & 0.42 & 0.42 & 0.42 & 0.42 \\
+type 1 rated high on $B$ & 0.60 & 0.63 & 0.74 & 0.77 & 0.78 & 0.78 & 0.78 \\
+type 2 rated high on $B$ & 0.40 & 0.24 & 0.16 & 0.15 & 0.15 & 0.15 & 0.15 \\
+log likelihood & $-199.4$ & $-174.2$ & $-159.3$ & $-157.7$ & $-157.7$ & $-157.7$ & $-157.7$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-3pt
+\begin{itemize}\itemsep4pt
+  \item Every round raises the likelihood (Week 3). Stop when nothing moves: here after about
+        ten rounds.
+  \item The end point is the maximum likelihood estimate, reached by counting, with no
+        derivatives.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Do Two Types Fit?}
+The same logic as every test of fit today: compare what the model implies with what is
+observed. Here the data are the counts of the 16 patterns \srcp{figs/w14\_lca.R}.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+countries with & observed & two types imply & one type implies \\
+\midrule
+four high ratings & 16 & 15.9 & 2.4 \\
+no high rating & 26 & 26.1 & 8.2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep5pt
+  \item One type means unrelated ratings: it misses badly.
+  \item Two types: 16 patterns give 15 free shares; 9 unknowns; $15 - 9 = 6$ degrees of freedom.
+        The chi-square test of fit is 6.0, $p = 0.43$: \textbf{not rejected}.
+  \item With only 75 countries the test cannot detect small gaps.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{How Many Types?}
+The number of types is not estimated: fit the model for each number and compare
+\srcp{figs/w14\_lca.R; 20 random starts each}.
+\begin{center}\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+types & unknowns & $\log L$ & chi-square & degrees of freedom & BIC \\
+\midrule
+1 & 4 & $-203.4$ & 141.8 & 11 & 424.0 \\
+2 & 9 & $-157.7$ & 6.0 & 6 & \textbf{354.3} \\
+3 & 14 & $-155.4$ & 0.7 & 1 & 371.2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep4pt
+  \item One type is rejected. Two fit. A third raises the likelihood by 2.3 for five more
+        unknowns: BIC (Week 3) picks two.
+  \item With four yes/no indicators the data hold only 15 numbers. Three types use 14 of them:
+        more types need more indicators.
+  \item In practice the choice also weighs whether each type can be read, and whether any is too
+        small to trust (the third type here is 15\% of 75 countries).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Bonikowski and DiMaggio (2016)}
+\textbf{The question.} Is there one American nationalism, stronger in some people than in
+others, or are there different kinds?
+\par\vskip3pt
+\textbf{The data.} The 2004 General Social Survey, 1,077 respondents, 23 questions: closeness to
+America, what makes someone ``truly American'', pride, and whether America is better than others.
+\par\vskip3pt
+\textbf{The method.} Latent class analysis on the 23 answers. Four classes fit best:
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcl@{}}
+\toprule
+class & share & profile \\
+\midrule
+restrictive & 38\% & moderate pride, a narrow definition of ``truly American'' \\
+ardent & 24\% & high on everything \\
+creedal & 22\% & high pride, an inclusive definition \\
+disengaged & 17\% & low on everything \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt
+  \item A single scale from weak to strong would have missed it: the restrictive and the creedal
+        differ in kind, not in amount.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{EM: Where It Is Used, and What to Watch}
+\begin{itemize}\itemsep6pt
+  \item \textbf{The same two steps work whenever a piece of the data is missing}: fill it in by
+        its expected value given the current estimates, re-estimate as if the data were complete,
+        repeat. Latent classes, factor models and structural equation models with latent
+        variables, mixtures, item nonresponse, the random effects of Week 4.
+  \item \textbf{Starting values.} EM climbs to the nearest peak of the likelihood, which need not
+        be the highest. Run it from several random starts and keep the best. Here ten random
+        starts end at the same answer.
+  \item \textbf{The labels are arbitrary}: ``type 1'' and ``type 2'' can swap. The number of types
+        is chosen by fit and BIC (Week 3).
+  \item \textbf{Fit is not existence.} Two types reproduce the counts. So could a continuous
+        trait. The types summarize how answers go together.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Treatments Over Time]{Marginal Structural Models}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+%% the two-period DAG; #1 = extra drawing commands (highlights)
+\newcommand{\msmdag}[1]{%
+\begin{tikzpicture}[dag]
+  \node (A1) at (0cm,0cm) {$D_1$};
+  \node (L) at (1.6cm,0cm) {$L$};
+  \node (A2) at (3.2cm,0cm) {$D_2$};
+  \node (Y) at (4.8cm,0cm) {$Y$};
+  \node[unobs] (U) at (3.2cm,1.55cm) {$U$};
+  \draw[arr] (A1) -- (L); \draw[arr] (L) -- (A2); \draw[arr] (A2) -- (Y);
+  \draw[arr] (A1) to[bend right=34] (A2);
+  \draw[arr] (A1) to[bend right=48] (Y);
+  \draw[arr] (L) to[bend left=34] (Y);
+  \draw[uarr] (U) -- (L); \draw[uarr] (U) -- (Y);
+  #1
+\end{tikzpicture}}
+\tikzset{hot/.style={->,accent,line width=2pt}}
+
+\begin{frame}{Treatments That Unfold Over Time}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\msmdag{}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+A child can live in a poor neighborhood in childhood ($D_1$), in adolescence ($D_2$), both, or
+neither. In between, family income $L$ changes. $Y$: the child's test score at the end.
+\begin{itemize}\itemsep2pt
+  \item $L$ is a \textbf{confounder} of $D_2$: income decides where the family lives next, and
+        affects the test score.
+  \item $L$ is also a \textbf{consequence} of $D_1$: a poor neighborhood lowers parents' earnings.
+  \item $U$: family traits nobody measured. They affect income and the test score.
+\end{itemize}
+\end{column}
+\end{columns}
+\begin{itemize}\itemsep2pt
+  \item The same structure: poverty spells and health, marriage and wages (Week 10).
+  \item Week 5: control for confounders; do not control for what the treatment causes. Here $L$ is both.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Target: the Effect of a Whole History}
+$Y_i(d_1, d_2)$: child $i$'s test score if the neighborhood history were set to $(d_1, d_2)$.
+\begin{itemize}\itemsep5pt
+  \item \textbf{Effect of $D_1$}: $E[Y(1, d_2) - Y(0, d_2)]$, everything a poor neighborhood in
+        childhood does, including what it does by lowering the family's later income.
+  \item \textbf{Effect of $D_2$}: $E[Y(d_1, 1) - Y(d_1, 0)]$.
+\end{itemize}
+\vskip4pt
+To see what each method recovers, a simulation where the truth is known \srcp{figs/w14\_msm.R}:
+\begin{itemize}\itemsep5pt
+  \item $D_1$ is a coin flip. It lowers the score by 2 directly. It also raises the share of
+        low-income families from 30\% to 50\%, and low income costs 5 points: $5 \times 0.2 = 1$
+        more. \textbf{True effect of $D_1$: $-3$.}
+  \item Low-income families are far more likely to live in a poor neighborhood in adolescence.
+        \textbf{True effect of $D_2$: $-2$.}
+  \item $U$ lowers income and lowers the score. It is not in the data.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Leaving Income Out: Confounding}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\msmdag{\draw[hot] (L) -- (A2); \draw[hot] (L) to[bend left=34] (Y);
+        \draw[hot] (U) -- (L); \draw[hot] (U) -- (Y);}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+Regress $Y$ on $D_1$ and $D_2$ only.
+\begin{itemize}\itemsep4pt
+  \item Two back-door paths into $D_2$ are open (orange):
+        $D_2 \leftarrow L \to Y$ and $D_2 \leftarrow L \leftarrow U \to Y$.
+  \item Low-income families end up in poor neighborhoods, and their children would score lower
+        wherever they lived.
+\end{itemize}
+\end{column}
+\end{columns}
 \vskip6pt
-\begin{alertblock}{The ordering is the lesson}
-Most quantitative papers start at 3 and never articulate 1 or 2. Most
-methodological disputes are really disagreements at 1 or 2 being conducted as if
-they were about 3.
+\begin{itemize}\itemsep4pt
+  \item The coefficient of $D_2$ mixes the neighborhood's effect with the effect of income.
+  \item Week 5's answer: close the back door by controlling for $L$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Controlling for Income, Problem 1: Over-Control}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\msmdag{\draw[hot] (A1) -- (L); \draw[hot] (L) to[bend left=34] (Y);}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+Regress $Y$ on $D_1$, $D_2$, and $L$.
+\begin{itemize}\itemsep4pt
+  \item $D_2$ is repaired: with $L$ held fixed, both of its back doors are closed.
+  \item But $L$ sits on a causal path of $D_1$ (orange): $D_1 \to L \to Y$.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip6pt
+\begin{itemize}\itemsep4pt
+  \item Holding income fixed compares children whose families ended up with the \emph{same} income.
+        The part of $D_1$'s effect that works by lowering income is removed.
+  \item What is left is the direct effect of $D_1$, not the effect of $D_1$ (Week 5: do not control
+        for a mediator).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Controlling for Income, Problem 2: A Collider}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\msmdag{\draw[hot] (A1) -- (L); \draw[hot] (U) -- (L); \draw[hot] (U) -- (Y);
+        \draw[<->,accent,dashed,line width=1.2pt] (A1) to[bend left=30] (U);}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+Two arrows point into $L$: from $D_1$ and from $U$. $L$ is a \textbf{collider} (Week 5).
+\begin{itemize}\itemsep4pt
+  \item Holding a collider fixed makes its two causes related (dashed).
+  \item A back door opens that did not exist: $D_1 \to L \leftarrow U \to Y$.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip6pt
+\begin{itemize}\itemsep4pt
+  \item Take two low-income families. One lived in a poor neighborhood: that explains its low
+        income. The other did not: something else must explain it, more often the unmeasured
+        disadvantage $U$.
+  \item So among families with the same income, those from poor neighborhoods have \emph{less}
+        unmeasured disadvantage, and $D_1$ looks less harmful than it is.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What the Two Regressions Give}
+The simulation, in a very large sample \srcp{figs/w14\_msm.R}:
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & coefficient of $D_1$ & coefficient of $D_2$ \\
+\midrule
+truth & $-3.0$ & $-2.0$ \\
+regression of $Y$ on $D_1$, $D_2$ & $-2.2$ & \alert{$-5.6$} \\
+regression of $Y$ on $D_1$, $D_2$, $L$ & \alert{$-1.7$} & $-2.0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep5pt
+  \item Without $L$: $D_2$ is confounded, almost three times the truth.
+  \item With $L$: $D_2$ is right. $D_1$ is wrong twice: over-control takes it from $-3$ to
+        $-2$, and the collider from $-2$ to $-1.7$. The collider bias needs no unmeasured cause of
+        the treatment ($D_1$ was a coin flip), only an unmeasured cause of income.
+  \item \textbf{No set of controls gets both right.} $L$ must be adjusted for, and must not be held
+        fixed.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Fix: Weight Instead of Control}
+\begin{columns}[c]
+\begin{column}{0.44\linewidth}
+\begin{center}
+\begin{tikzpicture}[dag]
+  \node (A1) at (0cm,0cm) {$D_1$};
+  \node (L) at (1.6cm,0cm) {$L$};
+  \node (A2) at (3.2cm,0cm) {$D_2$};
+  \node (Y) at (4.8cm,0cm) {$Y$};
+  \node[unobs] (U) at (3.2cm,1.55cm) {$U$};
+  \draw[arr] (A1) -- (L); \draw[arr] (A2) -- (Y);
+  \draw[arr] (A1) to[bend right=48] (Y);
+  \draw[arr] (L) to[bend left=34] (Y);
+  \draw[uarr] (U) -- (L); \draw[uarr] (U) -- (Y);
+\end{tikzpicture}
+
+{\footnotesize the weighted sample: no arrow into $D_2$}
+\end{center}
+\end{column}
+\begin{column}{0.54\linewidth}
+Week 6's inverse probability weight, applied to the second treatment
+\srcp{Robins, Hern\'an, and Brumback 2000}:
+\[ w_i = \frac{1}{\Pr(D_2 = d_{2i} \mid D_{1i}, L_i)} \]
+One over the probability of the neighborhood the child had, given the past (a logit).
+\end{column}
+\end{columns}
+\vskip4pt
+\begin{itemize}\itemsep3pt
+  \item 80\% of low-income families live in a poor neighborhood. The 20\% who do not count
+        $1 / 0.2 = 5$ times each, the others $1.25$ times: after weighting, half and half.
+  \item Nothing in the past predicts $D_2$ any more: the arrows $L \to D_2$ and $D_1 \to D_2$
+        are gone, and both back doors are closed.
+  \item $L$ is never held fixed: $D_1 \to L \to Y$ stays in $D_1$'s effect, the collider stays closed.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Marginal Structural Model}
+A model for the potential-outcome means, fitted by \emph{weighted} regression of $Y$ on the
+treatments, without $L$:
+\[ E[Y(d_1, d_2)] = \beta_0 + \beta_1 d_1 + \beta_2 d_2 . \]
+\vskip-8pt
+\begin{center}\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & coefficient of $D_1$ & coefficient of $D_2$ \\
+\midrule
+truth & $-3.0$ & $-2.0$ \\
+regression of $Y$ on $D_1$, $D_2$ & $-2.2$ & $-5.6$ \\
+regression of $Y$ on $D_1$, $D_2$, $L$ & $-1.7$ & $-2.0$ \\
+\textbf{weighted} regression of $Y$ on $D_1$, $D_2$ & $-3.0$ & $-2.0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Structural}: a model for potential outcomes. \textbf{Marginal}: for the whole
+        population, not within levels of $L$.
+  \item $L$ is used only to build the weights. It never enters the outcome regression.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Is This Only Week 6's Weighting Under a New Name?}
+\textbf{With one period, yes.} $E[Y(d)] = \beta_0 + \beta_1 d$, fitted with weights
+$1 / \Pr(D = d \mid X)$, is Week 6's weighting estimator of the ATE.
+\par\vskip3pt
+With a treatment over time, the name covers two separate things:
+\begin{itemize}\itemsep4pt
+  \item \textbf{The weights} are the estimator: Week 6's weight, once per period, multiplied.
+        New: the product, the stabilizing, an assumption that must hold in every period.
+  \item \textbf{The marginal structural model} is the target: a model for how the mean potential
+        outcome depends on the \emph{whole history}. Week 6 needed none: a 0/1 treatment has two
+        means. Sixteen yearly quintiles have $5^{16}$ histories. Nobody can estimate a mean for
+        each, so histories are summarized: a coefficient per period, or the average exposure.
+\end{itemize}
+\begin{itemize}\itemsep3pt
+  \item That summary is a modeling choice. It can be wrong even when the weights are right.
+  \item Weighting is one way to fit the model. Week 6's outcome modeling, period by
+        period (the g-formula), is another \srcp{Hern\'an and Robins 2020}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Many Periods: One Weight per Period, Multiplied}
+Periods $k = 1, \dots, K$. Write $\bar D_{k-1}$ for the treatments before period $k$ and $\bar L_k$
+for the covariates up to period $k$. The weight is the product of the period weights:
+\[ w_i = \prod_{k=1}^{K} \frac{1}{\Pr(D_k = d_{ki} \mid \bar D_{k-1}, \bar L_k)} . \]
+\vskip-4pt
+What must hold, period by period:
+\begin{itemize}\itemsep4pt
+  \item \textbf{Sequential ignorability}: given the measured past, each period's treatment is as
+        good as random. $U$ may affect $L$ and $Y$, but not any $D_k$ directly.
+  \item \textbf{Overlap}: every history has some chance of each treatment (Week 6).
+  \item \textbf{A correct model for the treatment} in each period.
+\end{itemize}
+\vskip4pt
+The practical problem: a product of many numbers like 5 is enormous. A handful of children with
+unusual histories carry the whole estimate. The remedy is on the next two slides.
+\end{frame}
+
+\begin{frame}{Stabilized Weights}
+Replace the 1 in the numerator by the probability of the same treatment given the
+\emph{treatment history only}:
+\[ sw_i = \prod_{k=1}^{K}
+   \frac{\Pr(D_k = d_{ki} \mid \bar D_{k-1})}{\Pr(D_k = d_{ki} \mid \bar D_{k-1}, \bar L_k)} . \]
+\begin{itemize}\itemsep5pt
+  \item \textbf{Numerator}: how common the child's neighborhood is among all children with the
+        same neighborhood history.
+  \item \textbf{Denominator}: how common it is among those who also share the family's income
+        history.
+  \item $sw_i > 1$: the family lives where families \emph{of its income} rarely live.
+        $sw_i < 1$: where they usually live.
+  \item If income did not affect where families live, numerator $=$ denominator, and every weight
+        is 1: the unweighted regression.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why the Numerator Can Take This Form}
+\begin{columns}[c]
+\begin{column}{0.42\linewidth}
+\begin{center}
+\begin{tikzpicture}[dag,scale=0.9,every node/.append style={transform shape}]
+  \node (A1) at (0cm,0cm) {$D_1$};
+  \node (L) at (1.6cm,0cm) {$L$};
+  \node (A2) at (3.2cm,0cm) {$D_2$};
+  \node (Y) at (4.8cm,0cm) {$Y$};
+  \node[unobs] (U) at (3.2cm,1.45cm) {$U$};
+  \draw[arr] (A1) -- (L); \draw[arr] (A2) -- (Y);
+  \draw[hot] (A1) to[bend right=34] (A2);
+  \draw[arr] (A1) to[bend right=48] (Y);
+  \draw[arr] (L) to[bend left=34] (Y);
+  \draw[uarr] (U) -- (L); \draw[uarr] (U) -- (Y);
+\end{tikzpicture}
+
+{\footnotesize the sample with stabilized weights}
+\end{center}
+\end{column}
+\begin{column}{0.56\linewidth}
+\begin{itemize}\itemsep5pt
+  \item The \textbf{denominator} removes $L \to D_2$, as before.
+  \item The \textbf{numerator}, a function of $D_1$ only, puts $D_1 \to D_2$ back (orange).
+  \item \textbf{No harm}: $D_1$ is in the outcome regression, which closes
+        $D_2 \leftarrow D_1 \to Y$.
+\end{itemize}
+\end{column}
+\end{columns}
+\vskip8pt
+\begin{itemize}\itemsep6pt
+  \item \textbf{The gain}: the weight keeps only what $L$ adds. If 95\% of families stay put
+        whatever their income, a family that moves has plain weight $1 / 0.05 = 20$ and
+        stabilized weight $0.05 / 0.05 = 1$.
+  \item \textbf{The rule}: the numerator may use only what is in the outcome regression. $L$ is
+        not, and must not be.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{In the Literature: Wodtke, Harding, and Elwert (2011)}
+\textbf{The question.} Does growing up in a disadvantaged neighborhood lower high school
+graduation? Earlier studies measured the neighborhood once, and controlled for family income and
+employment.
+\par\vskip3pt
+\textbf{The data.} Panel Study of Income Dynamics: 834 Black and 1,259 non-Black children, followed
+every year from age 1 to 17. Outcome: high school graduation by age 20.
+\par\vskip2pt
+\textbf{The treatment} $D_k$, every year from age 2 to 17: the census tract's disadvantage, in
+national quintiles, 5 the most disadvantaged.
+\par\vskip3pt
+\textbf{Time-varying confounders} $L_k$, every year: the household head's marital status,
+employment, and work hours; family income, family size, homeownership, welfare receipt.
+\begin{itemize}\itemsep2pt
+  \item Families move when a job is lost or a marriage ends: $L_k \to D_k$. The neighborhood
+        shapes the parents' jobs and income in turn: $D_{k-1} \to L_k$.
+  \item The two-period DAG, sixteen times over.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Wodtke et al.: the Method}
+\textbf{Weights.} For each child, sixteen yearly ratios multiplied, with the covariates fixed at
+birth $L_0$ in both numerator and denominator:
+\[ sw_i = \prod_{k=1}^{16}
+   \frac{\Pr(D_k = d_{ki} \mid \bar D_{k-1}, L_0)}{\Pr(D_k = d_{ki} \mid \bar D_{k-1}, \bar L_k)} . \]
+\vskip-4pt
+\begin{itemize}\itemsep3pt
+  \item Each probability: an ordered logit (Week 4) of this year's quintile.
+  \item The weights average 1.04 and 1.00, with 99th percentiles of 4.8 and 3.0
+        \srcp{their Table 4}.
+\end{itemize}
+\textbf{The marginal structural model.} $5^{16}$ possible histories
+$\bar d = (d_1, \dots, d_{16})$; a history matters through its average:
+\[ \text{logit} \Pr\big(Y(\bar d) = 1\big) = \theta_0 + \theta_1 \cdot \frac{1}{16} \sum_{k=1}^{16} d_k . \]
+\vskip-4pt
+\begin{itemize}\itemsep3pt
+  \item Lowercase $d_k$: a history that could be set, lived or not. Fitted as a weighted logit of
+        graduation on each child's observed average quintile, by race.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Wodtke et al.: Results}
+\begin{columns}[c]
+\begin{column}{0.36\linewidth}
+\begin{center}
+\includegraphics[width=0.84\linewidth]{figs/wodtke2011_fig3.jpg}
+
+\srcp{their Figure 3}
+\end{center}
+\end{column}
+\begin{column}{0.62\linewidth}
+One quintile more disadvantage, averaged over childhood: effect on the log-odds of graduating
+\srcp{their Table 5}.
+\vskip-4pt
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & Black & non-Black \\
+\midrule
+logit, no controls & $-0.70$ (0.17) & $-0.58$ (0.11) \\
+logit, time-varying controls & $-0.42$ (0.20) & $-0.21$ (0.13) \\
+weights (MSM) & $-0.53$ (0.19) & $-0.27$ (0.13) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{column}
+\end{columns}
+\begin{itemize}\itemsep2pt
+  \item The simulation's order: no controls, too large; controls, part of the effect is
+        controlled away; the weights land in between.
+  \item Always in the most disadvantaged quintile instead of the least: graduation falls from
+        96\% to 76\% (Black), from 95\% to 87\% (non-Black). Untestable: sequential ignorability.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Research Practice]{How Research Gets Done}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}\sectionpage\end{frame}
+
+\begin{frame}{Starting From a Question: Control Over Childbearing}
+\textbf{The question.} What happens to women's lives when they gain, or lose, control over
+whether and when to have a child? Women who used the pill or had an abortion differ from other
+women in much else, and so do places with easy and with difficult access. Quantitative
+scholars seeking causal inference looked for shocks to access:
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.02}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{4.7cm}>{\raggedright\arraybackslash}p{5.8cm}@{}}
+\toprule
+study & the shock & finding \\
+\midrule
+Goldin and Katz (2002) & states lowered the age for the pill without parental consent, at different
+  dates, 1969--74 & college women married later; the timing matches women's entry into law and
+  medicine \\
+Myers (2017) & the same laws, recoded, and access to legal abortion & abortion access, not
+  the pill, delayed marriage and first births \\
+Fischer, Royer, White (2018) & Texas laws of 2011--13 closed clinics & counties left with no
+  provider within 50 miles: abortions $-20.5$\%, births $+2.6$\% \\
+Dench et al.\ (2024) & state bans after \textit{Dobbs} & births $+2.3$\% in ban
+  states, first half of 2023 (synthetic DiD, Week 11) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vskip-2pt
+{\small The question came first. Each shock was found because someone was looking for it.}
+\end{frame}
+
+\begin{frame}{Starting From a Puzzle in Reading}
+A question often arrives as a doubt while reading: a control that looks like a mediator, a
+result at odds with another paper.
+\begin{itemize}\itemsep3pt
+  \item \textbf{Myers (2017)} reread Goldin and Katz. Studies had coded the state pill laws
+        differently in 35 of 51 jurisdictions. Recoded, the pill's effect on early marriage
+        disappears; legal abortion is what delayed marriage and births.
+  \item \textbf{Ludwig and Br\"uderl (2018)}, Week 10: does marriage raise men's wages, or do men on
+        steeper wage paths marry? With each man's own wage path, almost no premium is left.
+\end{itemize}
+\textbf{This has never been easier.}
+\begin{itemize}\itemsep3pt
+  \item With public data and code, an AI assistant can reproduce a paper's main table and change
+        the one choice you doubt in an afternoon.
+  \item What stays scarce is the hunch: reading closely enough to notice what is wrong.
+  \item A failed replication is not yet a paper. The contribution is what is true instead.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A Question Can Be Descriptive}
+A natural experiment answers a narrow ``what if''. Someone has to establish what is there, and
+for whom.
+\begin{itemize}\itemsep2pt
+  \item \textbf{Chetty, Hendren, Kline, and Saez (2014).} Tax records of 40 million children. A
+        child from the bottom fifth reaches the top fifth 4.4\% of the time in Charlotte and
+        12.9\% in San Jose.
+  \item \textbf{Chetty, Grusky, et al.\ (2017).} 90\% of children born in 1940 earned more than
+        their parents; of those born in the 1980s, 50\%.
+  \item \textbf{Nilforoshan et al.\ (2023)}, \textit{Nature}. Mobile phones of 9.6 million people:
+        whom people of different incomes cross paths with. Large cities are more segregated than
+        small ones, not less.
+  \item \textbf{Pettit and Western (2004).} Of men born 1965--69, 3\% of white and 20\% of Black men
+        had been to prison by their early thirties.
+\end{itemize}
+\vskip2pt
+Description makes the causal questions: Pettit and Western's numbers are why Pager's (2003)
+audit of criminal records and hiring had to be done.
+\end{frame}
+
+\begin{frame}{Starting From a Method: Dependency Parsing}
+\textbf{The method, from linguistics.} A dependency parser attaches every word of a sentence to
+the word it depends on, and labels the link.
+\begin{center}
+\begin{tikzpicture}[x=1.9cm, every node/.style={font=\small}]
+  \node (w1) at (0,0) {The};      \node (w2) at (1,0) {officer};
+  \node (w3) at (2,0) {arrested}; \node (w4) at (3,0) {the}; \node (w5) at (4,0) {man};
+  \draw[-{Stealth}, thick, dukeblue] (w3.north) to[out=150, in=30]
+        node[above, font=\scriptsize] {subject} (w2.north);
+  \draw[-{Stealth}, thick, dukeblue] (w3.north) to[out=30, in=150]
+        node[above, font=\scriptsize] {object} (w5.north);
+\end{tikzpicture}
+\end{center}
+\vskip-8pt
+Word counts read ``the man arrested the officer'' as the same text.
+\begin{itemize}\itemsep2pt
+  \item \textbf{Stuhler (2022)}, \textit{Sociological Methods \& Research}: rules that turn a
+        parser's output into what an actor does, what is done to it, and how it is described.
+  \item \textbf{Stuhler (2024)}, \textit{PNAS}: 87,531 works of fiction, 1850--2010. In
+        relations between a woman and a man, the woman is more often the one acted upon. The
+        gap narrowed after the 19th century but remains, and is wider for male authors.
+  \item The parser came first. It mattered because it was tied to an old question: who is
+        shown as acting.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Starting From New Data: Credit Records}
+Credit bureaus record the loans, cards, and missed payments of most American adults. Surveys never
+measured debt this well.
+\begin{itemize}\itemsep4pt
+  \item \textbf{Rhodes et al.\ (2026)}, \textit{ASR}. A large national sample of credit records,
+        linked to state safety-net policy (two-way fixed effects, Week 10). A more generous
+        safety net matters less for \emph{whether} low-income households borrow than for
+        \emph{what} they borrow: fewer payday loans, more mainstream credit cards.
+  \item \textbf{Miller, Wherry, and Foster (2023)} linked the women of the Turnaway Study, some
+        of whom were just past a clinic's gestational limit and turned away, to their credit
+        reports. Being denied an abortion raised past-due debt, bankruptcies, and evictions.
+        The abortion question again, answered with data nobody had used for it.
+  \item The risk of starting from data: a paper about what the records happen to contain. Both
+        papers work because a question was put to the data.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{When the Method or the Data Come First}
+\begin{itemize}\itemsep6pt
+  \item \textbf{It works when the tool unlocks a question people already had.} Who acts and who
+        is acted upon in fiction was argued for decades from close readings of a few novels; a
+        parser could count it in 87,531. What a lost safety net does to household debt could not be seen in
+        surveys; credit records show it.
+  \item \textbf{It fails when the question is chosen because the tool fits.} The paper answers
+        something nobody asked, and its interest ends when the tool stops being new.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Only the Question Defines You}
+\begin{itemize}\itemsep6pt
+  \item \textbf{Methods do not last.} A new method is a default option in software within a few
+        years. Whoever is known for a tool competes with every cohort trained on the next one,
+        and starts over when the tool becomes ordinary.
+  \item \textbf{Data do not last.} Exclusive data become public, or are replaced by better data.
+        Access is not a contribution.
+  \item \textbf{A question lasts.} Pettit and Western kept working on incarceration, Desmond on
+        eviction, Myers on access to abortion. The methods changed from paper to paper; the
+        question did not.
+  \item \textbf{The question is also where designs and data come from.} People find a shock, or
+        think of linking two files, because they have lived with one question long enough to
+        know its institutions.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Keeping One Identity}
+\begin{itemize}\itemsep5pt
+  \item \textbf{A test.} Say what you study in one sentence that names no method and no dataset.
+        ``I use machine learning on administrative data'' fails. ``I study why families lose
+        their housing'' passes.
+  \item \textbf{New data and new methods keep arriving.} Choose among them: take up the ones
+        that fit your identity.
+  \item \textbf{Choose a question large enough for ten years} and specific enough for a first
+        paper. ``Inequality'' is a field. ``How eviction shapes where poor families live'' is a
+        question.
+\end{itemize}
+\vskip2pt
+\begin{alertblock}{For the years ahead}
+This course gave you methods. They are what you use. The question is who you are as a
+researcher.
 \end{alertblock}
 \end{frame}
 
-\begin{frame}{One Idea, Recurring}
-\begin{center}
-\begin{tikzpicture}[scale=0.9,>=Stealth,thick,font=\small]
-  \node[draw=dukeblue,rounded corners,inner sep=5pt,fill=softgray] (a) at (0,0)
-    {\begin{tabular}{c}\textbf{FWL} (Wk 1)\\ residualize $D$ on $W$\end{tabular}};
-  \node[draw=dukeblue,rounded corners,inner sep=5pt,fill=softgray] (b) at (5.2,0)
-    {\begin{tabular}{c}\textbf{Weighting / AIPW} (Wk 6)\\ residualize, then reweight\end{tabular}};
-  \node[draw=dukeblue,rounded corners,inner sep=5pt,fill=softgray] (c) at (10.4,0)
-    {\begin{tabular}{c}\textbf{Flexible nuisances} (Wk 13)\\ the same idea, fewer\\ functional-form claims\end{tabular}};
-  \draw[->,accent,very thick] (a)--(b); \draw[->,accent,very thick] (b)--(c);
-\end{tikzpicture}
-\end{center}
-\vskip4pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Partialling out} is the through-line. Remove the part of the
-        treatment explained by the controls; use what is left.
-  \item Its virtue is \emph{insensitivity}: small errors in how you model the
-        controls do not contaminate the parameter you care about.
-  \item Everything else, matching, weighting, IV, RD, DID, synthetic control
-, is a different answer to the question \emph{where does the
-        counterfactual come from?}
-\end{itemize}
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Every Design, in One Table\core}
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{llll}
-\toprule
-Design & Key assumption & Estimand & Main threat \\
-\midrule
-Regression / matching / IPW & ignorability given $X$ & ATE, ATT, ATO & unmeasured confounding \\
-AIPW / DML & ignorability $+$ rates & ATE, $\tau(x)$ & same, ML does not identify \\
-IV / 2SLS & relevance, independence, exclusion, monotonicity & LATE (compliers) & weak or invalid instrument \\
-RD (sharp) & continuity at $c$ & effect at the cutoff & manipulation; bandwidth \\
-RD (fuzzy) & $+$ first-stage jump, monotonicity, exclusion & compliers at the cutoff & weak first stage \\
-DID (2$\times$2) & parallel trends, no anticipation & ATT & differential trends \\
-DID, staggered & cohort-wise parallel trends vs.\ not-yet-treated, no anticipation & ATT$(g,t)$, then aggregate & TWFE contamination \\
-Synthetic control & factor model, long pre-period & ATT for one unit & poor pre-fit; interpolation \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip5pt
-\begin{itemize}\itemsep2pt
-  \item \alert{No row is safer than the others in the abstract.} Credibility is a
-        property of the application, not of the method.
-  \item Notice how often the estimand is chosen \emph{by the design} rather than
-        by the researcher. Say so when it is.
-\end{itemize}
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Inference, in One Table\core}
-\begin{center}\footnotesize
-\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{lll}
-\toprule
-Situation & Use & Week \\
-\midrule
-Default & HC2 or HC3 robust & 2 \\
-Treatment assigned in groups & cluster on the assignment level & 2 \\
-Fewer than $\sim$40 clusters & CR2 $+$ Satterthwaite, or wild cluster bootstrap & 2 \\
-Nonlinear quantity of interest & delta method, simulation, or bootstrap & 2, 4 \\
-Nuisance function estimated & bootstrap the whole pipeline, or an influence function & 6 \\
-Weak instrument & Anderson--Rubin & 7 \\
-One treated unit & permutation / placebo inference & 11 \\
-ML nuisances & orthogonal score $+$ cross-fitting & 13 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\vskip5pt
-\alert{The recurring error is a standard error that ignores a step in the
-procedure}, estimated weights, a selected model, a matched design, a chosen
-bandwidth. When in doubt, bootstrap the whole pipeline, resampling in a way that
-\emph{reproduces the sampling or assignment structure} (clusters as clusters,
-panels as panels). But the bootstrap is not universal: it is \emph{invalid} for
-nearest-neighbour matching (Week 6), and unreliable more generally for
-non-smooth, boundary, post-selection, and weakly identified procedures.
-\end{frame}
-
-\begin{frame}{A Decision Guide\core}
-\begin{enumerate}\itemsep3pt
-  \item Write the theoretical estimand in one sentence: unit-specific quantity,
-        target population.
-  \item Draw the DAG. Mark what is unobserved.
-  \item Ask: \emph{is there any set I can measure that closes the back doors?}
-  \begin{itemize}\itemsep1pt
-    \item Yes $\to$ selection on observables. Check overlap, use a doubly robust
-          estimator, report a sensitivity analysis (Week 6).
-    \item No $\to$ look for design-based variation: an instrument (7), a threshold
-          (9), a policy change over time (10), a single treated unit with a long
-          pre-period (11).
-  \end{itemize}
-  \item Check whether the design's estimand is the one you wrote in step 1. If
-        not, say so explicitly rather than quietly redefining the question.
-  \item Choose inference to match the design.
-  \item If $W$ is high-dimensional or the functional form is a guess, use an
-        orthogonal score with cross-fitting (13).
-  \item Report what would change your mind.
-\end{enumerate}
-\end{frame}
-
-\begin{frame}{Things That Are Never a Solution\core}
-\begin{itemize}\itemsep3pt
-  \item \alert{Adding more controls} without a DAG. Bad controls exist, and
-        ``kitchen sink'' amplifies bias as often as it reduces it (Week 5).
-  \item \alert{Robust standard errors} for a problem of bias (Week 2).
-  \item \alert{A high $R^2$}, or a high AUC, as evidence of causality (Weeks 1,
-        12).
-  \item \alert{A non-significant specification test}, balance $t$-tests,
-        Sargan, pre-trend tests, as evidence that an assumption holds. Low
-        power is not confirmation (Weeks 6, 7, 10).
-  \item \alert{Machine learning} for an identification problem (Week 13).
-  \item \alert{Reporting whichever specification worked.} Pre-commit, then show
-        robustness.
-\end{itemize}
-\vskip3pt
-Each of these is a real move made in published sociology, and you now have the
-vocabulary to say precisely why it fails.
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section[Final Exam]{The Final Exam}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}\sectionpage\end{frame}
 
-\begin{frame}{What the Exam Covers}
+\begin{frame}{The Final Exam: Format and Rules}
 Cumulative, but \alert{weighted towards Weeks 9--13}: the midterm already
 examined Weeks 1--7, and this is the only assessment that reaches the second
 half of the course.
-\vskip4pt
-\begin{itemize}\itemsep3pt
-  \item \textbf{Everything developed in scalar form is examinable.} Frames
-        marked \core{} are the essential spine, study those first. Frames
-        marked \adv{} are not examinable: matrix derivations, projection
-        geometry, asymptotic arguments.
-  \item For every design, you should be able to state \emph{what it assumes},
-        \emph{what it estimates}, and \emph{how it fails}. That is the table from
-        earlier today, and it is the spine of the exam.
-  \item Expect to read a short description of a study and say which design it is,
-        what its estimand is, and what you would need to believe.
-  \item No code. You may be asked to interpret \texttt{R} output.
+\vskip6pt
+\begin{itemize}\itemsep5pt
+  \item \textbf{When.} Thursday, December 3, 9:05--11:35AM. No lab this Thursday (Thanksgiving
+        recess).
+  \item \textbf{Format.} Open book and open note, but timed.
+  \item \textbf{What you may bring.} Slides and notes, printed or on a laptop (a laptop saves
+        paper). No wifi and no searching during the exam.
+  \item \textbf{Weight.} 35\%, or 25\% if you elected the project option; the 6--10 page project
+        memo and replication code are then due Friday, December 11.
+  \item \textbf{Problem Set 5.} Distributed Tuesday, November 24; also due Friday, December 11.
+        Lighter than the earlier sets.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Format and Rules}
-\begin{block}{Logistics}
-Date and time \textbf{to be determined}: we will poll the class and announce
-well in advance. Open book and open note, but \textbf{timed}. The exam counts
-35\%, or 25\% if you elected the \textbf{project option}, in which case your
-6--10 page project memo and replication code are due Friday, December 11.
-\end{block}
-\vskip5pt
-\begin{alertblock}{No AI}
-Unlike the problem sets, no AI assistance of any kind. This is deliberate. It is
-the one place in the course where what is being assessed is unambiguously
-\emph{your} understanding rather than what a tool can produce for you.
-\end{alertblock}
-\vskip5pt
-Bring the slides and your own notes. Notes you wrote yourself are far more useful
-under time pressure than a printout you have never read.
-\end{frame}
-
-\begin{frame}{How to Prepare}
-\begin{enumerate}\itemsep4pt
-  \item \textbf{Work the blue stars.} Go deck by deck through the frames marked
-        \core{} and check you can explain and use each one without notes. If you
-        can, you are ready.
-  \item \textbf{Rebuild the four tables} from today: design, assumption, estimand,
-        threat; and the inference table. Write them from memory, then check.
-  \item \textbf{Re-derive the short results by hand}: the normal equations, the
-        scalar variance, omitted-variable bias, the Wald ratio, the $2\times2$
-        DID. None takes more than a few lines.
-  \item \textbf{Re-read your own problem sets}, especially anything you got wrong.
-        That is the highest-yield hour you can spend.
-\end{enumerate}
-\vskip5pt
-\alert{The exam rewards judgement, not recall.} If you can say why a design is
-the wrong one for a question, you understand it.
-\end{frame}
-
-\begin{frame}[allowframebreaks,t]{Where to Go Next}
-\begin{itemize}\itemsep3pt
-  \item \textbf{Depth on design}: Angrist and Pischke, \textit{Mostly Harmless
-        Econometrics}; Cunningham, \textit{Causal Inference: The Mixtape};
-        Huntington-Klein, \textit{The Effect}.
-  \item \textbf{Depth on potential outcomes}: Imbens and Rubin,
-        \textit{Causal Inference for Statistics, Social, and Biomedical Sciences};
-        Morgan and Winship.
-  \item \textbf{Depth on graphs}: Pearl, \textit{Causality}; Hern\'an and Robins,
-        \textit{Causal Inference: What If}.
-  \item \textbf{Depth on causal ML}: Chernozhukov et al., \textit{Applied Causal
-        Inference Powered by ML and AI}.
-  \item \textbf{In this department}: measurement and latent variables,
-        computational text analysis, network methods, demographic methods,
-        multilevel models, each of which assumes what you now know.
+\begin{frame}[t]{Where to Go Next}
+\small
+\begin{itemize}\itemsep2pt
+  \item \textbf{Research design.} Angrist and Pischke (2009), \textit{Mostly Harmless
+        Econometrics}; Cunningham (2021), \textit{Causal Inference: The Mixtape};
+        Huntington-Klein (2021), \textit{The Effect}.
+  \item \textbf{Potential outcomes.} Imbens and Rubin (2015), \textit{Causal Inference for
+        Statistics, Social, and Biomedical Sciences}; Morgan and Winship (2015),
+        \textit{Counterfactuals and Causal Inference}, 2nd ed.
+  \item \textbf{Causal graphs and treatments over time.} Pearl (2009), \textit{Causality},
+        2nd ed.; Hern\'an and Robins (2020), \textit{Causal Inference: What If}.
+  \item \textbf{Structural equations and latent classes.} Bollen (1989), \textit{Structural
+        Equations with Latent Variables}; Collins and Lanza (2010), \textit{Latent Class and
+        Latent Transition Analysis}.
+  \item \textbf{Causal machine learning.} Chernozhukov et al.\ (2024), \textit{Applied Causal Inference Powered by ML and AI}.
 \end{itemize}
 \vskip4pt
-\begin{alertblock}{The one thing to keep}
-Say what you are estimating, say what would have to be true, and say what would
-change your mind. Everything else is technique.
-\end{alertblock}
+\alert{The one thing to keep.} Say what you are estimating, say what would have to be true, and
+say what would change your mind. Everything else is technique.
+\end{frame}
+
+\begin{frame}{Course Evaluation}
+\begin{center}
+\includegraphics[height=0.62\textheight]{figs/duke_eval_qr.png}
+\par\vskip4pt
+\textbf{Duke Course Evaluations}\par
+\url{https://eval-duke.evaluationkit.com/}
+\end{center}
+\end{frame}
+
+\begin{frame}[allowframebreaks,t]{References}
+\footnotesize
+\begin{itemize}\itemsep2pt
+\item Blau, Peter M. and Otis Dudley Duncan. 1967. \textit{The American Occupational Structure}. New York: Wiley.
+\item Bollen, Kenneth A. 1989. \textit{Structural Equations with Latent Variables}. New York: Wiley.
+\item Bonikowski, Bart and Paul DiMaggio. 2016. ``Varieties of American Popular Nationalism.'' \textit{American Sociological Review} 81(5): 949--980.
+\item Dempster, A. P., N. M. Laird, and D. B. Rubin. 1977. ``Maximum Likelihood from Incomplete Data via the EM Algorithm.'' \textit{Journal of the Royal Statistical Society, Series B} 39(1): 1--38.
+\item Chetty, Raj, Nathaniel Hendren, Patrick Kline, and Emmanuel Saez. 2014. ``Where Is the Land of Opportunity? The Geography of Intergenerational Mobility in the United States.'' \textit{Quarterly Journal of Economics} 129(4): 1553--1623.
+\item Chetty, Raj, David Grusky, Maximilian Hell, Nathaniel Hendren, Robert Manduca, and Jimmy Narang. 2017. ``The Fading American Dream: Trends in Absolute Income Mobility Since 1940.'' \textit{Science} 356(6336): 398--406.
+\item Dench, Daniel, Mayra Pineda-Torres, and Caitlin Myers. 2024. ``The Effects of Post-Dobbs Abortion Bans on Fertility.'' \textit{Journal of Public Economics} 234: 105124.
+\item Desmond, Matthew. 2012. ``Eviction and the Reproduction of Urban Poverty.'' \textit{American Journal of Sociology} 118(1): 88--133.
+\item Fischer, Stefanie, Heather Royer, and Corey White. 2018. ``The Impacts of Reduced Access to Abortion and Family Planning Services on Abortions, Births, and Contraceptive Purchases.'' \textit{Journal of Public Economics} 167: 43--68.
+\item Goodman, Leo A. 1974. ``Exploratory Latent Structure Analysis Using Both Identifiable and Unidentifiable Models.'' \textit{Biometrika} 61(2): 215--231.
+\item Goldin, Claudia and Lawrence F. Katz. 2002. ``The Power of the Pill: Oral Contraceptives and Women's Career and Marriage Decisions.'' \textit{Journal of Political Economy} 110(4): 730--770.
+\item Hern\'an, Miguel A. and James M. Robins. 2020. \textit{Causal Inference: What If}. Boca Raton: Chapman \& Hall/CRC.
+\item Hu, Li-tze and Peter M. Bentler. 1999. ``Cutoff Criteria for Fit Indexes in Covariance Structure Analysis: Conventional Criteria versus New Alternatives.'' \textit{Structural Equation Modeling} 6(1): 1--55.
+\item Ludwig, Volker and Josef Br\"uderl. 2018. ``Is There a Male Marital Wage Premium? New Evidence from the United States.'' \textit{American Sociological Review} 83(4): 744--770.
+\item Miller, Sarah, Laura R. Wherry, and Diana Greene Foster. 2023. ``The Economic Consequences of Being Denied an Abortion.'' \textit{American Economic Journal: Economic Policy} 15(1): 394--437.
+\item Myers, Caitlin Knowles. 2017. ``The Power of Abortion Policy: Reexamining the Effects of Young Women's Access to Reproductive Control.'' \textit{Journal of Political Economy} 125(6): 2178--2224.
+\item Nilforoshan, Hamed, Wenli Looi, Emma Pierson, Blanca Villanueva, Nic Fishman, Yiling Chen, John Sholar, Beth Redbird, David Grusky, and Jure Leskovec. 2023. ``Human Mobility Networks Reveal Increased Segregation in Large Cities.'' \textit{Nature} 624(7992): 586--592.
+\item Pager, Devah. 2003. ``The Mark of a Criminal Record.'' \textit{American Journal of Sociology} 108(5): 937--975.
+\item Pettit, Becky and Bruce Western. 2004. ``Mass Imprisonment and the Life Course: Race and Class Inequality in U.S. Incarceration.'' \textit{American Sociological Review} 69(2): 151--169.
+\item Rhodes, Alec P., Davon Norris, Jason Houle, Rachel E. Dwyer, Sarah K. Bruch, and Lawrence M. Berger. 2026. ``Unsecured Credit and the Social Safety Net in U.S. States.'' \textit{American Sociological Review} 91(2): 349--377.
+\item Robins, James M., Miguel \'A. Hern\'an, and Babette Brumback. 2000. ``Marginal Structural Models and Causal Inference in Epidemiology.'' \textit{Epidemiology} 11(5): 550--560.
+\item Stuhler, Oscar. 2022. ``Who Does What to Whom? Making Text Parsers Work for Sociological Inquiry.'' \textit{Sociological Methods \& Research} 51(4): 1580--1633.
+\item Stuhler, Oscar. 2024. ``The Gender Agency Gap in Fiction Writing (1850 to 2010).'' \textit{Proceedings of the National Academy of Sciences} 121(29): e2319514121.
+\item Wodtke, Geoffrey T., David J. Harding, and Felix Elwert. 2011. ``Neighborhood Effects in Temporal Perspective: The Impact of Long-Term Exposure to Concentrated Disadvantage on High School Graduation.'' \textit{American Sociological Review} 76(5): 713--736.
+\end{itemize}
 \end{frame}
 
 \end{document}

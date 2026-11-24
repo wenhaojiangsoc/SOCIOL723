@@ -43,14 +43,9 @@ options(digits = 4, scipen = 999, width = 76)
 
 Every number below should match a slide.
 
-1.  **Panel data, quickly** (Parts 1--2): in a $2\times2$, four routes give the
-    same DiD; on all years, two-way fixed effects (TWFE) with clustered
-    standard errors; random effects and the Hausman test in one step.
-2.  **Staggered adoption, one number** (Part 3): see TWFE fail on the toy,
-    decompose it on the divorce data, then get a clean single estimate with
-    Callaway--Sant'Anna, Sun--Abraham, and imputation.
-3.  **Event studies** (Part 4): see that each $\tau_k$ is a $2\times2$, see the
-    TWFE event study fail when cohorts differ, and run the clean event studies.
+1.  **Panel data, quickly** (Parts 1--2): in a $2\times2$, four routes give the same DiD; on all years, two-way fixed effects (TWFE) with clustered standard errors; random effects and the Hausman test in one step.
+2.  **Staggered adoption, one number** (Part 3): see TWFE fail on the toy, decompose it on the divorce data, then get a clean single estimate with Callaway--Sant'Anna, Sun--Abraham, and imputation.
+3.  **Event studies** (Part 4): see that each $\tau_k$ is a $2\times2$, see the TWFE event study fail when cohorts differ, and run the clean event studies.
 
 ```{r}
 #| label: packages
@@ -77,8 +72,7 @@ w <- wagepan
 c(men = n_distinct(w$nr), years = n_distinct(w$year), rows = nrow(w))
 ```
 
-As in the lecture: 1980 and 1987 only, and the men who married in between or
-did not change (the 17 who left marriage are set aside).
+As in the lecture: 1980 and 1987 only, and the men who married in between or did not change (the 17 who left marriage are set aside).
 
 ```{r}
 #| label: two-by-two
@@ -105,9 +99,7 @@ round(c(DiD_by_hand = (m(1, 1) - m(1, 0)) - (m(0, 1) - m(0, 0)),
         first_diff  = coef(lm(dy ~ dD, keep))[["dD"]]), 4)
 ```
 
-All four are 0.0125, the slide's 0.012. With two periods, TWFE **is** the
-difference in differences: the man dummies remove each man's level, the year
-dummy removes the common change.
+All four are 0.0125, the slide's 0.012. With two periods, TWFE **is** the difference in differences: the man dummies remove each man's level, the year dummy removes the common change.
 
 # Part 2: All Men, All Years
 
@@ -124,8 +116,7 @@ etable(pool, fe_man, fe_yr, twfe, keep = "married", fitstat = "n",
        headers = c("pooled", "man FE", "year FE", "TWFE"))
 ```
 
-The slides' four numbers: 0.220, 0.243, 0.150, 0.061. Always cluster by the
-unit: a man's wage shocks are correlated across his eight years.
+The slides' four numbers: 0.220, 0.243, 0.150, 0.061. Always cluster by the unit: a man's wage shocks are correlated across his eight years.
 
 ## Random effects, and the Hausman test
 
@@ -140,16 +131,13 @@ round(c(FE = coef(fe_plm)[["married"]], RE = coef(re_plm)[["married"]]), 3)
 phtest(fe_plm, re_plm)
 ```
 
-$\chi^2 = 37.0$: FE and RE differ by more than noise, so the random-effects
-assumption (man effects unrelated to marriage) is rejected. Report fixed
-effects.
+$\chi^2 = 37.0$: FE and RE differ by more than noise, so the random-effects assumption (man effects unrelated to marriage) is rejected. Report fixed effects.
 
 # Part 3: Staggered Adoption, One Number
 
 ## The toy: TWFE gets 1.10, the truth is 1.75
 
-The lecture's toy: three units, four periods, untreated outcome 0 everywhere.
-Early is treated from $t = 2$ (effects 1, 2, 3); late from $t = 4$ (effect 1).
+The lecture's toy: three units, four periods, untreated outcome 0 everywhere. Early is treated from $t = 2$ (effects 1, 2, 3); late from $t = 4$ (effect 1).
 
 ```{r}
 #| label: toy
@@ -176,8 +164,7 @@ bt
 sum(bt$estimate * bt$weight)
 ```
 
-The `Later vs Earlier Treated` row is the forbidden comparison: $-0.5$ (GB's
-window means) with weight 0.2, pulling TWFE down to 1.10.
+The `Later vs Earlier Treated` row is the forbidden comparison: $-0.5$ (GB's window means) with weight 0.2, pulling TWFE down to 1.10.
 
 ```{r}
 #| label: toy-cs
@@ -196,9 +183,7 @@ Every block recovers its true effect; their average is the truth, 1.75.
 
 ## The divorce data
 
-Unilateral divorce and female suicide (Stevenson and Wolfers 2006): 50 states +
-DC, 1964--96. `divyear` is the adoption year; 1950 means adopted before 1964
-(always treated), 2000 means never adopted in the sample.
+Unilateral divorce and female suicide (Stevenson and Wolfers 2006): 50 states + DC, 1964--96. `divyear` is the adoption year; 1950 means adopted before 1964 (always treated), 2000 means never adopted in the sample.
 
 ```{r}
 #| label: divorce
@@ -227,15 +212,11 @@ bd |> group_by(type) |>
             total_weight = round(sum(weight), 3))
 ```
 
-The `Later vs Always Treated` and `Later vs Earlier Treated` rows use
-already-treated states as controls: 67% of the weight. The clean
-`Treated vs Untreated` comparisons average $-5.2$; TWFE reports $-3.05$.
+The `Later vs Always Treated` and `Later vs Earlier Treated` rows use already-treated states as controls: 67% of the weight. The clean `Treated vs Untreated` comparisons average $-5.2$; TWFE reports $-3.05$.
 
 ## Clean blocks, then one average
 
-Drop the 9 always-treated states (no pre-period). The packages want a cohort
-variable: the adoption year, with a code for never treated (`0` for `did` and
-`didimputation`, a year beyond the sample for `sunab`).
+Drop the 9 always-treated states (no pre-period). The packages want a cohort variable: the adoption year, with a code for never treated (`0` for `did` and `didimputation`, a year beyond the sample for `sunab`).
 
 ```{r}
 #| label: clean-setup
@@ -279,15 +260,11 @@ data.frame(
   knitr::kable(digits = 2)
 ```
 
-The slide's "The Estimators on One Dataset" table, plus Sun--Abraham. The
-clean estimators agree on the sign and say TWFE understates the effect.
-Callaway--Sant'Anna and Sun--Abraham with never-treated controls give the same
-$-10.56$; imputation uses every untreated year as the baseline, so it differs.
+The slide's "The Estimators on One Dataset" table, plus Sun--Abraham. The clean estimators agree on the sign and say TWFE understates the effect. Callaway--Sant'Anna and Sun--Abraham with never-treated controls give the same $-10.56$; imputation uses every untreated year as the baseline, so it differs.
 
 ## Covariates inside each block
 
-Southern and non-Southern states may trend differently. `xformla` adjusts each
-block by regression (`"reg"`), weighting (`"ipw"`), or both (`"dr"`):
+Southern and non-Southern states may trend differently. `xformla` adjusts each block by regression (`"reg"`), weighting (`"ipw"`), or both (`"dr"`):
 
 ```{r}
 #| label: cs-cov
@@ -304,16 +281,13 @@ cs_x <- sapply(c("reg", "ipw", "dr"), function(m) {
 round(c(no_covariates = a_notyet$overall.att, cs_x), 2)
 ```
 
-Region is one 0/1 variable, so both models are saturated and all three agree
-(as on the slide's hypothetical block). Adjusting for region moves the
-estimate from $-8.7$ to $-3.7$.
+Region is one 0/1 variable, so both models are saturated and all three agree (as on the slide's hypothetical block). Adjusting for region moves the estimate from $-8.7$ to $-3.7$.
 
 # Part 4: Event Studies
 
 ## Each $\tau_k$ is a $2\times2$
 
-One adoption date: 2 treated and 2 control units, periods 1--6, treated from
-$t = 4$; the effect grows 1, 2, 3 (the lecture's event-study toy).
+One adoption date: 2 treated and 2 control units, periods 1--6, treated from $t = 4$; the effect grows 1, 2, 3 (the lecture's event-study toy).
 
 ```{r}
 #| label: es-toy
@@ -334,8 +308,7 @@ c(tau_minus2 = (mm(1, 2) - mm(1, 3)) - (mm(0, 2) - mm(0, 3)),
 
 ## The event study on the staggered toy
 
-Back to the staggered toy (early 1, 2, 3; late 1). The static TWFE gave 1.10.
-The event study gives one coefficient per $k$:
+Back to the staggered toy (early 1, 2, 3; late 1). The static TWFE gave 1.10. The event study gives one coefficient per $k$:
 
 ```{r}
 #| label: es-staggered
@@ -347,14 +320,11 @@ round(coef(feols(Y ~ i(k, ref = c(-1, -1000)) | unit + t, toy)), 2)
 c(forbidden = (y("late", 4) - y("late", 3)) - (y("early", 4) - y("early", 3)))
 ```
 
-Exactly 0, 0, 1, 2, 3. The forbidden $2\times2$ is 0. Static TWFE reads it as
-$\beta = 0$; the event study reads it as $\tau_0 - (\tau_2 - \tau_1)$, subtracts
-early's growth ($3 - 2 = 1$), and gets $\tau_0 = 1$.
+Exactly 0, 0, 1, 2, 3. The forbidden $2\times2$ is 0. Static TWFE reads it as $\beta = 0$; the event study reads it as $\tau_0 - (\tau_2 - \tau_1)$, subtracts early's growth ($3 - 2 = 1$), and gets $\tau_0 = 1$. The forbidden $2\times2$ is still in the regression, corrected with early's growth: an implicit forbidden comparison.
 
 ## What the event study still assumes
 
-One path $\tau_k$ for every cohort. Break it: late's effect at $t = 4$ is 3,
-not 1. The truth by $k$ is 0, 0, 2, 2, 3.
+Early adopters stand in for late ones: each cohort's effect at $k$ must be the same (it may grow with $k$, but not differ by start date). Break it: late's effect at $t = 4$ is 3, not 1. The truth by $k$ is 0, 0, 2, 2, 3.
 
 ```{r}
 #| label: es-fail
@@ -365,15 +335,11 @@ round(coef(m_toy2), 2)
 round(fixef(m_toy2)$unit, 2)                             ## late's level: 0.75, not 0
 ```
 
-$-0.75, -0.25, 2.00, 2.75, 3.25$: a fake pre-trend and wrong post effects,
-from treatment effects alone. Late jumps 3 but the shared $\hat\tau_0$ is 2, so
-OLS raises late's level to 0.75 and the leads go negative to pull its
-before-years back to 0.
+$-0.75, -0.25, 2.00, 2.75, 3.25$: a fake pre-trend and wrong post effects, from cohort differences alone. Late jumps 3 but the shared $\hat\tau_0$ is 2, so OLS raises late's level to 0.75 and the leads go negative to pull its before-years back to 0.
 
 ## Five event studies on the divorce data
 
-Event time $k$ = year $-$ adoption year, binned at $-10$ and $15$ for the TWFE
-version; never-treated states as controls (CS also with not-yet-treated).
+Event time $k$ = year $-$ adoption year, binned at $-10$ and $15$ for the TWFE version; never-treated states as controls (CS also with not-yet-treated).
 
 ```{r}
 #| label: es-divorce
@@ -433,34 +399,19 @@ ggplot(all, aes(k, est)) +
   theme_minimal(base_size = 9)
 ```
 
-Sun--Abraham and Callaway--Sant'Anna (never treated) give the **same** path
-($-6.53$ on average over $k = 0$--10); the TWFE event study gives $-3.09$.
-CS with not-yet-treated controls gives $-3.10$: later adopters are controls
-early on, and by $k = 15$ only never-treated states remain ($-14.82$ vs.
-$-14.85$). Imputation uses every untreated year as the baseline and gives $-0.97$. The
-leads are not flat, so that choice matters.
+Sun--Abraham and Callaway--Sant'Anna (never treated) give the **same** path ($-6.53$ on average over $k = 0$--10); the TWFE event study gives $-3.09$. CS with not-yet-treated controls gives $-3.10$: later adopters are controls early on, and by $k = 15$ only never-treated states remain ($-14.82$ vs. $-14.85$). Imputation uses every untreated year as the baseline and gives $-0.97$. The leads are not flat, so that choice matters.
 
 # Exercises
 
-1.  **The $2\times2$ with the 17 men who left marriage.** Put them back (`dD`
-    in $\{-1, 0, 1\}$) and run first differences with an intercept. You should
-    get 0.051. Why is it not $0.488 - 0.476$?
+1.  **The** $2\times2$ with the 17 men who left marriage. Put them back (`dD` in $\{-1, 0, 1\}$) and run first differences with an intercept. You should get 0.051. Why is it not $0.488 - 0.476$?
 
-2.  **Constant effects.** Change the staggered toy so every treated cell's
-    effect is 2. Show that TWFE, the forbidden $2\times2$, and Callaway--Sant'Anna
-    all give 2. In one sentence: what does the forbidden comparison need in
-    order to go wrong?
+2.  **Constant effects.** Change the staggered toy so every treated cell's effect is 2. Show that TWFE, the forbidden $2\times2$, and Callaway--Sant'Anna all give 2. In one sentence: what does the forbidden comparison need in order to go wrong?
 
-3.  **Event study vs. clean blocks.** For `toy2` (late's effect 3), compute the
-    clean blocks for each $k$ by hand (cohort vs. never, base $g - 1$) and
-    check they give 0, 0, 2, 2, 3.
+3.  **Event study vs. clean blocks.** For `toy2` (late's effect 3), compute the clean blocks for each $k$ by hand (cohort vs. never, base $g - 1$) and check they give 0, 0, 2, 2, 3.
 
-4.  **Not yet vs. never treated.** Compare the two Callaway--Sant'Anna
-    estimates in the scoreboard. Which uses more control states, and what
-    extra assumption does it need?
+4.  **Not yet vs. never treated.** Compare the two Callaway--Sant'Anna estimates in the scoreboard. Which uses more control states, and what extra assumption does it need?
 
-5.  **Aggregation choices.** From `cs_never`, compute `aggte(type = "group")`
-    and `aggte(type = "calendar")`. Describe each estimand in one sentence.
+5.  **Aggregation choices.** From `cs_never`, compute `aggte(type = "group")` and `aggte(type = "calendar")`. Describe each estimand in one sentence.
 
 # Session information
 

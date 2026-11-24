@@ -554,6 +554,7 @@ The first direction puts a positive weight on all four indicators: a woman score
 
 ```{r}
 #| label: pca-score
+h$health_score <- pc$x[, 1] ## the first PC
 round(pc$rotation[, 1], 2)               ## PC1's weight on each indicator
 ## a component's sign is arbitrary: orient it so that higher = worse health
 h$score <- pc$x[, 1] * sign(sum(pc$rotation[, 1]))

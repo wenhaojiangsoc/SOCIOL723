@@ -73,3 +73,18 @@ blk <- function(u, tt, base) (yy(u, tt) - yy(u, base)) - (yy("never", tt) - yy("
 cat("clean blocks: early k = 0, 1, 2:", blk("early", 2, 1), blk("early", 3, 1), blk("early", 4, 1),
     "; late k = -3, -2, 0:", blk("late", 1, 3), blk("late", 2, 3), blk("late", 4, 3),
     "; average at k = 0:", (blk("early", 2, 1) + blk("late", 4, 3)) / 2, "\n")
+
+## three cohorts that share later k: all gain 1 at k = 0, later paths differ (g2: 1,2,3,4; g3: 1,3,5; g4: 1,2)
+## already-treated cohorts become controls, corrected by the AVERAGE path, so their differences leak into tau_0
+d3 <- expand.grid(unit = c("never", "g2", "g3", "g4"), t = 1:5, stringsAsFactors = FALSE)
+d3$G <- c(never = 10000, g2 = 2, g3 = 3, g4 = 4)[d3$unit]
+d3$k <- ifelse(d3$unit == "never", -1000, d3$t - d3$G)
+paths <- list(g2 = c(1, 2, 3, 4), g3 = c(1, 3, 5), g4 = c(1, 2))
+d3$Y <- mapply(function(u, k) if (u == "never" || k < 0) 0 else paths[[u]][k + 1], d3$unit, d3$k)
+m3 <- feols(Y ~ i(k, ref = c(-1, -1000)) | unit + t, d3)
+cat("\nthree cohorts, TWFE event study (truth k = -3, -2: 0; k = 0: 1):\n"); print(round(coef(m3), 3))
+cat("year effects (never-treated Y is 0 every year):", round(fixef(m3)$t, 3), "\n")
+y3 <- function(u, tt) d3$Y[d3$unit == u & d3$t == tt]
+cat("clean blocks at k = 0 (vs never, base g - 1):",
+    sapply(c(g2 = 2, g3 = 3, g4 = 4), function(g) (y3(paste0("g", g), g) - y3(paste0("g", g), g - 1)) -
+                                                  (y3("never", g) - y3("never", g - 1))), "\n")

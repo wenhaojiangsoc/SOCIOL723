@@ -43,13 +43,10 @@ options(digits = 4, scipen = 999, width = 76)
 
 # Goals
 
-One task: predict log earnings in the GSS for people the model has not seen. For each
-method, the code you would run in your own work.
+One task: predict log earnings in the GSS for people the model has not seen. For each method, the code you would run in your own work.
 
-1.  Penalized regression with `glmnet`: lasso, ridge, elastic net; $\lambda$ by
-    cross-validation; post-lasso.
-2.  Trees with `rpart`, random forests with `ranger` (tuning, variable importance),
-    boosted trees with `xgboost`.
+1.  Penalized regression with `glmnet`: lasso, ridge, elastic net; $\lambda$ by cross-validation; post-lasso.
+2.  Trees with `rpart`, random forests with `ranger` (tuning, variable importance), boosted trees with `xgboost`.
 3.  A neural network with `nnet`.
 4.  Word vectors with `word2vec`.
 5.  One scoreboard: every method's test $R^2$.
@@ -104,18 +101,11 @@ dtr <- data.frame(y = y[tr], Xm[tr, ]); dte <- data.frame(Xm[te, ])
 
 # Lasso, ridge, and elastic net
 
-The lasso picks $b$ to minimize
-$$\sum_i \Big(Y_i - b_0 - \sum_j X_{ij} b_j\Big)^2 + \lambda \sum_j |b_j| .$$
-Ridge uses $\lambda \sum_j b_j^2$; the elastic net mixes the two. In `glmnet`, `alpha = 1`
-is the lasso, `alpha = 0` ridge, anything in between an elastic net. `glmnet` divides
-the sum of squares by $2n$, so its `lambda` is the slides' $\lambda/(2n)$. It standardizes
-the columns before penalizing and reports coefficients on the original scale.
+The lasso picks $b$ to minimize $$\sum_i \Big(Y_i - b_0 - \sum_j X_{ij} b_j\Big)^2 + \lambda \sum_j |b_j| .$$ Ridge uses $\lambda \sum_j b_j^2$; the elastic net mixes the two. In `glmnet`, `alpha = 1` is the lasso, `alpha = 0` ridge, anything in between an elastic net. `glmnet` divides the sum of squares by $2n$, so its `lambda` is the slides' $\lambda/(2n)$. It standardizes the columns before penalizing and reports coefficients on the original scale.
 
 ## Fit, choose $\lambda$, read the coefficients
 
-`cv.glmnet` fits the whole path of $\lambda$ values and runs $K$-fold cross-validation on
-the training cases. `lambda.min` has the smallest CV error; `lambda.1se` is the largest
-$\lambda$ within one standard error of it (a simpler model that predicts about as well).
+`cv.glmnet` fits the whole path of $\lambda$ values and runs $K$-fold cross-validation on the training cases. `lambda.min` has the smallest CV error; `lambda.1se` is the largest $\lambda$ within one standard error of it (a simpler model that predicts about as well).
 
 ```{r}
 #| label: lasso-main
@@ -154,11 +144,7 @@ c(lasso_terms_kept = unname(cl$nzero[cl$lambda == cl$lambda.min]),
 
 ## Choosing $\alpha$ for the elastic net by cross-validation
 
-The elastic-net penalty is
-$\lambda\big[\tfrac{1-\alpha}{2}\sum_j b_j^2 + \alpha \sum_j |b_j|\big]$: $\alpha = 0$ is ridge,
-$\alpha = 1$ the lasso. `cv.glmnet` tunes $\lambda$ for one $\alpha$, so loop over a grid of
-$\alpha$ and keep the pair $(\alpha, \lambda)$ with the smallest CV error. Use the **same
-folds** for every $\alpha$ (`foldid`), so the comparison is not driven by different splits.
+The elastic-net penalty is $\lambda\big[\tfrac{1-\alpha}{2}\sum_j b_j^2 + \alpha \sum_j |b_j|\big]$: $\alpha = 0$ is ridge, $\alpha = 1$ the lasso. `cv.glmnet` tunes $\lambda$ for one $\alpha$, so loop over a grid of $\alpha$ and keep the pair $(\alpha, \lambda)$ with the smallest CV error. Use the **same folds** for every $\alpha$ (`foldid`), so the comparison is not driven by different splits.
 
 ```{r}
 #| label: en-alpha
@@ -175,8 +161,7 @@ c(alpha = alphas[best], lambda = ce_best$lambda.min,
   test_R2 = r2(predict(ce_best, Xb[te, ], s = "lambda.min")))
 ```
 
-The CV errors across $\alpha$ are usually close: once $\lambda$ is tuned, the mix matters
-less than the amount of shrinkage. The test set is used once, for the chosen pair.
+The CV errors across $\alpha$ are usually close: once $\lambda$ is tuned, the mix matters less than the amount of shrinkage. The test set is used once, for the chosen pair.
 
 ## Post-lasso
 
@@ -191,9 +176,7 @@ round(rbind(lasso = b[keep], post_lasso = coef(post)[-1]), 3)
 
 # Trees
 
-A regression tree splits the data in two at the cut $(j, s)$ that makes
-$\sum_{i \in L}(Y_i - \bar Y_L)^2 + \sum_{i \in R}(Y_i - \bar Y_R)^2$ smallest, then splits each
-part again; each leaf predicts its average.
+A regression tree splits the data in two at the cut $(j, s)$ that makes $\sum_{i \in L}(Y_i - \bar Y_L)^2 + \sum_{i \in R}(Y_i - \bar Y_R)^2$ smallest, then splits each part again; each leaf predicts its average.
 
 ```{r}
 #| label: gss-tree
@@ -215,9 +198,7 @@ rpart.plot(t3, type = 2,  ## split label under each node
            under = TRUE, fallen.leaves = TRUE, cex = 0.6)
 ```
 
-The usual workflow: grow a large tree, then prune it back by cross-validation. `rpart`
-cross-validates the pruning sequence as it grows (10 folds by default); keep the
-complexity penalty `cp` with the smallest CV error.
+The usual workflow: grow a large tree, then prune it back by cross-validation. `rpart` cross-validates the pruning sequence as it grows (10 folds by default); keep the complexity penalty `cp` with the smallest CV error.
 
 ```{r}
 #| label: prune
@@ -233,8 +214,7 @@ c(cp = cp_best, leaves = sum(pruned$frame$var == "<leaf>"), test_R2 = r2(predict
 
 # Random forests
 
-Grow many deep trees on bootstrap samples; at each split try only `mtry` random
-predictors (default: $\sqrt p$ rounded down, here 4); average the trees.
+Grow many deep trees on bootstrap samples; at each split try only `mtry` random predictors (default: $\sqrt p$ rounded down, here 4); average the trees.
 
 ```{r}
 #| label: rf
@@ -271,10 +251,7 @@ c(default = r2(predict(rf, dte)$predictions), tuned = r2(predict(rf_tun, dte)$pr
 
 ## Variable importance
 
-**Permutation importance**: shuffle one column, predict again, record how much the
-error rises (`ranger` does this on each tree's out-of-bag cases). **Impurity
-importance**: add up how much each variable's splits cut the sum of squares. Ask for
-permutation importance explicitly; it is not the default.
+**Permutation importance**: shuffle one column, predict again, record how much the error rises (`ranger` does this on each tree's out-of-bag cases). **Impurity importance**: add up how much each variable's splits cut the sum of squares. Ask for permutation importance explicitly; it is not the default.
 
 ```{r}
 #| label: fig-importance
@@ -291,16 +268,11 @@ barplot(rev(ii), horiz = TRUE, las = 1, col = "firebrick", border = NA,
         main = "impurity", xlab = "share of SSE reduction")
 ```
 
-Correlated variables share credit, and impurity importance favours variables with
-many distinct values. Importance describes the forest's predictions, not causes.
+Correlated variables share credit, and impurity importance favours variables with many distinct values. Importance describes the forest's predictions, not causes.
 
 # Boosted trees
 
-Start from the mean, fit a small tree to the residuals, add a fraction $\eta$ (the
-learning rate) of it, and repeat:
-$\hat f \leftarrow \hat f + \eta\, \hat f_m$. `xgb.cv` picks the number of steps by 5-fold CV,
-stopping once 50 more steps bring no improvement; `xgb.train` then fits that many steps on
-all training cases.
+Start from the mean, fit a small tree to the residuals, add a fraction $\eta$ (the learning rate) of it, and repeat: $\hat f \leftarrow \hat f + \eta\, \hat f_m$. `xgb.cv` picks the number of steps by 5-fold CV, stopping once 50 more steps bring no improvement; `xgb.train` then fits that many steps on all training cases.
 
 ```{r}
 #| label: xgboost
@@ -323,9 +295,7 @@ c(steps = steps, test_R2 = r2(predict(bst, Xm[te, ])))
 
 # Neural networks
 
-One hidden layer: $A_k = \sigma\big(w_{k0} + \sum_j w_{kj}X_j\big)$, then
-$f(X) = \beta_0 + \sum_k \beta_k A_k$, fit by gradient descent. `size` = number of hidden
-units; `decay` = weight decay (a ridge penalty on the weights).
+One hidden layer: $A_k = \sigma\big(w_{k0} + \sum_j w_{kj}X_j\big)$, then $f(X) = \beta_0 + \sum_k \beta_k A_k$, fit by gradient descent. `size` = number of hidden units; `decay` = weight decay (a ridge penalty on the weights).
 
 ```{r}
 #| label: nn-gss
@@ -347,18 +317,13 @@ c(parameters = (ncol(Xm) + 1) * 2 + 2 + 1, test_R2 = r2(nn_pred))
 ## nnet does not have a user-input learning rate; default is BFGS quasi-Newton optimization method
 ```
 
-`nnet` works on the raw variables here because the weight decay keeps every weight small.
-Set `decay = 0` and the fit gets much worse (Exercise 6). The usual safe habit is still to
-put the inputs on one scale, as in the next model.
+`nnet` works on the raw variables here because the weight decay keeps every weight small. Set `decay = 0` and the fit gets much worse (Exercise 6). The usual safe habit is still to put the inputs on one scale, as in the next model.
 
 ## A deeper network with keras3
 
-`keras3` drives Keras/TensorFlow from R. The first call downloads a private Python and
-TensorFlow (about a minute, once); after that it runs like any package.
+`keras3` drives Keras/TensorFlow from R. The first call downloads a private Python and TensorFlow (about a minute, once); after that it runs like any package.
 
-The model has two hidden layers of ReLU units, $23 \to 32 \to 16 \to 1$, with dropout after
-each, trained by Adam (a version of stochastic gradient descent) on mini-batches, with 20%
-of the training cases held back to decide when to stop.
+The model has two hidden layers of ReLU units, $23 \to 32 \to 16 \to 1$, with dropout after each, trained by Adam (a version of stochastic gradient descent) on mini-batches, with 20% of the training cases held back to decide when to stop.
 
 ```{r}
 #| label: keras
@@ -418,18 +383,13 @@ c(epochs_run = length(history$metrics$loss), test_R2 = r2(keras_pred))
 plot(history)  ## loss by epoch: training vs. validation
 ```
 
-With 2,456 cases and 23 survey variables, the deep network does no better than the
-two-unit `nnet`: deep networks pay off with many raw inputs (pixels, words), not here.
+With 2,456 cases and 23 survey variables, the deep network does no better than the two-unit `nnet`: deep networks pay off with many raw inputs (pixels, words), not here.
 
 # Word vectors
 
-Skip-gram word2vec predicts each word's neighbours,
-$\Pr(c \mid w) = \exp\big(\sum_k u_{wk} v_{ck}\big) / \sum_{c'} \exp\big(\sum_k u_{wk} v_{c'k}\big)$;
-the fitted $u_w$ is word $w$'s vector. Similarity is the cosine,
-$\sum_k a_k b_k / \big(\sqrt{\sum_k a_k^2}\sqrt{\sum_k b_k^2}\big)$.
+Skip-gram word2vec predicts each word's neighbours, $\Pr(c \mid w) = \exp\big(\sum_k u_{wk} v_{ck}\big) / \sum_{c'} \exp\big(\sum_k u_{wk} v_{c'k}\big)$; the fitted $u_w$ is word $w$'s vector. Similarity is the cosine, $\sum_k a_k b_k / \big(\sqrt{\sum_k a_k^2}\sqrt{\sum_k b_k^2}\big)$.
 
-The text: Jane Austen's six novels, about 730,000 words. The `word2vec` package does not
-take a seed, so the numbers change a little from run to run; the patterns do not.
+The text: Jane Austen's six novels, about 730,000 words. The `word2vec` package does not take a seed, so the numbers change a little from run to run; the patterns do not.
 
 ```{r}
 #| label: w2v-austen
@@ -451,9 +411,7 @@ predict(m, c("sister", "letter"), type = "nearest", top_n = 5)
 predict(m, emb["brother", ] - emb["he", ] + emb["she", ], type = "nearest", top_n = 5)
 ```
 
-A cultural dimension, as in Kozlowski, Taddy, and Evans (2019): average several
-male-minus-female differences into one direction, then take each word's cosine with it
-(positive = closer to the male side of Austen's usage).
+A cultural dimension, as in Kozlowski, Taddy, and Evans (2019): average several male-minus-female differences into one direction, then take each word's cosine with it (positive = closer to the male side of Austen's usage).
 
 ```{r}
 #| label: w2v-dimension
@@ -483,23 +441,14 @@ sort(c(OLS = r2(as.vector(cbind(1, Xm[te, ]) %*% coef(ols))),
 
 # Exercises
 
-1.  **Two rules for $\lambda$.** Print the main-effect lasso coefficients at
-    `lambda.min` and at `lambda.1se`. Which variables differ? Which model predicts
-    better on the test set?
-2.  **Post-lasso.** Why is every post-lasso coefficient larger in size than the lasso
-    one? When would post-lasso predict worse than lasso?
+1.  **Two rules for** $\lambda$. Print the main-effect lasso coefficients at `lambda.min` and at `lambda.1se`. Which variables differ? Which model predicts better on the test set?
+2.  **Post-lasso.** Why is every post-lasso coefficient larger in size than the lasso one? When would post-lasso predict worse than lasso?
 3.  **Pruning.** Grow `big` with `cp = 0.0001` instead. Does the pruned tree change?
-4.  **Forests.** Add `mtry` = 2 and 12 to the `rf-tune` grid, and try `num.trees` = 50.
-    Report the out-of-bag MSE.
-5.  **Boosting's learning rate.** In the `xgboost` chunk, try `eta` = 0.01, 0.1, 0.5.
-    How many steps does CV choose for each, and which predicts best?
-6.  **Scaling and weight decay.** Rerun `nn-gss` with `decay = 0`, then with
-    `Ztr`, `Zte` (from the `keras` chunk) as inputs. When does rescaling matter?
-7.  **Word vectors.** In `w2v-austen`, change `window` to 2 and then 10. How do the
-    nearest words to *letter* change? Build a *rich* $-$ *poor* dimension and place five
-    words on it.
-8.  **Prediction is not inference.** Take the post-lasso coefficient on `female`.
-    Explain in two sentences why you would not report it with the usual standard error.
+4.  **Forests.** Add `mtry` = 2 and 12 to the `rf-tune` grid, and try `num.trees` = 50. Report the out-of-bag MSE.
+5.  **Boosting's learning rate.** In the `xgboost` chunk, try `eta` = 0.01, 0.1, 0.5. How many steps does CV choose for each, and which predicts best?
+6.  **Scaling and weight decay.** Rerun `nn-gss` with `decay = 0`, then with `Ztr`, `Zte` (from the `keras` chunk) as inputs. When does rescaling matter?
+7.  **Word vectors.** In `w2v-austen`, change `window` to 2 and then 10. How do the nearest words to *letter* change? Build a *rich* $-$ *poor* dimension and place five words on it.
+8.  **Prediction is not inference.** Take the post-lasso coefficient on `female`. Explain in two sentences why you would not report it with the usual standard error.
 
 # Session information
 

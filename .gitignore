@@ -34,3 +34,9 @@ Week 9 Regression Discontinuity Designs/figs/fema/data/
 Week 13 Causal Machine Learning/papers/
 Data/amazon_toys_raw.csv
 Data/amazon_toys_bert.csv.gz
+
+# build leftovers and local review notes
+Rplots.pdf
+*.vrb
+Week */lab*.tex
+codex_review_*.md

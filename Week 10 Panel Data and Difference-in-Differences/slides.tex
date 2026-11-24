@@ -2125,19 +2125,19 @@ $2\times2$ & $1 - 1 = 0$ & $0 = \beta$ & $0 = \tau_0 - (\tau_2 - \tau_1)$ \\
         trend. It reads the $2\times2$ as $\beta = 0$, and is pulled down: 1.10, not 1.75.
   \item \textbf{The event study} knows early moved from $k = 1$ to $k = 2$, and that its effect grew
         by $\tau_2 - \tau_1 = 3 - 2 = 1$. It subtracts that growth: $\tau_0 = 0 + 1 = 1$. Correct.
-  \item The TWFE event study gives exactly 1, 2, 3: \alert{it fixes the growing-effect problem}.
+  \item The TWFE event study gives exactly 1, 2, 3. The forbidden $2\times2$ is still in the
+        regression, corrected with early's growth: \alert{an implicit forbidden comparison}.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{What the Event Study Still Assumes\core}
-To subtract early's growth from late's comparison, the event study assumes \alert{every cohort
-follows the same path} $\tau_0, \tau_1, \tau_2$: one $\tau_k$ for all.
+The correction uses early's growth for late: early adopters stand in for late ones. It assumes
+\alert{each cohort's effect at $k$ is the same}: it may grow with $k$, but not differ by start date.
 \vskip3pt
-\textbf{Break it}: keep early at 1, 2, 3, but late gains 3 at $k = 0$. Early vs.\ never says
-$\tau_0 = 1$, late vs.\ never says 3; one $\tau_0$ cannot be both, and the misfit leaks:
+\textbf{Break it}: early still 1, 2, 3, but late gains 3 at $k = 0$. One $\tau_0$ cannot be 1 and 3:
 \vskip2pt
-\begin{center}\small
-\renewcommand{\arraystretch}{1.12}
+\begin{center}\footnotesize
+\renewcommand{\arraystretch}{1.1}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
 $k$ & $-3$ & $-2$ & 0 & 1 & 2 \\
@@ -2149,11 +2149,13 @@ clean blocks (vs.\ never, base $g - 1$) & 0 & 0 & 2 & 2 & 3 \\
 \end{tabular}
 \end{center}
 \vskip2pt
-\begin{itemize}\itemsep1pt
-  \item A \textbf{fake pre-trend} and wrong post effects, from treatment effects alone: the forbidden
-        $2\times2$ is still in the regression \srcp{Sun and Abraham 2021; figs/w10\_toy\_staggered.R}.
-  \item Why the leads move: late jumps 3, the shared $\hat\tau_0$ is 2, so OLS raises late's level
-        ($\hat\alpha = 0.75$); the leads go negative to pull its before-years back to 0.
+\begin{itemize}\itemsep1pt\small
+  \item \textbf{Fake pre-trend}, from cohort differences alone: $\hat\tau_0 = 2$ falls short of
+        late's 3, so OLS raises late's level ($\hat\alpha = 0.75$) and its leads go negative.
+  \item Many cohorts: already-treated controls are corrected by the \emph{average} path, so
+        their differences leak in. Three cohorts, all 1 at $k = 0$, later paths differ:
+        $\hat\tau_0 = 1.05$, leads $-0.02, -0.21$; clean blocks 1, 0, 0
+        \srcp{Sun and Abraham 2021; figs/w10\_toy\_staggered.R}.
   \item Fix: give each cohort its own path, then average by $k$ (next).
 \end{itemize}
 \end{frame}
@@ -2386,8 +2388,8 @@ C & 1 & 1 & 1 & \textbf{0} & 0 \\
         or outcome model again, and all of Week 6's cautions return with it.
 \end{itemize}
 \vskip4pt
-\begin{block}{Problem Set 4}
-Assigned today, due Monday November 9. Covers Weeks 7 and 9.
+\begin{block}{Problem Set 3}
+Due Tuesday, November 3.
 \end{block}
 \end{frame}
 

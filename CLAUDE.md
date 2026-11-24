@@ -801,18 +801,144 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   decay chosen on validation = 30: test R2 price .37, demand .10) + 'DML with the network, step by step'
   (-0.078 (0.032)) + 'Full fine-tuning (code only)' (reticulate torch loop, AdamW 1e-5, eval: false; tested on 48
   toys for one pass).
-- Week 14 (40 pp, REBUILT 2026-11-17, user: topics not covered + 30 min on research practice; old synthesis deck in git
-  8687915): (1) Marginal structural models (DAG D1 -> L -> D2 -> Y with U; figs/w14_msm.R: truth -2.77/-1.99, no L
-  -2.10/-5.48, control L -1.29/-2.03, stabilized weights -2.86/-2.02; Wodtke, Harding & Elwert 2011 ASR, numbers read
-  from the PMC text: log-odds -0.70/-0.42/-0.53 Black, -0.58/-0.21/-0.27 non-Black, 96->76%, 95->87%). (2) GMM
-  (figs/w14_gmm.R on Card's data, controls partialled out: near4 alone .094, near2 alone .508, 2SLS .110, two-step GMM
-  .109 (.051), J 3.19 p .074; gmm_objective.pdf). (3) SEM on lavaan::PoliticalDemocracy (figs/w14_sem.R: loading by
-  hand sqrt(.977 x .812/1.782) = .667 = lavaan; 66 moments, 31 parameters, chi2 38.1 df 35; std paths .45/.89/.18 vs
-  OLS on averaged ratings .38/.78/.20; EM for the one-factor model .462 -> .667 in 100 rounds). (4) How Research Gets
-  Done: four kinds of questions, Three Questions (kept), Snow (Freedman 1991; 315 vs 37 per 10,000 houses), Pager,
-  designs found in institutions, Silberzahn 2018 / Breznau 2022, Choosing a Method, Never a Solution. (5) Final exam
-  frames kept (date Dec 3 from the syllabus; design + inference tables moved here). Syllabus still says 'Synthesis and
-  Exam Review'; folder name unchanged. New frames unstarred.
+- Week 14 (72 pp, rebuilt 2026-11-21, REVISED 2026-11-23 by user feedback: SEM after slide 8 was 'unbearably complex', GMM
+  DROPPED, MSM numbers too complex, research practice must open with three ways to motivate research). Order: (1) SEM on
+  Blau & Duncan 1967 from their ten correlations (figs/w14_sem.R; n taken as 20,700 from memory): Several Equations ->
+  In the Literature -> model -> ten correlations, 8 unknowns -> equation to correlations (normal equations; paths
+  .309/.278, .440/.224, .395/.115/.281) -> two unused correlations (.315 vs .332; .327 vs .322) -> 'A Test of Fit' = put
+  each left-out arrow back in and read its OLS t (V->W .025 (.007) t 3.7; V->Y -.014 (.006) t -2.2); chi-square 18.1 on
+  2 df named in one bullet only -> 'Rejected, but by How Much?' (n = 500: t .6/-.3, chi-square .4) -> direct/indirect/
+  total -> What Fit Does Not Show. NO fitting function F, NO ML search, NO curvature s.e. (user: no F test or MLE).
+  (2) NEW section 'Latent Variables and the EM Algorithm' (figs/w14_lca.R; poLCA installed to the system library
+  2026-11-23): latent variable as common cause (tikz) -> Stouffer & Toby 1951 four dilemmas (poLCA::values, 216
+  students, Goodman 1974) -> 'Two Easy Problems' (know types -> count; know the nine numbers -> Bayes, .84) -> E step /
+  M step -> EM table (pi .50 -> .28, logLik -590.8 -> -504.5 in ~50 rounds) -> result (type 1 28%: .99/.94/.93/.77;
+  type 2: .71/.33/.35/.13) -> 'Do Two Types Fit?' (42 vs 41.8 vs 13.6; chi-square 2.7 on 6 df) -> Bonikowski & DiMaggio
+  2016 (2004 GSS, 1,077, 23 items, four classes 38/24/22/17%; from the DASH manuscript) -> EM uses and cautions.
+  (3) MSM (figs/w14_msm.R, NEW DGP with round truths: U binary, P(L) = .1 + .2 D1 + .4 U, P(D2) = .2 + .1 D1 + .6 L,
+  Y = 50 - 2 D1 - 2 D2 - 5 L - 3 U; truth D1 -3, D2 -2; weights need the saturated logit D2 ~ D1 * L): DAG -> target ->
+  confounding / over-control / collider frames are DAG + words ONLY (user: no numbers on the DAG-intuition frames) ->
+  ONE table 'What the Two Regressions Give' (-2.2/-5.6; -1.7/-2.0) -> 'The Fix: Weight Instead of Control' (formula,
+  DAG without L -> D2, 80% example) -> MSM table (weighted -3.0/-2.0) -> many periods -> THREE stabilized-weight frames
+  (definition read as numerator/denominator; worked example for D1 = 1 children: plain 1.1/10/3.3/1.4 vs stabilized
+  .67/4/2/.57, plain makes income groups 50/50, stabilized 60/60; 'What Stabilizing Buys': five sticky periods, s.d.
+  .57 vs .15, largest weight thousands vs 6) -> Wodtke, Harding & Elwert 2011 in THREE frames (question/data; method;
+  results with Table 5 + their Figure 3; wodtke2011_fig1.jpg now unused). (4) Research practice opens with five new
+  frames: Starting From a Question (abortion access: Myers 2017, Fischer-Royer-White 2018, Lindo et al. 2020, Dench et
+  al. 2024) -> A Question Can Be Descriptive (Pettit & Western 2004, Desmond 2012, Jones & Jerman 2017, Hout et al.
+  2022) -> Starting From a Method (Kiley & Vaisey 2020 ASR is NOT SEM: a nonlinear equation with phi; the SEM version
+  is Vaisey & Kiley 2021 Sociological Science) -> Starting From New Data (Rhodes et al. 2026 ASR credit records;
+  Miller, Wherry & Foster 2023 Turnaway + Experian) -> 'Only the Question Defines You'; then the old frames (Four Kinds
+  of Questions ... Never a Solution). Literature web-verified by an agent 2026-11-23; NOT checked against print: Myers
+  2017 numbers (none shown), Rhodes et al.'s data vendor (slide says 'a large national sample of credit records'),
+  Miller et al. magnitudes (none shown). (5) Final exam frames unchanged.
+  Lab 14 (`lab14.qmd`; NO Thursday session, Thanksgiving: 'to work through on your own'): Part 1 Blau-Duncan (ols()
+  from the correlation matrix with s.e. and t; left-out arrows at n = 20,700 and 500; lavaan chi-square, := effects,
+  reversed arrow); Part 2 latent classes (E and M step once, em() loop, fit by pattern counts, poLCA nrep = 10);
+  Part 3 MSM (n = 20,000; two regressions; collider table; plain and stabilized weights by cell; balance 50/50 vs
+  60/60; weightitMSM + lm_weightit; five sticky periods). 7 exercises. GMM and the Bollen CFA are gone (old versions in
+  the session scratchpad only: slides_w14_before_round2.tex, lab14_before_round2.qmd, w14_gmm.R). Syllabus still says
+  'Synthesis and Exam Review'. New frames unstarred.
+  ROUND 3, 2026-11-23 (user): deck 67 pp. SEM adds 'The Estimated Model' (path diagram with coefficients and residual
+  paths .859/.818/.753) and 'What a Paper Reports About Fit' (chi-square, RMSEA .020, CFI .999, SRMR .005, BIC prefers
+  the model without the two arrows; Hu & Bentler 1999). Latent classes reordered (user: EM is not the next step after
+  the idea): idea -> data -> 'The Latent Class Model' (mixture equation, nine unknowns, steps of a real analysis) ->
+  'Estimating the Nine Numbers' (ML, log of a sum, a general search via optim reaches -504.47, EM as the search
+  poLCA runs) -> Two Easy Problems -> EM -> result -> fit -> 'How Many Types?' (1/2/3 classes: BIC 1108.8/1057.3/1081.9)
+  -> Bonikowski & DiMaggio -> cautions. MSM adds 'Is This Only Week 6's Weighting Under a New Name?' (one period: yes;
+  over time the weights are the estimator, the MSM is the model for the mean potential outcome across histories, a
+  modeling choice; g-formula is another estimator). RESEARCH PRACTICE: old pp. 45-52 were 'cliche' (user): DROPPED Four
+  Kinds of Questions, Three Questions in Order (core), Snow, Pager, Find the Comparison, Things That Are Never a
+  Solution (core); kept 'The Same Data, Different Answers' (shortened) and 'Choosing a Method' (core). New order:
+  Starting From a Question -> What Starting From a Question Buys -> A Question Can Be Descriptive (description makes
+  the causal questions; gives an effect its scale) -> Starting From a Method -> Starting From New Data -> When the
+  Method or the Data Come First (two tests) -> Only the Question Defines You -> Keeping One Identity. Lab 14 adds fit
+  measures + BIC, the likelihood through optim(), and the 1/2/3-class table; exercise 5 = poLCA::election with PARTY.
+  Backup: scratchpad slides_w14_before_round3.tex.
+  ROUND 4, 2026-11-23 (user, slide by slide): deck 70 pp. Slide 3 = toy mediation SEM (X -> M -> Y, a, b, c) + 'OLS is
+  the smallest SEM, mediation is one too'. SEM order now: test of fit (t on left-out arrows) -> 'What a Paper Reports
+  About Fit' (RMSEA and SRMR WITH FORMULAS: sqrt((18.1-2)/(2 x 20,700)) = .020; sqrt((.017^2+.005^2)/15) = .005; NO
+  CFI, NO BIC) -> Rejected, but by How Much? -> The Estimated Model -> NEW 'An Unobserved Cause of Education and the
+  First Job' (two-headed arrow between e_U and e_W; estimated as Week 7's IV with V as instrument, X as control:
+  reduced form .159 / first stage .309 = .515 vs OLS .440; lavaan U ~~ W gives .515 (.022); costs the V->W test) ->
+  effects -> What Fit Does Not Show. LATENT SECTION NOW ON ONE EXAMPLE, Bollen's (1989) democracy ratings
+  (lavaan::PoliticalDemocracy y1-y4, 75 countries, 1960; Stouffer-Toby DROPPED, old script in the scratchpad):
+  'A Latent Variable in the Path Diagram' (A = lambda_A T + e_A; user disliked leading with local independence) ->
+  'Where the Loadings Come From' (r_AB = lambda_A lambda_B; triples give .95/.76/.88; ML .82/.76/.71/.88; chi-square
+  10.0 on 2 df; figs/w14_factor.R) -> 'How This Differs From Principal Components' (PCA does not ask why A-D correlate,
+  A may cause B; latent = independent given T, testable; scores r .995) -> 'Democracy as a Type: Latent Classes'
+  (ratings split at the median; 24/13/13/7/18 by number of high ratings) -> model -> ML -> two easy problems -> EM ->
+  table (pi .50 -> .34, logLik -199.9 -> -165.6) -> two types (34%: .95/.85/.84/1.00; 66%: .25/.19/.15/.19; Pr(type 1)
+  correlates .86 with the factor score) -> fit (18 vs 17.5 vs 2.8; chi-square 16.0 on 6 df, p .01) -> how many types
+  (BIC 426.7/370.0/382.5) -> Bonikowski & DiMaggio -> cautions. Lab 14 Part 2 follows (factor model by hand + cfa, PCA,
+  then latent classes and EM on the same data).
+  ROUND 5, 2026-11-23 (user: make the example's tests of fit NOT reject; PCA slide simpler; say why anyone uses a
+  latent variable): deck 71 pp. The four indicators are now y1, y2, y3 (1960) and y8 (legislature, 1965): the 1960
+  legislature rating y4 shares source and year with y2 (Bollen frees that error covariance), and with y8 both models
+  fit. Factor model: triples .95/.82/.92, ML .89/.69/.73/.76, chi-square 4.0 on 2 df, p .14. PCA slide = two plain
+  sentences (PCA is a weighted sum and assumes nothing about relations among A-D; a latent variable assumes every
+  correlation among them comes from T; scores r .99). NEW 'Why Use a Latent Variable, Then?' (PCA is enough for an
+  index or control; a latent variable can be tested and (the slope .75 vs .82 measurement-error point was DROPPED by the user)
+  need not be a number: types, which PCA cannot give). Latent classes on the median split: 26/15/6/12/16; EM pi .50 ->
+  .42 in about ten rounds, logLik -199.4 -> -157.7; type 1 42%: .92/.78/.79/.89, type 2 58%: .18/.15/.10/.05; fit 16
+  vs 15.9 vs 2.4, chi-square 6.0 on 6 df, p .43; BIC 424.0/354.3/371.2. Lab 14 Part 2 uses the same four ratings;
+  exercise 4 = refit with y4 and add B ~~ D.
+  Then (user): deck 72 pp. Latent-class order = model -> 'Estimating the Nine Numbers' (ML by a general search) ->
+  'The Result: Nine Numbers' (what a paper reports) -> 'Which Country Is Which Type?' (Bayes with the nine numbers,
+  pattern (1,1,0,1) -> .99; classify to the more likely type: 31 / 44; 69 of 75 above .9) -> 'A Second Search: Two Easy
+  Problems' -> EM -> EM table -> fit -> how many types. EM comes AFTER the results, as another way to the same numbers.
+  Then (user): deck 71 pp. EM frame = only the nine numbers are guessed; E step computes g_i; M step = fractional
+  counting on three hypothetical countries. Fix-by-weighting DAG has NO arrow into D2 (plain weights remove D1 -> D2
+  too). Stabilized weights = TWO frames: the definition, then 'Why the Numerator Can Take This Form' (denominator does
+  the work; numerator is constant within a treatment history so balance on L is untouched; it only changes how many
+  weighted children each history has; it cancels the part of the denominator unrelated to L: 1/.05 = 20 vs .05/.05 =
+  1; L in the numerator would bring L -> D back). The worked-example table and 'What Stabilizing Buys' simulation
+  frame were DROPPED (figs/w14_msm.R still computes them; the lab keeps both).
+  Then (user): deck 72 pp. Stabilized-weights reason frame now has the DAG (D1 -> D2 back in orange; harmless because
+  D1 is in the outcome regression; rule: the numerator may use only what is in the outcome regression). Research
+  practice: first frame retitled 'Starting From a Question: Control Over Childbearing' with Goldin & Katz 2002 added
+  (Lindo et al. row dropped); NEW 'Starting From a Puzzle in Reading' after 'What Starting From a Question Buys'
+  (Myers 2017 rereading Goldin-Katz; Ludwig & Bruderl 2018; in the AI era a doubt can be tested in an afternoon when
+  data and code are public; the scarce thing is the hunch; a failed replication is not yet a paper).
+  Then (user): 'Starting From a Method' = DEPENDENCY PARSING (tikz 'The officer arrested the man' with subject/object
+  arcs; Stuhler 2022 SMR 51(4): 1580-1633; Stuhler 2024 PNAS 121(29): 87,531 works of fiction 1850-2010, women more
+  often acted upon, gap narrowed but remains, wider for male authors; web-verified from abstracts). Kiley & Vaisey
+  frame and both refs DROPPED. Goldin-Katz / Myers wording verified 2026-11-23 (Myers details from the 2012 IZA
+  working paper, not the JPE print).
+  Then (user): deck 69 pp. Final Exam section = 'The Final Exam: Format and Rules' (weighted to Weeks 9-13; Dec 3
+  9:05-11:35; open book, timed; laptop allowed for slides/notes, NO wifi, no searching; the 'No AI' block is GONE;
+  Problem Set 5 distributed Tue Nov 24, due Fri Dec 11, lighter) -> the two tables -> 'Where to Go Next' (Author
+  (Year), Title throughout). 'What the Exam Covers' bullets, 'How to Prepare', and the 'In this department' bullet
+  DROPPED. NOT YET CHANGED to the new PS5 dates: homework5.qmd subtitle, README, syllabus/schedule.tex (still Nov 20
+  / Dec 4).
+  Lab 14 re-aligned 2026-11-24: Part 1 adds 'An unobserved cause of education and the first job' (IV ratio by hand
+  .159/.309 = .515, lavaan U ~~ W); Part 2 latent classes follow the slide order (optim -> nine numbers -> Bayes
+  classification 31/44 -> EM as a second search -> fit -> poLCA). Part 3 still has stabilized weights by cell and
+  the five-period simulation, which the slides no longer show.
+  Then (user): 'Every Design, in One Table' and 'Inference, in One Table' DROPPED; Final Exam section = Format and
+  Rules -> Where to Go Next (books) -> NEW 'Where to Go Next: Duke Sociology' (faculty by method; names from the
+  department's faculty page, the area next to each name is from general knowledge, NOT from a Duke page) -> 'Course
+  Evaluation' (figs/duke_eval_qr.png). Deck 69 pp.
+  Then (user): deck 68 pp. 'What Starting From a Question Buys' DROPPED ('quite cliche'; Lundberg et al. ref removed);
+  'When the Method or the Data Come First' keeps only its two works/fails bullets (institution bullet and 'Two tests'
+  dropped); childbearing intro says 'Social scientists' and that places with different access differ too. User
+  flagged two bullets as 'so AI' (aphoristic three-part cadence, 'never worth becoming'): reworded plainly ('A
+  question lasts'; 'A good idea can come from a method or a dataset. Use it when it helps answer your question.').
+  Then (user): 'The Same Data, Different Answers' and 'Choosing a Method' (core) DROPPED (Silberzahn, Breznau refs
+  removed); research practice ends with 'Keeping One Identity'. Deck 66 pp.
+  Then (user): 'Where to Go Next: Duke Sociology' DROPPED. Deck 65 pp.
+  Then (user): 'A Question Can Be Descriptive' = Chetty-Hendren-Kline-Saez 2014 QJE (40M children; 4.4% Charlotte
+  vs 12.9% San Jose), Chetty, Grusky et al. 2017 Science (90% -> 50%), Nilforoshan et al. 2023 Nature (9.6M phones;
+  large cities more segregated; Grusky coauthor), Pettit & Western; Desmond and Jones & Jerman rows dropped (web-
+  verified from abstracts). Identity bullet: 'New data and new methods keep arriving. Choose among them: take up the
+  ones that fit your identity.'
+  2026-11-24 REPO CLEANUP (user) and push: figures no slide or lab references were deleted (26 tracked, git rm'd,
+  recoverable from history: Week 10 fe_*.pdf, pan_*.pdf leftovers, kleven_fig1.png, divorce_raw.pdf; Week 3
+  rulers_large/parabola_reg; Week 4 score_childs; Week 5 po_sims; Week 6 heckman_bias, pal2016_*, wodtke2011_*;
+  Week 7 shiftshare_sim; Week 9 dq_density, poly_weights; plus untracked leftovers). Their scripts are kept.
+  .gitignore now covers Rplots.pdf, *.vrb, Week */lab*.tex, codex_review_*.md. Problem Set 5 dates changed
+  everywhere to assigned Tue Nov 24, due Fri Dec 11 (homework5.qmd, README, syllabus schedule). README Week 14
+  block rewritten for the current deck and links Lab 14. Syllabus Week 14 title still 'Synthesis and Exam Review'.
 - `Math Review/math_review.tex`: 24-page standalone review (calculus, Taylor, linear algebra,
   probability, asymptotics, integrals, penalized optimization), linked from README.
 - Problem Set 2 (`Homework/homework2/homework2.qmd`, assigned Thu Sep 24, due Thu Oct 8; 9 pp,
@@ -836,7 +962,20 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   Mark & Wu 2022 PNAS read + run on `Data/sexed_county.csv` (CDC model-based teen birth rates + their public funding file,
   `Data/build_sexed_extract.R`); Part 2 SC = Abadie-Gardeazabal 2003 read + run on `Synth::basque` (tidysynth, synthdid).
   Key `homework4_answers.qmd` (gitignored). PS5 = Weeks 12-13, assigned Fri Nov 20, due Fri Dec 4 (day after the final; user's choice). Numbers in the napkin.
-- Remaining to build: Weeks 13-14 labs, Problem Set 5, midterm review, final packet.
+- Problem Set 5 (`Homework/homework5/`, built 2026-11-20; assigned Fri Nov 20, due Fri Dec 4; Weeks 12-13 before PCA,
+  every question answerable with Lab 12/13 code): Part 1 prediction = Salganik et al. 2020 read + predict `lowwage` on
+  `Data/nlsy79_brand.rds` from the 24 adolescent columns (30% test; 4-variable benchmark .168, OLS 24 .199, OLS on 299
+  pairwise terms .127 (train .306), lasso/ridge, pruned tree .139, forest .217, boosting .217, nnet .219); Part 2 DML =
+  Brand et al. 2021 read + college on lowwage, unweighted (raw -.232, OLS -.092, PLR lasso -.093 / forest -.128 /
+  boosting -.128, by-hand residual slope = all_coef; IRM ATE -.188, ATT -.119, 36% with propensity < .05) + one DiD
+  question on PS4's `big` counties (att_gt linear DR -.028 vs ddml_attgt -.038; pre-funding estimates unchanged); Part 3
+  causal forest = GSS 'welfare' vs 'assistance to the poor' wording experiment (Smith 1987; Green & Kern 2012),
+  `Data/gss_welfare.csv` built by `Data/build_gss_welfare.R` from gsbDBI/ExperimentData (28,159 complete cases 1986-2010;
+  welfare = 1 - their w; 1987 and 2006 assigned 1/3 to 'welfare'): difference .348, forest ATE .340, calibration slope
+  1.22, strong Democrats .26 to strong Republicans .43, Black .25 vs .36, schooling not monotone, AUTOC .087. Key
+  `homework5_answers.qmd` (gitignored) needs ddml >= 0.9 (rendered with the scratch R_LIBS copy). Students read the
+  data from GitHub raw URLs, so `Data/gss_welfare.csv` must be pushed before the set is handed out.
+- Remaining to build: midterm review, final packet.
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
 ## Gotchas

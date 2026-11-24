@@ -28,3 +28,24 @@ for (eff in list(c(A = 2, B = 2), c(A = 4, B = 1))) {
   cat(sprintf("effects A=%g B=%g | true ATT %.2f | TWFE %.2f | TWFE + type dummy %.2f | TWFE + type x period %.2f | regression %.2f\n",
               eff["A"], eff["B"], att, plain, absorb, bytype, greg))
 }
+
+## Why TWFE + type x period gives 2.50, not 1.60, when effects differ (A +4, B +1).
+## Within each type, OLS weights the type's effect by n_type * Var(D | type) = n_type * e(1 - e);
+## the ATT weights by the number of NJ stores of that type.
+n  <- c(A = 100, B = 100); e <- c(A = 0.2, B = 0.8)
+vw <- n * e * (1 - e); vw <- vw / sum(vw)
+aw <- n * e;           aw <- aw / sum(aw)
+cat(sprintf("variance weights A %.2f B %.2f -> %.2f | ATT weights A %.2f B %.2f -> %.2f\n",
+            vw["A"], vw["B"], sum(vw * c(4, 1)), aw["A"], aw["B"], sum(aw * c(4, 1))))
+
+## Time-varying X affected by the law (bad control). Hypothetical, 100 stores per state, two periods.
+## X_it = hours per worker; the law cuts hours by 1 in NJ. Employment rises by 1 directly and by 1 more
+## because each worker works fewer hours: total effect of the law = 2.
+set.seed(723)
+b <- merge(data.frame(store = 1:200, nj = rep(c(1, 0), each = 100)), data.frame(post = 0:1))
+b$D <- b$nj * b$post
+b$hours <- 35 + rnorm(nrow(b), 0, 0.3) - 1 * b$D
+b$y <- 20 + 0.5 * b$post + 1 * b$D - 1 * (b$hours - 35) + rnorm(nrow(b), 0, 0.3)
+cat(sprintf("bad control: TWFE %.2f | TWFE + hours_it %.2f | truth (total effect) 2\n",
+            coef(feols(y ~ D | store + post, b))[["D"]],
+            coef(feols(y ~ D + hours | store + post, b))[["D"]]))
