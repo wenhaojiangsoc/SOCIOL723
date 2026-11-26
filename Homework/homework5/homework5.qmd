@@ -48,11 +48,7 @@ editor: visual
 
 **Instructions.** Submit a single PDF rendered from a Quarto or RMarkdown source, together with the source file. Each part pairs a published study with an analysis you run yourself on public data. Use the functions from Labs 12 and 13; every question can be answered with code from those labs. You may use AI assistance, but you are responsible for every line you submit. Use `set.seed(723)` before every step that involves randomness (a split, cross-validation, a forest, cross-fitting). Your numbers will differ a little from your classmates' depending on package versions; what is graded is the code, the reading of the output, and the reasoning.
 
-**Data.** Each part opens with a code chunk that loads its data and packages; copy it into your own file. Part 2 needs `ddml` version 0.9 or later, installed from GitHub as in Lab 13:
-
-```{r}
-remotes::install_github("thomaswiemann/ddml")
-```
+**Data.** Each part opens with a code chunk that loads its data and packages; copy it into your own file.
 
 ```{=latex}
 \begin{center}
@@ -63,7 +59,7 @@ remotes::install_github("thomaswiemann/ddml")
 Part & Method & Week & Read & Run \\
 \midrule
 1 & Prediction & 12 & Salganik et al. (2020) & NLSY79: low-wage work \\
-2 & Double machine learning & 13 & Brand et al. (2021) & NLSY79; U.S. counties \\
+2 & Double machine learning & 13 & Brand et al. (2021) & NLSY79: college \\
 3 & Causal forest & 13 & Green and Kern (2012) & GSS wording experiment \\
 \bottomrule
 \end{tabular}
@@ -98,19 +94,14 @@ child's grit & 0.06 & caregiver's layoff & 0.03 \\
 
 The best submission was only slightly better than a benchmark chosen by a domain expert: a regression on four variables (the mother's race, marital status, and education at the birth, and the same outcome measured at age 9).
 
-1.  **Reading the design.**
-
-    (a) Why were teams scored on families whose outcomes they never saw, and not on the families they trained on? What would the $R^2$ of a very flexible model look like on its own training families?
-
-    (b) A reader concludes: "With an $R^2$ of 0.2, family background hardly matters for children's lives." Give one reason the conclusion does not follow from a low $R^2$.
+1.  **Reading the design.** Why were teams scored on families whose outcomes they never saw, and not on the families they trained on? What would the $R^2$ of a very flexible model look like on its own training families?
 
 ## Run: predicting a career in low-wage work
 
 We ask the same question of the NLSY79 extract from Lab 13 (Brand et al. 2021): 4,113 respondents aged 14--17 in 1979 who finished at least 12th grade. The outcome `lowwage` is the share of survey years, 1990--2014, in which the respondent's hourly wage was below two-thirds of that year's median. The predictors are 24 columns measured in adolescence, before anyone could have finished college. They are listed in `xvars`; `ability` is the standardized AFQT score, `parinc` parents' income, `rotter` a locus-of-control scale, `schooldis` a measure of school disadvantage, and the three `_miss` columns flag imputed values. Do not use `college` in this part.
 
 ```{r}
-library(glmnet); library(rpart); library(ranger)
-library(xgboost); library(nnet)
+library(glmnet); library(ranger); library(xgboost)
 u <- paste0("https://raw.githubusercontent.com/wenhaojiangsoc/",
             "SOCIOL723/main/Data/nlsy79_brand.rds")
 d <- readRDS(url(u))
@@ -131,7 +122,7 @@ te <- sample(n, round(0.3 * n)); tr <- setdiff(1:n, te)
 r2 <- function(pred) {
   1 - mean((y[te] - pred)^2) / mean((y[te] - mean(y[tr]))^2)
 }
-## data frames for rpart, ranger, and lm
+## data frames for ranger and lm
 dtr <- data.frame(y = y[tr], Xm[tr, ]); dte <- data.frame(Xm[te, ])
 ```
 
@@ -147,25 +138,17 @@ dtr <- data.frame(y = y[tr], Xm[tr, ]); dte <- data.frame(Xm[te, ])
 
     (b) Fit the lasso and ridge on `Xb`, with $\lambda$ at `lambda.min`. Report both test $R^2$ and compare them with 2(b). The three models use the same columns. Why do the penalized ones predict better?
 
-4.  **Trees, forests, boosting, and a network.**
+4.  **Forests and boosting.**
 
-    (a) Grow a large tree with `rpart` (`cp = 0.001`) and prune it at the `cp` with the smallest cross-validated error. How many leaves are left? Describe the first two levels of splits in words. Report the test $R^2$.
+    (a) Fit a random forest with `ranger` (1,000 trees, `importance = "permutation"`). Report the test $R^2$ and the five variables with the largest permutation importance.
 
-    (b) Fit a random forest with `ranger` (1,000 trees, `importance = "permutation"`). Then tune it: compute the out-of-bag MSE for `mtry` in (1, 2, 4, 8, 24) and `min.node.size` in (5, 20, 50, 100), and refit at the best pair. Show the grid. Report the test $R^2$ of the default and the tuned forest, and the five variables with the largest permutation importance. Why is the out-of-bag error an honest guide here, when the training error is not?
+    (b) Fit boosted trees with `xgboost` (`eta = 0.05`, `max_depth = 3`), choosing the number of steps with `xgb.cv` and early stopping as in Lab 12. Report the test $R^2$.
 
-    (c) Fit boosted trees with `xgboost` (`eta = 0.05`, `max_depth = 3`), choosing the number of steps with `xgb.cv` and early stopping as in Lab 12. How many steps does it choose? Report the test $R^2$.
+5.  **Reading the results.**
 
-    (d) Fit a network with one hidden layer of two units with `nnet` (`decay = 1`, `linout = TRUE`, `maxit = 500`) on standardized inputs, using means and standard deviations from the training cases only. Average the predictions of five random starts. Report the test $R^2$.
+    (a) By how much does your best method beat the four-variable benchmark? Compare the pattern with the Fragile Families Challenge in two or three sentences.
 
-5.  **The scoreboard.**
-
-    (a) Put every test $R^2$ from questions 2--4 in one sorted table.
-
-    (b) By how much does your best method beat the four-variable benchmark? Compare the pattern with the Fragile Families Challenge in two or three sentences.
-
-    (c) `ability` and `male` lead the importance ranking. A policy memo reads: "Raising adolescents' test scores would move them out of low-wage work." Rewrite the sentence so that it says only what a prediction model can support, and name what would be needed to support the original.
-
-    (d) Suppose you had chosen the forest's `mtry` by its test $R^2$ instead of the out-of-bag error, and then reported that same test $R^2$. What would be wrong with the reported number?
+    (b) `ability` and `male` lead the importance ranking. A policy memo reads: "Raising adolescents' test scores would move them out of low-wage work." Rewrite the sentence so that it says only what a prediction model can support.
 
 \newpage
 
@@ -175,11 +158,7 @@ dtr <- data.frame(y = y[tr], Xm[tr, ]); dte <- data.frame(Xm[te, ])
 
 Brand, Xu, Koch, and Geraldo (2021, *Sociological Methodology*) ask whether finishing a four-year college degree by age 25 keeps people out of low-wage work, and for whom. College is not assigned at random, so they compare graduates and non-graduates who share the same pre-college characteristics: the 24 columns of Part 1. Part 1 asked how well those columns *predict* low-wage work. Part 2 uses the same kind of prediction for a different purpose: to estimate the effect of `college` on `lowwage`.
 
-1.  **Reading the design.**
-
-    (a) State, in words, the assumption under which adjusting for the 24 columns identifies the effect of college on low-wage work. Name one variable not on the list that would violate it, and say in which direction it would bias the estimate.
-
-    (b) OLS of `lowwage` on `college` and the 24 columns also "adjusts for" them. What does OLS assume that DML does not? Which assumption do the two share?
+1.  **Reading the design.** OLS of `lowwage` on `college` and the 24 columns also "adjusts for" them. What does OLS assume that DML does not? Which assumption do the two share?
 
 ## Run: one number, three ways
 
@@ -200,58 +179,13 @@ learners <- list(
 
 2.  **From OLS to DML.**
 
-    (a) Report the difference in mean `lowwage` between graduates and non-graduates, and the coefficient on `college` from OLS with the 24 columns entered linearly, each with a robust (HC1) standard error.
+    (a) Report the coefficient on `college` from OLS with the 24 columns entered linearly, with a robust (HC1) standard error.
 
     (b) For each of the three learners (the same learner for $Y$ and for $D$), fit `DoubleMLPLR` with 5 folds and the folds redrawn 5 times (`n_rep = 5`), keeping the predictions (`store_predictions = TRUE`). Make the table from Lab 13: the out-of-fold $R^2$ for $Y$ and for $D$, the estimate, and its standard error.
 
     (c) By hand. Take the forest fit and its first set of folds: the cross-fitted predictions are `m$predictions$ml_l[, 1, 1]` (for $Y$) and `m$predictions$ml_m[, 1, 1]` (for $D$). Form the two residuals, compute the residual-on-residual slope $\sum_i \tilde D_i \tilde Y_i / \sum_i \tilde D_i^2$, and check it against `m$all_coef[1, 1]`. Which Week 1 result is this formula?
 
     (d) Which estimate do you report, by the rule from lecture? The lasso's estimate is almost the same as OLS in (a), and the forest's is not. Explain both facts.
-
-    (e) The out-of-fold $R^2$ for $Y$ is about what Part 1 found: most of the variation in low-wage work is not predicted. Is that a problem for DML? Say what DML needs from the two predictions, and where the unpredicted part of $Y$ shows up in the result.
-
-3.  **From one number to the ATE and the ATT.** The partially linear model reports one $\tau$. Week 6's AIPW targets the ATE or the ATT; with cross-fitted ML predictions it is `DoubleMLIRM`:
-
-    ```{r}
-    set.seed(723)
-    irm <- DoubleMLIRM$new(dat,
-      ml_g = lrn("regr.ranger", num.trees = 500),     ## E[Y | X], each arm
-      ml_m = lrn("classif.ranger", num.trees = 500,   ## the propensity
-                 predict_type = "prob"),
-      score = "ATE",                 ## "ATTE" gives the ATT
-      n_folds = 5, n_rep = 5,
-      trimming_threshold = 0.01)     ## propensities kept in [0.01, 0.99]
-    irm$fit(store_predictions = TRUE)
-    e_hat <- irm$predictions$ml_m[, 1, 1]   ## cross-fitted propensities
-    ```
-
-    (a) Report the ATE and the ATT with standard errors.
-
-    (b) Describe the distribution of `e_hat`. What share of respondents has a propensity below 0.05? Compare their means of `ability`, `parinc`, and `expect` with everyone else's. For which of the two estimands, ATE or ATT, do these respondents matter, and what is the estimate for them built on?
-
-    (c) Order the three numbers: the ATT, the partially linear $\hat\tau$ from 2(d), and the ATE. Lecture called the partially linear $\tau$ a variance-weighted average of the effects $\tau(x)$: respondents count in proportion to $e(x)(1 - e(x))$. Use this, and your answer to (b), to explain the order. What does the order suggest about who gains more from college, those likely or those unlikely to finish it?
-
-4.  **DML in a design: Problem Set 4 again.** In Problem Set 4 you estimated the effect of comprehensive sex-education funding on teen births with Callaway and Sant'Anna's estimator, among counties with at least 5,000 teens. With covariates, each block was an AIPW estimate built from a linear regression and a logit.
-
-    ```{r}
-    library(did); library(ddml)
-    u <- paste0("https://raw.githubusercontent.com/wenhaojiangsoc/",
-                "SOCIOL723/main/Data/sexed_county.csv")
-    sx <- read.csv(u)
-    sx$lrate <- log(sx$birth_rate); sx$lpop <- log(sx$pop_2010)
-    big <- subset(sx, pop_2010 >= 5000)
-    big <- big[order(big$fips, big$year), ]             ## sort: county, year
-    Ymat  <- matrix(big$lrate, ncol = 15, byrow = TRUE) ## counties x years
-    first <- big[big$year == 2003, ]                    ## one row per county
-    covs  <- c("lpop", "med_hhinc_2010", "pct_pov_2010",
-               "pct_black_2010", "pct_hisp_2010")
-    ```
-
-    (a) Re-estimate the linear version: `att_gt()` on `big` with the five covariates in `covs`, never-funded counties as controls, `base_period = "universal"`, and the doubly robust estimator. Report the simple ATT.
-
-    (b) Estimate the same blocks with `ddml_attgt()` as in Lab 13: a stack of `ols` and a random forest for the change in the outcome, a stack of a logit and a random forest for the propensity. Report the simple ATT, and draw the event study, both with `lincom_weights_did()` and `lincom()`.
-
-    (c) Compare (a) and (b) in percent. Then look at the estimates before funding in the event study. In Problem Set 4 they were flat and positive four to seven years before funding, then fell toward zero in the last two years. Did the machine-learning predictions remove that pattern? What does your answer say about what DML can repair in a difference-in-differences and what it cannot?
 
 \newpage
 
@@ -261,18 +195,11 @@ learners <- list(
 
 Since the 1980s the General Social Survey has asked respondents whether the country is spending too much, too little, or about the right amount on a list of problems. One item on the list is worded two ways, and each respondent is assigned one wording at random: spending on "welfare", or spending on "assistance to the poor". Smith (1987, *Public Opinion Quarterly*) showed that the label alone changes the answer by a wide margin: Americans support "assistance to the poor" far more than "welfare". Green and Kern (2012, *Public Opinion Quarterly*) return to the experiment to ask *for whom* the label matters, and argue that the search over respondent characteristics should be done by a tree-based method and not by a researcher trying interaction terms one at a time.
 
-1.  **Reading the design.**
-
-    (a) The wording is assigned at random. What does that imply about the propensity score $e(x)$? Why can a difference in means be trusted here, when it could not be in Part 2?
-
-    (b) Suppose the forest finds that the wording matters more for conservatives than for liberals. The wording was randomized; political views were not. Say exactly what such a finding does and does not establish.
-
 ## Run: who responds to the word?
 
 The file holds 28,159 respondents from 1986 to 2010 with complete data. `welfare` = 1 if the respondent was asked about "welfare" (0 = "assistance to the poor"); `toomuch` = 1 if the answer was "too much". Covariates: `year`, `age`, `educ` (years of schooling), `female`, `black`, `otherrace`, `partyid` (0 = strong Democrat to 6 = strong Republican), `polviews` (1 = extremely liberal to 7 = extremely conservative), `income` (the GSS family-income category, 1 to 12), `childs` (number of children), `married`, `fulltime`.
 
 ```{r}
-library(grf); library(sandwich)
 u <- paste0("https://raw.githubusercontent.com/wenhaojiangsoc/",
             "SOCIOL723/main/Data/gss_welfare.csv")
 g <- read.csv(u)
@@ -283,29 +210,36 @@ X <- as.matrix(g[, zvars])
 Y <- g$toomuch; D <- g$welfare
 ```
 
-2.  **The average effect, and one split by hand.**
+1.  **The average effect.** Compute the difference in the share answering "too much" between the two wordings, with its standard error. Then tabulate the share assigned the "welfare" wording by year. In which years was it not one half?
 
-    (a) Compute the difference in the share answering "too much" between the two wordings, with its standard error. Then tabulate the share assigned the "welfare" wording by year. In which years was it not one half?
+2.  **A tree for effects, then the forest.** The chunk below grows the tree from lecture. It first controls for $X$: two regression forests predict $Y$ and $D$, and the residuals are $\tilde Y_i$ and $\tilde D_i$. A leaf's effect is the OLS slope of $\tilde Y$ on $\tilde D$ among the respondents in it. For every covariate and every cut, the tree computes the slope on each side and $\Delta = \frac{n_L n_R}{n}(\hat\tau_L - \hat\tau_R)^2$, and takes the cut with the largest $\Delta$. `grf` grows trees of this kind inside `causal_forest()` but does not draw their effects, so the course file `effect_tree.R` supplies a function that grows one small tree and lets `rpart.plot` draw it.
 
-    (b) Lab 13's splitting rule: $\Delta = \frac{n_L n_R}{n}(\hat\tau_L - \hat\tau_R)^2$, with each $\hat\tau$ a difference in means. Compute $\Delta$ for three candidate first splits of the whole sample: conservative (`polviews >= 5`), `black`, and a college degree (`educ >= 16`). Rank the three. The gap $\hat\tau_L - \hat\tau_R$ is clearly largest for `black`, yet its $\Delta$ is about the same as the one for `conservative`. Why?
+    ```{r}
+    library(grf); library(rpart); library(rpart.plot)
+    u <- paste0("https://raw.githubusercontent.com/wenhaojiangsoc/",
+                "SOCIOL723/main/Homework/homework5/effect_tree.R")
+    source(u)                     ## defines effect_tree()
+    ## control for X: predict Y and D from X, keep the residuals
+    Y_hat <- regression_forest(X, Y, num.trees = 500,
+                               seed = 723)$predictions
+    D_hat <- regression_forest(X, D, num.trees = 500,
+                               seed = 723)$predictions
+    Yt <- Y - Y_hat; Dt <- D - D_hat
+    ## the tree: two levels, leaves of at least 1,000 respondents
+    tree <- effect_tree(Yt, Dt, X, depth = 2, min_leaf = 1000)
+    ## the number in a node is its effect (slope of Yt on Dt)
+    suppressWarnings(rpart.plot(tree, type = 2, digits = 2))
+    ```
 
-3.  **The forest.**
+    (a) Plot the tree. Which variables does it split on? Describe the leaf with the largest effect and the leaf with the smallest.
 
-    (a) Fit `causal_forest(X, Y, D, num.trees = 2000, seed = 723)`. Report the ATE from `average_treatment_effect()` and check that it is the mean of the AIPW estimates from `get_scores()`. Summarize the forest's own propensity predictions (`cf$W.hat`). Why are they not all equal to one number, and why does the ATE differ slightly from 2(a)? (Check your explanation with a regression of `toomuch` on `welfare` and year dummies.)
+    (b) This tree used the same respondents to choose its splits and to estimate its leaves. What does that do to the leaf effects, and what does a tree in a causal forest do differently? (Hint: honesty.)
 
-    (b) Report the 5th, 25th, 50th, 75th, and 95th percentiles of the forest's estimates $\hat\tau(X_i)$. Then run `test_calibration()`. Interpret both coefficients. Is the spread in $\hat\tau(X_i)$ real?
+    (c) Fit the forest on the same residuals: `cf <- causal_forest(X, Y, D, Y.hat = Y_hat, W.hat = D_hat, num.trees = 2000, seed = 723)`. A causal forest produces two main sets of estimates. `predict(cf)$predictions` gives $\hat\tau(X_i)$, the leaf-specific treatment effect of each respondent, averaged over the trees. `get_scores(cf)` gives every respondent an AIPW estimate, built from the regression forests' predictions of $Y$ and $D$. Check that `average_treatment_effect(cf)` is the mean of the AIPW estimates.
 
-    (c) Each tree splits on one half of its subsample and estimates the leaf effects on the other half. If the same people did both jobs, what would happen to the spread you reported in (b), and why?
+    (d) Report the 5th, 25th, 50th, 75th, and 95th percentiles of $\hat\tau(X_i)$. Then run `test_calibration()`. Interpret both coefficients. Is the spread in $\hat\tau(X_i)$ real?
 
-4.  **For whom does the label matter?**
-
-    (a) Report the average effect, with its standard error, in each category of `partyid`, in each category of `polviews`, for Black and non-Black respondents, and in four schooling groups (less than 12 years, 12, 13--15, 16 or more). Describe the patterns. Which one is not monotone?
-
-    (b) Run `best_linear_projection()` of the effect on `polviews`, `partyid`, `educ`, `black`, `age`, `income`, and `year`. Interpret the coefficients on `polviews` and `black` in a sentence each. The gap between Black and non-Black respondents in (a) is larger than the coefficient on `black` here. Why?
-
-    (c) Rank respondents by $\hat\tau(X_i)$, largest first, with `rank_average_treatment_effect()`. Plot the TOC curve and report the AUTOC with its standard error. Read off the curve at $q = 0.2$ and say in words what that number is.
-
-5.  **Write it up.** In one paragraph, as in a results section: the average effect of the label with its 95% interval; the evidence that the effect differs across respondents; who responds most and least, with numbers; and one sentence, following 1(b), on how the differences should and should not be read.
+3.  **For whom does the label matter?** The average effect in a group is the mean of the AIPW estimates of its members, as the ATE in 2(c) is their mean over everyone; `average_treatment_effect(cf, subset = ...)` adds the standard error. Report it in each category of `partyid`, in each category of `polviews`, for Black and non-Black respondents, and in four schooling groups (less than 12 years, 12, 13--15, 16 or more). Describe the patterns. Which one is not monotone?
 
 \newpage
 
@@ -315,13 +249,9 @@ Athey, Susan, Julie Tibshirani, and Stefan Wager. 2019. "Generalized Random Fore
 
 Brand, Jennie E., Jiahui Xu, Bernard Koch, and Pablo Geraldo. 2021. "Uncovering Sociological Effect Heterogeneity Using Tree-Based Machine Learning." *Sociological Methodology* 51(2): 189--223.
 
-Callaway, Brantly, and Pedro H. C. Sant'Anna. 2021. "Difference-in-Differences with Multiple Time Periods." *Journal of Econometrics* 225(2): 200--230.
-
 Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, Esther Duflo, Christian Hansen, Whitney Newey, and James Robins. 2018. "Double/Debiased Machine Learning for Treatment and Structural Parameters." *The Econometrics Journal* 21(1): C1--C68.
 
 Green, Donald P., and Holger L. Kern. 2012. "Modeling Heterogeneous Treatment Effects in Survey Experiments with Bayesian Additive Regression Trees." *Public Opinion Quarterly* 76(3): 491--511.
-
-Mark, Nicholas D. E., and Lawrence L. Wu. 2022. "More Comprehensive Sex Education Reduced Teen Births: Quasi-Experimental Evidence." *Proceedings of the National Academy of Sciences* 119(8): e2113144119.
 
 Salganik, Matthew J., Ian Lundberg, Alexander T. Kindel, et al. 2020. "Measuring the Predictability of Life Outcomes with a Scientific Mass Collaboration." *Proceedings of the National Academy of Sciences* 117(15): 8398--8403.
 

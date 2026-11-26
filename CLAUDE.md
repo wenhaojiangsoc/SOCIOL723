@@ -975,6 +975,23 @@ CRAN, never make a lab depend on it). Public GitHub repo; lab answer keys are tr
   1.22, strong Democrats .26 to strong Republicans .43, Black .25 vs .36, schooling not monotone, AUTOC .087. Key
   `homework5_answers.qmd` (gitignored) needs ddml >= 0.9 (rendered with the scratch R_LIBS copy). Students read the
   data from GitHub raw URLs, so `Data/gss_welfare.csv` must be pushed before the set is handed out.
+  SHORTENED 2026-11-25 (user: to about 2/3-3/4; 38 lettered items -> 27): Part 1 drops the low-R2 reading item, the
+  pruned tree, the forest tuning grid, the nnet network, and the tune-on-test item; Part 2 drops 2(e) and ALL of
+  question 4 (the Problem Set 4 DiD with ddml), so the set no longer needs ddml from GitHub; Part 3 drops the split
+  by hand, the honesty item, and best_linear_projection. The key mirrors the new numbering.
+  Round 2, 2026-11-25 (user): Part 1 has no scoreboard table (question 5 = 'Reading the results': best vs benchmark,
+  policy-memo rewrite without 'what would be needed'); boosting no longer asks the number of steps. Part 2 = ONE
+  reading question (OLS vs DML assumptions) + question 2 (OLS with controls only, no raw difference; PLR table; by
+  hand; which to report); the IRM ATE/ATT question is GONE. Part 3 has no reading questions and no write-up:
+  1 average effect; 2 'A tree for effects, then the forest'; 3 for whom (group effects = averages of AIPW
+  estimates; TOC). The tree is THE LECTURE'S TREE (user rejected an rpart tree on AIPW estimates: 'what I stressed
+  is the tree finds the max heterogeneity of Y-tilde on D-tilde, OLS within each leaf'): residuals from two
+  regression forests, then `Homework/homework5/effect_tree.R` (students source it from GitHub: MUST BE PUSHED) =
+  rpart with a user-written split method, leaf value = residual-on-residual slope, split = largest Delta;
+  rpart.plot draws it (partyid < 4, then polviews < 4 / income < 10; leaves .24/.33/.29/.43; top node .340).
+  grf's own get_tree()/plot() show splits and leaf mean Y only, no effects, need DiagrammeR, and a forest tree has
+  ~900 nodes; htetree::causalTree split only on year here. Items: (a) read the tree + check two nodes with
+  lm(Yt ~ 0 + Dt), (b) honesty, (c) causal_forest on the same residuals, ATE = mean of get_scores, (d) calibration.
 - Remaining to build: midterm review, final packet.
   Source decks for later weeks: `../SOCIOL690S` (see napkin Build Plan).
 
